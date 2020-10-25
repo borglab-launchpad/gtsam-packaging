@@ -1,10 +1,21 @@
-gtsam (4.0.3-1ubuntu1~4.gbp7d3d6b) UNRELEASED; urgency=medium
+gtsam (4.0.3-1ubuntu1~5.gbpa14763) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a147631d3564d40381bdb3c01b9fa4dc274c311e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7d3d6ba3160721c8b9b3f5ab625cefd8be3c1b52 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 20 Oct 2020 03:01:37 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Add alternativeName()
+
+  [ Jose Luis Blanco Claraco ]
+  * replaced lambda with class plus functor
+  * less verbose name path for SymbolGenerator
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Oct 2020 02:59:20 +0000
 
 gtsam (4.0.3-1ubuntu1~3.gbp2b9fdc) focal; urgency=medium
 
