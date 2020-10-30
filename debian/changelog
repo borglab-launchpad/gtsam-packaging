@@ -1,10 +1,22 @@
-gtsam (4.0.3-1ubuntu1~8.gbpac7ddf) UNRELEASED; urgency=medium
+gtsam (4.0.3-1ubuntu1~9.gbp92af85) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @92af857cf567bea9dd78dabbcb505f93b53aaa40 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ac7ddf68388e24a70332b268eb9cbb1d522a96f2 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Oct 2020 03:01:28 +0000
+  [ Frank dellaert ]
+  * Fix warning on clang
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Jose Luis Blanco-Claraco ]
+  * Automatic detection of correct suggest-override flag
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Oct 2020 02:59:30 +0000
 
 gtsam (4.0.3-1ubuntu1~7.gbp98222e) focal; urgency=medium
 
