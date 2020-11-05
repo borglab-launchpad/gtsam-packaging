@@ -1,3 +1,12 @@
+gtsam (4.0.3-1ubuntu1~19.gbp5d3a03) bionic; urgency=medium
+
+  ** SNAPSHOT build @5d3a0398939039bbce60cedc8f716ca99d64e9e4 **
+
+  * updated changelog and patch files for snapshot 4.0.3-1ubuntu1~18.gbpaed86d
+  * modified changelog for distro xenial
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Nov 2020 03:00:08 +0000
+
 gtsam (4.0.3-1ubuntu1~18.gbpaed86d) xenial; urgency=medium
 
   ** SNAPSHOT build @aed86d33d9f2ffb4e823db32581ebe042fa8d2a1 **
