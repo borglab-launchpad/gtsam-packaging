@@ -1,10 +1,22 @@
-gtsam (4.0.3-1ubuntu1~17.gbpc41fcf) UNRELEASED; urgency=medium
+gtsam (4.0.3-1ubuntu1~18.gbpaed86d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @aed86d33d9f2ffb4e823db32581ebe042fa8d2a1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c41fcfa7948280030d8acff04ef3fb6077e94cf2 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 03 Nov 2020 16:28:39 +0000
+  [ Tim McGrath ]
+  * adding additional Unit3 support in the wrapper: PriorFactorUnit3, Values::insert/update/at(Unit3)
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Consistent interface for pixel center (#579)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Nov 2020 02:59:25 +0000
 
 gtsam (4.0.3-1ubuntu1~16.gbp0d7ed4) focal; urgency=medium
 
