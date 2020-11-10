@@ -1,10 +1,32 @@
-gtsam (4.0.3-1ubuntu2~29.gbpee656d) UNRELEASED; urgency=medium
+gtsam (4.0.3-1ubuntu2~30.gbp816015) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @816015d53723d13c2360d404152061bb4adbffcd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ee656dcbae93b57eedb3d66578a932a5340da80d **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 09 Nov 2020 03:02:49 +0000
+  [ Sushmita ]
+  * python wrapper for sfmdata
+  * unittested features in SfmData
+  * python wrapped SfmData and SfmTrack
+  * python wrapper sfmtrack reflected in other files
+  * changed Measurements to measurements
+  * wrapped sfmtrack
+  * removed measurements from sfmdata
+  * changed setP method name removed commented code
+  * remved commented code
+  * added new constructor and changed to emplace
+  * sfmtrack constructor changed to accept point
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Bernd Pfrommer ]
+  * had to bump version number manually to avoid ppa reject
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Nov 2020 02:59:11 +0000
 
 gtsam (4.0.3-1ubuntu1~28.gbp2baec3) focal; urgency=medium
 
