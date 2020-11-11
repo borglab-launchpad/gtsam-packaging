@@ -1,5 +1,12 @@
-gtsam (4.1.0-1ubuntu2~33.gbp516532) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~34.gbp1497fd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1497fd5ce694669d9e7ec85ee9d1c91e35762128 **
+
+  [ Bernd Pfrommer ]
   * restarted changelog version number
 
- -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Tue, 11 Nov 2020 03:02:36 +0000
+  [ Varun Agrawal ]
+  * Fix python discovery for MATLAB wrapper
+  * ubuntu with gcc-9 in CI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Nov 2020 02:59:55 +0000
