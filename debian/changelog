@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~37.gbpef91d4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~38.gbpc97f6c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c97f6caa4dfafedb200c40b17e0cfb2aaa523936 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ef91d47e04626dce4305869ee1de89e47e153e10 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Nov 2020 03:03:35 +0000
+  [ Varun Agrawal ]
+  * Use new env files for github actions
+  * fix path setting for Windows
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Martin Vonheim Larsen ]
+  * Docs: Use https for mathjax
+
+  [ Varun Agrawal ]
+  * comment out Windows build which is timing out
+  * Update Boost since 1.69.0 has been deprecated in CI images
+  * Comment out Windows 2016 since it times out
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Nov 2020 02:59:28 +0000
 
 gtsam (4.1.0-1ubuntu2~36.gbp9a5c05) focal; urgency=medium
 

@@ -5,16 +5,29 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~34.gbp1497fd) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~38.gbpc97f6c) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @1497fd5ce694669d9e7ec85ee9d1c91e35762128 **
+   ** SNAPSHOT build @c97f6caa4dfafedb200c40b17e0cfb2aaa523936 **
  .
-   [ Bernd Pfrommer ]
-   * restarted changelog version number
+   [ Borglab Builder ]
+   ** SNAPSHOT build @ef91d47e04626dce4305869ee1de89e47e153e10 **
+ .
+   * modified changelog for distro focal
  .
    [ Varun Agrawal ]
-   * Fix python discovery for MATLAB wrapper
-   * ubuntu with gcc-9 in CI
+   * Use new env files for github actions
+   * fix path setting for Windows
+ .
+   [ Borglab Builder ]
+   * commit of final snapshot version number update
+ .
+   [ Martin Vonheim Larsen ]
+   * Docs: Use https for mathjax
+ .
+   [ Varun Agrawal ]
+   * comment out Windows build which is timing out
+   * Update Boost since 1.69.0 has been deprecated in CI images
+   * Comment out Windows 2016 since it times out
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -28,7 +41,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-11
+Last-Update: 2020-11-13
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -123,7 +136,7 @@ Last-Update: 2020-11-11
 +$PYTHON -m unittest discover
 --- gtsam-4.1.0.orig/.github/workflows/build-linux.yml
 +++ gtsam-4.1.0/.github/workflows/build-linux.yml
-@@ -48,8 +48,15 @@ jobs:
+@@ -48,25 +48,32 @@ jobs:
        - name: Install (Linux)
          if: runner.os == 'Linux'
          run: |
@@ -140,9 +153,32 @@ Last-Update: 2020-11-11
              sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
            fi
            sudo apt-get -y update
+ 
+           sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
+           
+-          echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
+-          echo "::set-env name=LD_LIBRARY_PATH::$(echo $BOOST_ROOT_1_69_0/lib)"
++          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
++          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
+           
+           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+-            echo "::set-env name=CC::clang-${{ matrix.version }}"
+-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
++            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
+           fi
+       - name: Check Boost version
+         if: runner.os == 'Linux'
 --- gtsam-4.1.0.orig/.github/workflows/build-macos.yml
 +++ gtsam-4.1.0/.github/workflows/build-macos.yml
-@@ -35,7 +35,9 @@ jobs:
+@@ -35,17 +35,19 @@ jobs:
        - name: Install (macOS)
          if: runner.os == 'macOS'
          run: |
@@ -152,8 +188,17 @@ Last-Update: 2020-11-11
 +          brew install ProfFan/robotics/boost
            if [ "${{ matrix.compiler }}" = "gcc" ]; then
              brew install gcc@${{ matrix.version }}
-             echo "::set-env name=CC::gcc-${{ matrix.version }}"
-@@ -48,4 +50,4 @@ jobs:
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+-            echo "::set-env name=CC::clang"
+-            echo "::set-env name=CXX::clang++"
++            echo "CC=clang" >> $GITHUB_ENV
++            echo "CXX=clang++" >> $GITHUB_ENV
+           fi
        - name: Build and Test (macOS)
          if: runner.os == 'macOS'
          run: |
@@ -218,7 +263,21 @@ Last-Update: 2020-11-11
              sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
            fi
            sudo apt-get -y update
-@@ -83,7 +86,9 @@ jobs:
+@@ -73,30 +76,32 @@ jobs:
+           
+           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+-            echo "::set-env name=CC::clang-${{ matrix.version }}"
+-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
++            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
+           fi
        - name: Install (macOS)
          if: runner.os == 'macOS'
          run: |
@@ -228,7 +287,25 @@ Last-Update: 2020-11-11
 +          brew install ProfFan/robotics/boost
            if [ "${{ matrix.compiler }}" = "gcc" ]; then
              brew install gcc@${{ matrix.version }}
-             echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+-            echo "::set-env name=CC::clang"
+-            echo "::set-env name=CXX::clang++"
++            echo "CC=clang" >> $GITHUB_ENV
++            echo "CXX=clang++" >> $GITHUB_ENV
+           fi
+       - name: Set GTSAM_WITH_TBB Flag
+         if: matrix.flag == 'tbb'
+         run: |
+-          echo "::set-env name=GTSAM_WITH_TBB::ON"
++          echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
+           echo "GTSAM Uses TBB"
+       - name: Build (Linux)
+         if: runner.os == 'Linux'
 @@ -105,4 +110,4 @@ jobs:
        - name: Build (macOS)
          if: runner.os == 'macOS'
@@ -238,7 +315,7 @@ Last-Update: 2020-11-11
 +          bash .github/scripts/python.sh
 --- gtsam-4.1.0.orig/.github/workflows/build-special.yml
 +++ gtsam-4.1.0/.github/workflows/build-special.yml
-@@ -56,6 +56,8 @@ jobs:
+@@ -56,23 +56,25 @@ jobs:
          run: |
            # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
            if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
@@ -247,6 +324,118 @@ Last-Update: 2020-11-11
              sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
            fi
            sudo apt-get -y update
+ 
+           sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
+ 
+-          echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
+-          echo "::set-env name=LD_LIBRARY_PATH::$(echo $BOOST_ROOT_1_69_0/lib)"
++          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
++          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
+ 
+           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+-            echo "::set-env name=CC::clang-${{ matrix.version }}"
+-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
++            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
+           fi
+ 
+       - name: Install (macOS)
+@@ -81,30 +83,30 @@ jobs:
+           brew install cmake ninja boost
+           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+             brew install gcc@${{ matrix.version }}
+-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
++            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
++            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+           else
+             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+-            echo "::set-env name=CC::clang"
+-            echo "::set-env name=CXX::clang++"
++            echo "CC=clang" >> $GITHUB_ENV
++            echo "CXX=clang++" >> $GITHUB_ENV
+             fi
+ 
+       - name: Set Allow Deprecated Flag
+         if: matrix.flag == 'deprecated'
+         run: |
+-          echo "::set-env name=GTSAM_ALLOW_DEPRECATED_SINCE_V41::ON"
++          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V41=ON" >> $GITHUB_ENV
+           echo "Allow deprecated since version 4.1"
+ 
+       - name: Set Use Quaternions Flag
+         if: matrix.flag == 'quaternions'
+         run: |
+-          echo "::set-env name=GTSAM_USE_QUATERNIONS::ON"
++          echo "GTSAM_USE_QUATERNIONS=ON" >> $GITHUB_ENV
+           echo "Use Quaternions for rotations"
+ 
+       - name: Set GTSAM_WITH_TBB Flag
+         if: matrix.flag == 'tbb'
+         run: |
+-          echo "::set-env name=GTSAM_WITH_TBB::ON"
++          echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
+           echo "GTSAM Uses TBB"
+ 
+       - name: Build & Test
+--- gtsam-4.1.0.orig/.github/workflows/build-windows.yml
++++ gtsam-4.1.0/.github/workflows/build-windows.yml
+@@ -18,16 +18,19 @@ jobs:
+         # Github Actions requires a single row to be added to the build matrix.
+         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+         name: [
+-          windows-2016-cl,
++          #TODO This build keeps timing out, need to understand why.
++          # windows-2016-cl,
+           windows-2019-cl,
+         ]
+ 
+         build_type: [Debug, Release]
+         build_unstable: [ON]
+         include:
+-          - name: windows-2016-cl
+-            os: windows-2016
+-            compiler: cl
++
++          #TODO This build keeps timing out, need to understand why.
++          # - name: windows-2016-cl
++          #   os: windows-2016
++          #   compiler: cl
+ 
+           - name: windows-2019-cl
+             os: windows-2019
+@@ -50,17 +53,17 @@ jobs:
+             # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
+             # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
+             scoop install gcc --global
+-            echo "::set-env name=CC::gcc"
+-            echo "::set-env name=CXX::g++"
++            echo "CC=gcc" >> $GITHUB_ENV
++            echo "CXX=g++" >> $GITHUB_ENV
+           } elseif ("${{ matrix.compiler }}" -eq "clang") {
+-            echo "::set-env name=CC::clang"
+-            echo "::set-env name=CXX::clang++"
++            echo "CC=clang" >> $GITHUB_ENV
++            echo "CXX=clang++" >> $GITHUB_ENV
+           } else {
+-            echo "::set-env name=CC::${{ matrix.compiler }}"
+-            echo "::set-env name=CXX::${{ matrix.compiler }}"
++            echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
++            echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+           }
+           # Scoop modifies the PATH so we make the modified PATH global.
+-          echo "::set-env name=PATH::$env:PATH"
++          echo "$env:PATH" >> $GITHUB_PATH
+       - name: Build (Windows)
+         if: runner.os == 'Windows'
+         run: |
 --- gtsam-4.1.0.orig/.github/workflows/trigger-python.yml
 +++ gtsam-4.1.0/.github/workflows/trigger-python.yml
 @@ -1,11 +1,11 @@
@@ -1593,6 +1782,17 @@ Last-Update: 2020-11-11
 +
 +add_custom_target(uninstall
 +  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+--- gtsam-4.1.0.orig/doc/Doxyfile.in
++++ gtsam-4.1.0/doc/Doxyfile.in
+@@ -1188,7 +1188,7 @@ USE_MATHJAX            = YES
+ # MathJax, but it is strongly recommended to install a local copy of MathJax 
+ # before deployment.
+ 
+-MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
++MATHJAX_RELPATH        = https://cdn.mathjax.org/mathjax/latest
+ 
+ # The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension 
+ # names that should be enabled during MathJax rendering.
 --- gtsam-4.1.0.orig/docker/ubuntu-gtsam-python/Dockerfile
 +++ gtsam-4.1.0/docker/ubuntu-gtsam-python/Dockerfile
 @@ -7,9 +7,9 @@ FROM dellaert/ubuntu-gtsam:bionic
