@@ -5,29 +5,28 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~38.gbpc97f6c) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~42.gbp579bb5) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @c97f6caa4dfafedb200c40b17e0cfb2aaa523936 **
+   ** SNAPSHOT build @579bb5910f030f1334225af4e3e828c1fd76eeb1 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @ef91d47e04626dce4305869ee1de89e47e153e10 **
+   ** SNAPSHOT build @16203313f81e1e308c620e62daf773c0a52329da **
  .
    * modified changelog for distro focal
  .
    [ Varun Agrawal ]
-   * Use new env files for github actions
-   * fix path setting for Windows
+   * Force EXPMAP option for both if either POSE3 or ROT3 is set
+   * uncomment tests
+   * Improved CayleyChart Local
+   * Similarity3 test only for Rot3 Expmap
+   * Revert "Improved CayleyChart Local"
+   * Use older and faster Cayley transform but add det check and docs
+   * Print message when either Pose3 or Rot3 expmap is ON
+   * CI path for Cayley transform
+   * small doc fix
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
- .
-   [ Martin Vonheim Larsen ]
-   * Docs: Use https for mathjax
- .
-   [ Varun Agrawal ]
-   * comment out Windows build which is timing out
-   * Update Boost since 1.69.0 has been deprecated in CI images
-   * Comment out Windows 2016 since it times out
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -41,7 +40,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-13
+Last-Update: 2020-11-14
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -134,6 +133,17 @@ Last-Update: 2020-11-13
 +$PYTHON setup.py install --user --prefix=
 +cd $GITHUB_WORKSPACE/python/gtsam/tests
 +$PYTHON -m unittest discover
+--- gtsam-4.1.0.orig/.github/scripts/unix.sh
++++ gtsam-4.1.0/.github/scripts/unix.sh
+@@ -66,6 +66,8 @@ function configure()
+       -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
+       -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=${GTSAM_ALLOW_DEPRECATED_SINCE_V41:-OFF} \
+       -DGTSAM_USE_QUATERNIONS=${GTSAM_USE_QUATERNIONS:-OFF} \
++      -DGTSAM_ROT3_EXPMAP=${GTSAM_ROT3_EXPMAP:-ON} \
++      -DGTSAM_POSE3_EXPMAP=${GTSAM_POSE3_EXPMAP:-ON} \
+       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+       -DBOOST_ROOT=$BOOST_ROOT \
+       -DBoost_NO_SYSTEM_PATHS=ON \
 --- gtsam-4.1.0.orig/.github/workflows/build-linux.yml
 +++ gtsam-4.1.0/.github/workflows/build-linux.yml
 @@ -48,25 +48,32 @@ jobs:
@@ -315,7 +325,28 @@ Last-Update: 2020-11-13
 +          bash .github/scripts/python.sh
 --- gtsam-4.1.0.orig/.github/workflows/build-special.yml
 +++ gtsam-4.1.0/.github/workflows/build-special.yml
-@@ -56,23 +56,25 @@ jobs:
+@@ -24,6 +24,7 @@ jobs:
+             ubuntu-gcc-deprecated,
+             ubuntu-gcc-quaternions,
+             ubuntu-gcc-tbb,
++            ubuntu-cayleymap,
+           ]
+ 
+         build_type: [Debug, Release]
+@@ -47,6 +48,12 @@ jobs:
+             version: "9"
+             flag: tbb
+ 
++          - name: ubuntu-cayleymap
++            os: ubuntu-18.04
++            compiler: gcc
++            version: "9"
++            flag: cayley
++
+     steps:
+       - name: Checkout
+         uses: actions/checkout@master
+@@ -56,23 +63,25 @@ jobs:
          run: |
            # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
            if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
@@ -347,7 +378,7 @@ Last-Update: 2020-11-13
            fi
  
        - name: Install (macOS)
-@@ -81,30 +83,30 @@ jobs:
+@@ -81,32 +90,39 @@ jobs:
            brew install cmake ninja boost
            if [ "${{ matrix.compiler }}" = "gcc" ]; then
              brew install gcc@${{ matrix.version }}
@@ -384,7 +415,16 @@ Last-Update: 2020-11-13
 +          echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
            echo "GTSAM Uses TBB"
  
++      - name: Use Cayley Transform for Rot3
++        if: matrix.flag == 'cayley'
++        run: |
++          echo "GTSAM_POSE3_EXPMAP=OFF" >> $GITHUB_ENV
++          echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
++          echo "GTSAM Uses Cayley map for Rot3"
++
        - name: Build & Test
+         run: |
+           bash .github/scripts/unix.sh -t
 --- gtsam-4.1.0.orig/.github/workflows/build-windows.yml
 +++ gtsam-4.1.0/.github/workflows/build-windows.yml
 @@ -18,16 +18,19 @@ jobs:
@@ -1460,7 +1500,7 @@ Last-Update: 2020-11-13
 +endif()
 --- /dev/null
 +++ gtsam-4.1.0/cmake/HandleGeneralOptions.cmake
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,55 @@
 +###############################################################################
 +# Set up options
 +
@@ -1492,6 +1532,15 @@ Last-Update: 2020-11-13
 +option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
 +if(NOT MSVC AND NOT XCODE_VERSION)
 +    option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
++endif()
++
++# Enable GTSAM_ROT3_EXPMAP if GTSAM_POSE3_EXPMAP is enabled, and vice versa.
++if(GTSAM_POSE3_EXPMAP)
++    message(STATUS "GTSAM_POSE3_EXPMAP=ON, enabling GTSAM_ROT3_EXPMAP as well")
++    set(GTSAM_ROT3_EXPMAP 1 CACHE BOOL "" FORCE)
++elseif(GTSAM_ROT3_EXPMAP)
++    message(STATUS "GTSAM_ROT3_EXPMAP=ON, enabling GTSAM_POSE3_EXPMAP as well")
++    set(GTSAM_POSE3_EXPMAP 1 CACHE BOOL "" FORCE)
 +endif()
 +
 +# Options relating to MATLAB wrapper
@@ -3918,6 +3967,25 @@ Last-Update: 2020-11-13
  Rot3 Rot3::operator*(const Rot3& R2) const {
    return Rot3(rot_*R2.rot_);
  }
+@@ -145,7 +176,17 @@ Vector3 Rot3::CayleyChart::Local(const R
+   if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
+   // Create a fixed-size matrix
+   Matrix3 A = R.matrix();
+-  // Mathematica closed form optimization (procrastination?) gone wild:
++
++  // Check if (A+I) is invertible. Same as checking for -1 eigenvalue.
++  if ((A + I_3x3).determinant() == 0.0) {
++    throw std::runtime_error("Rot3::CayleyChart::Local Invalid Rotation");
++  }
++
++  // Mathematica closed form optimization.
++  // The following are the essential computations for the following algorithm
++  // 1. Compute the inverse of P = (A+I), using a closed-form formula since P is 3x3 
++  // 2. Compute the Cayley transform C = 2 * P^{-1} * (A-I)
++  // 3. C is skew-symmetric, so we pick out the computations corresponding only to x, y, and z.
+   const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
+   const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
+   const double g = A(2, 0), h = A(2, 1), i = A(2, 2);
 --- gtsam-4.1.0.orig/gtsam/geometry/Rot3Q.cpp
 +++ gtsam-4.1.0/gtsam/geometry/Rot3Q.cpp
 @@ -67,13 +67,30 @@ namespace gtsam {
@@ -4066,6 +4134,19 @@ Last-Update: 2020-11-13
  /* ************************************************************************* */
  TEST( Pose3, LogmapDerivative) {
    Matrix6 actualH;
+@@ -895,9 +906,9 @@ TEST(Pose3 , ChartDerivatives) {
+   Pose3 id;
+   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
+     CHECK_CHART_DERIVATIVES(id,id);
+-//    CHECK_CHART_DERIVATIVES(id,T2);
+-//    CHECK_CHART_DERIVATIVES(T2,id);
+-//    CHECK_CHART_DERIVATIVES(T2,T3);
++    CHECK_CHART_DERIVATIVES(id,T2);
++    CHECK_CHART_DERIVATIVES(T2,id);
++    CHECK_CHART_DERIVATIVES(T2,T3);
+   }
+ }
+ 
 --- gtsam-4.1.0.orig/gtsam/geometry/tests/testRot3.cpp
 +++ gtsam-4.1.0/gtsam/geometry/tests/testRot3.cpp
 @@ -744,6 +744,193 @@ TEST(Rot3, axisAngle) {
@@ -6594,7 +6675,7 @@ Last-Update: 2020-11-13
  //******************************************************************************
  TEST(Similarity3, Concepts) {
    BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
-@@ -256,6 +258,114 @@ TEST(Similarity3, GroupAction) {
+@@ -256,6 +258,118 @@ TEST(Similarity3, GroupAction) {
  }
  
  //******************************************************************************
@@ -6701,8 +6782,12 @@ Last-Update: 2020-11-13
 +
 +  vector<Pose3Pair> correspondences{bTa1, bTa2};
 +
++  // Cayley transform cannot accommodate 180 degree rotations,
++  // hence we only test for Expmap
++#ifdef GTSAM_ROT3_EXPMAP
 +  Similarity3 actual_aSb = Similarity3::Align(correspondences);
 +  EXPECT(assert_equal(expected_aSb, actual_aSb));
++#endif
 +}
 +
 +//******************************************************************************

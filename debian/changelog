@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~41.gbp162033) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~42.gbp579bb5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @579bb5910f030f1334225af4e3e828c1fd76eeb1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @16203313f81e1e308c620e62daf773c0a52329da **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Nov 2020 03:02:48 +0000
+  [ Varun Agrawal ]
+  * Force EXPMAP option for both if either POSE3 or ROT3 is set
+  * uncomment tests
+  * Improved CayleyChart Local
+  * Similarity3 test only for Rot3 Expmap
+  * Revert "Improved CayleyChart Local"
+  * Use older and faster Cayley transform but add det check and docs
+  * Print message when either Pose3 or Rot3 expmap is ON
+  * CI path for Cayley transform
+  * small doc fix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 14 Nov 2020 02:59:34 +0000
 
 gtsam (4.1.0-1ubuntu2~40.gbpcef5d5) focal; urgency=medium
 
