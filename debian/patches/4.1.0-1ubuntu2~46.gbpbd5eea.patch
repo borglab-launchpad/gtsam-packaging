@@ -5,28 +5,20 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~42.gbp579bb5) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~46.gbpbd5eea) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @579bb5910f030f1334225af4e3e828c1fd76eeb1 **
+   ** SNAPSHOT build @bd5eea832ee6a7da9379c837b76c6a37581ebaea **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @16203313f81e1e308c620e62daf773c0a52329da **
+   ** SNAPSHOT build @a39e491f8cf79b18bf87472dc41aa973590357c2 **
  .
    * modified changelog for distro focal
+   * commit of final snapshot version number update
  .
    [ Varun Agrawal ]
-   * Force EXPMAP option for both if either POSE3 or ROT3 is set
-   * uncomment tests
-   * Improved CayleyChart Local
-   * Similarity3 test only for Rot3 Expmap
-   * Revert "Improved CayleyChart Local"
-   * Use older and faster Cayley transform but add det check and docs
-   * Print message when either Pose3 or Rot3 expmap is ON
-   * CI path for Cayley transform
-   * small doc fix
- .
-   [ Borglab Builder ]
-   * commit of final snapshot version number update
+   * Add new assertions and update tests
+   * use KeyVector to allow proper wrapping with TBB
+   * update MFAS tests
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -40,7 +32,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-14
+Last-Update: 2020-11-17
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -2716,6 +2708,61 @@ Last-Update: 2020-11-14
    operator bool() const {
      return pointer_!=nullptr;
    }
+--- gtsam-4.1.0.orig/gtsam/base/TestableAssertions.h
++++ gtsam-4.1.0/gtsam/base/TestableAssertions.h
+@@ -23,6 +23,7 @@
+ #include <boost/optional.hpp>
+ #include <map>
+ #include <iostream>
++#include <sstream>
+ #include <vector>
+ 
+ namespace gtsam {
+@@ -349,4 +350,44 @@ bool assert_inequal(const V& expected, c
+   return false;
+ }
+ 
++/**
++ * Capture std out via cout stream and compare against string.
++ */
++template<class V>
++bool assert_stdout_equal(const std::string& expected, const V& actual) {
++  // Redirect output to buffer so we can compare
++  std::stringstream buffer;
++  // Save the original output stream so we can reset later
++  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
++
++  // We test against actual std::cout for faithful reproduction
++  std::cout << actual;
++
++  // Get output string and reset stdout
++  std::string actual_ = buffer.str();
++  std::cout.rdbuf(old);
++
++  return assert_equal(expected, actual_);
++}
++
++/**
++ * Capture print function output and compare against string.
++ */
++template<class V>
++bool assert_print_equal(const std::string& expected, const V& actual) {
++  // Redirect output to buffer so we can compare
++  std::stringstream buffer;
++  // Save the original output stream so we can reset later
++  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
++
++  // We test against actual std::cout for faithful reproduction
++  actual.print();
++
++  // Get output string and reset stdout
++  std::string actual_ = buffer.str();
++  std::cout.rdbuf(old);
++
++  return assert_equal(expected, actual_);
++}
++
+ } // \namespace gtsam
 --- gtsam-4.1.0.orig/gtsam/base/numericalDerivative.h
 +++ gtsam-4.1.0/gtsam/base/numericalDerivative.h
 @@ -109,7 +109,7 @@ typename Eigen::Matrix<double, N, 1> num
@@ -4067,6 +4114,33 @@ Last-Update: 2020-11-14
  }
  
  /* ************************************************************************* */
+--- gtsam-4.1.0.orig/gtsam/geometry/tests/testCal3_S2.cpp
++++ gtsam-4.1.0/gtsam/geometry/tests/testCal3_S2.cpp
+@@ -16,6 +16,7 @@
+ 
+ #include <CppUnitLite/TestHarness.h>
+ #include <gtsam/base/Testable.h>
++#include <gtsam/base/TestableAssertions.h>
+ #include <gtsam/base/numericalDerivative.h>
+ #include <gtsam/geometry/Cal3_S2.h>
+ 
+@@ -128,6 +129,16 @@ TEST(Cal3_S2, between) {
+ }
+ 
+ /* ************************************************************************* */
++TEST(Cal3_S2, Print) {
++  Cal3_S2 cal(5, 5, 5, 5, 5);
++  std::stringstream os;
++  os << "{fx: " << cal.fx() << ", fy: " << cal.fy() << ", s:" << cal.skew() << ", px:" << cal.px()
++     << ", py:" << cal.py() << "}";
++
++  EXPECT(assert_stdout_equal(os.str(), cal));
++}
++
++/* ************************************************************************* */
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.1.0.orig/gtsam/geometry/tests/testPinholeCamera.cpp
 +++ gtsam-4.1.0/gtsam/geometry/tests/testPinholeCamera.cpp
 @@ -337,6 +337,15 @@ TEST( PinholeCamera, range3) {
@@ -4116,7 +4190,15 @@ Last-Update: 2020-11-14
  }
 --- gtsam-4.1.0.orig/gtsam/geometry/tests/testPose3.cpp
 +++ gtsam-4.1.0/gtsam/geometry/tests/testPose3.cpp
-@@ -807,6 +807,17 @@ TEST(Pose3, ExpmapDerivative2) {
+@@ -18,6 +18,7 @@
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/base/testLie.h>
+ #include <gtsam/base/lieProxies.h>
++#include <gtsam/base/TestableAssertions.h>
+ 
+ #include <boost/assign/std/vector.hpp> // for operator +=
+ using namespace boost::assign;
+@@ -807,6 +808,17 @@ TEST(Pose3, ExpmapDerivative2) {
    }
  }
  
@@ -4134,7 +4216,7 @@ Last-Update: 2020-11-14
  /* ************************************************************************* */
  TEST( Pose3, LogmapDerivative) {
    Matrix6 actualH;
-@@ -895,9 +906,9 @@ TEST(Pose3 , ChartDerivatives) {
+@@ -895,9 +907,9 @@ TEST(Pose3 , ChartDerivatives) {
    Pose3 id;
    if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
      CHECK_CHART_DERIVATIVES(id,id);
@@ -4147,6 +4229,42 @@ Last-Update: 2020-11-14
    }
  }
  
+@@ -1017,32 +1029,13 @@ TEST(Pose3, Create) {
+ }
+ 
+ /* ************************************************************************* */
+-TEST(Pose3, print) {
+-  std::stringstream redirectStream;
+-  std::streambuf* ssbuf = redirectStream.rdbuf();
+-  std::streambuf* oldbuf  = std::cout.rdbuf();
+-  // redirect cout to redirectStream
+-  std::cout.rdbuf(ssbuf);
+-
++TEST(Pose3, Print) {
+   Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
+-  // output is captured to redirectStream
+-  pose.print();
+ 
+   // Generate the expected output
+-  std::stringstream expected;
+-  Point3 translation(1, 2, 3);
+-
+-  // Add expected rotation
+-  expected << "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
+-  expected << "t: 1 2 3\n";
+-
+-  // reset cout to the original stream
+-  std::cout.rdbuf(oldbuf);
+-
+-  // Get substring corresponding to translation part
+-  std::string actual = redirectStream.str();
++  std::string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 1 2 3\n";
+ 
+-  CHECK_EQUAL(expected.str(), actual);
++  EXPECT(assert_print_equal(expected, pose));
+ }
+ 
+ /* ************************************************************************* */
 --- gtsam-4.1.0.orig/gtsam/geometry/tests/testRot3.cpp
 +++ gtsam-4.1.0/gtsam/geometry/tests/testRot3.cpp
 @@ -744,6 +744,193 @@ TEST(Rot3, axisAngle) {
@@ -5296,6 +5414,61 @@ Last-Update: 2020-11-14
    }
    Vector3 localCoordinates(const Cal3Bundler0& T2) const {
      return T2.vector() - vector();
+--- gtsam-4.1.0.orig/gtsam/nonlinear/tests/testFunctorizedFactor.cpp
++++ gtsam-4.1.0/gtsam/nonlinear/tests/testFunctorizedFactor.cpp
+@@ -19,6 +19,7 @@
+ 
+ #include <CppUnitLite/TestHarness.h>
+ #include <gtsam/base/Testable.h>
++#include <gtsam/base/TestableAssertions.h>
+ #include <gtsam/inference/Symbol.h>
+ #include <gtsam/nonlinear/FunctorizedFactor.h>
+ #include <gtsam/nonlinear/factorTesting.h>
+@@ -115,16 +116,6 @@ TEST(FunctorizedFactor, Print) {
+   auto factor =
+       MakeFunctorizedFactor<Matrix>(key, X, model, MultiplyFunctor(multiplier));
+ 
+-  // redirect output to buffer so we can compare
+-  stringstream buffer;
+-  streambuf *old = cout.rdbuf(buffer.rdbuf());
+-
+-  factor.print();
+-
+-  // get output string and reset stdout
+-  string actual = buffer.str();
+-  cout.rdbuf(old);
+-
+   string expected =
+       "  keys = { X0 }\n"
+       "  noise model: unit (9) \n"
+@@ -135,7 +126,7 @@ TEST(FunctorizedFactor, Print) {
+       "]\n"
+       "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
+ 
+-  CHECK_EQUAL(expected, actual);
++  EXPECT(assert_print_equal(expected, factor));
+ }
+ 
+ /* ************************************************************************* */
+--- gtsam-4.1.0.orig/gtsam/nonlinear/tests/testValues.cpp
++++ gtsam-4.1.0/gtsam/nonlinear/tests/testValues.cpp
+@@ -595,15 +595,7 @@ TEST(Values, Demangle) {
+   values.insert(key1, v);
+   string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
+ 
+-  stringstream buffer;
+-  streambuf * old = cout.rdbuf(buffer.rdbuf());
+-
+-  values.print();
+-
+-  string actual = buffer.str();
+-  cout.rdbuf(old);
+-
+-  EXPECT(assert_equal(expected, actual));
++  EXPECT(assert_print_equal(expected, values));
+ }
+ 
+ /* ************************************************************************* */
 --- /dev/null
 +++ gtsam-4.1.0/gtsam/sfm/MFAS.cpp
 @@ -0,0 +1,171 @@
@@ -5422,8 +5595,8 @@ Last-Update: 2020-11-14
 +  }
 +}
 +
-+vector<Key> MFAS::computeOrdering() const {
-+  vector<Key> ordering;  // Nodes in MFAS order (result).
++KeyVector MFAS::computeOrdering() const {
++  KeyVector ordering;  // Nodes in MFAS order (result).
 +
 +  // A graph is an unordered map from keys to nodes. Each node contains a list
 +  // of its adjacent nodes. Create the graph from the edgeWeights.
@@ -5441,7 +5614,7 @@ Last-Update: 2020-11-14
 +
 +map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
 +  // Find the ordering.
-+  vector<Key> ordering = computeOrdering();
++  KeyVector ordering = computeOrdering();
 +
 +  // Create a map from the node key to its position in the ordering. This makes
 +  // it easier to lookup positions of different nodes.
@@ -5559,7 +5732,7 @@ Last-Update: 2020-11-14
 +   * @brief Computes the 1D MFAS ordering of nodes in the graph
 +   * @return orderedNodes: vector of nodes in the obtained order
 +   */
-+  std::vector<Key> computeOrdering() const;
++  KeyVector computeOrdering() const;
 +
 +  /**
 +   * @brief Computes the outlier weights of the graph. We define the outlier
@@ -6203,7 +6376,7 @@ Last-Update: 2020-11-14
 +vector<MFAS::KeyPair> edges = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
 +                         make_pair(1, 2), make_pair(0, 2), make_pair(3, 0)};
 +// nodes in the graph
-+vector<Key> nodes = {Key(0), Key(1), Key(2), Key(3)};
++KeyVector nodes = {Key(0), Key(1), Key(2), Key(3)};
 +// weights from projecting in direction-1 (bad direction, outlier accepted)
 +vector<double> weights1 = {2, 1.5, 0.5, 0.25, 1, 0.75};
 +// weights from projecting in direction-2 (good direction, outlier rejected)
@@ -6225,10 +6398,10 @@ Last-Update: 2020-11-14
 +TEST(MFAS, OrderingWeights2) {
 +  MFAS mfas_obj(getEdgeWeights(edges, weights2));
 +
-+  vector<Key> ordered_nodes = mfas_obj.computeOrdering();
++  KeyVector ordered_nodes = mfas_obj.computeOrdering();
 +
 +  // ground truth (expected) ordering in this example
-+  vector<Key> gt_ordered_nodes = {0, 1, 3, 2};
++  KeyVector gt_ordered_nodes = {0, 1, 3, 2};
 +
 +  // check if the expected ordering is obtained
 +  for (size_t i = 0; i < ordered_nodes.size(); i++) {
@@ -6255,10 +6428,10 @@ Last-Update: 2020-11-14
 +TEST(MFAS, OrderingWeights1) {
 +  MFAS mfas_obj(getEdgeWeights(edges, weights1));
 +
-+  vector<Key> ordered_nodes = mfas_obj.computeOrdering();
++  KeyVector ordered_nodes = mfas_obj.computeOrdering();
 +
 +  // "ground truth" expected ordering in this example
-+  vector<Key> gt_ordered_nodes = {3, 0, 1, 2};
++  KeyVector gt_ordered_nodes = {3, 0, 1, 2};
 +
 +  // check if the expected ordering is obtained
 +  for (size_t i = 0; i < ordered_nodes.size(); i++) {

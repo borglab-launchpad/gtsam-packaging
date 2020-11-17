@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~45.gbpa39e49) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~46.gbpbd5eea) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bd5eea832ee6a7da9379c837b76c6a37581ebaea **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a39e491f8cf79b18bf87472dc41aa973590357c2 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 14 Nov 2020 03:03:17 +0000
+  [ Varun Agrawal ]
+  * Add new assertions and update tests
+  * use KeyVector to allow proper wrapping with TBB
+  * update MFAS tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Nov 2020 02:59:31 +0000
 
 gtsam (4.1.0-1ubuntu2~44.gbpba28e8) focal; urgency=medium
 
