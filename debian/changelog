@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~49.gbpa18743) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~50.gbp21077b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @21077b6dbb0b20abfdc0b44ecf7d51361bb1004b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a18743838797a621b42c60793b955559ee91f3c7 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Nov 2020 03:03:01 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Add iteration hook in non-linear optimizers
+
+  [ Jose Luis Blanco Claraco ]
+  * Add docs, fix ctor placement
+  * further extended docs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Nov 2020 02:59:52 +0000
 
 gtsam (4.1.0-1ubuntu2~48.gbp42e405) focal; urgency=medium
 

@@ -5,20 +5,24 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~46.gbpbd5eea) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~50.gbp21077b) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @bd5eea832ee6a7da9379c837b76c6a37581ebaea **
+   ** SNAPSHOT build @21077b6dbb0b20abfdc0b44ecf7d51361bb1004b **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @a39e491f8cf79b18bf87472dc41aa973590357c2 **
+   ** SNAPSHOT build @a18743838797a621b42c60793b955559ee91f3c7 **
  .
    * modified changelog for distro focal
-   * commit of final snapshot version number update
  .
-   [ Varun Agrawal ]
-   * Add new assertions and update tests
-   * use KeyVector to allow proper wrapping with TBB
-   * update MFAS tests
+   [ Jose Luis Blanco-Claraco ]
+   * Add iteration hook in non-linear optimizers
+ .
+   [ Jose Luis Blanco Claraco ]
+   * Add docs, fix ctor placement
+   * further extended docs
+ .
+   [ Borglab Builder ]
+   * commit of final snapshot version number update
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -32,7 +36,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-17
+Last-Update: 2020-11-19
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -5299,6 +5303,19 @@ Last-Update: 2020-11-17
    JointMarginal() {}
  
    /** Access a block, corresponding to a pair of variables, of the joint
+--- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h
++++ gtsam-4.1.0/gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h
+@@ -200,6 +200,10 @@ boost::tuple<V, int> nonlinearConjugateG
+     currentValues = system.advance(prevValues, alpha, direction);
+     currentError = system.error(currentValues);
+ 
++    // User hook:
++    if (params.iterationHook)
++      params.iterationHook(iteration, prevError, currentError);
++
+     // Maybe show output
+     if (params.verbosity >= NonlinearOptimizerParams::ERROR)
+       std::cout << "iteration: " << iteration << ", currentError: " << currentError << std::endl;
 --- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearFactorGraph.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/NonlinearFactorGraph.cpp
 @@ -205,42 +205,49 @@ void NonlinearFactorGraph::saveGraph(std
@@ -5375,7 +5392,7 @@ Last-Update: 2020-11-17
      }
 --- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearOptimizer.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/NonlinearOptimizer.cpp
-@@ -88,20 +88,24 @@ void NonlinearOptimizer::defaultOptimize
+@@ -88,20 +88,28 @@ void NonlinearOptimizer::defaultOptimize
    }
  
    // Iterative loop
@@ -5389,7 +5406,11 @@ Last-Update: 2020-11-17
  
 +    // Update newError for either printouts or conditional-end checks:
 +    newError = error();
-+    
++
++    // User hook:
++    if (params.iterationHook)
++      params.iterationHook(iterations(), currentError, newError);
++
      // Maybe show output
      if (params.verbosity >= NonlinearOptimizerParams::VALUES)
        values().print("newValues");
@@ -5403,6 +5424,103 @@ Last-Update: 2020-11-17
  
    // Printing if verbose
    if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
+--- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearOptimizer.h
++++ gtsam-4.1.0/gtsam/nonlinear/NonlinearOptimizer.h
+@@ -81,7 +81,7 @@ protected:
+ 
+ public:
+   /** A shared pointer to this class */
+-  typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
++  using shared_ptr = boost::shared_ptr<const NonlinearOptimizer>;
+ 
+   /// @name Standard interface
+   /// @{
+--- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearOptimizerParams.h
++++ gtsam-4.1.0/gtsam/nonlinear/NonlinearOptimizerParams.h
+@@ -38,21 +38,12 @@ public:
+     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
+   };
+ 
+-  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
+-  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
+-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
+-  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
+-  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
+-  Ordering::OrderingType orderingType; ///< The method of ordering use during variable elimination (default COLAMD)
+-
+-  NonlinearOptimizerParams() :
+-      maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5), errorTol(
+-          0.0), verbosity(SILENT), orderingType(Ordering::COLAMD),
+-          linearSolverType(MULTIFRONTAL_CHOLESKY) {}
+-
+-  virtual ~NonlinearOptimizerParams() {
+-  }
+-  virtual void print(const std::string& str = "") const;
++  size_t maxIterations = 100; ///< The maximum iterations to stop iterating (default 100)
++  double relativeErrorTol = 1e-5; ///< The maximum relative error decrease to stop iterating (default 1e-5)
++  double absoluteErrorTol = 1e-5; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
++  double errorTol = 0.0; ///< The maximum total error to stop iterating (default 0.0)
++  Verbosity verbosity = SILENT; ///< The printing verbosity during optimization (default SILENT)
++  Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
+ 
+   size_t getMaxIterations() const { return maxIterations; }
+   double getRelativeErrorTol() const { return relativeErrorTol; }
+@@ -71,6 +62,37 @@ public:
+   static Verbosity verbosityTranslator(const std::string &s) ;
+   static std::string verbosityTranslator(Verbosity value) ;
+ 
++  /** Type for an optional user-provided hook to be called after each
++   * internal optimizer iteration. See iterationHook below. */
++  using IterationHook = std::function<
++    void(size_t /*iteration*/, double/*errorBefore*/, double/*errorAfter*/)>;
++
++  /** Optional user-provided iteration hook to be called after each
++   * optimization iteration (Default: none).
++   * Note that `IterationHook` is defined as a std::function<> with this
++   * signature:
++   * \code
++   *  void(size_t iteration, double errorBefore, double errorAfter)
++   * \endcode
++   * which allows binding by means of a reference to a regular function:
++   * \code
++   *  void foo(size_t iteration, double errorBefore, double errorAfter);
++   *  // ...
++   *  lmOpts.iterationHook = &foo;
++   * \endcode
++   * or to a C++11 lambda (preferred if you need to capture additional
++   * context variables, such that the optimizer object itself, the factor graph,
++   * etc.):
++   * \code
++   *  lmOpts.iterationHook = [&](size_t iter, double oldError, double newError)
++   *  {
++   *    // ...
++   *  };
++   * \endcode
++   * or to the result of a properly-formed `std::bind` call.
++   */
++  IterationHook iterationHook;
++
+   /** See NonlinearOptimizerParams::linearSolverType */
+   enum LinearSolverType {
+     MULTIFRONTAL_CHOLESKY,
+@@ -81,10 +103,16 @@ public:
+     CHOLMOD, /* Experimental Flag */
+   };
+ 
+-  LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
++  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
+   boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
+   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+ 
++  NonlinearOptimizerParams() = default;
++  virtual ~NonlinearOptimizerParams() {
++  }
++
++  virtual void print(const std::string& str = "") const;
++
+   inline bool isMultifrontal() const {
+     return (linearSolverType == MULTIFRONTAL_CHOLESKY)
+         || (linearSolverType == MULTIFRONTAL_QR);
 --- gtsam-4.1.0.orig/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp
 @@ -41,7 +41,7 @@ struct Cal3Bundler0 : public Cal3Bundler
@@ -8738,6 +8856,67 @@ Last-Update: 2020-11-17
      test_suite="gtsam.tests",
      install_requires=["numpy"],
      zip_safe=False,
+--- gtsam-4.1.0.orig/tests/testNonlinearOptimizer.cpp
++++ gtsam-4.1.0/tests/testNonlinearOptimizer.cpp
+@@ -567,6 +567,58 @@ TEST( NonlinearOptimizer, logfile )
+ }
+ 
+ /* ************************************************************************* */
++TEST( NonlinearOptimizer, iterationHook_LM )
++{
++  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
++
++  Point2 x0(3,3);
++  Values c0;
++  c0.insert(X(1), x0);
++
++  // Levenberg-Marquardt
++  LevenbergMarquardtParams lmParams;
++  size_t lastIterCalled = 0;
++  lmParams.iterationHook = [&](size_t iteration, double oldError, double newError)
++  {
++    // Tests:
++    lastIterCalled = iteration;
++    EXPECT(newError<oldError);
++    
++    // Example of evolution printout:
++    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
++  };
++  LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
++  
++  EXPECT(lastIterCalled>5);
++}
++/* ************************************************************************* */
++TEST( NonlinearOptimizer, iterationHook_CG )
++{
++  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
++
++  Point2 x0(3,3);
++  Values c0;
++  c0.insert(X(1), x0);
++
++  // Levenberg-Marquardt
++  NonlinearConjugateGradientOptimizer::Parameters cgParams;
++  size_t lastIterCalled = 0;
++  cgParams.iterationHook = [&](size_t iteration, double oldError, double newError)
++  {
++    // Tests:
++    lastIterCalled = iteration;
++    EXPECT(newError<oldError);
++    
++    // Example of evolution printout:
++    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
++  };
++  NonlinearConjugateGradientOptimizer(fg, c0, cgParams).optimize();
++  
++  EXPECT(lastIterCalled>5);
++}
++
++
++/* ************************************************************************* */
+ //// Minimal traits example
+ struct MyType : public Vector3 {
+   using Vector3::Vector3;
 --- gtsam-4.1.0.orig/wrap/cmake/PybindWrap.cmake
 +++ gtsam-4.1.0/wrap/cmake/PybindWrap.cmake
 @@ -27,15 +27,24 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHO
