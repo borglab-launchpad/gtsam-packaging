@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~53.gbp2d728b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~54.gbpe9c1e1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e9c1e1a1eaacbbae5560fb10236a391719a8ef6d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2d728b098523cd25f31f50916e3f2a22161fdaa1 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Nov 2020 03:03:43 +0000
+  [ Varun Agrawal ]
+  * Added flag for absolute error
+  * add test
+  * cleaner assertion
+  * upload build directory after workflow completes
+  * fix indentation and add upload for Windows
+  * correct form for workspace env variable
+  * differentiate between Release and Debug builds
+  * Better fkag naming, and more docs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * better flag name and docs
+  * only upload release builds
+  * enforce constant term in quadratic to be 0
+  * correct conditional syntax
+  * syntax update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Nov 2020 02:59:37 +0000
 
 gtsam (4.1.0-1ubuntu2~52.gbp82f17f) focal; urgency=medium
 

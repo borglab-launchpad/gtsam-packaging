@@ -5,24 +5,34 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~50.gbp21077b) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~54.gbpe9c1e1) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @21077b6dbb0b20abfdc0b44ecf7d51361bb1004b **
+   ** SNAPSHOT build @e9c1e1a1eaacbbae5560fb10236a391719a8ef6d **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @a18743838797a621b42c60793b955559ee91f3c7 **
+   ** SNAPSHOT build @2d728b098523cd25f31f50916e3f2a22161fdaa1 **
  .
    * modified changelog for distro focal
  .
-   [ Jose Luis Blanco-Claraco ]
-   * Add iteration hook in non-linear optimizers
- .
-   [ Jose Luis Blanco Claraco ]
-   * Add docs, fix ctor placement
-   * further extended docs
+   [ Varun Agrawal ]
+   * Added flag for absolute error
+   * add test
+   * cleaner assertion
+   * upload build directory after workflow completes
+   * fix indentation and add upload for Windows
+   * correct form for workspace env variable
+   * differentiate between Release and Debug builds
+   * Better fkag naming, and more docs
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
+ .
+   [ Varun Agrawal ]
+   * better flag name and docs
+   * only upload release builds
+   * enforce constant term in quadratic to be 0
+   * correct conditional syntax
+   * syntax update
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -36,7 +46,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-19
+Last-Update: 2020-11-20
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -182,9 +192,22 @@ Last-Update: 2020-11-19
            fi
        - name: Check Boost version
          if: runner.os == 'Linux'
+@@ -75,4 +82,10 @@ jobs:
+       - name: Build and Test (Linux)
+         if: runner.os == 'Linux'
+         run: |
+-          bash .github/scripts/unix.sh -t
+\ No newline at end of file
++          bash .github/scripts/unix.sh -t
++      - name: Upload build directory
++        uses: actions/upload-artifact@v2
++        if: matrix.build_type  == 'Release'
++        with:
++          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
++          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/build-macos.yml
 +++ gtsam-4.1.0/.github/workflows/build-macos.yml
-@@ -35,17 +35,19 @@ jobs:
+@@ -35,17 +35,25 @@ jobs:
        - name: Install (macOS)
          if: runner.os == 'macOS'
          run: |
@@ -211,6 +234,12 @@ Last-Update: 2020-11-19
 -          bash .github/scripts/unix.sh -t
 \ No newline at end of file
 +          bash .github/scripts/unix.sh -t
++      - name: Upload build directory
++        uses: actions/upload-artifact@v2
++        if: matrix.build_type == 'Release'
++        with:
++          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
++          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/build-python.yml
 +++ gtsam-4.1.0/.github/workflows/build-python.yml
 @@ -12,7 +12,6 @@ jobs:
@@ -472,6 +501,19 @@ Last-Update: 2020-11-19
        - name: Build (Windows)
          if: runner.os == 'Windows'
          run: |
+@@ -72,4 +75,10 @@ jobs:
+           cmake --build build --config ${{ matrix.build_type }} --target wrap
+           cmake --build build --config ${{ matrix.build_type }} --target check.base
+           cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
+-          cmake --build build --config ${{ matrix.build_type }} --target check.linear
+\ No newline at end of file
++          cmake --build build --config ${{ matrix.build_type }} --target check.linear
++      - name: Upload build directory
++        uses: actions/upload-artifact@v2
++        if: matrix.build_type == 'Release'
++        with:
++          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
++          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/trigger-python.yml
 +++ gtsam-4.1.0/.github/workflows/trigger-python.yml
 @@ -1,11 +1,11 @@
@@ -2692,6 +2734,17 @@ Last-Update: 2020-11-19
 +typedef std::map<IndexPair, IndexPairSet> IndexPairSetMap;
 +typedef DSFMap<IndexPair> DSFMapIndexPair;
  }  // namespace gtsam
+--- gtsam-4.1.0.orig/gtsam/base/Matrix.h
++++ gtsam-4.1.0/gtsam/base/Matrix.h
+@@ -90,7 +90,7 @@ bool equal_with_abs_tol(const Eigen::Den
+ 
+   for(size_t i=0; i<m1; i++)
+     for(size_t j=0; j<n1; j++) {
+-      if(!fpEqual(A(i,j), B(i,j), tol)) {
++      if(!fpEqual(A(i,j), B(i,j), tol, false)) {
+         return false;
+       }
+     }
 --- gtsam-4.1.0.orig/gtsam/base/OptionalJacobian.h
 +++ gtsam-4.1.0/gtsam/base/OptionalJacobian.h
 @@ -112,7 +112,7 @@ public:
@@ -2767,6 +2820,66 @@ Last-Update: 2020-11-19
 +}
 +
  } // \namespace gtsam
+--- gtsam-4.1.0.orig/gtsam/base/Vector.cpp
++++ gtsam-4.1.0/gtsam/base/Vector.cpp
+@@ -39,7 +39,7 @@ namespace gtsam {
+  * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+  * 2. https://floating-point-gui.de/errors/comparison/
+  * ************************************************************************* */
+-bool fpEqual(double a, double b, double tol) {
++bool fpEqual(double a, double b, double tol, bool check_relative_also) {
+   using std::abs;
+   using std::isnan;
+   using std::isinf;
+@@ -48,7 +48,7 @@ bool fpEqual(double a, double b, double
+   double larger = (abs(b) > abs(a)) ? abs(b) : abs(a);
+ 
+   // handle NaNs
+-  if(std::isnan(a) || isnan(b)) {
++  if(isnan(a) || isnan(b)) {
+     return isnan(a) && isnan(b);
+   }
+   // handle inf
+@@ -60,13 +60,15 @@ bool fpEqual(double a, double b, double
+   else if(a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
+     return abs(a-b) <= tol * DOUBLE_MIN_NORMAL;
+   }
+-  // Check if the numbers are really close
+-  // Needed when comparing numbers near zero or tol is in vicinity
+-  else if(abs(a-b) <= tol) {
++  // Check if the numbers are really close.
++  // Needed when comparing numbers near zero or tol is in vicinity.
++  else if (abs(a - b) <= tol) {
+     return true;
+   }
+-  // Use relative error
+-  else if(abs(a-b) <= tol * min(larger, std::numeric_limits<double>::max())) {
++  // Check for relative error
++  else if (abs(a - b) <=
++               tol * min(larger, std::numeric_limits<double>::max()) &&
++           check_relative_also) {
+     return true;
+   }
+ 
+--- gtsam-4.1.0.orig/gtsam/base/Vector.h
++++ gtsam-4.1.0/gtsam/base/Vector.h
+@@ -85,9 +85,15 @@ static_assert(
+  * respectively for the comparison to be true.
+  * If one is NaN/Inf and the other is not, returns false.
+  *
++ * @param check_relative_also is a flag which toggles additional checking for
++ * relative error. This means that if either the absolute error or the relative
++ * error is within the tolerance, the result will be true.
++ * By default, the flag is true.
++ *
+  * Return true if two numbers are close wrt tol.
+  */
+-GTSAM_EXPORT bool fpEqual(double a, double b, double tol);
++GTSAM_EXPORT bool fpEqual(double a, double b, double tol,
++                          bool check_relative_also = true);
+ 
+ /**
+  * print without optional string, must specify cout yourself
 --- gtsam-4.1.0.orig/gtsam/base/numericalDerivative.h
 +++ gtsam-4.1.0/gtsam/base/numericalDerivative.h
 @@ -109,7 +109,7 @@ typename Eigen::Matrix<double, N, 1> num
@@ -3184,6 +3297,28 @@ Last-Update: 2020-11-19
  }
  
  template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+--- gtsam-4.1.0.orig/gtsam/base/tests/testMatrix.cpp
++++ gtsam-4.1.0/gtsam/base/tests/testMatrix.cpp
+@@ -1163,6 +1163,19 @@ TEST(Matrix , IsVectorSpace) {
+   BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
+ }
+ 
++TEST(Matrix, AbsoluteError) {
++  double a = 2000, b = 1997, tol = 1e-1;
++  bool isEqual;
++
++  // Test only absolute error
++  isEqual = fpEqual(a, b, tol, false);
++  EXPECT(!isEqual);
++
++  // Test relative error as well
++  isEqual = fpEqual(a, b, tol);
++  EXPECT(isEqual);
++}
++
+ /* ************************************************************************* */
+ int main() {
+   TestResult tr;
 --- gtsam-4.1.0.orig/gtsam/base/tests/testNumericalDerivative.cpp
 +++ gtsam-4.1.0/gtsam/base/tests/testNumericalDerivative.cpp
 @@ -143,6 +143,13 @@ Vector6 f6(const double x1, const double
@@ -4338,15 +4473,15 @@ Last-Update: 2020-11-19
 +  test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
 +  test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
 +  test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
-+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, error});
++  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, 1e-8});
 +  test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
 +  test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
 +  test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
 +  test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
 +
 +  // Test close to singularity
-+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-8});
-+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-8});
++  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-7});
++  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-7});
 +  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
 +  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
 +
@@ -7260,6 +7395,53 @@ Last-Update: 2020-11-19
  };
  
  }
+--- gtsam-4.1.0.orig/gtsam_unstable/linear/QPSParser.cpp
++++ gtsam-4.1.0/gtsam_unstable/linear/QPSParser.cpp
+@@ -81,7 +81,7 @@ class QPSVisitor {
+       varname_to_key;  // Variable QPS string name to key
+   std::unordered_map<Key, std::unordered_map<Key, Matrix11>>
+       H;                 // H from hessian
+-  double f;              // Constant term of quadratic cost
++  double f = 0;          // Constant term of quadratic cost
+   std::string obj_name;  // the objective function has a name in the QPS
+   std::string name_;     // the quadratic program has a name in the QPS
+   std::unordered_map<Key, double>
+@@ -175,10 +175,11 @@ class QPSVisitor {
+     string var_ = fromChars<1>(vars);
+     string row_ = fromChars<3>(vars);
+     double coefficient = at_c<5>(vars);
+-    if (row_ == obj_name)
++    if (row_ == obj_name) {
+       f = -coefficient;
+-    else
++    } else {
+       b[row_] = coefficient;
++    }
+ 
+     if (debug) {
+       cout << "Added RHS for Var: " << var_ << " Row: " << row_
+@@ -194,15 +195,17 @@ class QPSVisitor {
+     string row2_ = fromChars<7>(vars);
+     double coefficient1 = at_c<5>(vars);
+     double coefficient2 = at_c<9>(vars);
+-    if (row1_ == obj_name)
++    if (row1_ == obj_name) {
+       f = -coefficient1;
+-    else
++    } else {
+       b[row1_] = coefficient1;
++    }
+ 
+-    if (row2_ == obj_name)
++    if (row2_ == obj_name) {
+       f = -coefficient2;
+-    else
++    } else {
+       b[row2_] = coefficient2;
++    }
+ 
+     if (debug) {
+       cout << "Added RHS for Var: " << var_ << " Row: " << row1_
 --- gtsam-4.1.0.orig/gtsam_unstable/linear/tests/testLPSolver.cpp
 +++ gtsam-4.1.0/gtsam_unstable/linear/tests/testLPSolver.cpp
 @@ -16,21 +16,23 @@
