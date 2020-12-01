@@ -1,10 +1,43 @@
-gtsam (4.1.0-1ubuntu2~61.gbpc3472a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~62.gbp0727b0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0727b0f21b6de6482f962ff424761f29b6c682b1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c3472a71d772c04bdf6ca9a4464897ca3c7ba707 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Nov 2020 03:02:58 +0000
+  [ Varun Agrawal ]
+  * Make Values::at return as const
+  * FIx indentation for Values-inl.h
+
+  [ jingwuOUO ]
+  * Added test for subgraph preconditioner in shonan
+  * Refined error message in subgraphbuilder
+
+  [ Varun Agrawal ]
+  * Assign pointer to prevent errors
+  * fixes to plot code
+  * suppress warnings from clang as well
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Deprecate SimpleCamera properly
+  * deprecate SimpleCamera tests
+
+  [ jingwuOUO ]
+  * Fixed typo
+
+  [ Varun Agrawal ]
+  * update Python test
+  * Revert "FIx indentation for Values-inl.h"
+
+  [ jingwuOUO ]
+  * Added more description to the toyExample.g2o
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Dec 2020 03:00:06 +0000
 
 gtsam (4.1.0-1ubuntu2~60.gbp4b7e7a) focal; urgency=medium
 

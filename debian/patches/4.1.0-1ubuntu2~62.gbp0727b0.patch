@@ -5,23 +5,44 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~58.gbp0d77ee) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~62.gbp0727b0) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @0d77eed1bddf253ba10a34a58a024ae76f0b292b **
+   ** SNAPSHOT build @0727b0f21b6de6482f962ff424761f29b6c682b1 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @7faaf7b809b6618426c30fba4421c11e9d77eaa3 **
+   ** SNAPSHOT build @c3472a71d772c04bdf6ca9a4464897ca3c7ba707 **
  .
    * modified changelog for distro focal
  .
    [ Varun Agrawal ]
-   * check if mex compiler exists for Matlab wrapper, formatting
-   * placed MEX check to new cmake file
-   * restructuring
-   * encapsulated and updated all the CMake related to Matlab
+   * Make Values::at return as const
+   * FIx indentation for Values-inl.h
+ .
+   [ jingwuOUO ]
+   * Added test for subgraph preconditioner in shonan
+   * Refined error message in subgraphbuilder
+ .
+   [ Varun Agrawal ]
+   * Assign pointer to prevent errors
+   * fixes to plot code
+   * suppress warnings from clang as well
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
+ .
+   [ Varun Agrawal ]
+   * Deprecate SimpleCamera properly
+   * deprecate SimpleCamera tests
+ .
+   [ jingwuOUO ]
+   * Fixed typo
+ .
+   [ Varun Agrawal ]
+   * update Python test
+   * Revert "FIx indentation for Values-inl.h"
+ .
+   [ jingwuOUO ]
+   * Added more description to the toyExample.g2o
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -35,7 +56,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-11-30
+Last-Update: 2020-12-01
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -2430,7 +2451,7 @@ Last-Update: 2020-11-30
 +  output_filename = var_map["output_filename"].as<string>();
 +  use_isam = var_map["use_isam"].as<bool>();
 +
-+  ISAM2* isam2;
++  ISAM2* isam2 = 0;
 +  if (use_isam) {
 +    printf("Using ISAM2\n");
 +    ISAM2Params parameters;
@@ -2787,6 +2808,17 @@ Last-Update: 2020-11-30
 +  return 0;
 +}
 +/* ************************************************************************* */
+--- gtsam-4.1.0.orig/gtsam/CMakeLists.txt
++++ gtsam-4.1.0/gtsam/CMakeLists.txt
+@@ -199,7 +199,7 @@ if(WIN32)
+ else()
+   if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+     # Suppress all warnings from 3rd party sources.
+-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
++    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
+   else()
+     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
+   endif()
 --- gtsam-4.1.0.orig/gtsam/base/DSFMap.h
 +++ gtsam-4.1.0/gtsam/base/DSFMap.h
 @@ -21,6 +21,7 @@
@@ -4285,6 +4317,59 @@ Last-Update: 2020-11-30
    Rot3 Rot3::operator*(const Rot3& R2) const {
      return Rot3(quaternion_ * R2.quaternion_);
    }
+--- gtsam-4.1.0.orig/gtsam/geometry/SimpleCamera.cpp
++++ gtsam-4.1.0/gtsam/geometry/SimpleCamera.cpp
+@@ -21,6 +21,7 @@
+ 
+ namespace gtsam {
+ 
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+   SimpleCamera simpleCamera(const Matrix34& P) {
+ 
+     // P = [A|a] = s K cRw [I|-T], with s the unknown scale
+@@ -45,5 +46,6 @@ namespace gtsam {
+     return SimpleCamera(Pose3(wRc, T),
+         Cal3_S2(K(0, 0), K(1, 1), K(0, 1), K(0, 2), K(1, 2)));
+   }
++#endif
+ 
+ }
+--- gtsam-4.1.0.orig/gtsam/geometry/SimpleCamera.h
++++ gtsam-4.1.0/gtsam/geometry/SimpleCamera.h
+@@ -19,14 +19,23 @@
+ #pragma once
+ 
+ #include <gtsam/geometry/BearingRange.h>
+-#include <gtsam/geometry/PinholeCamera.h>
++#include <gtsam/geometry/Cal3Bundler.h>
++#include <gtsam/geometry/Cal3DS2.h>
++#include <gtsam/geometry/Cal3Unified.h>
+ #include <gtsam/geometry/Cal3_S2.h>
++#include <gtsam/geometry/PinholeCamera.h>
+ 
+ namespace gtsam {
+ 
+-  /// A simple camera class with a Cal3_S2 calibration
+-typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
++  /// Convenient aliases for Pinhole camera classes with different calibrations.
++  /// Also needed as forward declarations in the wrapper.
++  using PinholeCameraCal3_S2 = gtsam::PinholeCamera<gtsam::Cal3_S2>;
++  using PinholeCameraCal3Bundler = gtsam::PinholeCamera<gtsam::Cal3Bundler>;
++  //TODO Need to fix issue 621 for this to work with wrapper
++  // using PinholeCameraCal3DS2 = gtsam::PinholeCamera<gtsam::Cal3DS2>;
++  // using PinholeCameraCal3Unified = gtsam::PinholeCamera<gtsam::Cal3Unified>;
+ 
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+ /**
+  * @deprecated: SimpleCamera for backwards compatability with GTSAM 3.x
+  * Use PinholeCameraCal3_S2 instead
+@@ -140,4 +149,6 @@ struct traits<const SimpleCamera> : publ
+ template <typename T>
+ struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
+ 
++#endif
++
+ }  // namespace gtsam
 --- gtsam-4.1.0.orig/gtsam/geometry/tests/testCal3Bundler.cpp
 +++ gtsam-4.1.0/gtsam/geometry/tests/testCal3Bundler.cpp
 @@ -52,12 +52,14 @@ TEST( Cal3Bundler, calibrate )
@@ -4705,6 +4790,26 @@ Last-Update: 2020-11-30
    EXPECT(equalsBinary<gtsam::Point2>(Point2(1.0, 2.0)));
    EXPECT(equalsBinary<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
    EXPECT(equalsBinary<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
+--- gtsam-4.1.0.orig/gtsam/geometry/tests/testSimpleCamera.cpp
++++ gtsam-4.1.0/gtsam/geometry/tests/testSimpleCamera.cpp
+@@ -26,6 +26,8 @@
+ using namespace std;
+ using namespace gtsam;
+ 
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
++
+ static const Cal3_S2 K(625, 625, 0, 0, 0);
+ 
+ static const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()),
+@@ -149,6 +151,8 @@ TEST( SimpleCamera, simpleCamera)
+   CHECK(assert_equal(expected, actual,1e-1));
+ }
+ 
++#endif
++
+ /* ************************************************************************* */
+ int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+ /* ************************************************************************* */
 --- gtsam-4.1.0.orig/gtsam/gtsam.i
 +++ gtsam-4.1.0/gtsam/gtsam.i
 @@ -93,9 +93,9 @@
@@ -4785,14 +4890,14 @@ Last-Update: 2020-11-30
 -
 -  // Standard interface
 -  double value() const;
+-
+-  // Testable
+-  void print(string s) const;
+-  bool equals(const gtsam::LieScalar& expected, double tol) const;
 +class IndexPairVector {
 +  IndexPairVector();
 +  IndexPairVector(const gtsam::IndexPairVector& other);
  
--  // Testable
--  void print(string s) const;
--  bool equals(const gtsam::LieScalar& expected, double tol) const;
--
 -  // Group
 -  static gtsam::LieScalar identity();
 -  gtsam::LieScalar inverse() const;
@@ -4821,8 +4926,7 @@ Last-Update: 2020-11-30
 -  // Standard constructors
 -  LieVector();
 -  LieVector(Vector v);
-+gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
- 
+-
 -  // Standard interface
 -  Vector vector() const;
 -
@@ -4835,7 +4939,8 @@ Last-Update: 2020-11-30
 -  gtsam::LieVector inverse() const;
 -  gtsam::LieVector compose(const gtsam::LieVector& p) const;
 -  gtsam::LieVector between(const gtsam::LieVector& l2) const;
--
++gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
+ 
 -  // Manifold
 -  size_t dim() const;
 -  gtsam::LieVector retract(Vector v) const;
@@ -4900,7 +5005,7 @@ Last-Update: 2020-11-30
 -  // enabling serialization functionality
 -  void serialize() const;
 +#include <gtsam/base/GenericValue.h>
-+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
++template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
 +virtual class GenericValue : gtsam::Value {
 +  void serializable() const;
  };
@@ -5021,12 +5126,58 @@ Last-Update: 2020-11-30
  
    // enabling serialization functionality
    void serialize() const;
-@@ -1134,10 +1104,10 @@ gtsam::SimpleCamera simpleCamera(const M
+@@ -1089,55 +1059,15 @@ class PinholeCamera {
+   void serialize() const;
+ };
+ 
++// Forward declaration of PinholeCameraCalX is defined here.
+ #include <gtsam/geometry/SimpleCamera.h>
+-virtual class SimpleCamera {
+-  // Standard Constructors and Named Constructors
+-  SimpleCamera();
+-  SimpleCamera(const gtsam::Pose3& pose);
+-  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
+-  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K, const gtsam::Pose2& pose, double height);
+-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
+-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+-      const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+-      const gtsam::Point3& upVector);
+-
+-  // Testable
+-  void print(string s) const;
+-  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
+-
+-  // Standard Interface
+-  gtsam::Pose3 pose() const;
+-  gtsam::Cal3_S2 calibration() const;
+-
+-  // Manifold
+-  gtsam::SimpleCamera retract(Vector d) const;
+-  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
+-  size_t dim() const;
+-  static size_t Dim();
+-
+-  // Transformations and measurement functions
+-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
+-  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+-  gtsam::Point2 project(const gtsam::Point3& point);
+-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+-  double range(const gtsam::Point3& point);
+-  double range(const gtsam::Pose3& pose);
+-
+-  // enabling serialization functionality
+-  void serialize() const;
+-
+-};
+-
+-gtsam::SimpleCamera simpleCamera(const Matrix& P);
+-
  // Some typedefs for common camera types
  // PinholeCameraCal3_S2 is the same as SimpleCamera above
  typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 -// due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
-+//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
++//TODO (Issue 621) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
  //typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
  //typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 -//typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
@@ -5034,7 +5185,16 @@ Last-Update: 2020-11-30
  
  #include <gtsam/geometry/StereoCamera.h>
  class StereoCamera {
-@@ -1330,7 +1300,7 @@ class SymbolicBayesTree {
+@@ -1180,7 +1110,7 @@ gtsam::Point3 triangulatePoint3(const gt
+ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
+     double rank_tol, bool optimize);
+-
++    
+ //*************************************************************************
+ // Symbolic
+ //*************************************************************************
+@@ -1330,7 +1260,7 @@ class SymbolicBayesTree {
  // //  const std::list<derived_ptr>& children() const { return children_; }
  // //  derived_ptr parent() const { return parent_.lock(); }
  //
@@ -5043,16 +5203,16 @@ Last-Update: 2020-11-30
  // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
  // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
  // //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-@@ -2099,7 +2069,7 @@ class NonlinearFactorGraph {
+@@ -2099,7 +2029,7 @@ class NonlinearFactorGraph {
    gtsam::KeySet keys() const;
    gtsam::KeyVector keyVector() const;
  
 -  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
-+  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
++  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
    void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
  
    // NonlinearFactorGraph
-@@ -2129,7 +2099,7 @@ virtual class NonlinearFactor {
+@@ -2129,7 +2059,7 @@ virtual class NonlinearFactor {
    bool active(const gtsam::Values& c) const;
    gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
    gtsam::NonlinearFactor* clone() const;
@@ -5061,7 +5221,7 @@ Last-Update: 2020-11-30
  };
  
  #include <gtsam/nonlinear/NonlinearFactor.h>
-@@ -2188,11 +2158,13 @@ class Values {
+@@ -2188,11 +2118,13 @@ class Values {
    void insert(size_t j, const gtsam::SOn& P);
    void insert(size_t j, const gtsam::Rot3& rot3);
    void insert(size_t j, const gtsam::Pose3& pose3);
@@ -5075,7 +5235,7 @@ Last-Update: 2020-11-30
    void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
    void insert(size_t j, const gtsam::NavState& nav_state);
  
-@@ -2205,16 +2177,19 @@ class Values {
+@@ -2205,16 +2137,19 @@ class Values {
    void update(size_t j, const gtsam::SOn& P);
    void update(size_t j, const gtsam::Rot3& rot3);
    void update(size_t j, const gtsam::Pose3& pose3);
@@ -5096,7 +5256,7 @@ Last-Update: 2020-11-30
    T at(size_t j);
  
    /// version for double
-@@ -2491,6 +2466,8 @@ class ISAM2Result {
+@@ -2491,6 +2426,8 @@ class ISAM2Result {
    size_t getVariablesRelinearized() const;
    size_t getVariablesReeliminated() const;
    size_t getCliques() const;
@@ -5105,7 +5265,7 @@ Last-Update: 2020-11-30
  };
  
  class ISAM2 {
-@@ -2507,16 +2484,17 @@ class ISAM2 {
+@@ -2507,16 +2444,17 @@ class ISAM2 {
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
@@ -5122,21 +5282,35 @@ Last-Update: 2020-11-30
                       gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                       gtsam::Cal3Bundler, gtsam::EssentialMatrix,
 -                     gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, Vector, Matrix}>
-+                     gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, 
++                     gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, 
 +                     Vector, Matrix}>
    VALUE calculateEstimate(size_t key) const;
    gtsam::Values calculateBestEstimate() const;
    Matrix marginalCovariance(size_t key) const;
-@@ -2554,7 +2532,7 @@ class NonlinearISAM {
+@@ -2549,12 +2487,11 @@ class NonlinearISAM {
+ //*************************************************************************
+ // Nonlinear factor types
+ //*************************************************************************
+-#include <gtsam/geometry/SimpleCamera.h>
+ #include <gtsam/geometry/CalibratedCamera.h>
  #include <gtsam/geometry/StereoPoint2.h>
  
  #include <gtsam/nonlinear/PriorFactor.h>
 -template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
-+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
++template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
  virtual class PriorFactor : gtsam::NoiseModelFactor {
    PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
    T prior() const;
-@@ -2641,8 +2619,7 @@ class BearingRange {
+@@ -2578,7 +2515,7 @@ virtual class BetweenFactor : gtsam::Noi
+ template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+                gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
+                gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
+-               gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2,
++               gtsam::PinholeCameraCal3_S2,
+                gtsam::imuBias::ConstantBias}>
+ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
+   // Constructor - forces exact evaluation
+@@ -2641,8 +2578,7 @@ class BearingRange {
    BearingRange(const BEARING& b, const RANGE& r);
    BEARING bearing() const;
    RANGE range() const;
@@ -5146,18 +5320,18 @@ Last-Update: 2020-11-30
    static BEARING MeasureBearing(const POSE& pose, const POINT& point);
    static RANGE MeasureRange(const POSE& pose, const POINT& point);
    void print(string s) const;
-@@ -2698,8 +2675,9 @@ virtual class GeneralSFMFactor : gtsam::
+@@ -2698,8 +2634,9 @@ virtual class GeneralSFMFactor : gtsam::
    gtsam::Point2 measured() const;
  };
  typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
 -// due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
-+//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
++//TODO (Issue 621) due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
  //typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 +typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
  
  template<CALIBRATION = {gtsam::Cal3_S2}>
  virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
-@@ -2786,21 +2764,39 @@ virtual class EssentialMatrixFactor : gt
+@@ -2786,21 +2723,39 @@ virtual class EssentialMatrixFactor : gt
  };
  
  #include <gtsam/slam/dataset.h>
@@ -5200,7 +5374,7 @@ Last-Update: 2020-11-30
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
      gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-@@ -2909,11 +2905,19 @@ class BinaryMeasurement {
+@@ -2909,11 +2864,19 @@ class BinaryMeasurement {
    size_t key1() const;
    size_t key2() const;
    T measured() const;
@@ -5220,7 +5394,7 @@ Last-Update: 2020-11-30
  #include <gtsam/sfm/ShonanAveraging.h>
  
  // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
-@@ -2925,6 +2929,7 @@ class ShonanAveragingParameters2 {
+@@ -2925,6 +2888,7 @@ class ShonanAveragingParameters2 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot2& value);
@@ -5228,7 +5402,7 @@ Last-Update: 2020-11-30
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -2940,6 +2945,7 @@ class ShonanAveragingParameters3 {
+@@ -2940,6 +2904,7 @@ class ShonanAveragingParameters3 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot3& value);
@@ -5236,7 +5410,7 @@ Last-Update: 2020-11-30
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -3033,6 +3039,36 @@ class ShonanAveraging3 {
+@@ -3033,6 +2998,36 @@ class ShonanAveraging3 {
    pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
  };
  
@@ -5326,6 +5500,17 @@ Last-Update: 2020-11-30
  }
  /* ************************************************************************* */
 -
+--- gtsam-4.1.0.orig/gtsam/linear/SubgraphBuilder.cpp
++++ gtsam-4.1.0/gtsam/linear/SubgraphBuilder.cpp
+@@ -383,7 +383,7 @@ Subgraph SubgraphBuilder::operator()(con
+   const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
+   if (tree.size() != n - 1) {
+     throw std::runtime_error(
+-        "SubgraphBuilder::operator() failure: tree.size() != n-1");
++        "SubgraphBuilder::operator() failure: tree.size() != n-1, might be caused by disconnected graph");
+   }
+ 
+   // Downweight the tree edges to zero.
 --- gtsam-4.1.0.orig/gtsam/navigation/AHRSFactor.h
 +++ gtsam-4.1.0/gtsam/navigation/AHRSFactor.h
 @@ -42,7 +42,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeas
@@ -5732,6 +5917,48 @@ Last-Update: 2020-11-30
    inline bool isMultifrontal() const {
      return (linearSolverType == MULTIFRONTAL_CHOLESKY)
          || (linearSolverType == MULTIFRONTAL_QR);
+--- gtsam-4.1.0.orig/gtsam/nonlinear/Values-inl.h
++++ gtsam-4.1.0/gtsam/nonlinear/Values-inl.h
+@@ -338,19 +338,18 @@ namespace gtsam {
+    }  // internal
+ 
+    /* ************************************************************************* */
+-   template<typename ValueType>
+-   ValueType Values::at(Key j) const {
++   template <typename ValueType>
++   const ValueType Values::at(Key j) const {
+      // Find the item
+      KeyValueMap::const_iterator item = values_.find(j);
+ 
+      // Throw exception if it does not exist
+-     if(item == values_.end())
+-       throw ValuesKeyDoesNotExist("at", j);
++     if (item == values_.end()) throw ValuesKeyDoesNotExist("at", j);
+ 
+-    // Check the type and throw exception if incorrect
+-    // h() split in two lines to avoid internal compiler error (MSVC2017)
+-    auto h = internal::handle<ValueType>();
+-    return h(j,item->second);
++     // Check the type and throw exception if incorrect
++     // h() split in two lines to avoid internal compiler error (MSVC2017)
++     auto h = internal::handle<ValueType>();
++     return h(j, item->second);
+   }
+ 
+   /* ************************************************************************* */
+--- gtsam-4.1.0.orig/gtsam/nonlinear/Values.h
++++ gtsam-4.1.0/gtsam/nonlinear/Values.h
+@@ -187,8 +187,8 @@ namespace gtsam {
+      * Dynamic matrices/vectors can be retrieved as fixed-size, but not vice-versa.
+      * @return The stored value
+      */
+-    template<typename ValueType>
+-    ValueType at(Key j) const;
++    template <typename ValueType>
++    const ValueType at(Key j) const;
+ 
+     /// version for double
+     double atDouble(size_t key) const { return at<double>(key);}
 --- gtsam-4.1.0.orig/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp
 @@ -41,7 +41,7 @@ struct Cal3Bundler0 : public Cal3Bundler
@@ -6784,7 +7011,35 @@ Last-Update: 2020-11-30
 +/* ************************************************************************* */
 --- gtsam-4.1.0.orig/gtsam/sfm/tests/testShonanAveraging.cpp
 +++ gtsam-4.1.0/gtsam/sfm/tests/testShonanAveraging.cpp
-@@ -121,18 +121,17 @@ TEST(ShonanAveraging3, tryOptimizingAt4)
+@@ -92,6 +92,27 @@ TEST(ShonanAveraging3, checkOptimality)
+ }
+ 
+ /* ************************************************************************* */
++TEST(ShonanAveraging3, checkSubgraph) {
++  // Create parameter with solver set to SUBGRAPH
++  auto params = ShonanAveragingParameters3(
++      gtsam::LevenbergMarquardtParams::CeresDefaults(), "SUBGRAPH");
++  ShonanAveraging3::Measurements measurements;
++
++  // The toyExample.g2o has 5 vertices, from 0-4
++  // The edges are: 1-2, 2-3, 3-4, 3-1, 1-4, 0-1,
++  // which can build a connected graph
++  auto subgraphShonan = fromExampleName("toyExample.g2o", params);
++
++  // Create initial random estimation
++  Values initial;
++  initial = subgraphShonan.initializeRandomly(kRandomNumberGenerator);
++
++  // Run Shonan with SUBGRAPH solver
++  auto result = subgraphShonan.run(initial, 3, 3);
++  EXPECT_DOUBLES_EQUAL(1e-11, subgraphShonan.cost(result.first), 1e-4);
++}
++
++/* ************************************************************************* */
+ TEST(ShonanAveraging3, tryOptimizingAt3) {
+   const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+   Values initial = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);  // convert to SOn
+@@ -121,18 +142,17 @@ TEST(ShonanAveraging3, tryOptimizingAt4)
  }
  
  /* ************************************************************************* */
@@ -6812,7 +7067,7 @@ Last-Update: 2020-11-30
  }
  
  /* ************************************************************************* */
-@@ -168,7 +167,8 @@ TEST(ShonanAveraging3, CheckWithEigen) {
+@@ -168,7 +188,8 @@ TEST(ShonanAveraging3, CheckWithEigen) {
        minEigenValue = min(lambdas(i), minEigenValue);
  
    // Actual check
@@ -8249,6 +8504,107 @@ Last-Update: 2020-11-30
  }
  /* ************************************************************************* */
 -
+--- gtsam-4.1.0.orig/gtsam_unstable/slam/serialization.cpp
++++ gtsam-4.1.0/gtsam_unstable/slam/serialization.cpp
+@@ -43,7 +43,6 @@ typedef PriorFactor<Pose3>
+ typedef PriorFactor<Cal3_S2>              PriorFactorCal3_S2;
+ typedef PriorFactor<Cal3DS2>              PriorFactorCal3DS2;
+ typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
+-typedef PriorFactor<SimpleCamera>         PriorFactorSimpleCamera;
+ typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
+ typedef PriorFactor<StereoCamera>         PriorFactorStereoCamera;
+ 
+@@ -68,7 +67,6 @@ typedef NonlinearEquality<Pose3>
+ typedef NonlinearEquality<Cal3_S2>                NonlinearEqualityCal3_S2;
+ typedef NonlinearEquality<Cal3DS2>                NonlinearEqualityCal3DS2;
+ typedef NonlinearEquality<CalibratedCamera>       NonlinearEqualityCalibratedCamera;
+-typedef NonlinearEquality<SimpleCamera>           NonlinearEqualitySimpleCamera;
+ typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
+ typedef NonlinearEquality<StereoCamera>           NonlinearEqualityStereoCamera;
+ 
+@@ -77,10 +75,8 @@ typedef RangeFactor<Pose3, Point3>
+ typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
+ typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
+ typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
+-typedef RangeFactor<SimpleCamera, Point3>                       RangeFactorSimpleCameraPoint;
+ typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
+ typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
+-typedef RangeFactor<SimpleCamera, SimpleCamera>                 RangeFactorSimpleCamera;
+ typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
+ 
+ typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
+@@ -90,6 +86,7 @@ typedef GenericProjectionFactor<Pose3, P
+ typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
+ 
+ typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
++//TODO fix issue 621
+ //typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+ 
+ typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
+@@ -129,7 +126,6 @@ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+ GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
+ GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
+-GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+ GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
+ GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
+ 
+@@ -150,7 +146,6 @@ BOOST_CLASS_EXPORT_GUID(PriorFactorPose3
+ BOOST_CLASS_EXPORT_GUID(PriorFactorCal3_S2, "gtsam::PriorFactorCal3_S2");
+ BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2");
+ BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera");
+-BOOST_CLASS_EXPORT_GUID(PriorFactorSimpleCamera, "gtsam::PriorFactorSimpleCamera");
+ BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera, "gtsam::PriorFactorStereoCamera");
+ 
+ BOOST_CLASS_EXPORT_GUID(BetweenFactorLieVector, "gtsam::BetweenFactorLieVector");
+@@ -174,7 +169,6 @@ BOOST_CLASS_EXPORT_GUID(NonlinearEqualit
+ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3_S2, "gtsam::NonlinearEqualityCal3_S2");
+ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3DS2, "gtsam::NonlinearEqualityCal3DS2");
+ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqualityCalibratedCamera");
+-BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
+ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera");
+ 
+ BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D");
+@@ -182,9 +176,7 @@ BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "
+ BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");
+-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
+-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
+ 
+ BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
+ 
+@@ -192,12 +184,29 @@ BOOST_CLASS_EXPORT_GUID(GenericProjectio
+ BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2");
+ 
+ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
++//TODO Fix issue 621
+ //BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+ 
+ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
+ 
+ BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
+ 
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
++
++typedef PriorFactor<SimpleCamera>               PriorFactorSimpleCamera;
++typedef NonlinearEquality<SimpleCamera>         NonlinearEqualitySimpleCamera;
++typedef RangeFactor<SimpleCamera, Point3>       RangeFactorSimpleCameraPoint;
++typedef RangeFactor<SimpleCamera, SimpleCamera> RangeFactorSimpleCamera;
++
++GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
++BOOST_CLASS_EXPORT_GUID(PriorFactorSimpleCamera, "gtsam::PriorFactorSimpleCamera");
++BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
++BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
++BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
++
++#endif
++
++
+ /* ************************************************************************* */
+ // Actual implementations of functions
+ /* ************************************************************************* */
 --- gtsam-4.1.0.orig/matlab/CMakeLists.txt
 +++ gtsam-4.1.0/matlab/CMakeLists.txt
 @@ -2,6 +2,10 @@
@@ -8973,6 +9329,44 @@ Last-Update: 2020-11-30
 +
 +if __name__ == '__main__':
 +    unittest.main()
+--- gtsam-4.1.0.orig/python/gtsam/tests/test_SimpleCamera.py
++++ gtsam-4.1.0/python/gtsam/tests/test_SimpleCamera.py
+@@ -14,11 +14,12 @@ import unittest
+ import numpy as np
+ 
+ import gtsam
+-from gtsam import Cal3_S2, Point3, Pose2, Pose3, Rot3, SimpleCamera
++from gtsam import Cal3_S2, Point3, Pose2, Pose3, Rot3, PinholeCameraCal3_S2 as SimpleCamera
+ from gtsam.utils.test_case import GtsamTestCase
+ 
+ K = Cal3_S2(625, 625, 0, 0, 0)
+ 
++
+ class TestSimpleCamera(GtsamTestCase):
+ 
+     def test_constructor(self):
+@@ -29,15 +30,15 @@ class TestSimpleCamera(GtsamTestCase):
+ 
+     def test_level2(self):
+         # Create a level camera, looking in Y-direction
+-        pose2 = Pose2(0.4,0.3,math.pi/2.0)
++        pose2 = Pose2(0.4, 0.3, math.pi/2.0)
+         camera = SimpleCamera.Level(K, pose2, 0.1)
+ 
+         # expected
+-        x = Point3(1,0,0)
+-        y = Point3(0,0,-1)
+-        z = Point3(0,1,0)
+-        wRc = Rot3(x,y,z)
+-        expected = Pose3(wRc,Point3(0.4,0.3,0.1))
++        x = Point3(1, 0, 0)
++        y = Point3(0, 0, -1)
++        z = Point3(0, 1, 0)
++        wRc = Rot3(x, y, z)
++        expected = Pose3(wRc, Point3(0.4, 0.3, 0.1))
+         self.gtsamAssertEquals(camera.pose(), expected, 1e-9)
+ 
+ 
 --- /dev/null
 +++ gtsam-4.1.0/python/gtsam/tests/test_TranslationRecovery.py
 @@ -0,0 +1,63 @@
@@ -9087,6 +9481,86 @@ Last-Update: 2020-11-30
 +        for ext in extensions:
 +            if (name + ext) == osp.basename(data_file_path):
 +                return data_file_path
+--- gtsam-4.1.0.orig/python/gtsam/utils/plot.py
++++ gtsam-4.1.0/python/gtsam/utils/plot.py
+@@ -36,18 +36,15 @@ def set_axes_equal(fignum):
+     ax.set_zlim3d([origin[2] - radius, origin[2] + radius])
+ 
+ 
+-def ellipsoid(xc, yc, zc, rx, ry, rz, n):
++def ellipsoid(rx, ry, rz, n):
+     """
+     Numpy equivalent of Matlab's ellipsoid function.
+ 
+     Args:
+-        xc (double): Center of ellipsoid in X-axis.
+-        yc (double): Center of ellipsoid in Y-axis.
+-        zc (double): Center of ellipsoid in Z-axis.
+         rx (double): Radius of ellipsoid in X-axis.
+         ry (double): Radius of ellipsoid in Y-axis.
+         rz (double): Radius of ellipsoid in Z-axis.
+-        n (int): The granularity of the ellipsoid plotted. 
++        n (int): The granularity of the ellipsoid plotted.
+ 
+     Returns:
+         tuple[numpy.ndarray]: The points in the x, y and z axes to use for the surface plot.
+@@ -72,7 +69,8 @@ def plot_covariance_ellipse_3d(axes, ori
+     Args:
+         axes (matplotlib.axes.Axes): Matplotlib axes.
+         origin (gtsam.Point3): The origin in the world frame.
+-        P (numpy.ndarray): The marginal covariance matrix of the 3D point which will be represented as an ellipse.
++        P (numpy.ndarray): The marginal covariance matrix of the 3D point
++            which will be represented as an ellipse.
+         scale (float): Scaling factor of the radii of the covariance ellipse.
+         n (int): Defines the granularity of the ellipse. Higher values indicate finer ellipses.
+         alpha (float): Transparency value for the plotted surface in the range [0, 1].
+@@ -85,7 +83,7 @@ def plot_covariance_ellipse_3d(axes, ori
+     rx, ry, rz = radii
+ 
+     # generate data for "unrotated" ellipsoid
+-    xc, yc, zc = ellipsoid(0, 0, 0, rx, ry, rz, n)
++    xc, yc, zc = ellipsoid(rx, ry, rz, n)
+ 
+     # rotate data with orientation matrix U and center c
+     data = np.kron(U[:, 0:1], xc) + np.kron(U[:, 1:2], yc) + \
+@@ -106,7 +104,8 @@ def plot_pose2_on_axes(axes, pose, axis_
+         axes (matplotlib.axes.Axes): Matplotlib axes.
+         pose (gtsam.Pose2): The pose to be plotted.
+         axis_length (float): The length of the camera axes.
+-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
++        covariance (numpy.ndarray): Marginal covariance matrix to plot
++            the uncertainty of the estimation.
+     """
+     # get rotation and translation (center)
+     gRp = pose.rotation().matrix()  # rotation from pose to global
+@@ -146,7 +145,8 @@ def plot_pose2(fignum, pose, axis_length
+         fignum (int): Integer representing the figure number to use for plotting.
+         pose (gtsam.Pose2): The pose to be plotted.
+         axis_length (float): The length of the camera axes.
+-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
++        covariance (numpy.ndarray): Marginal covariance matrix to plot
++            the uncertainty of the estimation.
+         axis_labels (iterable[string]): List of axis labels to set.
+     """
+     # get figure object
+@@ -215,7 +215,8 @@ def plot_3d_points(fignum, values, lines
+         fignum (int): Integer representing the figure number to use for plotting.
+         values (gtsam.Values): Values dictionary consisting of points to be plotted.
+         linespec (string): String representing formatting options for Matplotlib.
+-        marginals (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
++        marginals (numpy.ndarray): Marginal covariance matrix to plot the
++            uncertainty of the estimation.
+         title (string): The title of the plot.
+         axis_labels (iterable[string]): List of axis labels to set.
+     """
+@@ -238,6 +239,7 @@ def plot_3d_points(fignum, values, lines
+             continue
+             # I guess it's not a Point3
+ 
++    fig = plt.figure(fignum)
+     fig.suptitle(title)
+     fig.canvas.set_window_title(title.lower())
+ 
 --- gtsam-4.1.0.orig/python/setup.py.in
 +++ gtsam-4.1.0/python/setup.py.in
 @@ -1,3 +1,4 @@
@@ -9175,6 +9649,115 @@ Last-Update: 2020-11-30
  //// Minimal traits example
  struct MyType : public Vector3 {
    using Vector3::Vector3;
+--- gtsam-4.1.0.orig/tests/testSerializationSLAM.cpp
++++ gtsam-4.1.0/tests/testSerializationSLAM.cpp
+@@ -89,10 +89,8 @@ typedef RangeFactor<Pose3, Point3>
+ typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
+ typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
+ typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
+-typedef RangeFactor<SimpleCamera, Point3>                       RangeFactorSimpleCameraPoint;
+ typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
+ typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
+-typedef RangeFactor<SimpleCamera, SimpleCamera>                 RangeFactorSimpleCamera;
+ typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
+ 
+ typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
+@@ -102,6 +100,7 @@ typedef GenericProjectionFactor<Pose3, P
+ typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
+ 
+ typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
++//TODO Fix issue 621 for this to work
+ //typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+ 
+ typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
+@@ -145,7 +144,6 @@ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+ GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
+ GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
+-GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+ GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
+ GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
+ 
+@@ -190,9 +188,9 @@ BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "
+ BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");
+-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
++BOOST_CLASS_EXPORT_GUID(RangeFactorPinholeCameraCal3_S2Point, "gtsam::RangeFactorPinholeCameraCal3_S2Point");
+ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
+-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
++BOOST_CLASS_EXPORT_GUID(RangeFactorPinholeCameraCal3_S2, "gtsam::RangeFactorPinholeCameraCal3_S2");
+ 
+ BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
+ 
+@@ -200,6 +198,7 @@ BOOST_CLASS_EXPORT_GUID(GenericProjectio
+ BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2");
+ 
+ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
++//TODO fix issue 621
+ //BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+ 
+ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
+@@ -352,9 +351,9 @@ TEST (testSerializationSLAM, factors) {
+   RangeFactorPose2 rangeFactorPose2(a08, b08, 2.0, model1);
+   RangeFactorPose3 rangeFactorPose3(a09, b09, 2.0, model1);
+   RangeFactorCalibratedCameraPoint rangeFactorCalibratedCameraPoint(a12, a05, 2.0, model1);
+-  RangeFactorSimpleCameraPoint rangeFactorSimpleCameraPoint(a13, a05, 2.0, model1);
++  RangeFactorPinholeCameraCal3_S2Point rangeFactorPinholeCameraCal3_S2Point(a13, a05, 2.0, model1);
+   RangeFactorCalibratedCamera rangeFactorCalibratedCamera(a12, b12, 2.0, model1);
+-  RangeFactorSimpleCamera rangeFactorSimpleCamera(a13, b13, 2.0, model1);
++  RangeFactorPinholeCameraCal3_S2 rangeFactorPinholeCameraCal3_S2(a13, b13, 2.0, model1);
+ 
+   BearingRangeFactor2D bearingRangeFactor2D(a08, a03, rot2, 2.0, model2);
+ 
+@@ -405,9 +404,9 @@ TEST (testSerializationSLAM, factors) {
+   graph += rangeFactorPose2;
+   graph += rangeFactorPose3;
+   graph += rangeFactorCalibratedCameraPoint;
+-  graph += rangeFactorSimpleCameraPoint;
++  graph += rangeFactorPinholeCameraCal3_S2Point;
+   graph += rangeFactorCalibratedCamera;
+-  graph += rangeFactorSimpleCamera;
++  graph += rangeFactorPinholeCameraCal3_S2;
+ 
+   graph += bearingRangeFactor2D;
+ 
+@@ -463,9 +462,9 @@ TEST (testSerializationSLAM, factors) {
+   EXPECT(equalsObj<RangeFactorPose2>(rangeFactorPose2));
+   EXPECT(equalsObj<RangeFactorPose3>(rangeFactorPose3));
+   EXPECT(equalsObj<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
+-  EXPECT(equalsObj<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
++  EXPECT(equalsObj<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
+   EXPECT(equalsObj<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
+-  EXPECT(equalsObj<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
++  EXPECT(equalsObj<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
+ 
+   EXPECT(equalsObj<BearingRangeFactor2D>(bearingRangeFactor2D));
+ 
+@@ -521,9 +520,9 @@ TEST (testSerializationSLAM, factors) {
+   EXPECT(equalsXML<RangeFactorPose2>(rangeFactorPose2));
+   EXPECT(equalsXML<RangeFactorPose3>(rangeFactorPose3));
+   EXPECT(equalsXML<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
+-  EXPECT(equalsXML<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
++  EXPECT(equalsXML<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
+   EXPECT(equalsXML<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
+-  EXPECT(equalsXML<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
++  EXPECT(equalsXML<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
+ 
+   EXPECT(equalsXML<BearingRangeFactor2D>(bearingRangeFactor2D));
+ 
+@@ -579,9 +578,9 @@ TEST (testSerializationSLAM, factors) {
+   EXPECT(equalsBinary<RangeFactorPose2>(rangeFactorPose2));
+   EXPECT(equalsBinary<RangeFactorPose3>(rangeFactorPose3));
+   EXPECT(equalsBinary<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
+-  EXPECT(equalsBinary<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
++  EXPECT(equalsBinary<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
+   EXPECT(equalsBinary<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
+-  EXPECT(equalsBinary<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
++  EXPECT(equalsBinary<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
+ 
+   EXPECT(equalsBinary<BearingRangeFactor2D>(bearingRangeFactor2D));
+ 
 --- gtsam-4.1.0.orig/wrap/cmake/PybindWrap.cmake
 +++ gtsam-4.1.0/wrap/cmake/PybindWrap.cmake
 @@ -27,15 +27,24 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHO
