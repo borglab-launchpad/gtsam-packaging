@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~65.gbpa2d74e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~66.gbp223697) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2236974f6ad677a125a1454969f1a7c8cd68ea2d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a2d74ee2390270460ce306aaee69d41956863ab0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Dec 2020 03:03:53 +0000
+  [ Varun Agrawal ]
+  * Jacobians for Camera models
+  * uncomment calibration applications
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * added Imu parameter units to doc
+  * formatting
+  * Common function to compute Jacobians of calibrate method
+  * Revert "added Imu parameter units to doc"
+  * Revert "formatting"
+  * Added units for imu noise and bias sigmas
+  * common header file for all calibration models
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Dec 2020 03:00:49 +0000
 
 gtsam (4.1.0-1ubuntu2~64.gbp01a07c) focal; urgency=medium
 
