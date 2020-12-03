@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~69.gbp5dec39) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~70.gbpafe013) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @afe013c4965e8f6a962121100acde8ac57942c31 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5dec39f0a5cc63feb059dee51f73a22acc6f3859 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Dec 2020 03:04:43 +0000
+  [ akrishnan86 ]
+  * new test doesnt pass
+  * translation recovery unit tests pass
+  * changing test names and adding documentation
+  * documenting member variables
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Dec 2020 02:59:34 +0000
 
 gtsam (4.1.0-1ubuntu2~68.gbpdd8ba2) focal; urgency=medium
 

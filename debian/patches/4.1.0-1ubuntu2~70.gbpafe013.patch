@@ -5,30 +5,23 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~66.gbp223697) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~70.gbpafe013) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @2236974f6ad677a125a1454969f1a7c8cd68ea2d **
+   ** SNAPSHOT build @afe013c4965e8f6a962121100acde8ac57942c31 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @a2d74ee2390270460ce306aaee69d41956863ab0 **
+   ** SNAPSHOT build @5dec39f0a5cc63feb059dee51f73a22acc6f3859 **
  .
    * modified changelog for distro focal
  .
-   [ Varun Agrawal ]
-   * Jacobians for Camera models
-   * uncomment calibration applications
+   [ akrishnan86 ]
+   * new test doesnt pass
+   * translation recovery unit tests pass
+   * changing test names and adding documentation
+   * documenting member variables
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
- .
-   [ Varun Agrawal ]
-   * added Imu parameter units to doc
-   * formatting
-   * Common function to compute Jacobians of calibrate method
-   * Revert "added Imu parameter units to doc"
-   * Revert "formatting"
-   * Added units for imu noise and bias sigmas
-   * common header file for all calibration models
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -42,7 +35,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-02
+Last-Update: 2020-12-03
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -7454,32 +7447,172 @@ Last-Update: 2020-12-02
 +}  // namespace gtsam
 --- gtsam-4.1.0.orig/gtsam/sfm/TranslationRecovery.cpp
 +++ gtsam-4.1.0/gtsam/sfm/TranslationRecovery.cpp
-@@ -45,9 +45,8 @@ NonlinearFactorGraph TranslationRecovery
+@@ -11,13 +11,12 @@
+ 
+ /**
+  * @file TranslationRecovery.cpp
+- * @author Frank Dellaert
++ * @author Frank Dellaert, Akshay Krishnan
+  * @date March 2020
+  * @brief Source code for recovering translations when rotations are given
+  */
+ 
+-#include <gtsam/sfm/TranslationRecovery.h>
+-
++#include <gtsam/base/DSFMap.h>
+ #include <gtsam/geometry/Point3.h>
+ #include <gtsam/geometry/Pose3.h>
+ #include <gtsam/geometry/Unit3.h>
+@@ -27,11 +26,45 @@
+ #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+ #include <gtsam/nonlinear/Values.h>
+ #include <gtsam/sfm/TranslationFactor.h>
++#include <gtsam/sfm/TranslationRecovery.h>
+ #include <gtsam/slam/PriorFactor.h>
+ 
++#include <set>
++#include <utility>
++
+ using namespace gtsam;
+ using namespace std;
+ 
++TranslationRecovery::TranslationRecovery(
++    const TranslationRecovery::TranslationEdges &relativeTranslations,
++    const LevenbergMarquardtParams &lmParams)
++    : params_(lmParams) {
++  // Some relative translations may be zero. We treat nodes that have a zero
++  // relativeTranslation as a single node.
++
++  // A DSFMap is used to find sets of nodes that have a zero relative
++  // translation. Add the nodes in each edge to the DSFMap, and merge nodes that
++  // are connected by a zero relative translation.
++  DSFMap<Key> sameTranslationDSF;
++  for (const auto &edge : relativeTranslations) {
++    Key key1 = sameTranslationDSF.find(edge.key1());
++    Key key2 = sameTranslationDSF.find(edge.key2());
++    if (key1 != key2 && edge.measured().equals(Unit3(0.0, 0.0, 0.0))) {
++      sameTranslationDSF.merge(key1, key2);
++    }
++  }
++  // Use only those edges for which two keys have a distinct root in the DSFMap.
++  for (const auto &edge : relativeTranslations) {
++    Key key1 = sameTranslationDSF.find(edge.key1());
++    Key key2 = sameTranslationDSF.find(edge.key2());
++    if (key1 == key2) continue;
++    relativeTranslations_.emplace_back(key1, key2, edge.measured(),
++                                       edge.noiseModel());
++  }
++  // Store the DSF map for post-processing results.
++  sameTranslationNodes_ = sameTranslationDSF.sets();
++}
++
+ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
+   NonlinearFactorGraph graph;
+ 
+@@ -44,14 +77,14 @@ NonlinearFactorGraph TranslationRecovery
+   return graph;
  }
  
- void TranslationRecovery::addPrior(const double scale,
+-void TranslationRecovery::addPrior(const double scale,
 -                                   NonlinearFactorGraph *graph) const {
 -  //TODO(akshay-krishnan): make this an input argument                                     
 -  auto priorNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
-+                                   NonlinearFactorGraph *graph,
-+                                   const SharedNoiseModel &priorNoiseModel) const {
++void TranslationRecovery::addPrior(
++    const double scale, NonlinearFactorGraph *graph,
++    const SharedNoiseModel &priorNoiseModel) const {
    auto edge = relativeTranslations_.begin();
-   graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
-   graph->emplace_shared<PriorFactor<Point3> >(edge->key2(), scale * edge->measured().point3(),
+-  graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
+-  graph->emplace_shared<PriorFactor<Point3> >(edge->key2(), scale * edge->measured().point3(),
+-                                              edge->noiseModel());
++  graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0),
++                                              priorNoiseModel);
++  graph->emplace_shared<PriorFactor<Point3> >(
++      edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+ }
+ 
+ Values TranslationRecovery::initalizeRandomly() const {
+@@ -78,6 +111,19 @@ Values TranslationRecovery::run(const do
+   const Values initial = initalizeRandomly();
+   LevenbergMarquardtOptimizer lm(graph, initial, params_);
+   Values result = lm.optimize();
++
++  // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
++  // from a key that was optimized to keys that were not optimized. Iterate over
++  // map and add results for keys not optimized.
++  for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
++    Key optimizedKey = optimizedAndDuplicateKeys.first;
++    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
++    // Add the result for the duplicate key if it does not already exist.
++    for (const Key duplicateKey : duplicateKeys) {
++      if (result.exists(duplicateKey)) continue;
++      result.insert<Point3>(duplicateKey, result.at<Point3>(optimizedKey));
++    }
++  }
+   return result;
+ }
+ 
 --- gtsam-4.1.0.orig/gtsam/sfm/TranslationRecovery.h
 +++ gtsam-4.1.0/gtsam/sfm/TranslationRecovery.h
-@@ -68,9 +68,7 @@ class TranslationRecovery {
+@@ -16,14 +16,16 @@
+  * @brief Recovering translations in an epipolar graph when rotations are given.
+  */
+ 
++#include <map>
++#include <set>
++#include <utility>
++#include <vector>
++
+ #include <gtsam/geometry/Unit3.h>
+ #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+ #include <gtsam/nonlinear/Values.h>
+ #include <gtsam/sfm/BinaryMeasurement.h>
+ 
+-#include <utility>
+-#include <vector>
+-
+ namespace gtsam {
+ 
+ // Set up an optimization problem for the unknown translations Ti in the world
+@@ -52,25 +54,30 @@ class TranslationRecovery {
+   using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;
+ 
+  private:
++  // Translation directions between camera pairs.
+   TranslationEdges relativeTranslations_;
++
++  // Parameters used by the LM Optimizer.
+   LevenbergMarquardtParams params_;
+ 
++  // Map from a key in the graph to a set of keys that share the same
++  // translation.
++  std::map<Key, std::set<Key>> sameTranslationNodes_;
++
+  public:
+   /**
+    * @brief Construct a new Translation Recovery object
+    *
+    * @param relativeTranslations the relative translations, in world coordinate
+-   * frames, vector of BinaryMeasurements of Unit3, where each key of a measurement 
+-   * is a point in 3D. 
++   * frames, vector of BinaryMeasurements of Unit3, where each key of a
++   * measurement is a point in 3D.
+    * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
+    * used to modify the parameters for the LM optimizer. By default, uses the
+-   * default LM parameters. 
++   * default LM parameters.
     */
-   TranslationRecovery(const TranslationEdges &relativeTranslations,
-                       const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
+-  TranslationRecovery(const TranslationEdges &relativeTranslations,
+-                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
 -      : relativeTranslations_(relativeTranslations), params_(lmParams) {
 -    params_.setVerbosityLM("Summary");
 -  }
-+      : relativeTranslations_(relativeTranslations), params_(lmParams) {}
++  TranslationRecovery(
++      const TranslationEdges &relativeTranslations,
++      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
  
    /**
     * @brief Build the factor graph to do the optimization.
-@@ -84,8 +82,11 @@ class TranslationRecovery {
+@@ -84,8 +91,11 @@ class TranslationRecovery {
     *
     * @param scale scale for first relative translation which fixes gauge.
     * @param graph factor graph to which prior is added.
@@ -7492,6 +7625,17 @@ Last-Update: 2020-12-02
  
    /**
     * @brief Create random initial translations.
+@@ -107,8 +117,8 @@ class TranslationRecovery {
+    *
+    * @param poses SE(3) ground truth poses stored as Values
+    * @param edges pairs (a,b) for which a measurement w_aZb will be generated.
+-   * @return TranslationEdges vector of binary measurements where the keys are 
+-   * the cameras and the measurement is the simulated Unit3 translation 
++   * @return TranslationEdges vector of binary measurements where the keys are
++   * the cameras and the measurement is the simulated Unit3 translation
+    * direction between the cameras.
+    */
+   static TranslationEdges SimulateMeasurements(
 --- /dev/null
 +++ gtsam-4.1.0/gtsam/sfm/tests/testMFAS.cpp
 @@ -0,0 +1,104 @@
@@ -10351,6 +10495,243 @@ Last-Update: 2020-12-02
  
    EXPECT(equalsBinary<BearingRangeFactor2D>(bearingRangeFactor2D));
  
+--- gtsam-4.1.0.orig/tests/testTranslationRecovery.cpp
++++ gtsam-4.1.0/tests/testTranslationRecovery.cpp
+@@ -11,19 +11,29 @@
+ 
+ /**
+  * @file testTranslationRecovery.cpp
+- * @author Frank Dellaert
++ * @author Frank Dellaert, Akshay Krishnan
+  * @date March 2020
+  * @brief test recovering translations when rotations are given.
+  */
+ 
+-#include <gtsam/sfm/TranslationRecovery.h>
+-
+ #include <CppUnitLite/TestHarness.h>
++
++#include <gtsam/sfm/TranslationRecovery.h>
+ #include <gtsam/slam/dataset.h>
+ 
+ using namespace std;
+ using namespace gtsam;
+ 
++// Returns the Unit3 direction as measured in the binary measurement, but
++// computed from the input poses. Helper function used in the unit tests.
++Unit3 GetDirectionFromPoses(const Values& poses,
++                            const BinaryMeasurement<Unit3>& unitTranslation) {
++  const Pose3 wTa = poses.at<Pose3>(unitTranslation.key1()),
++              wTb = poses.at<Pose3>(unitTranslation.key2());
++  const Point3 Ta = wTa.translation(), Tb = wTb.translation();
++  return Unit3(Tb - Ta);
++}
++
+ /* ************************************************************************* */
+ // We read the BAL file, which has 3 cameras in it, with poses. We then assume
+ // the rotations are correct, but translations have to be estimated from
+@@ -48,43 +58,186 @@ TEST(TranslationRecovery, BAL) {
+   const auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+       poses, {{0, 1}, {0, 2}, {1, 2}});
+ 
+-  // Check
+-  Unit3 w_aZb_stored; // measurement between 0 and 1 stored for next unit test
+-  for(auto& unitTranslation : relativeTranslations) {
+-    const Pose3 wTa = poses.at<Pose3>(unitTranslation.key1()), 
+-                wTb = poses.at<Pose3>(unitTranslation.key2());
+-    const Point3 Ta = wTa.translation(), Tb = wTb.translation();
+-    const Unit3 w_aZb = unitTranslation.measured();
+-    EXPECT(assert_equal(Unit3(Tb - Ta), w_aZb));
+-    if(unitTranslation.key1() == 0 && unitTranslation.key2() == 1) {
+-      w_aZb_stored = unitTranslation.measured();
+-    }
++  // Check simulated measurements.
++  for (auto& unitTranslation : relativeTranslations) {
++    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
++                        unitTranslation.measured()));
+   }
+ 
+   TranslationRecovery algorithm(relativeTranslations);
+   const auto graph = algorithm.buildGraph();
+   EXPECT_LONGS_EQUAL(3, graph.size());
+ 
+-  // Translation recovery, version 1
++  // Run translation recovery
+   const double scale = 2.0;
+   const auto result = algorithm.run(scale);
+ 
+   // Check result for first two translations, determined by prior
+   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
+-  EXPECT(assert_equal(Point3(2 * w_aZb_stored.point3()), result.at<Point3>(1)));
++  EXPECT(assert_equal(
++      Point3(2 * GetDirectionFromPoses(poses, relativeTranslations[0])),
++      result.at<Point3>(1)));
+ 
+   // Check that the third translations is correct
+   Point3 Ta = poses.at<Pose3>(0).translation();
+   Point3 Tb = poses.at<Pose3>(1).translation();
+   Point3 Tc = poses.at<Pose3>(2).translation();
+-  Point3 expected = 
+-      (Tc - Ta) * (scale / (Tb - Ta).norm());
++  Point3 expected = (Tc - Ta) * (scale / (Tb - Ta).norm());
+   EXPECT(assert_equal(expected, result.at<Point3>(2), 1e-4));
+ 
+   // TODO(frank): how to get stats back?
+   // EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
+ }
+ 
++TEST(TranslationRecovery, TwoPoseTest) {
++  // Create a dataset with 2 poses.
++  // __      __
++  // \/      \/
++  //  0 _____ 1
++  //
++  // 0 and 1 face in the same direction but have a translation offset.
++  Values poses;
++  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
++  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
++
++  auto relativeTranslations =
++      TranslationRecovery::SimulateMeasurements(poses, {{0, 1}});
++
++  // Check simulated measurements.
++  for (auto& unitTranslation : relativeTranslations) {
++    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
++                        unitTranslation.measured()));
++  }
++
++  TranslationRecovery algorithm(relativeTranslations);
++  const auto graph = algorithm.buildGraph();
++  EXPECT_LONGS_EQUAL(1, graph.size());
++
++  // Run translation recovery
++  const auto result = algorithm.run(/*scale=*/3.0);
++
++  // Check result for first two translations, determined by prior
++  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
++  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
++}
++
++TEST(TranslationRecovery, ThreePoseTest) {
++  // Create a dataset with 3 poses.
++  // __      __
++  // \/      \/
++  //  0 _____ 1
++  //    \ __ /
++  //     \\//
++  //       3
++  //
++  // 0 and 1 face in the same direction but have a translation offset. 3 is in
++  // the same direction as 0 and 1, in between 0 and 1, with some Y axis offset.
++
++  Values poses;
++  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
++  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
++  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
++
++  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
++      poses, {{0, 1}, {1, 3}, {3, 0}});
++
++  // Check simulated measurements.
++  for (auto& unitTranslation : relativeTranslations) {
++    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
++                        unitTranslation.measured()));
++  }
++
++  TranslationRecovery algorithm(relativeTranslations);
++  const auto graph = algorithm.buildGraph();
++  EXPECT_LONGS_EQUAL(3, graph.size());
++
++  const auto result = algorithm.run(/*scale=*/3.0);
++
++  // Check result
++  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
++  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
++  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3)));
++}
++
++TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
++  // Create a dataset with 3 poses.
++  // __      __
++  // \/      \/
++  //  0 _____ 1
++  //          2 <|
++  //
++  // 0 and 1 face in the same direction but have a translation offset. 2 is at
++  // the same point as 1 but is rotated, with little FOV overlap.
++  Values poses;
++  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
++  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
++  poses.insert<Pose3>(2, Pose3(Rot3::RzRyRx(-M_PI / 2, 0, 0), Point3(2, 0, 0)));
++
++  auto relativeTranslations =
++      TranslationRecovery::SimulateMeasurements(poses, {{0, 1}, {1, 2}});
++
++  // Check simulated measurements.
++  for (auto& unitTranslation : relativeTranslations) {
++    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
++                        unitTranslation.measured()));
++  }
++
++  TranslationRecovery algorithm(relativeTranslations);
++  const auto graph = algorithm.buildGraph();
++  // There is only 1 non-zero translation edge.
++  EXPECT_LONGS_EQUAL(1, graph.size()); 
++
++  // Run translation recovery
++  const auto result = algorithm.run(/*scale=*/3.0);
++
++  // Check result
++  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
++  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
++  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2)));
++}
++
++TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
++  // Create a dataset with 4 poses.
++  // __      __
++  // \/      \/
++  //  0 _____ 1
++  //    \ __  2 <|
++  //     \\//
++  //       3
++  //
++  // 0 and 1 face in the same direction but have a translation offset. 2 is at
++  // the same point as 1 but is rotated, with very little FOV overlap. 3 is in
++  // the same direction as 0 and 1, in between 0 and 1, with some Y axis offset.
++
++  Values poses;
++  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
++  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
++  poses.insert<Pose3>(2, Pose3(Rot3::RzRyRx(-M_PI / 2, 0, 0), Point3(2, 0, 0)));
++  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
++
++  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
++      poses, {{0, 1}, {1, 2}, {1, 3}, {3, 0}});
++
++  // Check simulated measurements.
++  for (auto& unitTranslation : relativeTranslations) {
++    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
++                        unitTranslation.measured()));
++  }
++
++  TranslationRecovery algorithm(relativeTranslations);
++  const auto graph = algorithm.buildGraph();
++  EXPECT_LONGS_EQUAL(3, graph.size());
++
++  // Run translation recovery
++  const auto result = algorithm.run(/*scale=*/4.0);
++
++  // Check result
++  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
++  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1)));
++  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2)));
++  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3)));
++}
++
+ /* ************************************************************************* */
+ int main() {
+   TestResult tr;
 --- gtsam-4.1.0.orig/wrap/cmake/PybindWrap.cmake
 +++ gtsam-4.1.0/wrap/cmake/PybindWrap.cmake
 @@ -27,15 +27,24 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHO
