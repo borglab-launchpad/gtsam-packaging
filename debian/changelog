@@ -1,10 +1,39 @@
-gtsam (4.1.0-1ubuntu2~73.gbpf1da20) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~74.gbp21d46f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @21d46f5e396a99f7ffe2d972be956d9952edd6f9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f1da20f708532660c007aca0190169de0dd979a4 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Dec 2020 03:03:04 +0000
+  [ Varun Agrawal ]
+  * Base class for all calibration models
+  * Refactor Cal3_S2 and Cal3_S2Stereo classes
+  * Refactor all Cal3D based models
+  * Refactor Bundler and Fisheye models
+  * Minor updates
+  * Remove deprecated calibration method from wrapper
+  * replace typedef with using
+  * modernized default constructors
+  * Cal3 code improvements
+  * matrix_inverse() -> inverse()
+  * remove using-namespace and fix print test
+  * Added tests for printing, plus small formatting
+  * stream printing for all calibration models
+  * Improved constructor for loading parameters from file
+  * Override dim(), cleanup, and add unicode
+  * Added tests for checking calibration model dimensions
+  * Consistent and better formatting
+  * additional formatting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Jose Luis Blanco Claraco ]
+  * SymbolGenerator: add chr() and made constexpr-capable
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 04 Dec 2020 02:59:32 +0000
 
 gtsam (4.1.0-1ubuntu2~72.gbp99f7f4) focal; urgency=medium
 
