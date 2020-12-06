@@ -5,23 +5,40 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~78.gbp4c997b) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~82.gbp17a780) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @4c997b4cc242fbf113299e18f8b4270c5d8517c0 **
+   ** SNAPSHOT build @17a7804888cf04b6674759cd1205fbc895153735 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @42607ed4655a6077d9a7c7df298d9d34439c9fcf **
+   ** SNAPSHOT build @0da3c6e6ae1e0cccf8fd40a581f5beeef4f24c67 **
  .
    * modified changelog for distro focal
  .
-   [ Varun Agrawal ]
-   * calibrate and uncalibrate for Cal3_S2Stereo model
+   [ Sushmita ]
+   * vector of cameras and triangulation function wrapped
+   * docs fixed and error threshold reduced
+   * moved landmark variable to setup
+   * push back arguments changed to const reference
+   * removed commented code
+   * templated functions where possible
+   * removed push_back method from cameraset wrapper
+   * added utility functions and code cleanup
+   * added cmake and preamble
+   * moved measurement generation to separate function
+   * code formatted
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
  .
+   [ Sushmita ]
+   * removed typedef and formatted code
+   * moved camera_set to generate_measurements
+ .
    [ Varun Agrawal ]
-   * disambiguate overloaded base class
+   * Revert "code formatted"
+   * format python triangulation tests
+   * more formatting
+   * remove unused imports
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -35,7 +52,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-05
+Last-Update: 2020-12-06
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -8038,6 +8055,30 @@ Last-Update: 2020-12-05
  /* ************************************************************************* */
  int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
  /* ************************************************************************* */
+--- gtsam-4.1.0.orig/gtsam/geometry/triangulation.h
++++ gtsam-4.1.0/gtsam/geometry/triangulation.h
+@@ -18,8 +18,10 @@
+ 
+ #pragma once
+ 
+-#include <gtsam/geometry/PinholeCamera.h>
++#include <gtsam/geometry/Cal3_S2.h>
++#include <gtsam/geometry/Cal3Bundler.h>
+ #include <gtsam/geometry/CameraSet.h>
++#include <gtsam/geometry/PinholeCamera.h>
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/slam/TriangulationFactor.h>
+ #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+@@ -494,5 +496,9 @@ TriangulationResult triangulateSafe(cons
+     }
+ }
+ 
++// Vector of Cameras - used by the Python/MATLAB wrapper
++using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
++using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
++
+ } // \namespace gtsam
+ 
 --- gtsam-4.1.0.orig/gtsam/gtsam.i
 +++ gtsam-4.1.0/gtsam/gtsam.i
 @@ -93,9 +93,9 @@
@@ -8118,7 +8159,10 @@ Last-Update: 2020-12-05
 -
 -  // Standard interface
 -  double value() const;
--
++class IndexPairVector {
++  IndexPairVector();
++  IndexPairVector(const gtsam::IndexPairVector& other);
+ 
 -  // Testable
 -  void print(string s) const;
 -  bool equals(const gtsam::LieScalar& expected, double tol) const;
@@ -8128,10 +8172,7 @@ Last-Update: 2020-12-05
 -  gtsam::LieScalar inverse() const;
 -  gtsam::LieScalar compose(const gtsam::LieScalar& p) const;
 -  gtsam::LieScalar between(const gtsam::LieScalar& l2) const;
-+class IndexPairVector {
-+  IndexPairVector();
-+  IndexPairVector(const gtsam::IndexPairVector& other);
- 
+-
 -  // Manifold
 -  size_t dim() const;
 -  gtsam::LieScalar retract(Vector v) const;
@@ -8161,14 +8202,14 @@ Last-Update: 2020-12-05
 -  // Testable
 -  void print(string s) const;
 -  bool equals(const gtsam::LieVector& expected, double tol) const;
--
++gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
+ 
 -  // Group
 -  static gtsam::LieVector identity();
 -  gtsam::LieVector inverse() const;
 -  gtsam::LieVector compose(const gtsam::LieVector& p) const;
 -  gtsam::LieVector between(const gtsam::LieVector& l2) const;
-+gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
- 
+-
 -  // Manifold
 -  size_t dim() const;
 -  gtsam::LieVector retract(Vector v) const;
@@ -8373,7 +8414,7 @@ Last-Update: 2020-12-05
  
    // enabling serialization functionality
    void serialize() const;
-@@ -1089,55 +1058,14 @@ class PinholeCamera {
+@@ -1089,55 +1058,23 @@ class PinholeCamera {
    void serialize() const;
  };
  
@@ -8430,19 +8471,43 @@ Last-Update: 2020-12-05
 +typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 +typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 +typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
++
++template<T>
++class CameraSet {
++  CameraSet();
++
++  // structure specific methods
++  T at(size_t i) const;
++  void push_back(const T& cam);
++};
  
  #include <gtsam/geometry/StereoCamera.h>
  class StereoCamera {
-@@ -1180,7 +1108,7 @@ gtsam::Point3 triangulatePoint3(const gt
+@@ -1170,7 +1107,7 @@ class StereoCamera {
+ 
+ #include <gtsam/geometry/triangulation.h>
+ 
+-// Templates appear not yet supported for free functions
++// Templates appear not yet supported for free functions - issue raised at borglab/wrap#14 to add support
+ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
+     double rank_tol, bool optimize);
+@@ -1180,7 +1117,13 @@ gtsam::Point3 triangulatePoint3(const gt
  gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
      gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
      double rank_tol, bool optimize);
 -
++gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
++    const gtsam::Point2Vector& measurements, double rank_tol,
++    bool optimize);
++gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
++    const gtsam::Point2Vector& measurements, double rank_tol,
++    bool optimize);
 +    
  //*************************************************************************
  // Symbolic
  //*************************************************************************
-@@ -1330,7 +1258,7 @@ class SymbolicBayesTree {
+@@ -1330,7 +1273,7 @@ class SymbolicBayesTree {
  // //  const std::list<derived_ptr>& children() const { return children_; }
  // //  derived_ptr parent() const { return parent_.lock(); }
  //
@@ -8451,7 +8516,7 @@ Last-Update: 2020-12-05
  // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
  // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
  // //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-@@ -2099,7 +2027,7 @@ class NonlinearFactorGraph {
+@@ -2099,7 +2042,7 @@ class NonlinearFactorGraph {
    gtsam::KeySet keys() const;
    gtsam::KeyVector keyVector() const;
  
@@ -8460,7 +8525,7 @@ Last-Update: 2020-12-05
    void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
  
    // NonlinearFactorGraph
-@@ -2129,7 +2057,7 @@ virtual class NonlinearFactor {
+@@ -2129,7 +2072,7 @@ virtual class NonlinearFactor {
    bool active(const gtsam::Values& c) const;
    gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
    gtsam::NonlinearFactor* clone() const;
@@ -8469,7 +8534,7 @@ Last-Update: 2020-12-05
  };
  
  #include <gtsam/nonlinear/NonlinearFactor.h>
-@@ -2188,11 +2116,13 @@ class Values {
+@@ -2188,11 +2131,13 @@ class Values {
    void insert(size_t j, const gtsam::SOn& P);
    void insert(size_t j, const gtsam::Rot3& rot3);
    void insert(size_t j, const gtsam::Pose3& pose3);
@@ -8483,7 +8548,7 @@ Last-Update: 2020-12-05
    void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
    void insert(size_t j, const gtsam::NavState& nav_state);
  
-@@ -2205,16 +2135,19 @@ class Values {
+@@ -2205,16 +2150,19 @@ class Values {
    void update(size_t j, const gtsam::SOn& P);
    void update(size_t j, const gtsam::Rot3& rot3);
    void update(size_t j, const gtsam::Pose3& pose3);
@@ -8504,7 +8569,7 @@ Last-Update: 2020-12-05
    T at(size_t j);
  
    /// version for double
-@@ -2491,6 +2424,8 @@ class ISAM2Result {
+@@ -2491,6 +2439,8 @@ class ISAM2Result {
    size_t getVariablesRelinearized() const;
    size_t getVariablesReeliminated() const;
    size_t getCliques() const;
@@ -8513,7 +8578,7 @@ Last-Update: 2020-12-05
  };
  
  class ISAM2 {
-@@ -2507,16 +2442,17 @@ class ISAM2 {
+@@ -2507,16 +2457,17 @@ class ISAM2 {
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
@@ -8535,7 +8600,7 @@ Last-Update: 2020-12-05
    VALUE calculateEstimate(size_t key) const;
    gtsam::Values calculateBestEstimate() const;
    Matrix marginalCovariance(size_t key) const;
-@@ -2549,12 +2485,11 @@ class NonlinearISAM {
+@@ -2549,12 +2500,11 @@ class NonlinearISAM {
  //*************************************************************************
  // Nonlinear factor types
  //*************************************************************************
@@ -8549,7 +8614,7 @@ Last-Update: 2020-12-05
  virtual class PriorFactor : gtsam::NoiseModelFactor {
    PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
    T prior() const;
-@@ -2578,7 +2513,7 @@ virtual class BetweenFactor : gtsam::Noi
+@@ -2578,7 +2528,7 @@ virtual class BetweenFactor : gtsam::Noi
  template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
                 gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
                 gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
@@ -8558,7 +8623,7 @@ Last-Update: 2020-12-05
                 gtsam::imuBias::ConstantBias}>
  virtual class NonlinearEquality : gtsam::NoiseModelFactor {
    // Constructor - forces exact evaluation
-@@ -2641,8 +2576,7 @@ class BearingRange {
+@@ -2641,8 +2591,7 @@ class BearingRange {
    BearingRange(const BEARING& b, const RANGE& r);
    BEARING bearing() const;
    RANGE range() const;
@@ -8568,7 +8633,7 @@ Last-Update: 2020-12-05
    static BEARING MeasureBearing(const POSE& pose, const POINT& point);
    static RANGE MeasureRange(const POSE& pose, const POINT& point);
    void print(string s) const;
-@@ -2698,8 +2632,8 @@ virtual class GeneralSFMFactor : gtsam::
+@@ -2698,8 +2647,8 @@ virtual class GeneralSFMFactor : gtsam::
    gtsam::Point2 measured() const;
  };
  typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
@@ -8579,7 +8644,7 @@ Last-Update: 2020-12-05
  
  template<CALIBRATION = {gtsam::Cal3_S2}>
  virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
-@@ -2786,21 +2720,39 @@ virtual class EssentialMatrixFactor : gt
+@@ -2786,21 +2735,39 @@ virtual class EssentialMatrixFactor : gt
  };
  
  #include <gtsam/slam/dataset.h>
@@ -8622,7 +8687,7 @@ Last-Update: 2020-12-05
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
      gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-@@ -2909,11 +2861,19 @@ class BinaryMeasurement {
+@@ -2909,11 +2876,19 @@ class BinaryMeasurement {
    size_t key1() const;
    size_t key2() const;
    T measured() const;
@@ -8642,7 +8707,7 @@ Last-Update: 2020-12-05
  #include <gtsam/sfm/ShonanAveraging.h>
  
  // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
-@@ -2925,6 +2885,7 @@ class ShonanAveragingParameters2 {
+@@ -2925,6 +2900,7 @@ class ShonanAveragingParameters2 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot2& value);
@@ -8650,7 +8715,7 @@ Last-Update: 2020-12-05
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -2940,6 +2901,7 @@ class ShonanAveragingParameters3 {
+@@ -2940,6 +2916,7 @@ class ShonanAveragingParameters3 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot3& value);
@@ -8658,7 +8723,7 @@ Last-Update: 2020-12-05
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -3033,6 +2995,36 @@ class ShonanAveraging3 {
+@@ -3033,6 +3010,36 @@ class ShonanAveraging3 {
    pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
  };
  
@@ -12194,13 +12259,15 @@ Last-Update: 2020-12-05
  
  pybind_wrap(gtsam_py # target
              ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i # interface_header
-@@ -72,7 +80,10 @@ set(ignore
+@@ -72,7 +80,12 @@ set(ignore
          gtsam::Point2Vector
          gtsam::Pose3Vector
          gtsam::KeyVector
 -        gtsam::FixedLagSmootherKeyTimestampMapValue)
 +        gtsam::FixedLagSmootherKeyTimestampMapValue
 +        gtsam::BinaryMeasurementsUnit3
++        gtsam::CameraSetCal3_S2
++        gtsam::CameraSetCal3Bundler
 +        gtsam::KeyPairDoubleMap)
 +        
  pybind_wrap(gtsam_unstable_py # target
@@ -12650,14 +12717,16 @@ Last-Update: 2020-12-05
 +    main()
 --- gtsam-4.1.0.orig/python/gtsam/preamble.h
 +++ gtsam-4.1.0/python/gtsam/preamble.h
-@@ -9,3 +9,4 @@ PYBIND11_MAKE_OPAQUE(std::vector<gtsam::
+@@ -9,3 +9,6 @@ PYBIND11_MAKE_OPAQUE(std::vector<gtsam::
  PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Pose3>);
  PYBIND11_MAKE_OPAQUE(std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > >);
  PYBIND11_MAKE_OPAQUE(std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > >);
 +PYBIND11_MAKE_OPAQUE(std::vector<gtsam::IndexPair>);
++PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler> >);
++PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2> >);
 --- gtsam-4.1.0.orig/python/gtsam/specializations.h
 +++ gtsam-4.1.0/python/gtsam/specializations.h
-@@ -9,3 +9,7 @@ py::bind_vector<std::vector<gtsam::Point
+@@ -9,3 +9,9 @@ py::bind_vector<std::vector<gtsam::Point
  py::bind_vector<std::vector<gtsam::Pose3> >(m_, "Pose3Vector");
  py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > > >(m_, "BetweenFactorPose3s");
  py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > > >(m_, "BetweenFactorPose2s");
@@ -12665,6 +12734,8 @@ Last-Update: 2020-12-05
 +py::bind_map<gtsam::IndexPairSetMap>(m_, "IndexPairSetMap");
 +py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");
 +py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
++py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2> > >(m_, "CameraSetCal3_S2");
++py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler> > >(m_, "CameraSetCal3Bundler");
 --- gtsam-4.1.0.orig/python/gtsam/tests/test_JacobianFactor.py
 +++ gtsam-4.1.0/python/gtsam/tests/test_JacobianFactor.py
 @@ -19,7 +19,7 @@ from gtsam.utils.test_case import GtsamT
@@ -12879,6 +12950,176 @@ Last-Update: 2020-12-05
 +if __name__ == "__main__":
 +    unittest.main()
 +
+--- gtsam-4.1.0.orig/python/gtsam/tests/test_Triangulation.py
++++ gtsam-4.1.0/python/gtsam/tests/test_Triangulation.py
+@@ -12,69 +12,123 @@ import unittest
+ 
+ import numpy as np
+ 
+-import gtsam as g
++import gtsam
++from gtsam import (Cal3_S2, Cal3Bundler, CameraSetCal3_S2,
++                   CameraSetCal3Bundler, PinholeCameraCal3_S2,
++                   PinholeCameraCal3Bundler, Point2Vector, Point3, Pose3,
++                   Pose3Vector, Rot3)
+ from gtsam.utils.test_case import GtsamTestCase
+-from gtsam import Cal3_S2, Cal3Bundler, Rot3, Pose3, \
+-    PinholeCameraCal3_S2, Point3, Point2Vector, Pose3Vector, triangulatePoint3
++
+ 
+ class TestVisualISAMExample(GtsamTestCase):
+-    def test_TriangulationExample(self):
+-        # Some common constants
+-        sharedCal = Cal3_S2(1500, 1200, 0, 640, 480)
++    """ Tests for triangulation with shared and individual calibrations """
+ 
++    def setUp(self):
++        """ Set up two camera poses """
+         # Looking along X-axis, 1 meter above ground plane (x-y)
+         upright = Rot3.Ypr(-np.pi / 2, 0., -np.pi / 2)
+         pose1 = Pose3(upright, Point3(0, 0, 1))
+-        camera1 = PinholeCameraCal3_S2(pose1, sharedCal)
+ 
+         # create second camera 1 meter to the right of first camera
+         pose2 = pose1.compose(Pose3(Rot3(), Point3(1, 0, 0)))
+-        camera2 = PinholeCameraCal3_S2(pose2, sharedCal)
++        # twoPoses
++        self.poses = Pose3Vector()
++        self.poses.append(pose1)
++        self.poses.append(pose2)
+ 
+         # landmark ~5 meters infront of camera
+-        landmark = Point3(5, 0.5, 1.2)
+-
+-        # 1. Project two landmarks into two cameras and triangulate
+-        z1 = camera1.project(landmark)
+-        z2 = camera2.project(landmark)
++        self.landmark = Point3(5, 0.5, 1.2)
+ 
+-        # twoPoses
+-        poses = Pose3Vector()
++    def generate_measurements(self, calibration, camera_model, cal_params, camera_set=None):
++        """
++        Generate vector of measurements for given calibration and camera model.
++
++        Args: 
++            calibration: Camera calibration e.g. Cal3_S2
++            camera_model: Camera model e.g. PinholeCameraCal3_S2
++            cal_params: Iterable of camera parameters for `calibration` e.g. [K1, K2]
++            camera_set: Cameraset object (for individual calibrations)
++        Returns:
++            list of measurements and list/CameraSet object for cameras
++        """
++        if camera_set is not None:
++            cameras = camera_set()
++        else:
++            cameras = []
+         measurements = Point2Vector()
+ 
+-        poses.append(pose1)
+-        poses.append(pose2)
+-        measurements.append(z1)
+-        measurements.append(z2)
++        for k, pose in zip(cal_params, self.poses):
++            K = calibration(*k)
++            camera = camera_model(pose, K)
++            cameras.append(camera)
++            z = camera.project(self.landmark)
++            measurements.append(z)
+ 
+-        optimize = True
+-        rank_tol = 1e-9
++        return measurements, cameras
+ 
+-        triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
+-        self.gtsamAssertEquals(landmark, triangulated_landmark,1e-9)
++    def test_TriangulationExample(self):
++        """ Tests triangulation with shared Cal3_S2 calibration"""
++        # Some common constants
++        sharedCal = (1500, 1200, 0, 640, 480)
+ 
+-        # 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+-        measurements = Point2Vector()
+-        measurements.append(z1 - np.array([0.1, 0.5]))
+-        measurements.append(z2 - np.array([-0.2, 0.3]))
++        measurements, _ = self.generate_measurements(Cal3_S2,
++                                                     PinholeCameraCal3_S2,
++                                                     (sharedCal, sharedCal))
++
++        triangulated_landmark = gtsam.triangulatePoint3(self.poses,
++                                                        Cal3_S2(sharedCal),
++                                                        measurements,
++                                                        rank_tol=1e-9,
++                                                        optimize=True)
++        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
++
++        # Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
++        measurements_noisy = Point2Vector()
++        measurements_noisy.append(measurements[0] - np.array([0.1, 0.5]))
++        measurements_noisy.append(measurements[1] - np.array([-0.2, 0.3]))
++
++        triangulated_landmark = gtsam.triangulatePoint3(self.poses,
++                                                        Cal3_S2(sharedCal),
++                                                        measurements_noisy,
++                                                        rank_tol=1e-9,
++                                                        optimize=True)
++
++        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-2)
++
++    def test_distinct_Ks(self):
++        """ Tests triangulation with individual Cal3_S2 calibrations """
++        # two camera parameters
++        K1 = (1500, 1200, 0, 640, 480)
++        K2 = (1600, 1300, 0, 650, 440)
++
++        measurements, cameras = self.generate_measurements(Cal3_S2,
++                                                           PinholeCameraCal3_S2,
++                                                           (K1, K2),
++                                                           camera_set=CameraSetCal3_S2)
++
++        triangulated_landmark = gtsam.triangulatePoint3(cameras,
++                                                        measurements,
++                                                        rank_tol=1e-9,
++                                                        optimize=True)
++        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
++
++    def test_distinct_Ks_Bundler(self):
++        """ Tests triangulation with individual Cal3Bundler calibrations"""
++        # two camera parameters
++        K1 = (1500, 0, 0, 640, 480)
++        K2 = (1600, 0, 0, 650, 440)
++
++        measurements, cameras = self.generate_measurements(Cal3Bundler,
++                                                           PinholeCameraCal3Bundler,
++                                                           (K1, K2),
++                                                           camera_set=CameraSetCal3Bundler)
++
++        triangulated_landmark = gtsam.triangulatePoint3(cameras,
++                                                        measurements,
++                                                        rank_tol=1e-9,
++                                                        optimize=True)
++        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
+ 
+-        triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
+-        self.gtsamAssertEquals(landmark, triangulated_landmark,1e-2)
+-        #
+-        # # two Poses with Bundler Calibration
+-        # bundlerCal = Cal3Bundler(1500, 0, 0, 640, 480)
+-        # camera1 = PinholeCameraCal3Bundler(pose1, bundlerCal)
+-        # camera2 = PinholeCameraCal3Bundler(pose2, bundlerCal)
+-        #
+-        # z1 = camera1.project(landmark)
+-        # z2 = camera2.project(landmark)
+-        #
+-        # measurements = Point2Vector()
+-        # measurements.append(z1)
+-        # measurements.append(z2)
+-        #
+-        # triangulated_landmark = triangulatePoint3(poses,bundlerCal, measurements, rank_tol, optimize)
+-        # self.gtsamAssertEquals(landmark, triangulated_landmark,1e-9)
+ 
+ if __name__ == "__main__":
+     unittest.main()
 --- gtsam-4.1.0.orig/python/gtsam/tests/test_dsf_map.py
 +++ gtsam-4.1.0/python/gtsam/tests/test_dsf_map.py
 @@ -35,6 +35,20 @@ class TestDSFMap(GtsamTestCase):

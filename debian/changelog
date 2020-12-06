@@ -1,10 +1,39 @@
-gtsam (4.1.0-1ubuntu2~81.gbp0da3c6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~82.gbp17a780) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @17a7804888cf04b6674759cd1205fbc895153735 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0da3c6e6ae1e0cccf8fd40a581f5beeef4f24c67 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 05 Dec 2020 03:04:17 +0000
+  [ Sushmita ]
+  * vector of cameras and triangulation function wrapped
+  * docs fixed and error threshold reduced
+  * moved landmark variable to setup
+  * push back arguments changed to const reference
+  * removed commented code
+  * templated functions where possible
+  * removed push_back method from cameraset wrapper
+  * added utility functions and code cleanup
+  * added cmake and preamble
+  * moved measurement generation to separate function
+  * code formatted
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Sushmita ]
+  * removed typedef and formatted code
+  * moved camera_set to generate_measurements
+
+  [ Varun Agrawal ]
+  * Revert "code formatted"
+  * format python triangulation tests
+  * more formatting
+  * remove unused imports
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Dec 2020 02:59:28 +0000
 
 gtsam (4.1.0-1ubuntu2~80.gbp3b3dc0) focal; urgency=medium
 
