@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~85.gbp532955) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~86.gbp5624c5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5624c550024cd5a3f67106a1e8163d520b7d5bc3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5329557e49e43a37c14668a49804607d89845952 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Dec 2020 03:02:55 +0000
+  [ Varun Agrawal ]
+  * function to save graph as graphviz file via wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * better documentation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 09 Dec 2020 02:59:18 +0000
 
 gtsam (4.1.0-1ubuntu2~84.gbpc73722) focal; urgency=medium
 

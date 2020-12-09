@@ -5,40 +5,23 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~82.gbp17a780) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~86.gbp5624c5) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @17a7804888cf04b6674759cd1205fbc895153735 **
+   ** SNAPSHOT build @5624c550024cd5a3f67106a1e8163d520b7d5bc3 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @0da3c6e6ae1e0cccf8fd40a581f5beeef4f24c67 **
+   ** SNAPSHOT build @5329557e49e43a37c14668a49804607d89845952 **
  .
    * modified changelog for distro focal
  .
-   [ Sushmita ]
-   * vector of cameras and triangulation function wrapped
-   * docs fixed and error threshold reduced
-   * moved landmark variable to setup
-   * push back arguments changed to const reference
-   * removed commented code
-   * templated functions where possible
-   * removed push_back method from cameraset wrapper
-   * added utility functions and code cleanup
-   * added cmake and preamble
-   * moved measurement generation to separate function
-   * code formatted
+   [ Varun Agrawal ]
+   * function to save graph as graphviz file via wrapper
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
  .
-   [ Sushmita ]
-   * removed typedef and formatted code
-   * moved camera_set to generate_measurements
- .
    [ Varun Agrawal ]
-   * Revert "code formatted"
-   * format python triangulation tests
-   * more formatting
-   * remove unused imports
+   * better documentation
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -52,7 +35,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-06
+Last-Update: 2020-12-09
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -8525,7 +8508,15 @@ Last-Update: 2020-12-06
    void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
  
    // NonlinearFactorGraph
-@@ -2129,7 +2072,7 @@ virtual class NonlinearFactor {
+@@ -2113,6 +2056,7 @@ class NonlinearFactorGraph {
+ 
+   // enabling serialization functionality
+   void serialize() const;
++  void saveGraph(const string& s) const;
+ };
+ 
+ #include <gtsam/nonlinear/NonlinearFactor.h>
+@@ -2129,7 +2073,7 @@ virtual class NonlinearFactor {
    bool active(const gtsam::Values& c) const;
    gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
    gtsam::NonlinearFactor* clone() const;
@@ -8534,7 +8525,7 @@ Last-Update: 2020-12-06
  };
  
  #include <gtsam/nonlinear/NonlinearFactor.h>
-@@ -2188,11 +2131,13 @@ class Values {
+@@ -2188,11 +2132,13 @@ class Values {
    void insert(size_t j, const gtsam::SOn& P);
    void insert(size_t j, const gtsam::Rot3& rot3);
    void insert(size_t j, const gtsam::Pose3& pose3);
@@ -8548,7 +8539,7 @@ Last-Update: 2020-12-06
    void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
    void insert(size_t j, const gtsam::NavState& nav_state);
  
-@@ -2205,16 +2150,19 @@ class Values {
+@@ -2205,16 +2151,19 @@ class Values {
    void update(size_t j, const gtsam::SOn& P);
    void update(size_t j, const gtsam::Rot3& rot3);
    void update(size_t j, const gtsam::Pose3& pose3);
@@ -8569,7 +8560,7 @@ Last-Update: 2020-12-06
    T at(size_t j);
  
    /// version for double
-@@ -2491,6 +2439,8 @@ class ISAM2Result {
+@@ -2491,6 +2440,8 @@ class ISAM2Result {
    size_t getVariablesRelinearized() const;
    size_t getVariablesReeliminated() const;
    size_t getCliques() const;
@@ -8578,7 +8569,7 @@ Last-Update: 2020-12-06
  };
  
  class ISAM2 {
-@@ -2507,16 +2457,17 @@ class ISAM2 {
+@@ -2507,16 +2458,17 @@ class ISAM2 {
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
@@ -8600,7 +8591,7 @@ Last-Update: 2020-12-06
    VALUE calculateEstimate(size_t key) const;
    gtsam::Values calculateBestEstimate() const;
    Matrix marginalCovariance(size_t key) const;
-@@ -2549,12 +2500,11 @@ class NonlinearISAM {
+@@ -2549,12 +2501,11 @@ class NonlinearISAM {
  //*************************************************************************
  // Nonlinear factor types
  //*************************************************************************
@@ -8614,7 +8605,7 @@ Last-Update: 2020-12-06
  virtual class PriorFactor : gtsam::NoiseModelFactor {
    PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
    T prior() const;
-@@ -2578,7 +2528,7 @@ virtual class BetweenFactor : gtsam::Noi
+@@ -2578,7 +2529,7 @@ virtual class BetweenFactor : gtsam::Noi
  template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
                 gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
                 gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
@@ -8623,7 +8614,7 @@ Last-Update: 2020-12-06
                 gtsam::imuBias::ConstantBias}>
  virtual class NonlinearEquality : gtsam::NoiseModelFactor {
    // Constructor - forces exact evaluation
-@@ -2641,8 +2591,7 @@ class BearingRange {
+@@ -2641,8 +2592,7 @@ class BearingRange {
    BearingRange(const BEARING& b, const RANGE& r);
    BEARING bearing() const;
    RANGE range() const;
@@ -8633,7 +8624,7 @@ Last-Update: 2020-12-06
    static BEARING MeasureBearing(const POSE& pose, const POINT& point);
    static RANGE MeasureRange(const POSE& pose, const POINT& point);
    void print(string s) const;
-@@ -2698,8 +2647,8 @@ virtual class GeneralSFMFactor : gtsam::
+@@ -2698,8 +2648,8 @@ virtual class GeneralSFMFactor : gtsam::
    gtsam::Point2 measured() const;
  };
  typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
@@ -8644,7 +8635,7 @@ Last-Update: 2020-12-06
  
  template<CALIBRATION = {gtsam::Cal3_S2}>
  virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
-@@ -2786,21 +2735,39 @@ virtual class EssentialMatrixFactor : gt
+@@ -2786,21 +2736,39 @@ virtual class EssentialMatrixFactor : gt
  };
  
  #include <gtsam/slam/dataset.h>
@@ -8687,7 +8678,7 @@ Last-Update: 2020-12-06
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
      gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-@@ -2909,11 +2876,19 @@ class BinaryMeasurement {
+@@ -2909,11 +2877,19 @@ class BinaryMeasurement {
    size_t key1() const;
    size_t key2() const;
    T measured() const;
@@ -8707,7 +8698,7 @@ Last-Update: 2020-12-06
  #include <gtsam/sfm/ShonanAveraging.h>
  
  // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
-@@ -2925,6 +2900,7 @@ class ShonanAveragingParameters2 {
+@@ -2925,6 +2901,7 @@ class ShonanAveragingParameters2 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot2& value);
@@ -8715,7 +8706,7 @@ Last-Update: 2020-12-06
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -2940,6 +2916,7 @@ class ShonanAveragingParameters3 {
+@@ -2940,6 +2917,7 @@ class ShonanAveragingParameters3 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot3& value);
@@ -8723,7 +8714,7 @@ Last-Update: 2020-12-06
    void setAnchorWeight(double value);
    double getAnchorWeight() const;
    void setKarcherWeight(double value);
-@@ -3033,6 +3010,36 @@ class ShonanAveraging3 {
+@@ -3033,6 +3011,36 @@ class ShonanAveraging3 {
    pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
  };
  
@@ -9073,7 +9064,15 @@ Last-Update: 2020-12-06
        std::cout << "iteration: " << iteration << ", currentError: " << currentError << std::endl;
 --- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearFactorGraph.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/NonlinearFactorGraph.cpp
-@@ -205,42 +205,49 @@ void NonlinearFactorGraph::saveGraph(std
+@@ -34,6 +34,7 @@
+ #endif
+ 
+ #include <cmath>
++#include <fstream>
+ #include <limits>
+ 
+ using namespace std;
+@@ -205,42 +206,49 @@ void NonlinearFactorGraph::saveGraph(std
      // Create factors and variable connections
      for(size_t i = 0; i < size(); ++i) {
        const NonlinearFactor::shared_ptr& factor = at(i);
@@ -9145,6 +9144,57 @@ Last-Update: 2020-12-06
          }
        }
      }
+@@ -250,6 +258,16 @@ void NonlinearFactorGraph::saveGraph(std
+ }
+ 
+ /* ************************************************************************* */
++void NonlinearFactorGraph::saveGraph(
++    const std::string& file, const Values& values,
++    const GraphvizFormatting& graphvizFormatting,
++    const KeyFormatter& keyFormatter) const {
++  std::ofstream of(file);
++  saveGraph(of, values, graphvizFormatting, keyFormatter);
++  of.close();
++}
++
++/* ************************************************************************* */
+ double NonlinearFactorGraph::error(const Values& values) const {
+   gttic(NonlinearFactorGraph_error);
+   double total_error = 0.;
+--- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearFactorGraph.h
++++ gtsam-4.1.0/gtsam/nonlinear/NonlinearFactorGraph.h
+@@ -11,7 +11,7 @@
+ 
+ /**
+  * @file    NonlinearFactorGraph.h
+- * @brief   Factor Graph Constsiting of non-linear factors
++ * @brief   Factor Graph consisting of non-linear factors
+  * @author  Frank Dellaert
+  * @author  Carlos Nieto
+  * @author  Christian Potthast
+@@ -111,11 +111,21 @@ namespace gtsam {
+     /** Test equality */
+     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
+ 
+-    /** Write the graph in GraphViz format for visualization */
++    /// Write the graph in GraphViz format for visualization
+     void saveGraph(std::ostream& stm, const Values& values = Values(),
+       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+ 
++    /**
++     * Write the graph in GraphViz format to file for visualization.
++     *
++     * This is a wrapper friendly version since wrapped languages don't have
++     * access to C++ streams.
++     */
++    void saveGraph(const std::string& file, const Values& values = Values(),
++      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
++      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
++
+     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
+     double error(const Values& values) const;
+ 
 --- gtsam-4.1.0.orig/gtsam/nonlinear/NonlinearOptimizer.cpp
 +++ gtsam-4.1.0/gtsam/nonlinear/NonlinearOptimizer.cpp
 @@ -88,20 +88,28 @@ void NonlinearOptimizer::defaultOptimize
