@@ -5,23 +5,19 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~86.gbp5624c5) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~90.gbpfc8297) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @5624c550024cd5a3f67106a1e8163d520b7d5bc3 **
+   ** SNAPSHOT build @fc829711615bc2d3356f4fe8b1b9a47af10c14f5 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @5329557e49e43a37c14668a49804607d89845952 **
+   ** SNAPSHOT build @69f344f8210f2d5f188ba04af621ee9b72330695 **
  .
    * modified changelog for distro focal
- .
-   [ Varun Agrawal ]
-   * function to save graph as graphviz file via wrapper
- .
-   [ Borglab Builder ]
    * commit of final snapshot version number update
  .
    [ Varun Agrawal ]
-   * better documentation
+   * explicitly initialize Point3
+   * formatting
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -35,7 +31,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-09
+Last-Update: 2020-12-11
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -10742,6 +10738,26 @@ Last-Update: 2020-12-09
  #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
  inline boost::optional<IndexedPose> parseVertex(std::istream &is,
                                                  const std::string &tag) {
+--- gtsam-4.1.0.orig/gtsam/slam/tests/testInitializePose3.cpp
++++ gtsam-4.1.0/gtsam/slam/tests/testInitializePose3.cpp
+@@ -75,8 +75,15 @@ NonlinearFactorGraph graph2() {
+   g.add(BetweenFactor<Pose3>(x0, x1, pose0.between(pose1), noiseModel::Isotropic::Precision(6, 1.0)));
+   g.add(BetweenFactor<Pose3>(x1, x2, pose1.between(pose2), noiseModel::Isotropic::Precision(6, 1.0)));
+   g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), noiseModel::Isotropic::Precision(6, 1.0)));
+-  g.add(BetweenFactor<Pose3>(x2, x0, Pose3(Rot3::Ypr(0.1,0,0.1), Point3()), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero information
+-  g.add(BetweenFactor<Pose3>(x0, x3, Pose3(Rot3::Ypr(0.5,-0.2,0.2), Point3(10,20,30)), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero informatoin
++  // random pose, but zero information
++  auto noise_zero_info = noiseModel::Isotropic::Precision(6, 0.0);
++  g.add(BetweenFactor<Pose3>(
++      x2, x0, Pose3(Rot3::Ypr(0.1, 0.0, 0.1), Point3(0.0, 0.0, 0.0)),
++      noise_zero_info));
++  // random pose, but zero information
++  g.add(BetweenFactor<Pose3>(
++      x0, x3, Pose3(Rot3::Ypr(0.5, -0.2, 0.2), Point3(10, 20, 30)),
++      noise_zero_info));
+   g.addPrior(x0, pose0, model);
+   return g;
+ }
 --- gtsam-4.1.0.orig/gtsam_extra.cmake.in
 +++ gtsam-4.1.0/gtsam_extra.cmake.in
 @@ -7,8 +7,3 @@ set (GTSAM_VERSION_STRING "@GTSAM_VERSIO
