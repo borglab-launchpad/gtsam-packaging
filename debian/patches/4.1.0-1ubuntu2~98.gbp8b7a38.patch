@@ -5,18 +5,20 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~94.gbp5adfbd) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~98.gbp8b7a38) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @5adfbdc011f4b94bd95c9061a41b3c5d84dc1db3 **
+   ** SNAPSHOT build @8b7a3822ce6092956977b5ac24f06e108d1c0baa **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @f1904a24f0204f6ad2e7955a96740e28f0a4b6ae **
+   ** SNAPSHOT build @0296b301aba1732634641b869c63d63f3c426dc2 **
  .
    * modified changelog for distro focal
-   * commit of final snapshot version number update
  .
    [ Varun Agrawal ]
-   * wrap Symbol class and methods
+   * minor formatting of cmake file
+ .
+   [ Borglab Builder ]
+   * commit of final snapshot version number update
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -30,7 +32,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-28
+Last-Update: 2020-12-29
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -1380,6 +1382,72 @@ Last-Update: 2020-12-28
      print_padded(GTSAM_COMPILE_DEFINITIONS_PUBLIC_${build_type_toupper})
    endforeach()
  endfunction()
+--- gtsam-4.1.0.orig/cmake/GtsamTesting.cmake
++++ gtsam-4.1.0/cmake/GtsamTesting.cmake
+@@ -88,36 +88,36 @@ enable_testing()
+ 
+ option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
+ option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
+-	option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
++option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+ 
+-		# Add option for combining unit tests
+-		if(MSVC OR XCODE_VERSION)
+-			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+-		else()
+-			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+-		endif()
+-		mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+-
+-		# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+-		if(GTSAM_BUILD_TESTS)
+-			add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+-			# Also add alternative checks using valgrind.
+-			# We don't look for valgrind being installed in the system, since these
+-			# targets are not invoked unless directly instructed by the user.
+-			if (UNIX)
+-				# Run all tests using valgrind:
+-				add_custom_target(check_valgrind)
+-			endif()
+-
+-			# Add target to build tests without running
+-			add_custom_target(all.tests)
+-		endif()
++# Add option for combining unit tests
++if(MSVC OR XCODE_VERSION)
++	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
++else()
++	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
++endif()
++mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
++
++# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
++if(GTSAM_BUILD_TESTS)
++	add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
++	# Also add alternative checks using valgrind.
++	# We don't look for valgrind being installed in the system, since these
++	# targets are not invoked unless directly instructed by the user.
++	if (UNIX)
++		# Run all tests using valgrind:
++		add_custom_target(check_valgrind)
++	endif()
++
++	# Add target to build tests without running
++	add_custom_target(all.tests)
++endif()
+ 
+-		# Add examples target
+-		add_custom_target(examples)
++# Add examples target
++add_custom_target(examples)
+ 
+-		# Add timing target
+-		add_custom_target(timing)
++# Add timing target
++add_custom_target(timing)
+ 
+ 
+ # Implementations of this file's macros:
 --- /dev/null
 +++ gtsam-4.1.0/cmake/HandleAllocators.cmake
 @@ -0,0 +1,34 @@
