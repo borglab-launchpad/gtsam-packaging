@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~101.gbpbfa80d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~102.gbp1971fa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1971fa5b38a3a3f0bbcd27c033509fca8692ace8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bfa80dc3c57b573a6e3fc202d05b6d39cb8156cf **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Dec 2020 03:19:06 +0000
+  [ Ayush Baid ]
+  * Wrapping Cal3Bundler's prior and GeneralSFMFactor2
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Ayush Baid ]
+  * Adding Cal3DS2 prior factor and using template instead of typedefs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Dec 2020 03:13:27 +0000
 
 gtsam (4.1.0-1ubuntu2~100.gbp3e2a5a) focal; urgency=medium
 

@@ -5,20 +5,23 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~98.gbp8b7a38) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~102.gbp1971fa) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @8b7a3822ce6092956977b5ac24f06e108d1c0baa **
+   ** SNAPSHOT build @1971fa5b38a3a3f0bbcd27c033509fca8692ace8 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @0296b301aba1732634641b869c63d63f3c426dc2 **
+   ** SNAPSHOT build @bfa80dc3c57b573a6e3fc202d05b6d39cb8156cf **
  .
    * modified changelog for distro focal
  .
-   [ Varun Agrawal ]
-   * minor formatting of cmake file
+   [ Ayush Baid ]
+   * Wrapping Cal3Bundler's prior and GeneralSFMFactor2
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
+ .
+   [ Ayush Baid ]
+   * Adding Cal3DS2 prior factor and using template instead of typedefs
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -32,7 +35,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-29
+Last-Update: 2020-12-30
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -8686,7 +8689,7 @@ Last-Update: 2020-12-29
  
  #include <gtsam/nonlinear/PriorFactor.h>
 -template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
-+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
++template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
  virtual class PriorFactor : gtsam::NoiseModelFactor {
    PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
    T prior() const;
@@ -8709,7 +8712,7 @@ Last-Update: 2020-12-29
    static BEARING MeasureBearing(const POSE& pose, const POINT& point);
    static RANGE MeasureRange(const POSE& pose, const POINT& point);
    void print(string s) const;
-@@ -2698,8 +2663,8 @@ virtual class GeneralSFMFactor : gtsam::
+@@ -2698,10 +2663,10 @@ virtual class GeneralSFMFactor : gtsam::
    gtsam::Point2 measured() const;
  };
  typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
@@ -8718,8 +8721,11 @@ Last-Update: 2020-12-29
 +typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 +typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
  
- template<CALIBRATION = {gtsam::Cal3_S2}>
+-template<CALIBRATION = {gtsam::Cal3_S2}>
++template<CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler}>
  virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
+   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
+   gtsam::Point2 measured() const;
 @@ -2786,21 +2751,39 @@ virtual class EssentialMatrixFactor : gt
  };
  
