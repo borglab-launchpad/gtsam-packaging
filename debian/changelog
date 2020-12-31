@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~105.gbp7c318a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~106.gbpe70ebd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e70ebdc85563b5b725a32ea4869ca7d0d2408358 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7c318ad45e1ac88fd2b4b2906c052ced69dabd47 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Dec 2020 03:16:57 +0000
+  [ cttdev ]
+  * Adding BearingFactor3D to the wrapper definition.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Dec 2020 03:15:34 +0000
 
 gtsam (4.1.0-1ubuntu2~104.gbp98ed93) focal; urgency=medium
 
