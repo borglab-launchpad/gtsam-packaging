@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~109.gbpa4b8d2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~110.gbp731682) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7316820bb0c04df54e5fd60212ace619b863896d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a4b8d2d5f04c1022b1234e06c707a049a0c67249 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Dec 2020 03:18:57 +0000
+  [ Varun Agrawal ]
+  * Pose3 interpolateRt method (#647)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Jan 2021 03:14:57 +0000
 
 gtsam (4.1.0-1ubuntu2~108.gbpdbd75f) focal; urgency=medium
 

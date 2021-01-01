@@ -5,18 +5,18 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~106.gbpe70ebd) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~110.gbp731682) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @e70ebdc85563b5b725a32ea4869ca7d0d2408358 **
+   ** SNAPSHOT build @7316820bb0c04df54e5fd60212ace619b863896d **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @7c318ad45e1ac88fd2b4b2906c052ced69dabd47 **
+   ** SNAPSHOT build @a4b8d2d5f04c1022b1234e06c707a049a0c67249 **
  .
    * modified changelog for distro focal
    * commit of final snapshot version number update
  .
-   [ cttdev ]
-   * Adding BearingFactor3D to the wrapper definition.
+   [ Varun Agrawal ]
+   * Pose3 interpolateRt method (#647)
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -30,7 +30,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2020-12-31
+Last-Update: 2021-01-01
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -6379,7 +6379,33 @@ Last-Update: 2020-12-31
  }
 --- gtsam-4.1.0.orig/gtsam/geometry/Pose3.h
 +++ gtsam-4.1.0/gtsam/geometry/Pose3.h
-@@ -181,6 +181,18 @@ public:
+@@ -112,6 +112,25 @@ public:
+     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
+   }
+ 
++  /**
++   * Interpolate between two poses via individual rotation and translation
++   * interpolation.
++   *
++   * The default "interpolate" method defined in Lie.h minimizes the geodesic
++   * distance on the manifold, leading to a screw motion interpolation in
++   * Cartesian space, which might not be what is expected.
++   * In contrast, this method executes a straight line interpolation for the
++   * translation, while still using interpolate (aka "slerp") for the rotational
++   * component. This might be more intuitive in many applications.
++   *
++   * @param T End point of interpolation.
++   * @param t A value in [0, 1].
++   */
++  Pose3 interpolateRt(const Pose3& T, double t) const {
++    return Pose3(interpolate<Rot3>(R_, T.R_, t),
++                 interpolate<Point3>(t_, T.t_, t));
++  }
++
+   /// @}
+   /// @name Lie Group
+   /// @{
+@@ -181,6 +200,18 @@ public:
      static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = boost::none);
    };
  
@@ -6398,7 +6424,7 @@ Last-Update: 2020-12-31
    using LieGroup<Pose3, 6>::inverse; // version with derivative
  
    /**
-@@ -356,6 +368,9 @@ inline Matrix wedge<Pose3>(const Vector&
+@@ -356,6 +387,9 @@ inline Matrix wedge<Pose3>(const Vector&
    return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
  }
  
@@ -7818,7 +7844,41 @@ Last-Update: 2020-12-31
    }
  }
  
-@@ -1017,32 +1029,13 @@ TEST(Pose3, Create) {
+@@ -1004,6 +1016,33 @@ TEST(Pose3, TransformCovariance6) {
+ TEST(Pose3, interpolate) {
+   EXPECT(assert_equal(T2, interpolate(T2,T3, 0.0)));
+   EXPECT(assert_equal(T3, interpolate(T2,T3, 1.0)));
++
++  // Trivial example: start at origin and move to (1, 0, 0) while rotating pi/2
++  // about z-axis.
++  Pose3 start;
++  Pose3 end(Rot3::Rz(M_PI_2), Point3(1, 0, 0));
++  // This interpolation is easy to calculate by hand.
++  double t = 0.5;
++  Pose3 expected0(Rot3::Rz(M_PI_4), Point3(0.5, 0, 0));
++  EXPECT(assert_equal(expected0, start.interpolateRt(end, t)));
++
++  // Example from Peter Corke
++  // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
++  t = 0.0759;  // corresponds to the 10th element when calling `ctraj` in
++               // the video
++  Pose3 O;
++  Pose3 F(Rot3::Roll(0.6).compose(Rot3::Pitch(0.8)).compose(Rot3::Yaw(1.4)),
++          Point3(1, 2, 3));
++
++  // The expected answer matches the result presented in the video.
++  Pose3 expected1(interpolate(O.rotation(), F.rotation(), t),
++                  interpolate(O.translation(), F.translation(), t));
++  EXPECT(assert_equal(expected1, O.interpolateRt(F, t)));
++
++  // Non-trivial interpolation, translation value taken from output.
++  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t),
++                  interpolate(T2.translation(), T3.translation(), t));
++  EXPECT(assert_equal(expected2, T2.interpolateRt(T3, t)));
+ }
+ 
+ /* ************************************************************************* */
+@@ -1017,32 +1056,13 @@ TEST(Pose3, Create) {
  }
  
  /* ************************************************************************* */
