@@ -1,3 +1,11 @@
+gtsam (4.1.0-1ubuntu2~112.gbp3b2312) focal; urgency=medium
+
+  ** SNAPSHOT build @3b2312b6cdbccf233d4def98d146c5d4186dae8f **
+
+  * modified changelog for distro bionic
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Jan 2021 03:17:04 +0000
+
 gtsam (4.1.0-1ubuntu2~111.gbp58bd34) bionic; urgency=medium
 
   ** SNAPSHOT build @58bd34453e0b1c30f2f8262a163192af8e77c43d **
