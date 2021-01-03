@@ -5,18 +5,18 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~110.gbp731682) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~114.gbp5ddaab) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @7316820bb0c04df54e5fd60212ace619b863896d **
+   ** SNAPSHOT build @5ddaab127ad79560a1ce422a23f2cd8c3d7ba955 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @a4b8d2d5f04c1022b1234e06c707a049a0c67249 **
+   ** SNAPSHOT build @fddae24c211e02c8a1a17a51ec08531f3af21e15 **
  .
    * modified changelog for distro focal
    * commit of final snapshot version number update
  .
    [ Varun Agrawal ]
-   * Pose3 interpolateRt method (#647)
+   * remove build upload since it can't be used downstream
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -30,7 +30,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2021-01-01
+Last-Update: 2021-01-03
 
 --- gtsam-4.1.0.orig/.github/scripts/python.sh
 +++ gtsam-4.1.0/.github/scripts/python.sh
@@ -176,22 +176,16 @@ Last-Update: 2021-01-01
            fi
        - name: Check Boost version
          if: runner.os == 'Linux'
-@@ -75,4 +82,10 @@ jobs:
+@@ -75,4 +82,4 @@ jobs:
        - name: Build and Test (Linux)
          if: runner.os == 'Linux'
          run: |
 -          bash .github/scripts/unix.sh -t
 \ No newline at end of file
 +          bash .github/scripts/unix.sh -t
-+      - name: Upload build directory
-+        uses: actions/upload-artifact@v2
-+        if: matrix.build_type  == 'Release'
-+        with:
-+          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
-+          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/build-macos.yml
 +++ gtsam-4.1.0/.github/workflows/build-macos.yml
-@@ -35,17 +35,25 @@ jobs:
+@@ -35,17 +35,19 @@ jobs:
        - name: Install (macOS)
          if: runner.os == 'macOS'
          run: |
@@ -218,12 +212,6 @@ Last-Update: 2021-01-01
 -          bash .github/scripts/unix.sh -t
 \ No newline at end of file
 +          bash .github/scripts/unix.sh -t
-+      - name: Upload build directory
-+        uses: actions/upload-artifact@v2
-+        if: matrix.build_type == 'Release'
-+        with:
-+          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
-+          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/build-python.yml
 +++ gtsam-4.1.0/.github/workflows/build-python.yml
 @@ -12,7 +12,6 @@ jobs:
@@ -485,19 +473,13 @@ Last-Update: 2021-01-01
        - name: Build (Windows)
          if: runner.os == 'Windows'
          run: |
-@@ -72,4 +75,10 @@ jobs:
+@@ -72,4 +75,4 @@ jobs:
            cmake --build build --config ${{ matrix.build_type }} --target wrap
            cmake --build build --config ${{ matrix.build_type }} --target check.base
            cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
 -          cmake --build build --config ${{ matrix.build_type }} --target check.linear
 \ No newline at end of file
 +          cmake --build build --config ${{ matrix.build_type }} --target check.linear
-+      - name: Upload build directory
-+        uses: actions/upload-artifact@v2
-+        if: matrix.build_type == 'Release'
-+        with:
-+          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
-+          path: ${{ github.workspace }}/build/
 --- gtsam-4.1.0.orig/.github/workflows/trigger-python.yml
 +++ gtsam-4.1.0/.github/workflows/trigger-python.yml
 @@ -1,11 +1,11 @@
