@@ -2,8 +2,8 @@ import os
 import argparse
 import textwrap
 
-import interface_parser as parser
-import template_instantiator as instantiator
+import gtwrap.interface_parser as parser
+import gtwrap.template_instantiator as instantiator
 
 from functools import reduce
 from functools import partial
@@ -49,6 +49,8 @@ class MatlabWrapper(object):
     }
     """Methods that should not be wrapped directly"""
     whitelist = ['serializable', 'serialize']
+    """Methods that should be ignored"""
+    ignore_methods = ['pickle']
     """Datatypes that do not need to be checked in methods"""
     not_check_type = []
     """Data types that are primitive types"""
@@ -563,6 +565,8 @@ class MatlabWrapper(object):
         for method in methods:
             if method.name in self.whitelist:
                 continue
+            if method.name in self.ignore_methods:
+                continue
 
             comment += '%{name}({args})'.format(name=method.name, args=self._wrap_args(method.args))
 
@@ -587,7 +591,7 @@ class MatlabWrapper(object):
         file_name = self._wrapper_name() + '.cpp'
 
         wrapper_file = textwrap.dedent('''\
-            # include <wrap/matlab.h>
+            # include <gtwrap/matlab.h>
             # include <map>
         ''')
 
@@ -612,6 +616,9 @@ class MatlabWrapper(object):
         methods = self._group_methods(methods)
 
         for method in methods:
+            if method in self.ignore_methods:
+                continue
+
             if globals:
                 self._debug("[wrap_methods] wrapping: {}..{}={}".format(method[0].parent.name, method[0].name,
                                                                         type(method[0].parent.name)))
@@ -861,6 +868,8 @@ class MatlabWrapper(object):
             method_name = method[0].name
             if method_name in self.whitelist and method_name != 'serialize':
                 continue
+            if method_name in self.ignore_methods:
+                continue
 
             if method_name == 'serialize':
                 serialize[0] = True
@@ -931,6 +940,9 @@ class MatlabWrapper(object):
         for static_method in static_methods:
             format_name = list(static_method[0].name)
             format_name[0] = format_name[0].upper()
+
+            if static_method[0].name in self.ignore_methods:
+                continue
 
             method_text += textwrap.indent(textwrap.dedent('''\
                     function varargout = {name}(varargin)
@@ -1010,7 +1022,8 @@ class MatlabWrapper(object):
         file_name = self._clean_class_name(instantiated_class)
         namespace_file_name = namespace_name + file_name
 
-        if instantiated_class.cpp_class() in self.ignore_classes:
+        uninstantiated_name = "::".join(instantiated_class.namespaces()[1:]) + "::" + instantiated_class.name
+        if uninstantiated_name in self.ignore_classes:
             return None
 
         # Class comment
@@ -1463,7 +1476,7 @@ class MatlabWrapper(object):
         """Generate the c++ wrapper."""
         # Includes
         wrapper_file = textwrap.dedent('''\
-            #include <wrap/matlab.h>
+            #include <gtwrap/matlab.h>
             #include <map>\n
             #include <boost/archive/text_iarchive.hpp>
             #include <boost/archive/text_oarchive.hpp>
@@ -1472,7 +1485,16 @@ class MatlabWrapper(object):
 
         includes_list = sorted(list(self.includes.keys()), key=lambda include: include.header)
 
-        wrapper_file += reduce(lambda x, y: str(x) + '\n' + str(y), includes_list) + '\n'
+        # Check the number of includes.
+        # If no includes, do nothing, if 1 then just append newline.
+        # if more than one, concatenate them with newlines.
+        if len(includes_list) == 0:
+            pass
+        elif len(includes_list) == 1:
+            wrapper_file += (str(includes_list[0]) + '\n')
+        else:
+            wrapper_file += reduce(lambda x, y: str(x) + '\n' + str(y), includes_list)
+        wrapper_file += '\n'
 
         typedef_instances = '\n'
         typedef_collectors = ''
@@ -1518,7 +1540,11 @@ class MatlabWrapper(object):
         ptr_ctor_frag = ''
 
         for cls in self.classes:
-            if cls.cpp_class().strip() in self.ignore_classes:
+            uninstantiated_name = "::".join(cls.namespaces()[1:]) + "::" + cls.name
+            self._debug("Cls: {} -> {}".format(cls.name, uninstantiated_name))
+
+            if uninstantiated_name in self.ignore_classes:
+                self._debug("Ignoring: {} -> {}".format(cls.name, uninstantiated_name))
                 continue
 
             def _has_serialization(cls):
@@ -1666,7 +1692,7 @@ class MatlabWrapper(object):
         return self.content
 
 
-def _generate_content(cc_content, path, verbose=False):
+def generate_content(cc_content, path, verbose=False):
     """Generate files and folders from matlab wrapper content.
 
     Keyword arguments:
@@ -1698,7 +1724,7 @@ def _generate_content(cc_content, path, verbose=False):
             for sub_content in c:
                 import sys
                 _debug("sub object: {}".format(sub_content[1][0][0]))
-                _generate_content(sub_content[1], path_to_folder)
+                generate_content(sub_content[1], path_to_folder)
         elif type(c[1]) == list:
             path_to_folder = path + '/' + c[0]
 
@@ -1726,53 +1752,3 @@ def _generate_content(cc_content, path, verbose=False):
 
             with open(path_to_file, 'w') as f:
                 f.write(c[1])
-
-
-if __name__ == "__main__":
-    arg_parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg_parser.add_argument("--src", type=str, required=True, help="Input interface .h file.")
-    arg_parser.add_argument("--module_name", type=str, required=True, help="Name of the C++ class being wrapped.")
-    arg_parser.add_argument("--out", type=str, required=True, help="Name of the output folder.")
-    arg_parser.add_argument("--top_module_namespaces",
-                            type=str,
-                            default="",
-                            help="C++ namespace for the top module, e.g. `ns1::ns2::ns3`. "
-                                 "Only the content within this namespace and its sub-namespaces "
-                                 "will be wrapped. The content of this namespace will be available at "
-                                 "the top module level, and its sub-namespaces' in the submodules.\n"
-                                 "For example, `import <module_name>` gives you access to a Python "
-                                 "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`"
-                                 ", and `from <module_name> import ns4` gives you access to a Python "
-                                 "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ")
-    arg_parser.add_argument("--ignore",
-                            nargs='*',
-                            type=str,
-                            help="A space-separated list of classes to ignore. "
-                                 "Class names must include their full namespaces.")
-    args = arg_parser.parse_args()
-
-    top_module_namespaces = args.top_module_namespaces.split("::")
-    if top_module_namespaces[0]:
-        top_module_namespaces = [''] + top_module_namespaces
-
-    with open(args.src, 'r') as f:
-        content = f.read()
-
-    if not os.path.exists(args.src):
-        os.mkdir(args.src)
-
-    module = parser.Module.parseString(content)
-
-    instantiator.instantiate_namespace_inplace(module)
-
-    import sys
-
-    print("Ignoring classes: {}".format(args.ignore), file=sys.stderr)
-    wrapper = MatlabWrapper(module=module,
-                            module_name=args.module_name,
-                            top_module_namespace=top_module_namespaces,
-                            ignore_classes=args.ignore)
-
-    cc_content = wrapper.wrap()
-
-    _generate_content(cc_content, args.out)
