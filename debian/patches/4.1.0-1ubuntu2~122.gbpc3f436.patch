@@ -5,512 +5,18 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~118.gbp5997d8) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~122.gbpc3f436) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @5997d836a704c81a0de9bb7f1c8f55fa4c52d4bd **
+   ** SNAPSHOT build @c3f43601e06165ba8f26982415bb9ab3c3f8043a **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @cd7189004dfd92a80b2b865cea8db5294de0459a **
+   ** SNAPSHOT build @dbd3ce30d6abc208a5eed9d5ec36061e4aed7830 **
  .
    * modified changelog for distro focal
- .
-   [ David ]
-   * Add unit test for oriented plane 3 factor jacobian
-   * Fix OrientedPlane3Factor jacobian using numericalDerivative
-   * Address Frank's comments and clean up changes
-   * Update style and switch to errorVector()
-   * Fix all unit tests. Only remaining item is the analytical Jacobian for Unit3::localCoordinates.
- .
-   [ lcarlone ]
-   * adding robust cost function - version 1
-   * robust noise in place - test fails due to non-isotropic covariance?
-   * solving issue with robust model
-   * attempting robustification in Frobenius factor
-   * added nice unit test
-   * improved test
-   * added check and unit test
-   * added control over minimum rank in ShonanAveraging example, and resolved hard-coded sigma in FrobeniusFactor
-   * reverted changes to cproject and language settings
-   * fixed typo
-   * reverted changes to cproject
- .
-   [ jingwuOUO ]
-   * Add acc power method in Alg6
-   * Completed and tested power method with unittest
-   * Added PowerMinimumEigenValue method and unittest.
-   * feat: Add  Best Heavy Ball alg  to set beta
-   * Refactor power and accelerated method
- .
-   [ Frank dellaert ]
-   * Fixed some warnings
-   * Printing now transpose
-   * Simplified evaluateError
-   * Use keyFormatter
-   * Added unit test for issue 561
- .
-   [ jingwuOUO ]
-   * Reformat code.
-   * Small fix
-   * Revise according to Frank and David's comments
-   * Correct unittest input error
-   * Added more detailed documentation
-   * Fixed not solve errors and detailed documentation
-   * Revised as David's second review
-   * Refined unittest
-   * Delete forcing compare eigenvector in unittest
-   * Revised documentation
-   * Fixed forcing comparing eigenvector.
- .
-   [ Varun Agrawal ]
-   * Roustify BinaryMeasurements in a functional way, plus formatting
-   * Remove goto, update docs, formatting
-   * delete old, unused file
-   * pass in params to optimizer
- .
-   [ jingwuOUO ]
-   * Fixed doxygen
- .
-   [ Frank dellaert ]
-   * Initial design
- .
-   [ lcarlone ]
-   * starting to create test and code for gncParams
-   * added equals in NonlinearOptimizerParams
-   * params parsed correctly
-   * added gnc loop
-   * now we have very cool tests!
-   * 2 tests to go
-   * simplified small test to make it more understandable
-   * 1 test to go
-   * stuck on conversion of noise model
-   * finally I have a way to properly change the noise model!
-   * working on make graph
-   * new constructor test which gets rid of robust loss now passes!
-   * yay! only the final monster to go!
-   * added verbosity
-   * ladies and gents... GNC!
-   * added functionality to fix weights
-   * correct formatting
-   * done - PGO works like a charm!
- .
-   [ Varun Agrawal ]
-   * Removed unnecessary copy constructor and robust noise model is caller's responsibility
-   * throw runtime errors and explicitly form robust noise model
-   * makeNoiseModelRobust assumes responsibility for robustifying noise models
-   * use goto flow
-   * formatting
-   * fix tests
-   * Don't throw error for Kappa and test parameter print
- .
-   [ jingwuOUO ]
-   * Added dense matrix test case in power/acc
- .
-   [ Varun Agrawal ]
-   * mark getters as const
-   * Helper method to robustify measurements
-   * throw error if robust model used but not specified in parameters
- .
-   [ lcarlone ]
-   * moved class to .h
-   * added comments
-   * fixed typo
-   * added more explanation on throw
- .
-   [ Varun Agrawal ]
-   * added flag to enable optimality certification, some formatting
-   * correct flag checking
- .
-   [ jingnanshi ]
-   * fix comment
- .
-   [ Varun Agrawal ]
-   * formatting and small fixes
- .
-   [ jingnanshi ]
-   * TLS wip
-   * tls done except unit tests
-   * minor fix
-   * fix scoping
-   * mu initialization test & minor formatting fixes
-   * mu update test
-   * correctly check relative difference between mu valus at consecutive iterations
-   * test fix
-   * more unit tests
- .
-   [ Russell Buchanan ]
-   * Adds unit test for imu preintegration of a single step
- .
-   [ lcarlone ]
-   * fixed small typos
- .
-   [ jingwuOUO ]
-   * Added the example graph in powerMethodExample.h
-   * Refined reference documentation
-   * Make purturb static
- .
-   [ Varun Agrawal ]
-   * refactored code for ImuMeasurements
-   * refactored code for testing ImuPreintegration with impact
-   * add simulation data
-   * save time in CSV, formatting
- .
-   [ lcarlone ]
-   * templating on params is still problematic
-   * finally fixed the typedef
-   * fixed templating, added a strict unit test on inlier threshold
-   * made function name less ambiguous, added more comments on inlierThreshold
- .
-   [ jingnanshi ]
-   * Fix TLS convergence check
-   * update function name
-   * fix test
- .
-   [ lcarlone ]
-   * - fixed stopping conditions - handled degenerate case in mu initialization - set TLS as default - added more unit tests
- .
-   [ jingnanshi ]
-   * minor fixes
- .
-   [ lcarlone ]
-   * moved GncParams to separate file, addressing comments by Frank, 1/n
-   * renamed enum
-   * addressed all except 2 comments by Frank. waiting for inputs on the 2 outstanding issues
-   * moved gncLossType outside params
-   * addressed final comments by Frank
- .
-   [ Ayush Baid ]
-   * adding serialization and other functions to enable testing
-   * adding track serialization and testable trait
-   * improving formatting
-   * fixing variable names and comments
-   * adding serialization functions to wrapper
- .
-   [ Borglab Builder ]
    * commit of final snapshot version number update
  .
-   [ Ayush Baid ]
-   * fixing xml serialization issues
-   * reverting SfmTrack to struct
-   * printing out the 3d point
-   * adding equals function to wrapper
-   * adding inline comment for round trip
-   * Adding serialization support to be used for GT-SFM (#650)
- .
    [ Varun Agrawal ]
-   * documentation for compiling on windows
-   * improvements to windows doc
-   * Squashed 'wrap/' changes from dfa624e77..09f8bbf71
-   * updates to Cmake to use the new wrap package
-   * updated python setup files so that example data is loaded correctly
-   * more precise python version control in CI
-   * Revert "more precise python version control in CI"
- .
-   [ Frank Dellaert ]
-   * add virtual constructor
-   * Removed reference for iterating over values. Also used auto where I could, when changing.
- .
-   [ Varun Agrawal ]
-   * fix metis based warnings in CMake and compiling
-   * add std namespacing
-   * fix warnings for vectors and matrices
-   * verbose printing of exceptions
-   * remove verbose flag and print exception to std::cerr
-   * cleanly initialize matrices in test
-   * remove exception print, add TODO
- .
-   [ Ayush Baid ]
-   * adding default color values to fix equality check
- .
-   [ John Lambert ]
-   * make r,g,b part of constructor w/ default values
-   * add getter for rgb
-   * make getter const
- .
-   [ Varun Agrawal ]
-   * use older form of CMake install
-   * add docs for cmake update
-   * follow correct doxygen format
-   * Squashed 'wrap/' changes from 09f8bbf71..186ed2c79
-   * Squashed 'wrap/' changes from 186ed2c79..85d34351c
- .
-   [ David ]
-   * Add getters to line3
- .
-   [ John Lambert ]
-   * add robust shonan updates to python wrapper
- .
-   [ RamadanAhmed ]
-   * Fix GTSAM_EXPORT for some classes and function
- .
-   [ Varun Agrawal ]
-   * added FunctorizedFactor2
- .
-   [ Toni ]
-   * Split .h/.cpp, use const& (WIP)
- .
-   [ Jose-Luis Blanco Claraco ]
-   * CMake scripts compatible with gtsam as git submodule
- .
-   [ Ayush Baid ]
-   * changing robust noise model to Gaussian
- .
-   [ Toni ]
-   * Move example to gtsam_unstable
-   * Fix formatting
-   * Remove gtsam_unstable lib from examples
-   * Fix formatting
- .
-   [ Gerry Chen ]
-   * Mandy+Fan's original code for converting sparse matrices to Eigen format
-   * merge Mandy + Fan's sparseJacobian unit test additions
-   * organize/isolate sparseEigen functionality
-   * fix off-by-one bug
-   * cleanup
- .
-   [ jingwuOUO ]
-   * Set estimateBeta() as optional
- .
-   [ Russell Buchanan ]
-   * clean up
- .
-   [ Gerry Chen ]
-   * rename matrix type from `SpMat` to `SparseEigen`
-   * roll back some cosmetic changes to minimize the diff
-   * SparseEigen docstring
-   * typo: `expected` changed to `expectedMatlab`
- .
-   [ David Wisth ]
-   * Add a simplifed version of the minimal failing example
- .
-   [ Gerry Chen ]
-   * timing sparse eigen
-   * minor efficiency modifications
- .
-   [ Varun Agrawal ]
-   * use streams instead of printf
-   * use of passed in stream for print capture
-   * stream printing for Pose2
-   * add BearingRange measured to wrapper
-   * add override and formatting
-   * remove cout statements from testImuPreintegration tests
- .
-   [ David Wisth ]
-   * Add hessian calculation
- .
-   [ Gerry Chen ]
-   * add generic optional parameters to sparseJacobian Also, the unit test changed due to a 0 entry that was previously wrongly included in the b-column of the sparse representation.
-   * more generic sparseJacobianInPlace function
-   * eliminate copy/pasta from SparseEigen with generic version of sparseJacobian
-   * populate sparse matrix with `insert` rather than `setFromTriplets` About 5% speed improvement.
- .
-   [ Varun Agrawal ]
-   * upgrade minimum required Boost version to 1.67.
-   * Revert "upgrade minimum required Boost version to 1.67."
-   * add known issues section with info about march=native
- .
-   [ Gerry Chen ]
-   * move SparseMatrixBoostTriplets typedef to gfg
-   * remove templating while maintaining efficiency Templating still used in cpp file for generic-ness, but not exposed anymore
-   * revert Matrix.h
-   * formatting
- .
-   [ Frank Dellaert ]
-   * use transform rather than deprecated static function
-   * Got rid of extra keys
-   * Got rid of static versions of methods
-   * Cleaned up derivative code
-   * Cleanup
- .
-   [ Toni ]
-   * Fix can be marked override warning
- .
-   [ Varun Agrawal ]
-   * make non-editable CMake variables as INTERNAL
-   * set TBB default to Release unless TBB_USE_DEBUG_BUILD is set
- .
-   [ lcarlone ]
-   * changed barcsq to be a vector, such that the user can provide a bound for each factor
-   * trying to include chi2
-   * working unit tests: added chi2
-   * done with new default noise thresholds!
- .
-   [ Varun Agrawal ]
-   * fix bug in Pose2 print
-   * use standard function to check for empty string
- .
-   [ Gerry Chen ]
-   * remove unnecessary function overloads and typedefs
-   * remove InPlace jacobian from .h file
-   * fix comment and remove whitespace diff
-   * disambiguate double template >>
-   * replace sparseJacobian with "fast" version
-   * auto and reserve fewer
- .
-   [ Peter Mullen ]
-   * type in test hidden by duplicate test values
- .
-   [ Toni ]
-   * Fix override warnings: modernize-use-override
- .
-   [ Frank Dellaert ]
-   * cleanup
- .
-   [ lcarlone ]
-   * improved comments
-   * removed commented line
- .
-   [ jingnanshi ]
-   * use std namespace qualifier
- .
-   [ Frank Dellaert ]
-   * Comments
- .
-   [ Toni ]
-   * Fix issue #689
-   * Remove unnecessary include eigen3
- .
-   [ Jose Luis Blanco Claraco ]
-   * Avoid target collision if gtsam used as submodule
- .
-   [ Mostafa ]
-   * Update LieGroups.lyx
-   * Generate LieGroups.pdf
- .
-   [ David Wisth ]
-   * Add new oriented plane 3 factors with local linearisation point
-   * Update print method of OrientedPlane3Factor
-   * remove deprecated Unit3::error() which is replaced by Unit3::errorVector()
-   * Update documentation on new factor
- .
-   [ Fan Jiang ]
-   * Fix GTSAM MATLAB
-   * Squashed 'wrap/' changes from 85d34351c..b28b3570d
-   * Use latest Boost
- .
-   [ David Wisth ]
-   * Revert "remove deprecated Unit3::error() which is replaced by Unit3::errorVector()"
-   * remove the error() function from OrientedPlane3 (it had incorrect derivatives)
-   * Tidy up comments and use cpplint
-   * small tidy and fix unit tests
- .
-   [ John Lambert ]
-   * Start moving Sim(3) functionality into Python wrapper
- .
-   [ David Wisth ]
-   * Add inline comments on commented-out unit tests
- .
-   [ Asa Hammond ]
-   * Initial implimentation of a Constant Velocity Constraint between NavStates
-   * add gtsam namespace
-   * bind a lambda instead of a static function
- .
-   [ John Lambert ]
-   * add sim3 Point3 align to wrapper
-   * Fix typo in using -> typedef conversion
-   * move sim3 to stable version
-   * move unit test out of gtsam unstable
-   * move typedef to header file
-   * add Align() for pose3pairs
- .
-   [ Asa Hammond ]
-   * Add docstrings, use update() to build predicted state and build the error calc
-   * remove AAA style for Dellaert style on simpler types
-   * rename some vars for consistency
-   * static const for placeholder vars
-   * fixup noisemodel so its correct dimension
-   * cleanup some cruft, add license text
-   * corrected license header
- .
-   [ John Lambert ]
-   * add standard interface for Sim3 in wrapper
- .
-   [ Asa Hammond ]
-   * test cleanup
- .
-   [ John Lambert ]
-   * add interface for transformFrom
-   * PointPairs to Point3Pairs, and move to Point3.h
-   * move PointPairs to Point3.h
-   * update the docstring
-   * Rename PointPairs to Point3Pairs everywhere per popular demand
-   * add a unit test for line case
-   * add another unit test, but this one fails
-   * move Point3Pairs to Point3.h part of gtsam.i
-   * fix notation
-   * fix bugs in Karcher mean
-   * switch typedef to using per popular request
-   * update author list
- .
-   [ Akshay Krishnan ]
-   * unit test + fix segfault
- .
-   [ akrishnan86 ]
-   * formatting changes
- .
-   [ John Lambert ]
-   * Use brew's boost, instead of Fan's version
-   * fix notations
-   * clean up Sim(3) notations
-   * update test notation to have just 1 world frame, and fix typo in abPointPairs
-   * dont conflate notation on aTb
- .
-   [ Ayush Baid ]
-   * Squashed 'wrap/' changes from b28b3570d..d37b8a972
-   * Squashed 'wrap/' changes from d37b8a972..10e1efd6f
-   * enabling markers and testing pickle roundtrip for few classes
- .
-   [ Varun Agrawal ]
-   * offload matlab wrapping to the wrap project
-   * Make matlab wrapping rely completely on the wrap project
- .
-   [ John Lambert ]
-   * improve docstring
-   * improve docstring
- .
-   [ Varun Agrawal ]
-   * update Matlab CMakeLists.txt to use the wrapper
-   * delete example project since it is now its own git template
-   * Squashed 'wrap/' changes from b28b3570d..b0eb968f2
- .
-   [ John Lambert ]
-   * add const on Rot3
-   * improve docstring
-   * reformat with black
-   * use different brace indent format
- .
-   [ Varun Agrawal ]
-   * Fix Matlab tests and add saveGraph method to GaussianBayesNet
- .
-   [ Asa Hammond ]
-   * Avoid derivative calcs if they aren't asked for
-   * Move to fixed size matrix for derivative calculations
- .
-   [ John Lambert ]
-   * temporarily turn off Python + tbb in CI because of OOM
- .
-   [ Frank Dellaert ]
-   * fixed inhertance
-   * Added explicit header as suggested in issue #634
- .
-   [ Varun Agrawal ]
-   * clean up the CMake
-   * Squashed 'wrap/' changes from b0eb968f2..d19cda546
-   * templated return types are now supported
-   * Move wrapper documentation to the wrap project
-   * fix holder_type typo
-   * make ignore list consistent across Python and Matlab
-   * Squashed 'wrap/' changes from d19cda546..91f3835a8
-   * Squashed 'wrap/' changes from 91f3835a8..aae9b4605
-   * undo ignore updates, all tests now pass
- .
-   [ Jose Luis Blanco Claraco ]
-   * fix missing verbosityLMTranslator case
- .
-   [ Varun Agrawal ]
-   * fix the Similarity3 export declarations and wrapper
-   * Fix CI with separate boost install
-   * temporarily added required check
-   * explicitly add python version
+   * fix numpy deprecation warnings
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -524,7 +30,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2021-03-21
+Last-Update: 2021-03-25
 
 --- /dev/null
 +++ gtsam-4.1.0/.github/scripts/boost.sh
@@ -24970,7 +24476,7 @@ Last-Update: 2021-03-21
  from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                     ConstantTwistScenario, ImuFactor, NonlinearFactorGraph,
                     PinholeCameraCal3_S2, Point3, Pose3,
-@@ -18,7 +20,6 @@ from gtsam import (ISAM2, BetweenFactorC
+@@ -18,12 +20,11 @@ from gtsam import (ISAM2, BetweenFactorC
                     PriorFactorVector, Rot3, Values)
  from gtsam.symbol_shorthand import B, V, X
  from gtsam.utils import plot
@@ -24978,6 +24484,12 @@ Last-Update: 2021-03-21
  
  
  def vector3(x, y, z):
+     """Create 3d double numpy array."""
+-    return np.array([x, y, z], dtype=np.float)
++    return np.array([x, y, z], dtype=float)
+ 
+ 
+ g = 9.81
 @@ -58,7 +59,6 @@ def get_camera(radius):
  
  def get_scenario(radius, pose_0, angular_velocity, delta_t):
@@ -24986,8 +24498,107 @@ Last-Update: 2021-03-21
      angular_velocity_vector = vector3(0, -angular_velocity, 0)
      linear_velocity_vector = vector3(radius * angular_velocity, 0, 0)
      scenario = ConstantTwistScenario(
+--- gtsam-4.1.0.orig/python/gtsam/examples/PlanarManipulatorExample.py
++++ gtsam-4.1.0/python/gtsam/examples/PlanarManipulatorExample.py
+@@ -29,7 +29,7 @@ from gtsam.utils.test_case import GtsamT
+ 
+ def vector3(x, y, z):
+     """Create 3D double numpy array."""
+-    return np.array([x, y, z], dtype=np.float)
++    return np.array([x, y, z], dtype=float)
+ 
+ 
+ def compose(*poses):
+@@ -94,7 +94,7 @@ class ThreeLinkArm(object):
+                          [-self.L1*math.sin(q[0]) - self.L2*math.sin(a)-self.L3*math.sin(b),
+                           -self.L1*math.sin(a)-self.L3*math.sin(b),
+                           - self.L3*math.sin(b)],
+-                         [1, 1, 1]], np.float)
++                         [1, 1, 1]], float)
+ 
+     def poe(self, q):
+         """ Forward kinematics.
+@@ -230,12 +230,12 @@ class TestPose2SLAMExample(GtsamTestCase
+     def test_jacobian(self):
+         """Test Jacobian calculation."""
+         # at rest
+-        expected = np.array([[-9.5, -6, -2.5], [0, 0, 0], [1, 1, 1]], np.float)
++        expected = np.array([[-9.5, -6, -2.5], [0, 0, 0], [1, 1, 1]], float)
+         J = self.arm.jacobian(Q0)
+         np.testing.assert_array_almost_equal(J, expected)
+ 
+         # at -90, 90, 0
+-        expected = np.array([[-6, -6, -2.5], [3.5, 0, 0], [1, 1, 1]], np.float)
++        expected = np.array([[-6, -6, -2.5], [3.5, 0, 0], [1, 1, 1]], float)
+         J = self.arm.jacobian(Q2)
+         np.testing.assert_array_almost_equal(J, expected)
+ 
+@@ -280,13 +280,13 @@ class TestPose2SLAMExample(GtsamTestCase
+     def test_manipulator_jacobian(self):
+         """Test Jacobian calculation."""
+         # at rest
+-        expected = np.array([[0, 3.5, 7], [0, 0, 0], [1, 1, 1]], np.float)
++        expected = np.array([[0, 3.5, 7], [0, 0, 0], [1, 1, 1]], float)
+         J = self.arm.manipulator_jacobian(Q0)
+         np.testing.assert_array_almost_equal(J, expected)
+ 
+         # at -90, 90, 0
+         expected = np.array(
+-            [[0, 0, 3.5], [0, -3.5, -3.5], [1, 1, 1]], np.float)
++            [[0, 0, 3.5], [0, -3.5, -3.5], [1, 1, 1]], float)
+         J = self.arm.manipulator_jacobian(Q2)
+         np.testing.assert_array_almost_equal(J, expected)
+ 
+--- gtsam-4.1.0.orig/python/gtsam/examples/Pose2SLAMExample.py
++++ gtsam-4.1.0/python/gtsam/examples/Pose2SLAMExample.py
+@@ -25,7 +25,7 @@ import gtsam.utils.plot as gtsam_plot
+ 
+ def vector3(x, y, z):
+     """Create 3d double numpy array."""
+-    return np.array([x, y, z], dtype=np.float)
++    return np.array([x, y, z], dtype=float)
+ 
+ # Create noise models
+ PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector3(0.3, 0.3, 0.1))
+--- gtsam-4.1.0.orig/python/gtsam/examples/Pose2SLAMExample_g2o.py
++++ gtsam-4.1.0/python/gtsam/examples/Pose2SLAMExample_g2o.py
+@@ -23,7 +23,7 @@ from gtsam.utils import plot
+ 
+ def vector3(x, y, z):
+     """Create 3d double numpy array."""
+-    return np.array([x, y, z], dtype=np.float)
++    return np.array([x, y, z], dtype=float)
+ 
+ 
+ parser = argparse.ArgumentParser(
+--- gtsam-4.1.0.orig/python/gtsam/examples/Pose3SLAMExample_g2o.py
++++ gtsam-4.1.0/python/gtsam/examples/Pose3SLAMExample_g2o.py
+@@ -19,7 +19,7 @@ from gtsam.utils import plot
+ 
+ def vector6(x, y, z, a, b, c):
+     """Create 6d double numpy array."""
+-    return np.array([x, y, z, a, b, c], dtype=np.float)
++    return np.array([x, y, z, a, b, c], dtype=float)
+ 
+ 
+ parser = argparse.ArgumentParser(
 --- gtsam-4.1.0.orig/python/gtsam/examples/PreintegrationExample.py
 +++ gtsam-4.1.0/python/gtsam/examples/PreintegrationExample.py
+@@ -29,11 +29,11 @@ class PreintegrationExample(object):
+         kGyroSigma = math.radians(0.5) / 60  # 0.5 degree ARW
+         kAccelSigma = 0.1 / 60  # 10 cm VRW
+         params.setGyroscopeCovariance(
+-            kGyroSigma ** 2 * np.identity(3, np.float))
++            kGyroSigma ** 2 * np.identity(3, float))
+         params.setAccelerometerCovariance(
+-            kAccelSigma ** 2 * np.identity(3, np.float))
++            kAccelSigma ** 2 * np.identity(3, float))
+         params.setIntegrationCovariance(
+-            0.0000001 ** 2 * np.identity(3, np.float))
++            0.0000001 ** 2 * np.identity(3, float))
+         return params
+ 
+     def __init__(self, twist=None, bias=None, dt=1e-2):
 @@ -111,7 +111,7 @@ class PreintegrationExample(object):
      def plotGroundTruthPose(self, t, scale=0.3, time_interval=0.01):
          # plot ground truth pose, as well as prediction from integrated IMU measurements
@@ -25409,6 +25020,42 @@ Last-Update: 2021-03-21
  
  if __name__ == "__main__":
      unittest.main()
+--- gtsam-4.1.0.orig/python/gtsam/tests/test_SO4.py
++++ gtsam-4.1.0/python/gtsam/tests/test_SO4.py
+@@ -32,13 +32,13 @@ class TestSO4(unittest.TestCase):
+ 
+     def test_retract(self):
+         """Test retraction to manifold."""
+-        v = np.zeros((6,), np.float)
++        v = np.zeros((6,), float)
+         actual = I4.retract(v)
+         self.assertTrue(actual.equals(I4, 1e-9))
+ 
+     def test_local(self):
+         """Check localCoordinates for trivial case."""
+-        v0 = np.zeros((6,), np.float)
++        v0 = np.zeros((6,), float)
+         actual = I4.localCoordinates(I4)
+         np.testing.assert_array_almost_equal(actual, v0)
+ 
+--- gtsam-4.1.0.orig/python/gtsam/tests/test_SOn.py
++++ gtsam-4.1.0/python/gtsam/tests/test_SOn.py
+@@ -32,13 +32,13 @@ class TestSO4(unittest.TestCase):
+ 
+     def test_retract(self):
+         """Test retraction to manifold."""
+-        v = np.zeros((6,), np.float)
++        v = np.zeros((6,), float)
+         actual = I4.retract(v)
+         self.assertTrue(actual.equals(I4, 1e-9))
+ 
+     def test_local(self):
+         """Check localCoordinates for trivial case."""
+-        v0 = np.zeros((6,), np.float)
++        v0 = np.zeros((6,), float)
+         actual = I4.localCoordinates(I4)
+         np.testing.assert_array_almost_equal(actual, v0)
+ 
 --- /dev/null
 +++ gtsam-4.1.0/python/gtsam/tests/test_SfmData.py
 @@ -0,0 +1,79 @@
