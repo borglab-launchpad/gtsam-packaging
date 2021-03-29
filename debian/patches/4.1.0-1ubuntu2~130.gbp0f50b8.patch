@@ -5,30 +5,30 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~126.gbp3ff01b) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~130.gbp0f50b8) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @3ff01b874cadfbcfa812d82847a8e80ce73654e6 **
+   ** SNAPSHOT build @0f50b8ea7761b512fcf59b7cccef9b4e25a990da **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @996bbdecbb847dbc009f48c266d0c37bb720a95d **
+   ** SNAPSHOT build @a5efe442b16bcf8677383f0766a73a115c0777c7 **
  .
    * modified changelog for distro focal
  .
-   [ Varun Agrawal ]
-   * more specific version of python to test against
-   * Squashed 'wrap/' changes from aae9b4605..3eff76f60
-   * Squashed 'wrap/' changes from 3eff76f60..548e61b1f
-   * added CMake variable to set the matlab.h include
+   [ Milo Knowles ]
+   * Three examples of failing PartialPriorFactor<Pose3> Jacobians
+   * Add successful unit test for identity pose
+   * Correct Jacobian in PartialPriorFactor, modify derived factors for compatibility
+   * Change mask to indices and update factor docstring
+   * Prefer localCoordinates over logmap
+   * Fix x/y mismatch in unit tests
+   * Add constructor tests and extend tests to Pose2
+   * Switch to cleaner T::Logmap
+   * Fix incorrect Vector dimension that was causing CI failures
+   * Add LocalCoordinates() to ProductLieGroup and remove unnecessary <Eigen/Core> include to reduce compile memory
+   * Fix Rot3::LocalCoordinates runtime error when using Cayley map
  .
    [ Borglab Builder ]
    * commit of final snapshot version number update
- .
-   [ Varun Agrawal ]
-   * Squashed 'wrap/' changes from 548e61b1f..29628426d
-   * switch back to simple python3
-   * fix number of arguments to matlab_wrap for unstable
-   * Squashed 'wrap/' changes from 29628426d..9a467794e
-   * Squashed 'wrap/' changes from 9a467794e..96ccdfd0b
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -42,7 +42,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2021-03-27
+Last-Update: 2021-03-29
 
 --- /dev/null
 +++ gtsam-4.1.0/.github/scripts/boost.sh
@@ -6064,6 +6064,18 @@ Last-Update: 2021-03-27
 +  /// Return true if allocated, false if default constructor was used
    operator bool() const {
      return pointer_!=nullptr;
+   }
+--- gtsam-4.1.0.orig/gtsam/base/ProductLieGroup.h
++++ gtsam-4.1.0/gtsam/base/ProductLieGroup.h
+@@ -161,6 +161,9 @@ public:
+     }
+     return v;
+   }
++  static TangentVector LocalCoordinates(const ProductLieGroup& p, ChartJacobian Hp = boost::none) {
++    return Logmap(p, Hp);
++  }
+   ProductLieGroup expmap(const TangentVector& v) const {
+     return compose(ProductLieGroup::Expmap(v));
    }
 --- gtsam-4.1.0.orig/gtsam/base/Testable.h
 +++ gtsam-4.1.0/gtsam/base/Testable.h
@@ -21048,6 +21060,110 @@ Last-Update: 2021-03-27
  
      /// @}
      /// @name Standard Interface
+--- gtsam-4.1.0.orig/gtsam_unstable/dynamics/DynamicsPriors.h
++++ gtsam-4.1.0/gtsam_unstable/dynamics/DynamicsPriors.h
+@@ -9,20 +9,28 @@
+ 
+ #pragma once
+ 
+-#include <gtsam_unstable/slam/PartialPriorFactor.h>
+-
+ #include <gtsam_unstable/dynamics/PoseRTV.h>
++#include <gtsam_unstable/slam/PartialPriorFactor.h>
+ 
+ namespace gtsam {
+ 
++// Indices of relevant variables in the PoseRTV tangent vector:
++// [ rx ry rz tx ty tz vx vy vz ]
++static const size_t kRollIndex = 0;
++static const size_t kPitchIndex = 1;
++static const size_t kHeightIndex = 5;
++static const size_t kVelocityZIndex = 8;
++static const std::vector<size_t> kVelocityIndices = { 6, 7, 8 };
++
+ /**
+- * Forces the value of the height in a PoseRTV to a specific value
++ * Forces the value of the height (z) in a PoseRTV to a specific value.
+  * Dim: 1
+  */
+ struct DHeightPrior : public gtsam::PartialPriorFactor<PoseRTV> {
+   typedef gtsam::PartialPriorFactor<PoseRTV> Base;
++
+   DHeightPrior(Key key, double height, const gtsam::SharedNoiseModel& model)
+-  : Base(key, 5, height, model)  {  }
++  : Base(key, kHeightIndex, height, model)  {}
+ };
+ 
+ /**
+@@ -35,11 +43,11 @@ struct DRollPrior : public gtsam::Partia
+ 
+   /** allows for explicit roll parameterization - uses canonical coordinate */
+   DRollPrior(Key key, double wx, const gtsam::SharedNoiseModel& model)
+-  : Base(key, 0, wx, model)  {  }
++      : Base(key, kRollIndex, wx, model)  {  }
+ 
+   /** Forces roll to zero */
+   DRollPrior(Key key, const gtsam::SharedNoiseModel& model)
+-  : Base(key, 0, 0.0, model)  {  }
++      : Base(key, kRollIndex, 0.0, model)  {  }
+ };
+ 
+ /**
+@@ -49,17 +57,9 @@ struct DRollPrior : public gtsam::Partia
+  */
+ struct VelocityPrior : public gtsam::PartialPriorFactor<PoseRTV> {
+   typedef gtsam::PartialPriorFactor<PoseRTV> Base;
++
+   VelocityPrior(Key key, const gtsam::Vector& vel, const gtsam::SharedNoiseModel& model)
+-  : Base(key, model) {
+-    this->prior_ = vel;
+-    assert(vel.size() == 3);
+-    this->mask_.resize(3);
+-    this->mask_[0] = 6;
+-    this->mask_[1] = 7;
+-    this->mask_[2] = 8;
+-    this->H_ = Matrix::Zero(3, 9);
+-    this->fillH();
+-  }
++      : Base(key, kVelocityIndices, vel, model) {}
+ };
+ 
+ /**
+@@ -74,31 +74,15 @@ struct DGroundConstraint : public gtsam:
+    * Primary constructor allows for variable height of the "floor"
+    */
+   DGroundConstraint(Key key, double height, const gtsam::SharedNoiseModel& model)
+-  : Base(key, model) {
+-    this->prior_ = Vector::Unit(4,0)*height; // [z, vz, roll, pitch]
+-    this->mask_.resize(4);
+-    this->mask_[0] = 5; // z = height
+-    this->mask_[1] = 8; // vz
+-    this->mask_[2] = 0; // roll
+-    this->mask_[3] = 1; // pitch
+-    this->H_ = Matrix::Zero(3, 9);
+-    this->fillH();
+-  }
++      : Base(key, { kHeightIndex, kVelocityZIndex, kRollIndex, kPitchIndex },
++             Vector::Unit(4, 0)*height, model) {}
+ 
+   /**
+    * Fully specify vector - use only for debugging
+    */
+   DGroundConstraint(Key key, const Vector& constraint, const gtsam::SharedNoiseModel& model)
+-  : Base(key, model) {
++  : Base(key, { kHeightIndex, kVelocityZIndex, kRollIndex, kPitchIndex }, constraint, model) {
+     assert(constraint.size() == 4);
+-    this->prior_ = constraint; // [z, vz, roll, pitch]
+-    this->mask_.resize(4);
+-    this->mask_[0] = 5; // z = height
+-    this->mask_[1] = 8; // vz
+-    this->mask_[2] = 0; // roll
+-    this->mask_[3] = 1; // pitch
+-    this->H_ = Matrix::Zero(3, 9);
+-    this->fillH();
+   }
+ };
+ 
 --- gtsam-4.1.0.orig/gtsam_unstable/dynamics/FullIMUFactor.h
 +++ gtsam-4.1.0/gtsam_unstable/dynamics/FullIMUFactor.h
 @@ -48,7 +48,7 @@ public:
@@ -21070,6 +21186,16 @@ Last-Update: 2021-03-27
  
    /// @return a deep copy of this factor
    gtsam::NonlinearFactor::shared_ptr clone() const override {
+--- gtsam-4.1.0.orig/gtsam_unstable/dynamics/PoseRTV.h
++++ gtsam-4.1.0/gtsam_unstable/dynamics/PoseRTV.h
+@@ -80,6 +80,7 @@ public:
+   using Base::Dim;
+   using Base::retract;
+   using Base::localCoordinates;
++  using Base::LocalCoordinates;
+   /// @}
+ 
+   /// @name measurement functions
 --- gtsam-4.1.0.orig/gtsam_unstable/dynamics/SimpleHelicopter.h
 +++ gtsam-4.1.0/gtsam_unstable/dynamics/SimpleHelicopter.h
 @@ -33,7 +33,7 @@ public:
@@ -23121,15 +23247,147 @@ Last-Update: 2021-03-27
      NonlinearFactor::shared_ptr clone() const override {
 --- gtsam-4.1.0.orig/gtsam_unstable/slam/PartialPriorFactor.h
 +++ gtsam-4.1.0/gtsam_unstable/slam/PartialPriorFactor.h
-@@ -66,7 +66,7 @@ namespace gtsam {
+@@ -29,11 +29,9 @@ namespace gtsam {
+    *
+    * The prior vector used in this factor is stored in compressed form, such that
+    * it only contains values for measurements that are to be compared, and they are in
+-   * the same order as VALUE::Logmap().  The mask will determine which components to extract
+-   * in the error function.
++   * the same order as VALUE::Logmap(). The provided indices will determine which components to
++   * extract in the error function.
+    *
+-   * For practical use, it would be good to subclass this factor and have the class type
+-   * construct the mask.
+    * @tparam VALUE is the type of variable the prior effects
+    */
+   template<class VALUE>
+@@ -43,16 +41,14 @@ namespace gtsam {
+     typedef VALUE T;
+ 
+   protected:
+-
+     // Concept checks on the variable type - currently requires Lie
+     GTSAM_CONCEPT_LIE_TYPE(VALUE)
+ 
+     typedef NoiseModelFactor1<VALUE> Base;
+     typedef PartialPriorFactor<VALUE> This;
+ 
+-    Vector prior_;             ///< measurement on tangent space parameters, in compressed form
+-    std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
+-    Matrix H_;                  ///< Constant Jacobian - computed at creation
++    Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
++    std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
+ 
+     /** default constructor - only use for serialization */
+     PartialPriorFactor() {}
+@@ -66,22 +62,24 @@ namespace gtsam {
  
    public:
  
 -    virtual ~PartialPriorFactor() {}
 +    ~PartialPriorFactor() override {}
  
-     /** Single Element Constructor: acts on a single parameter specified by idx */
+-    /** Single Element Constructor: acts on a single parameter specified by idx */
++    /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
      PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
+-      Base(model, key), prior_((Vector(1) << prior).finished()), mask_(1, idx), H_(Matrix::Zero(1, T::dimension)) {
++      Base(model, key),
++      prior_((Vector(1) << prior).finished()),
++      indices_(1, idx) {
+       assert(model->dim() == 1);
+-      this->fillH();
+     }
+ 
+-    /** Indices Constructor: specify the mask with a set of indices */
+-    PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
++    /** Indices Constructor: Specify the relevant measured indices in the tangent vector.*/
++    PartialPriorFactor(Key key, const std::vector<size_t>& indices, const Vector& prior,
+         const SharedNoiseModel& model) :
+-      Base(model, key), prior_(prior), mask_(mask), H_(Matrix::Zero(mask.size(), T::dimension)) {
+-      assert((size_t)prior_.size() == mask.size());
+-      assert(model->dim() == (size_t) prior.size());
+-      this->fillH();
++        Base(model, key),
++        prior_(prior),
++        indices_(indices) {
++      assert((size_t)prior_.size() == indices_.size());
++      assert(model->dim() == (size_t)prior.size());
+     }
+ 
+     /// @return a deep copy of this factor
+@@ -102,35 +100,41 @@ namespace gtsam {
+       const This *e = dynamic_cast<const This*> (&expected);
+       return e != nullptr && Base::equals(*e, tol) &&
+           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
+-          this->mask_ == e->mask_;
++          this->indices_ == e->indices_;
+     }
+ 
+     /** implement functions needed to derive from Factor */
+ 
+-    /** vector of errors */
++    /** Returns a vector of errors for the measured tangent parameters.  */
+     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
+-      if (H) (*H) = H_;
+-      // FIXME: this was originally the generic retraction - may not produce same results
+-      Vector full_logmap = T::Logmap(p);
+-//      Vector full_logmap = T::identity().localCoordinates(p); // Alternate implementation
+-      Vector masked_logmap = Vector::Zero(this->dim());
+-      for (size_t i=0; i<mask_.size(); ++i)
+-        masked_logmap(i) = full_logmap(mask_[i]);
+-      return masked_logmap - prior_;
++      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
++
++      // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
++      // when asked to compute the Jacobian matrix (see Rot3M.cpp).
++      #ifdef GTSAM_ROT3_EXPMAP
++      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
++      #else
++      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
++      #endif
++
++      if (H) {
++        (*H) = Matrix::Zero(indices_.size(), T::dimension);
++        for (size_t i = 0; i < indices_.size(); ++i) {
++          (*H).row(i) = H_local.row(indices_.at(i));
++        }
++      }
++      // Select relevant parameters from the tangent vector.
++      Vector partial_tangent = Vector::Zero(indices_.size());
++      for (size_t i = 0; i < indices_.size(); ++i) {
++        partial_tangent(i) = full_tangent(indices_.at(i));
++      }
++
++      return partial_tangent - prior_;
+     }
+ 
+     // access
+     const Vector& prior() const { return prior_; }
+-    const std::vector<size_t>& mask() const { return  mask_; }
+-    const Matrix& H() const { return H_; }
+-
+-  protected:
+-
+-    /** Constructs the jacobian matrix in place */
+-    void fillH() {
+-      for (size_t i=0; i<mask_.size(); ++i)
+-        H_(i, mask_[i]) = 1.0;
+-    }
++    const std::vector<size_t>& indices() const { return indices_; }
+ 
+   private:
+     /** Serialization function */
+@@ -140,8 +144,8 @@ namespace gtsam {
+       ar & boost::serialization::make_nvp("NoiseModelFactor1",
+           boost::serialization::base_object<Base>(*this));
+       ar & BOOST_SERIALIZATION_NVP(prior_);
+-      ar & BOOST_SERIALIZATION_NVP(mask_);
+-      ar & BOOST_SERIALIZATION_NVP(H_);
++      ar & BOOST_SERIALIZATION_NVP(indices_);
++      // ar & BOOST_SERIALIZATION_NVP(H_);
+     }
+   }; // \class PartialPriorFactor
+ 
 --- gtsam-4.1.0.orig/gtsam_unstable/slam/PoseBetweenFactor.h
 +++ gtsam-4.1.0/gtsam_unstable/slam/PoseBetweenFactor.h
 @@ -56,7 +56,7 @@ namespace gtsam {
@@ -23891,6 +24149,292 @@ Last-Update: 2021-03-27
 +  TestResult tr;
 +  return TestRegistry::runAllTests(tr);
 +}
++/* ************************************************************************* */
+--- /dev/null
++++ gtsam-4.1.0/gtsam_unstable/slam/tests/testPartialPriorFactor.cpp
+@@ -0,0 +1,283 @@
++/* ----------------------------------------------------------------------------
++
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++ * See LICENSE for the license information
++
++ * -------------------------------------------------------------------------- */
++
++#include <gtsam_unstable/slam/PartialPriorFactor.h>
++#include <gtsam/inference/Symbol.h>
++#include <gtsam/geometry/Pose2.h>
++#include <gtsam/geometry/Pose3.h>
++#include <gtsam/base/numericalDerivative.h>
++#include <gtsam/base/TestableAssertions.h>
++#include <CppUnitLite/TestHarness.h>
++
++using namespace std;
++using namespace gtsam;
++
++namespace NM = gtsam::noiseModel;
++
++// Pose3 tangent representation is [ Rx Ry Rz Tx Ty Tz ].
++static const int kIndexRx = 0;
++static const int kIndexRy = 1;
++static const int kIndexRz = 2;
++static const int kIndexTx = 3;
++static const int kIndexTy = 4;
++static const int kIndexTz = 5;
++
++typedef PartialPriorFactor<Pose2> TestPartialPriorFactor2;
++typedef PartialPriorFactor<Pose3> TestPartialPriorFactor3;
++typedef std::vector<size_t> Indices;
++
++/// traits
++namespace gtsam {
++template<>
++struct traits<TestPartialPriorFactor2> : public Testable<TestPartialPriorFactor2> {};
++
++template<>
++struct traits<TestPartialPriorFactor3> : public Testable<TestPartialPriorFactor3> {};
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, Constructors2) {
++  Key poseKey(1);
++  Pose2 measurement(-13.1, 3.14, -0.73);
++
++  // Prior on x component of translation.
++  TestPartialPriorFactor2 factor1(poseKey, 0, measurement.x(), NM::Isotropic::Sigma(1, 0.25));
++  CHECK(assert_equal(1, factor1.prior().rows()));
++  CHECK(assert_equal(measurement.x(), factor1.prior()(0)));
++  CHECK(assert_container_equality<Indices>({ 0 }, factor1.indices()));
++
++  // Prior on full translation vector.
++  const Indices t_indices = { 0, 1 };
++  TestPartialPriorFactor2 factor2(poseKey, t_indices, measurement.translation(), NM::Isotropic::Sigma(2, 0.25));
++  CHECK(assert_equal(2, factor2.prior().rows()));
++  CHECK(assert_equal(measurement.translation(), factor2.prior()));
++  CHECK(assert_container_equality<Indices>(t_indices, factor2.indices()));
++
++  // Prior on theta.
++  TestPartialPriorFactor2 factor3(poseKey, 2, measurement.theta(), NM::Isotropic::Sigma(1, 0.1));
++  CHECK(assert_equal(1, factor3.prior().rows()));
++  CHECK(assert_equal(measurement.theta(), factor3.prior()(0)));
++  CHECK(assert_container_equality<Indices>({ 2 }, factor3.indices()));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianPartialTranslation2) {
++  Key poseKey(1);
++  Pose2 measurement(-13.1, 3.14, -0.73);
++
++  // Prior on x component of translation.
++  TestPartialPriorFactor2 factor(poseKey, 0, measurement.x(), NM::Isotropic::Sigma(1, 0.25));
++
++  Pose2 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
++      boost::bind(&TestPartialPriorFactor2::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianFullTranslation2) {
++  Key poseKey(1);
++  Pose2 measurement(-6.0, 3.5, 0.123);
++
++  // Prior on x component of translation.
++  TestPartialPriorFactor2 factor(poseKey, { 0, 1 }, measurement.translation(), NM::Isotropic::Sigma(2, 0.25));
++
++  Pose2 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
++      boost::bind(&TestPartialPriorFactor2::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianTheta) {
++  Key poseKey(1);
++  Pose2 measurement(-1.0, 0.4, -2.5);
++
++  // Prior on x component of translation.
++  TestPartialPriorFactor2 factor(poseKey, 2, measurement.theta(), NM::Isotropic::Sigma(1, 0.25));
++
++  Pose2 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
++      boost::bind(&TestPartialPriorFactor2::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, Constructors3) {
++  Key poseKey(1);
++  Pose3 measurement(Rot3::RzRyRx(-0.17, 0.567, M_PI), Point3(10.0, -2.3, 3.14));
++
++  // Single component of translation.
++  TestPartialPriorFactor3 factor1(poseKey, kIndexTy, measurement.y(),
++      NM::Isotropic::Sigma(1, 0.25));
++  CHECK(assert_equal(1, factor1.prior().rows()));
++  CHECK(assert_equal(measurement.y(), factor1.prior()(0)));
++  CHECK(assert_container_equality<Indices>({ kIndexTy }, factor1.indices()));
++
++  // Full translation vector.
++  const Indices t_indices = { kIndexTx, kIndexTy, kIndexTz };
++  TestPartialPriorFactor3 factor2(poseKey, t_indices, measurement.translation(),
++      NM::Isotropic::Sigma(3, 0.25));
++  CHECK(assert_equal(3, factor2.prior().rows()));
++  CHECK(assert_equal(measurement.translation(), factor2.prior()));
++  CHECK(assert_container_equality<Indices>(t_indices, factor2.indices()));
++
++  // Full tangent vector of rotation.
++  const Indices r_indices = { kIndexRx, kIndexRy, kIndexRz };
++  TestPartialPriorFactor3 factor3(poseKey, r_indices, Rot3::Logmap(measurement.rotation()),
++      NM::Isotropic::Sigma(3, 0.1));
++  CHECK(assert_equal(3, factor3.prior().rows()));
++  CHECK(assert_equal(Rot3::Logmap(measurement.rotation()), factor3.prior()));
++  CHECK(assert_container_equality<Indices>(r_indices, factor3.indices()));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianAtIdentity3) {
++  Key poseKey(1);
++  Pose3 measurement = Pose3::identity();
++  SharedNoiseModel model = NM::Isotropic::Sigma(1, 0.25);
++
++  TestPartialPriorFactor3 factor(poseKey, kIndexTy, measurement.translation().y(), model);
++
++  Pose3 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
++      boost::bind(&TestPartialPriorFactor3::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianPartialTranslation3) {
++  Key poseKey(1);
++  Pose3 measurement(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
++  SharedNoiseModel model = NM::Isotropic::Sigma(1, 0.25);
++
++  TestPartialPriorFactor3 factor(poseKey, kIndexTy, measurement.translation().y(), model);
++
++  Pose3 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
++      boost::bind(&TestPartialPriorFactor3::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianFullTranslation3) {
++  Key poseKey(1);
++  Pose3 measurement(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
++  SharedNoiseModel model = NM::Isotropic::Sigma(3, 0.25);
++
++  std::vector<size_t> translationIndices = { kIndexTx, kIndexTy, kIndexTz };
++  TestPartialPriorFactor3 factor(poseKey, translationIndices, measurement.translation(), model);
++
++  // Create a linearization point at the zero-error point
++  Pose3 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
++      boost::bind(&TestPartialPriorFactor3::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianTxTz3) {
++  Key poseKey(1);
++  Pose3 measurement(Rot3::RzRyRx(-0.17, 0.567, M_PI), Point3(10.0, -2.3, 3.14));
++  SharedNoiseModel model = NM::Isotropic::Sigma(2, 0.25);
++
++  std::vector<size_t> translationIndices = { kIndexTx, kIndexTz };
++  TestPartialPriorFactor3 factor(poseKey, translationIndices,
++      (Vector(2) << measurement.x(), measurement.z()).finished(), model);
++
++  Pose3 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
++      boost::bind(&TestPartialPriorFactor3::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++TEST(PartialPriorFactor, JacobianFullRotation3) {
++  Key poseKey(1);
++  Pose3 measurement(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
++  SharedNoiseModel model = NM::Isotropic::Sigma(3, 0.25);
++
++  std::vector<size_t> rotationIndices = { kIndexRx, kIndexRy, kIndexRz };
++  TestPartialPriorFactor3 factor(poseKey, rotationIndices, Rot3::Logmap(measurement.rotation()), model);
++
++  Pose3 pose = measurement; // Zero-error linearization point.
++
++  // Calculate numerical derivatives.
++  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
++      boost::bind(&TestPartialPriorFactor3::evaluateError, &factor, _1, boost::none), pose);
++
++  // Use the factor to calculate the derivative.
++  Matrix actualH1;
++  factor.evaluateError(pose, actualH1);
++
++  // Verify we get the expected error.
++  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
++}
++
++/* ************************************************************************* */
++int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 +/* ************************************************************************* */
 --- gtsam-4.1.0.orig/matlab/+gtsam/Contents.m
 +++ gtsam-4.1.0/matlab/+gtsam/Contents.m

@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~129.gbpa5efe4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~130.gbp0f50b8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0f50b8ea7761b512fcf59b7cccef9b4e25a990da **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a5efe442b16bcf8677383f0766a73a115c0777c7 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Mar 2021 03:16:49 +0000
+  [ Milo Knowles ]
+  * Three examples of failing PartialPriorFactor<Pose3> Jacobians
+  * Add successful unit test for identity pose
+  * Correct Jacobian in PartialPriorFactor, modify derived factors for compatibility
+  * Change mask to indices and update factor docstring
+  * Prefer localCoordinates over logmap
+  * Fix x/y mismatch in unit tests
+  * Add constructor tests and extend tests to Pose2
+  * Switch to cleaner T::Logmap
+  * Fix incorrect Vector dimension that was causing CI failures
+  * Add LocalCoordinates() to ProductLieGroup and remove unnecessary <Eigen/Core> include to reduce compile memory
+  * Fix Rot3::LocalCoordinates runtime error when using Cayley map
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 29 Mar 2021 03:16:08 +0000
 
 gtsam (4.1.0-1ubuntu2~128.gbpf300d8) focal; urgency=medium
 
