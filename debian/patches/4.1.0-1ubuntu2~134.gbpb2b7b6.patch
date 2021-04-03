@@ -5,30 +5,20 @@ Description: <short summary of the patch>
  information below has been extracted from the changelog. Adjust it or drop
  it.
  .
- gtsam (4.1.0-1ubuntu2~130.gbp0f50b8) UNRELEASED; urgency=medium
+ gtsam (4.1.0-1ubuntu2~134.gbpb2b7b6) UNRELEASED; urgency=medium
  .
-   ** SNAPSHOT build @0f50b8ea7761b512fcf59b7cccef9b4e25a990da **
+   ** SNAPSHOT build @b2b7b6c8ad0814fbec5df6de23d178ff19c04bb9 **
  .
    [ Borglab Builder ]
-   ** SNAPSHOT build @a5efe442b16bcf8677383f0766a73a115c0777c7 **
+   ** SNAPSHOT build @3bafe02c6532d57ea46cc4e6f82eb3540402d33b **
  .
    * modified changelog for distro focal
- .
-   [ Milo Knowles ]
-   * Three examples of failing PartialPriorFactor<Pose3> Jacobians
-   * Add successful unit test for identity pose
-   * Correct Jacobian in PartialPriorFactor, modify derived factors for compatibility
-   * Change mask to indices and update factor docstring
-   * Prefer localCoordinates over logmap
-   * Fix x/y mismatch in unit tests
-   * Add constructor tests and extend tests to Pose2
-   * Switch to cleaner T::Logmap
-   * Fix incorrect Vector dimension that was causing CI failures
-   * Add LocalCoordinates() to ProductLieGroup and remove unnecessary <Eigen/Core> include to reduce compile memory
-   * Fix Rot3::LocalCoordinates runtime error when using Cayley map
- .
-   [ Borglab Builder ]
    * commit of final snapshot version number update
+ .
+   [ Varun Agrawal ]
+   * Squashed 'wrap/' changes from 96ccdfd0b..5ddaff8ba
+   * operator overloading for compose
+   * add operator overloading and fix some TODOs in the wrapper
 Author: Borglab Builder <borglab.launchpad@gmail.com>
 
 ---
@@ -42,7 +32,7 @@ Bug-Debian: https://bugs.debian.org/<bugnumber>
 Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
 Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
-Last-Update: 2021-03-29
+Last-Update: 2021-04-03
 
 --- /dev/null
 +++ gtsam-4.1.0/.github/scripts/boost.sh
@@ -13275,17 +13265,17 @@ Last-Update: 2021-03-29
 -  // Standard constructors
 -  LieScalar();
 -  LieScalar(double d);
-+class IndexPairVector {
-+  IndexPairVector();
-+  IndexPairVector(const gtsam::IndexPairVector& other);
- 
+-
 -  // Standard interface
 -  double value() const;
 -
 -  // Testable
 -  void print(string s) const;
 -  bool equals(const gtsam::LieScalar& expected, double tol) const;
--
++class IndexPairVector {
++  IndexPairVector();
++  IndexPairVector(const gtsam::IndexPairVector& other);
+ 
 -  // Group
 -  static gtsam::LieScalar identity();
 -  gtsam::LieScalar inverse() const;
@@ -13314,7 +13304,8 @@ Last-Update: 2021-03-29
 -  // Standard constructors
 -  LieVector();
 -  LieVector(Vector v);
--
++gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
+ 
 -  // Standard interface
 -  Vector vector() const;
 -
@@ -13327,8 +13318,7 @@ Last-Update: 2021-03-29
 -  gtsam::LieVector inverse() const;
 -  gtsam::LieVector compose(const gtsam::LieVector& p) const;
 -  gtsam::LieVector between(const gtsam::LieVector& l2) const;
-+gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
- 
+-
 -  // Manifold
 -  size_t dim() const;
 -  gtsam::LieVector retract(Vector v) const;
@@ -13399,7 +13389,7 @@ Last-Update: 2021-03-29
  };
  
  //*************************************************************************
-@@ -406,6 +260,9 @@ class Point2 {
+@@ -406,10 +260,12 @@ class Point2 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13409,7 +13399,24 @@ Last-Update: 2021-03-29
  };
  
  // std::vector<gtsam::Point2>
-@@ -467,6 +324,9 @@ class StereoPoint2 {
+-#include <gtsam/geometry/Point2.h>
+ class Point2Vector
+ {
+   // Constructors
+@@ -451,6 +307,12 @@ class StereoPoint2 {
+   gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
+   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
+ 
++  // Operator Overloads
++  gtsam::StereoPoint2 operator-() const;
++  // gtsam::StereoPoint2 operator+(Vector b) const;  //TODO Mixed types not yet supported
++  gtsam::StereoPoint2 operator+(const gtsam::StereoPoint2& p2) const;
++  gtsam::StereoPoint2 operator-(const gtsam::StereoPoint2& p2) const;
++
+   // Manifold
+   gtsam::StereoPoint2 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::StereoPoint2& p) const;
+@@ -467,6 +329,9 @@ class StereoPoint2 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13419,7 +13426,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Point3.h>
-@@ -491,6 +351,18 @@ class Point3 {
+@@ -491,6 +356,17 @@ class Point3 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13428,7 +13435,6 @@ Last-Update: 2021-03-29
 +  void pickle() const;
 +};
 +
-+#include <gtsam/geometry/Point3.h>
 +class Point3Pairs {
 +  Point3Pairs();
 +  size_t size() const;
@@ -13438,7 +13444,17 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Rot2.h>
-@@ -519,6 +391,7 @@ class Rot2 {
+@@ -512,6 +388,9 @@ class Rot2 {
+   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
+   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
+ 
++  // Operator Overloads
++  gtsam::Rot2 operator*(const gtsam::Rot2& p2) const;
++
+   // Manifold
+   gtsam::Rot2 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::Rot2& p) const;
+@@ -519,6 +398,7 @@ class Rot2 {
    // Lie Group
    static gtsam::Rot2 Expmap(Vector v);
    static Vector Logmap(const gtsam::Rot2& p);
@@ -13446,7 +13462,7 @@ Last-Update: 2021-03-29
  
    // Group Action on Point2
    gtsam::Point2 rotate(const gtsam::Point2& point) const;
-@@ -535,6 +408,9 @@ class Rot2 {
+@@ -535,6 +415,9 @@ class Rot2 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13456,7 +13472,37 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/SO3.h>
-@@ -623,6 +499,15 @@ class SOn {
+@@ -556,6 +439,9 @@ class SO3 {
+   gtsam::SO3 between(const gtsam::SO3& R) const;
+   gtsam::SO3 compose(const gtsam::SO3& R) const;
+ 
++  // Operator Overloads
++  gtsam::SO3 operator*(const gtsam::SO3& R) const;
++
+   // Manifold
+   gtsam::SO3 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::SO3& R) const;
+@@ -583,6 +469,9 @@ class SO4 {
+   gtsam::SO4 between(const gtsam::SO4& Q) const;
+   gtsam::SO4 compose(const gtsam::SO4& Q) const;
+ 
++  // Operator Overloads
++  gtsam::SO4 operator*(const gtsam::SO4& Q) const;
++
+   // Manifold
+   gtsam::SO4 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::SO4& Q) const;
+@@ -610,6 +499,9 @@ class SOn {
+   gtsam::SOn between(const gtsam::SOn& Q) const;
+   gtsam::SOn compose(const gtsam::SOn& Q) const;
+ 
++  // Operator Overloads
++  gtsam::SOn operator*(const gtsam::SOn& Q) const;
++
+   // Manifold
+   gtsam::SOn retract(Vector v) const;
+   Vector localCoordinates(const gtsam::SOn& Q) const;
+@@ -623,6 +515,15 @@ class SOn {
    void serialize() const;
  };
  
@@ -13472,7 +13518,7 @@ Last-Update: 2021-03-29
  #include <gtsam/geometry/Rot3.h>
  class Rot3 {
    // Standard Constructors and Named Constructors
-@@ -632,6 +517,7 @@ class Rot3 {
+@@ -632,6 +533,7 @@ class Rot3 {
    Rot3(double R11, double R12, double R13,
        double R21, double R22, double R23,
        double R31, double R32, double R33);
@@ -13480,16 +13526,20 @@ Last-Update: 2021-03-29
  
    static gtsam::Rot3 Rx(double t);
    static gtsam::Rot3 Ry(double t);
-@@ -659,7 +545,7 @@ class Rot3 {
+@@ -658,8 +560,11 @@ class Rot3 {
+   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
    gtsam::Rot3 between(const gtsam::Rot3& p2) const;
  
++  // Operator Overloads
++  gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
++
    // Manifold
 -  //gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
 +  //gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both Matrix and Quaternion options
    gtsam::Rot3 retract(Vector v) const;
    Vector localCoordinates(const gtsam::Rot3& p) const;
  
-@@ -670,6 +556,7 @@ class Rot3 {
+@@ -670,6 +575,7 @@ class Rot3 {
    // Standard Interface
    static gtsam::Rot3 Expmap(Vector v);
    static Vector Logmap(const gtsam::Rot3& p);
@@ -13497,7 +13547,7 @@ Last-Update: 2021-03-29
    Matrix matrix() const;
    Matrix transpose() const;
    gtsam::Point3 column(size_t index) const;
-@@ -680,12 +567,15 @@ class Rot3 {
+@@ -680,12 +586,15 @@ class Rot3 {
    double pitch() const;
    double yaw() const;
    pair<gtsam::Unit3, double> axisAngle() const;
@@ -13514,7 +13564,17 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Pose2.h>
-@@ -715,6 +605,7 @@ class Pose2 {
+@@ -708,6 +617,9 @@ class Pose2 {
+   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+ 
++  // Operator Overloads
++  gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
++
+   // Manifold
+   gtsam::Pose2 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::Pose2& p) const;
+@@ -715,6 +627,7 @@ class Pose2 {
    // Lie Group
    static gtsam::Pose2 Expmap(Vector v);
    static Vector Logmap(const gtsam::Pose2& p);
@@ -13522,7 +13582,7 @@ Last-Update: 2021-03-29
    static Matrix ExpmapDerivative(Vector v);
    static Matrix LogmapDerivative(const gtsam::Pose2& v);
    Matrix AdjointMap() const;
-@@ -740,6 +631,9 @@ class Pose2 {
+@@ -740,6 +653,9 @@ class Pose2 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13532,7 +13592,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Pose3.h>
-@@ -748,7 +642,7 @@ class Pose3 {
+@@ -748,7 +664,7 @@ class Pose3 {
    Pose3();
    Pose3(const gtsam::Pose3& other);
    Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
@@ -13541,7 +13601,17 @@ Last-Update: 2021-03-29
    Pose3(Matrix mat);
  
    // Testable
-@@ -768,6 +662,7 @@ class Pose3 {
+@@ -761,6 +677,9 @@ class Pose3 {
+   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
+   gtsam::Pose3 between(const gtsam::Pose3& pose) const;
+ 
++  // Operator Overloads
++  gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
++
+   // Manifold
+   gtsam::Pose3 retract(Vector v) const;
+   Vector localCoordinates(const gtsam::Pose3& pose) const;
+@@ -768,6 +687,7 @@ class Pose3 {
    // Lie Group
    static gtsam::Pose3 Expmap(Vector v);
    static Vector Logmap(const gtsam::Pose3& pose);
@@ -13549,7 +13619,7 @@ Last-Update: 2021-03-29
    Matrix AdjointMap() const;
    Vector Adjoint(Vector xi) const;
    static Matrix adjointMap_(Vector xi);
-@@ -795,6 +690,18 @@ class Pose3 {
+@@ -795,10 +715,19 @@ class Pose3 {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13558,7 +13628,6 @@ Last-Update: 2021-03-29
 +  void pickle() const;
 +};
 +
-+#include <gtsam/geometry/Pose3.h>
 +class Pose3Pairs {
 +  Pose3Pairs();
 +  size_t size() const;
@@ -13567,8 +13636,12 @@ Last-Update: 2021-03-29
 +  void push_back(const gtsam::Pose3Pair& pose_pair);
  };
  
- // std::vector<gtsam::Pose3>
-@@ -828,6 +735,15 @@ class Unit3 {
+-// std::vector<gtsam::Pose3>
+-#include <gtsam/geometry/Pose3.h>
+ class Pose3Vector
+ {
+   Pose3Vector();
+@@ -828,6 +757,15 @@ class Unit3 {
    size_t dim() const;
    gtsam::Unit3 retract(Vector v) const;
    Vector localCoordinates(const gtsam::Unit3& s) const;
@@ -13584,7 +13657,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/EssentialMatrix.h>
-@@ -883,11 +799,13 @@ class Cal3_S2 {
+@@ -883,11 +821,13 @@ class Cal3_S2 {
    gtsam::Point2 principalPoint() const;
    Vector vector() const;
    Matrix K() const;
@@ -13600,7 +13673,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Cal3DS2_Base.h>
-@@ -912,10 +830,13 @@ virtual class Cal3DS2_Base {
+@@ -912,10 +852,13 @@ virtual class Cal3DS2_Base {
  
    // Action on Point2
    gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
@@ -13615,7 +13688,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Cal3DS2.h>
-@@ -937,6 +858,9 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_B
+@@ -937,6 +880,9 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_B
  
    // enabling serialization functionality
    void serialize() const;
@@ -13625,7 +13698,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Cal3Unified.h>
-@@ -963,6 +887,9 @@ virtual class Cal3Unified : gtsam::Cal3D
+@@ -963,6 +909,9 @@ virtual class Cal3Unified : gtsam::Cal3D
  
    // enabling serialization functionality
    void serialize() const;
@@ -13635,7 +13708,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/Cal3_S2Stereo.h>
-@@ -991,6 +918,7 @@ class Cal3Bundler {
+@@ -991,6 +940,7 @@ class Cal3Bundler {
    // Standard Constructors
    Cal3Bundler();
    Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
@@ -13643,7 +13716,7 @@ Last-Update: 2021-03-29
  
    // Testable
    void print(string s) const;
-@@ -1003,7 +931,7 @@ class Cal3Bundler {
+@@ -1003,7 +953,7 @@ class Cal3Bundler {
    Vector localCoordinates(const gtsam::Cal3Bundler& c) const;
  
    // Action on Point2
@@ -13652,7 +13725,7 @@ Last-Update: 2021-03-29
    gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
  
    // Standard Interface
-@@ -1011,14 +939,17 @@ class Cal3Bundler {
+@@ -1011,14 +961,17 @@ class Cal3Bundler {
    double fy() const;
    double k1() const;
    double k2() const;
@@ -13673,7 +13746,14 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/CalibratedCamera.h>
-@@ -1049,6 +980,9 @@ class CalibratedCamera {
+@@ -1045,10 +998,15 @@ class CalibratedCamera {
+ 
+   // Standard Interface
+   gtsam::Pose3 pose() const;
+-  double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
++  double range(const gtsam::Point3& point) const;
++  double range(const gtsam::Pose3& pose) const;
++  double range(const gtsam::CalibratedCamera& camera) const;
  
    // enabling serialization functionality
    void serialize() const;
@@ -13683,7 +13763,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/geometry/PinholeCamera.h>
-@@ -1087,57 +1021,51 @@ class PinholeCamera {
+@@ -1087,57 +1045,50 @@ class PinholeCamera {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13750,7 +13830,6 @@ Last-Update: 2021-03-29
  
 -gtsam::SimpleCamera simpleCamera(const Matrix& P);
  
-+
 +// Forward declaration of PinholeCameraCalX is defined here.
 +#include <gtsam/geometry/SimpleCamera.h>
  // Some typedefs for common camera types
@@ -13775,7 +13854,7 @@ Last-Update: 2021-03-29
  
  #include <gtsam/geometry/StereoCamera.h>
  class StereoCamera {
-@@ -1166,11 +1094,14 @@ class StereoCamera {
+@@ -1166,11 +1117,14 @@ class StereoCamera {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13791,7 +13870,7 @@ Last-Update: 2021-03-29
  gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
      gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
      double rank_tol, bool optimize);
-@@ -1180,7 +1111,13 @@ gtsam::Point3 triangulatePoint3(const gt
+@@ -1180,7 +1134,13 @@ gtsam::Point3 triangulatePoint3(const gt
  gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
      gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
      double rank_tol, bool optimize);
@@ -13806,16 +13885,40 @@ Last-Update: 2021-03-29
  //*************************************************************************
  // Symbolic
  //*************************************************************************
-@@ -1330,7 +1267,7 @@ class SymbolicBayesTree {
- // //  const std::list<derived_ptr>& children() const { return children_; }
- // //  derived_ptr parent() const { return parent_.lock(); }
+@@ -1314,9 +1274,9 @@ class SymbolicBayesTree {
+ };
+ 
+ // class SymbolicBayesTreeClique {
+-//   BayesTreeClique();
+-//   BayesTreeClique(CONDITIONAL* conditional);
+-// //  BayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
++//   SymbolicBayesTreeClique();
++//   SymbolicBayesTreeClique(CONDITIONAL* conditional);
++//   SymbolicBayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+ //
+ //   bool equals(const This& other, double tol) const;
+ //   void print(string s) const;
+@@ -1327,13 +1287,13 @@ class SymbolicBayesTree {
+ //   CONDITIONAL* conditional() const;
+ //   bool isRoot() const;
+ //   size_t treeSize() const;
+-// //  const std::list<derived_ptr>& children() const { return children_; }
+-// //  derived_ptr parent() const { return parent_.lock(); }
++//  const std::list<derived_ptr>& children() const { return children_; }
++//  derived_ptr parent() const { return parent_.lock(); }
  //
 -//   // FIXME: need wrapped versions graphs, BayesNet
+-// //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
+-// //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
+-// //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 +//   // TODO: need wrapped versions graphs, BayesNet
- // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
- // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
- // //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-@@ -1614,6 +1551,9 @@ class VectorValues {
++//  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
++//  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
++//  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+ //
+ //   void deleteCachedShortcuts();
+ // };
+@@ -1614,6 +1574,9 @@ class VectorValues {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13825,7 +13928,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/linear/GaussianFactor.h>
-@@ -1675,6 +1615,9 @@ virtual class JacobianFactor : gtsam::Ga
+@@ -1675,6 +1638,9 @@ virtual class JacobianFactor : gtsam::Ga
  
    // enabling serialization functionality
    void serialize() const;
@@ -13835,7 +13938,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/linear/HessianFactor.h>
-@@ -1706,6 +1649,9 @@ virtual class HessianFactor : gtsam::Gau
+@@ -1706,6 +1672,9 @@ virtual class HessianFactor : gtsam::Gau
  
    // enabling serialization functionality
    void serialize() const;
@@ -13845,7 +13948,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/linear/GaussianFactorGraph.h>
-@@ -1785,10 +1731,13 @@ class GaussianFactorGraph {
+@@ -1785,10 +1754,13 @@ class GaussianFactorGraph {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13860,7 +13963,7 @@ Last-Update: 2021-03-29
    //Constructors
    GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-@@ -1848,6 +1797,8 @@ virtual class GaussianBayesNet {
+@@ -1848,6 +1820,8 @@ virtual class GaussianBayesNet {
    gtsam::KeySet keys() const;
    bool exists(size_t idx) const;
  
@@ -13869,7 +13972,7 @@ Last-Update: 2021-03-29
    gtsam::GaussianConditional* front() const;
    gtsam::GaussianConditional* back() const;
    void push_back(gtsam::GaussianConditional* conditional);
-@@ -1993,6 +1944,21 @@ class KalmanFilter {
+@@ -1993,6 +1967,21 @@ class KalmanFilter {
  //*************************************************************************
  
  #include <gtsam/inference/Symbol.h>
@@ -13891,7 +13994,7 @@ Last-Update: 2021-03-29
  size_t symbol(char chr, size_t index);
  char symbolChr(size_t key);
  size_t symbolIndex(size_t key);
-@@ -2075,6 +2041,9 @@ class Ordering {
+@@ -2075,6 +2064,9 @@ class Ordering {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13901,7 +14004,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-@@ -2099,7 +2068,7 @@ class NonlinearFactorGraph {
+@@ -2099,7 +2091,7 @@ class NonlinearFactorGraph {
    gtsam::KeySet keys() const;
    gtsam::KeyVector keyVector() const;
  
@@ -13910,7 +14013,7 @@ Last-Update: 2021-03-29
    void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
  
    // NonlinearFactorGraph
-@@ -2113,6 +2082,11 @@ class NonlinearFactorGraph {
+@@ -2113,6 +2105,11 @@ class NonlinearFactorGraph {
  
    // enabling serialization functionality
    void serialize() const;
@@ -13922,7 +14025,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/nonlinear/NonlinearFactor.h>
-@@ -2129,7 +2103,7 @@ virtual class NonlinearFactor {
+@@ -2129,7 +2126,7 @@ virtual class NonlinearFactor {
    bool active(const gtsam::Values& c) const;
    gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
    gtsam::NonlinearFactor* clone() const;
@@ -13931,7 +14034,7 @@ Last-Update: 2021-03-29
  };
  
  #include <gtsam/nonlinear/NonlinearFactor.h>
-@@ -2169,6 +2143,9 @@ class Values {
+@@ -2169,6 +2166,9 @@ class Values {
    // enabling serialization functionality
    void serialize() const;
  
@@ -13941,7 +14044,7 @@ Last-Update: 2021-03-29
    // New in 4.0, we have to specialize every insert/update/at to generate wrappers
    // Instead of the old:
    // void insert(size_t j, const gtsam::Value& value);
-@@ -2188,11 +2165,13 @@ class Values {
+@@ -2188,11 +2188,13 @@ class Values {
    void insert(size_t j, const gtsam::SOn& P);
    void insert(size_t j, const gtsam::Rot3& rot3);
    void insert(size_t j, const gtsam::Pose3& pose3);
@@ -13955,7 +14058,7 @@ Last-Update: 2021-03-29
    void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
    void insert(size_t j, const gtsam::NavState& nav_state);
  
-@@ -2205,16 +2184,19 @@ class Values {
+@@ -2205,16 +2207,19 @@ class Values {
    void update(size_t j, const gtsam::SOn& P);
    void update(size_t j, const gtsam::Rot3& rot3);
    void update(size_t j, const gtsam::Pose3& pose3);
@@ -13976,7 +14079,7 @@ Last-Update: 2021-03-29
    T at(size_t j);
  
    /// version for double
-@@ -2491,6 +2473,8 @@ class ISAM2Result {
+@@ -2491,6 +2496,8 @@ class ISAM2Result {
    size_t getVariablesRelinearized() const;
    size_t getVariablesReeliminated() const;
    size_t getCliques() const;
@@ -13985,7 +14088,7 @@ Last-Update: 2021-03-29
  };
  
  class ISAM2 {
-@@ -2507,16 +2491,17 @@ class ISAM2 {
+@@ -2507,16 +2514,17 @@ class ISAM2 {
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
    gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
@@ -14007,7 +14110,7 @@ Last-Update: 2021-03-29
    VALUE calculateEstimate(size_t key) const;
    gtsam::Values calculateBestEstimate() const;
    Matrix marginalCovariance(size_t key) const;
-@@ -2549,18 +2534,20 @@ class NonlinearISAM {
+@@ -2549,18 +2557,20 @@ class NonlinearISAM {
  //*************************************************************************
  // Nonlinear factor types
  //*************************************************************************
@@ -14030,7 +14133,7 @@ Last-Update: 2021-03-29
  };
  
  
-@@ -2572,13 +2559,16 @@ virtual class BetweenFactor : gtsam::Noi
+@@ -2572,13 +2582,16 @@ virtual class BetweenFactor : gtsam::Noi
  
    // enabling serialization functionality
    void serialize() const;
@@ -14048,7 +14151,7 @@ Last-Update: 2021-03-29
                 gtsam::imuBias::ConstantBias}>
  virtual class NonlinearEquality : gtsam::NoiseModelFactor {
    // Constructor - forces exact evaluation
-@@ -2633,6 +2623,7 @@ virtual class BearingFactor : gtsam::Noi
+@@ -2633,6 +2646,7 @@ virtual class BearingFactor : gtsam::Noi
  };
  
  typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
@@ -14056,7 +14159,7 @@ Last-Update: 2021-03-29
  typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
  
  #include <gtsam/geometry/BearingRange.h>
-@@ -2641,8 +2632,7 @@ class BearingRange {
+@@ -2641,8 +2655,7 @@ class BearingRange {
    BearingRange(const BEARING& b, const RANGE& r);
    BEARING bearing() const;
    RANGE range() const;
@@ -14066,7 +14169,7 @@ Last-Update: 2021-03-29
    static BEARING MeasureBearing(const POSE& pose, const POINT& point);
    static RANGE MeasureRange(const POSE& pose, const POINT& point);
    void print(string s) const;
-@@ -2657,6 +2647,8 @@ virtual class BearingRangeFactor : gtsam
+@@ -2657,6 +2670,8 @@ virtual class BearingRangeFactor : gtsam
        const BEARING& measuredBearing, const RANGE& measuredRange,
        const gtsam::noiseModel::Base* noiseModel);
  
@@ -14075,7 +14178,7 @@ Last-Update: 2021-03-29
    // enabling serialization functionality
    void serialize() const;
  };
-@@ -2698,10 +2690,10 @@ virtual class GeneralSFMFactor : gtsam::
+@@ -2698,10 +2713,10 @@ virtual class GeneralSFMFactor : gtsam::
    gtsam::Point2 measured() const;
  };
  typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
@@ -14089,7 +14192,16 @@ Last-Update: 2021-03-29
  virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
    GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
    gtsam::Point2 measured() const;
-@@ -2786,21 +2778,57 @@ virtual class EssentialMatrixFactor : gt
+@@ -2742,7 +2757,7 @@ virtual class SmartProjectionPoseFactor:
+   void add(const gtsam::Point2& measured_i, size_t poseKey_i);
+ 
+   // enabling serialization functionality
+-  //void serialize() const;
++  void serialize() const;
+ };
+ 
+ typedef gtsam::SmartProjectionPoseFactor<gtsam::Cal3_S2> SmartProjectionPose3Factor;
+@@ -2786,21 +2801,57 @@ virtual class EssentialMatrixFactor : gt
  };
  
  #include <gtsam/slam/dataset.h>
@@ -14150,7 +14262,7 @@ Last-Update: 2021-03-29
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
      gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
  pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-@@ -2909,11 +2937,19 @@ class BinaryMeasurement {
+@@ -2909,11 +2960,19 @@ class BinaryMeasurement {
    size_t key1() const;
    size_t key2() const;
    T measured() const;
@@ -14170,7 +14282,7 @@ Last-Update: 2021-03-29
  #include <gtsam/sfm/ShonanAveraging.h>
  
  // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
-@@ -2925,12 +2961,18 @@ class ShonanAveragingParameters2 {
+@@ -2925,12 +2984,18 @@ class ShonanAveragingParameters2 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot2& value);
@@ -14191,7 +14303,7 @@ Last-Update: 2021-03-29
  };
  
  class ShonanAveragingParameters3 {
-@@ -2940,12 +2982,18 @@ class ShonanAveragingParameters3 {
+@@ -2940,12 +3005,18 @@ class ShonanAveragingParameters3 {
    void setOptimalityThreshold(double value);
    double getOptimalityThreshold() const;
    void setAnchor(size_t index, const gtsam::Rot3& value);
@@ -14212,7 +14324,16 @@ Last-Update: 2021-03-29
  };
  
  class ShonanAveraging2 {
-@@ -3033,6 +3081,36 @@ class ShonanAveraging3 {
+@@ -2992,7 +3063,7 @@ class ShonanAveraging3 {
+   ShonanAveraging3(string g2oFile);
+   ShonanAveraging3(string g2oFile,
+                    const gtsam::ShonanAveragingParameters3 &parameters);
+-  
++
+   // TODO(frank): deprecate once we land pybind wrapper
+   ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors);
+   ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors,
+@@ -3033,6 +3104,36 @@ class ShonanAveraging3 {
    pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
  };
  
@@ -14249,6 +14370,30 @@ Last-Update: 2021-03-29
  //*************************************************************************
  // Navigation
  //*************************************************************************
+@@ -3054,6 +3155,11 @@ class ConstantBias {
+   gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
+   gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
+ 
++  // Operator Overloads
++  gtsam::imuBias::ConstantBias operator-() const;
++  gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
++  gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
++
+   // Manifold
+   gtsam::imuBias::ConstantBias retract(Vector v) const;
+   Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
+@@ -3104,9 +3210,8 @@ virtual class PreintegratedRotationParam
+ 
+   Matrix getGyroscopeCovariance() const;
+ 
+-  // TODO(frank): allow optional
+-  //  boost::optional<Vector> getOmegaCoriolis() const;
+-  //  boost::optional<Pose3>   getBodyPSensor()   const;
++  boost::optional<Vector> getOmegaCoriolis() const;
++  boost::optional<gtsam::Pose3> getBodyPSensor() const;
+ };
+ 
+ #include <gtsam/navigation/PreintegrationParams.h>
 --- gtsam-4.1.0.orig/gtsam/inference/Symbol.h
 +++ gtsam-4.1.0/gtsam/inference/Symbol.h
 @@ -80,6 +80,9 @@ public:
@@ -28083,64 +28228,93 @@ Last-Update: 2021-03-29
 +
 --- /dev/null
 +++ gtsam-4.1.0/wrap/CMakeLists.txt
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,83 @@
 +cmake_minimum_required(VERSION 3.9)
 +
 +# Set the project name and version
-+project(GTwrap VERSION 1.0)
++project(gtwrap VERSION 1.0)
 +
 +# ##############################################################################
 +# General configuration
 +
-+set(WRAP_PYTHON_VERSION
-+    "Default"
-+    CACHE STRING "The Python version to use for wrapping")
-+
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GtwrapUtils.cmake)
 +gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 +
-+# ##############################################################################
-+# Install the CMake file to be used by other projects
++# Set the variables to be used for the cmake config file.
 +if(WIN32 AND NOT CYGWIN)
-+  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/CMake")
++  set(INSTALL_CMAKE_DIR CMake/${PROJECT_NAME})
 +else()
-+  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
++  set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 +endif()
 +
-+# Configure the include directory for matlab.h
-+# This allows the #include to be either gtwrap/matlab.h, wrap/matlab.h or something custom.
-+if(NOT DEFINED GTWRAP_INCLUDE_NAME)
-+  set(GTWRAP_INCLUDE_NAME "gtwrap" CACHE INTERNAL "Directory name for Matlab includes")
-+endif()
-+configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
++set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
++set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
++set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 +
++# ##############################################################################
++# Package Configuration
++
++# Helper functions for generating the gtwrapConfig.cmake file correctly.
++include(CMakePackageConfigHelpers)
++
++# Configure the config file which is used for `find_package`.
++configure_package_config_file(
++  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gtwrapConfig.cmake.in
++  ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
++  INSTALL_DESTINATION "${INSTALL_CMAKE_DIR}"
++  PATH_VARS INSTALL_CMAKE_DIR INSTALL_LIB_DIR INSTALL_BIN_DIR
++            INSTALL_INCLUDE_DIR
++  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
++
++message(STATUS "Package config  : ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
++
++# ##############################################################################
++# Install the package
++
++message(STATUS "CMake           : ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
 +# Install CMake scripts to the standard CMake script directory.
-+install(FILES cmake/gtwrapConfig.cmake cmake/MatlabWrap.cmake
-+              cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake
-+        DESTINATION "${SCRIPT_INSTALL_DIR}/gtwrap")
++install(
++  FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
++        cmake/MatlabWrap.cmake cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake
++  DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
 +
-+# Needed for the CMAKE_INSTALL_X variables used below.
-+include(GNUInstallDirs)
++# Configure the include directory for matlab.h This allows the #include to be
++# either gtwrap/matlab.h, wrap/matlab.h or something custom.
++if(NOT DEFINED GTWRAP_INCLUDE_NAME)
++  set(GTWRAP_INCLUDE_NAME
++      "gtwrap"
++      CACHE INTERNAL "Directory name for Matlab includes")
++endif()
++
++configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in
++               ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
 +
 +# Install the gtwrap python package as a directory so it can be found  by CMake
 +# for wrapping.
-+install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
++message(STATUS "Lib path        : ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
++install(DIRECTORY gtwrap
++        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
++
++# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
++# will allow the gtwrapConfig.cmake file to load it later.
++install(DIRECTORY pybind11
++        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
 +
 +# Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 +# be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can
 +# support older CMake versions.
++message(STATUS "Bin path        : ${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR}")
 +install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
-+        DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})
-+
-+# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
-+# will allow the gtwrapConfig.cmake file to load it later.
-+install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
++        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR}")
 +
 +# Install the matlab.h file to `CMAKE_INSTALL_PREFIX/lib/gtwrap/matlab.h`.
-+install(FILES matlab.h DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/gtwrap")
++message(
++  STATUS "Header path     : ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR}")
++install(FILES matlab.h
++        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR}")
 --- /dev/null
 +++ gtsam-4.1.0/wrap/DOCS.md
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,194 @@
 +## Wrap Module Definition
 +
 +### Important
@@ -28194,6 +28368,17 @@ Last-Update: 2021-03-29
 +
 +    - Class variables are read-write so they can be updated directly in Python.
 +
++- Operator Overloading (Python only)
++    - You can overload operators just like in C++.
++
++    ```cpp
++    class Overload {
++        Overload operator*(const Overload& other) const;
++    };
++    ```
++    - Supported operators are the intersection of those supported in C++ and in Python.
++    - Operator overloading definitions have to be marked as `const` methods.
++
 +- Pointer types
 +    - To declare a simple/raw pointer, simply add an `@` to the class name, e.g.`Pose3@`.
 +    - To declare a shared pointer (e.g. `gtsam::noiseModel::Base::shared_ptr`), use an asterisk (i.e. `*`). E.g. `gtsam::noiseModel::Base*` to define the wrapping for the `Base` noise model shared pointer.
@@ -28221,7 +28406,7 @@ Last-Update: 2021-03-29
 +    - Can have multiple functions of the same name in different namespaces.
 +    - Functions can be templated and have multiple template arguments, e.g.
 +        ```cpp
-+        template<T, >
++        template<T, R, S>
 +        ```
 +
 +- Using classes defined in other modules
@@ -28242,7 +28427,7 @@ Last-Update: 2021-03-29
 +        virtual boost::shared_ptr<CLASS_NAME> clone() const;
 +        ```
 +
-+- Class Templates
++- Templates
 +    - Basic templates are supported either with an explicit list of types to instantiate,
 +      e.g.
 +
@@ -28256,17 +28441,30 @@ Last-Update: 2021-03-29
 +      template<T, U> class Class2 { ... };
 +      typedef Class2<Type1, Type2> MyInstantiatedClass;
 +      ```
-+
++    - Templates can also be defined for methods, properties and static methods.
 +    - In the class definition, appearances of the template argument(s) will be replaced with their
 +      instantiated types, e.g. `void setValue(const T& value);`.
 +    - To refer to the instantiation of the template class itself, use `This`, i.e. `static This Create();`.
 +    - To create new instantiations in other modules, you must copy-and-paste the whole class definition
 +      into the new module, but use only your new instantiation types.
-+    - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
++    - When forward-declaring template instantiations, use the generated/typedef'd name, e.g.
 +
 +      ```cpp
 +      class gtsam::Class1Pose2;
 +      class gtsam::MyInstantiatedClass;
++      ```
++    - Template arguments can be templates themselves, e.g.
++
++      ```cpp
++      // Typedef'd PinholeCamera
++      template<CALIBRATION>
++      class PinholeCamera { ... };
++      typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
++
++      template<CAMERA>
++      class SfmFactor { ... };
++      // This is valid.
++      typedef gtsam::SfmFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>> BasicSfmFactor;
 +      ```
 +
 +- `Boost.serialization` within the wrapper:
@@ -28497,7 +28695,7 @@ Last-Update: 2021-03-29
 +  the wrap code. Normally, leave this empty.
 --- /dev/null
 +++ gtsam-4.1.0/wrap/cmake/GtwrapUtils.cmake
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,105 @@
 +# Utilities to help with wrapping.
 +
 +# Use CMake's find_package to find the version of Python installed.
@@ -28563,9 +28761,10 @@ Last-Update: 2021-03-29
 +endmacro()
 +
 +# Set the Python version for the wrapper and set the paths to the executable and
-+# include/library directories. WRAP_PYTHON_VERSION can be "Default" or a
++# include/library directories.
++# WRAP_PYTHON_VERSION (optionally) can be "Default" or a
 +# specific major.minor version.
-+macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
++macro(gtwrap_get_python_version)
 +  # Unset these cached variables to avoid surprises when the python in the
 +  # current environment are different from the cached!
 +  unset(Python_EXECUTABLE CACHE)
@@ -28573,6 +28772,11 @@ Last-Update: 2021-03-29
 +  unset(Python_VERSION_MAJOR CACHE)
 +  unset(Python_VERSION_MINOR CACHE)
 +  unset(Python_VERSION_PATCH CACHE)
++
++  # Set default value if the parameter is not passed in
++  if(NOT WRAP_PYTHON_VERSION)
++    set(WRAP_PYTHON_VERSION "Default")
++  endif()
 +
 +  # Allow override
 +  if(${WRAP_PYTHON_VERSION} STREQUAL "Default")
@@ -28599,63 +28803,74 @@ Last-Update: 2021-03-29
 +endmacro()
 --- /dev/null
 +++ gtsam-4.1.0/wrap/cmake/MatlabWrap.cmake
-@@ -0,0 +1,477 @@
-+find_package(
-+  Matlab
-+  COMPONENTS MEX_COMPILER
-+  REQUIRED)
-+
-+if(NOT Matlab_MEX_COMPILER)
-+  message(
-+    FATAL_ERROR
-+      "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well."
-+  )
+@@ -0,0 +1,488 @@
++if(GTWRAP_PYTHON_PACKAGE_DIR)
++  # packaged
++  set(GTWRAP_PACKAGE_DIR "${GTWRAP_PYTHON_PACKAGE_DIR}")
++else()
++  set(GTWRAP_PACKAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 +endif()
 +
-+if(WRAP_BUILD_TYPE_POSTFIXES)
-+    set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-+endif()
++# Macro which finds and configure Matlab before we do any wrapping.
++macro(find_and_configure_matlab)
++  find_package(
++    Matlab
++    COMPONENTS MEX_COMPILER
++    REQUIRED)
 +
-+# WRAP_MEX_BUILD_STATIC_MODULE is not for Windows - on Windows any static
-+# are already compiled into the library by the linker
-+if(WRAP_MEX_BUILD_STATIC_MODULE AND WIN32)
-+    message(FATAL_ERROR "WRAP_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries. To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
-+endif()
-+
-+set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
-+set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
-+
-+# Try to automatically configure mex path from provided custom `bin` path.
-+if(WRAP_CUSTOM_MATLAB_PATH)
-+  set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
-+
-+  if(WIN32)
-+    set(mex_program_name "mex.bat")
-+  else()
-+    set(mex_program_name "mex")
++  if(NOT Matlab_MEX_COMPILER)
++    message(
++      FATAL_ERROR
++        "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well."
++    )
 +  endif()
 +
-+  # Run find_program explicitly putting $PATH after our predefined program
-+  # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
-+  # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
-+  # on the system path.
-+  find_program(MEX_COMMAND ${mex_program_name}
-+     PATHS ${matlab_bin_directory} ENV PATH
-+     NO_DEFAULT_PATH)
-+  mark_as_advanced(FORCE MEX_COMMAND)
-+  # Now that we have mex, trace back to find the Matlab installation root
-+  get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
-+  get_filename_component(mex_path "${MEX_COMMAND}" PATH)
-+  if(mex_path MATCHES ".*/win64$")
-+     get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
-+  else()
-+     get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
++  if(WRAP_BUILD_TYPE_POSTFIXES)
++      set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
 +  endif()
-+endif()
++
++  # WRAP_MEX_BUILD_STATIC_MODULE is not for Windows - on Windows any static
++  # are already compiled into the library by the linker
++  if(WRAP_MEX_BUILD_STATIC_MODULE AND WIN32)
++      message(FATAL_ERROR "WRAP_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries. To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
++  endif()
++
++  set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
++  set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
++
++  # Try to automatically configure mex path from provided custom `bin` path.
++  if(WRAP_CUSTOM_MATLAB_PATH)
++    set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
++
++    if(WIN32)
++      set(mex_program_name "mex.bat")
++    else()
++      set(mex_program_name "mex")
++    endif()
++
++    # Run find_program explicitly putting $PATH after our predefined program
++    # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
++    # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
++    # on the system path.
++    find_program(MEX_COMMAND ${mex_program_name}
++      PATHS ${matlab_bin_directory} ENV PATH
++      NO_DEFAULT_PATH)
++    mark_as_advanced(FORCE MEX_COMMAND)
++    # Now that we have mex, trace back to find the Matlab installation root
++    get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
++    get_filename_component(mex_path "${MEX_COMMAND}" PATH)
++    if(mex_path MATCHES ".*/win64$")
++      get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
++    else()
++      get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
++    endif()
++  endif()
++endmacro()
 +
 +# Consistent and user-friendly wrap function
 +function(matlab_wrap interfaceHeader linkLibraries
 +         extraIncludeDirs extraMexFlags ignore_classes)
++  find_and_configure_matlab()
 +  wrap_and_install_library("${interfaceHeader}" "${linkLibraries}"
 +                           "${extraIncludeDirs}" "${extraMexFlags}"
 +                           "${ignore_classes}")
@@ -29189,40 +29404,32 @@ Last-Update: 2021-03-29
        get_filename_component(location "${dest_directory}" PATH)
        get_filename_component(name "${dest_directory}" NAME)
 --- /dev/null
-+++ gtsam-4.1.0/wrap/cmake/gtwrapConfig.cmake
-@@ -0,0 +1,32 @@
++++ gtsam-4.1.0/wrap/cmake/gtwrapConfig.cmake.in
+@@ -0,0 +1,24 @@
 +# This config file modifies CMAKE_MODULE_PATH so that the wrap cmake files may
 +# be included This file also allows the use of `find_package(gtwrap)` in CMake.
 +
-+# Standard includes
-+include(GNUInstallDirs)
-+include(CMakePackageConfigHelpers)
-+include(CMakeDependentOption)
-+
-+set(GTWRAP_DIR "${CMAKE_CURRENT_LIST_DIR}")
++@PACKAGE_INIT@
 +
 +list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 +
-+if(WIN32 AND NOT CYGWIN)
-+  set(GTWRAP_CMAKE_DIR "${GTWRAP_DIR}")
-+  set(GTWRAP_SCRIPT_DIR ${CMAKE_INSTALL_FULL_BINDIR})
-+  set(GTWRAP_PYTHON_PACKAGE_DIR ${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap)
-+else()
-+  set(GTWRAP_CMAKE_DIR "${GTWRAP_DIR}")
-+  set(GTWRAP_SCRIPT_DIR ${CMAKE_INSTALL_FULL_BINDIR})
-+  set(GTWRAP_PYTHON_PACKAGE_DIR ${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap)
-+endif()
++# Set the path to the Python package directory so we can add it to the PYTHONPATH.
++# Used in the *Wrap.cmake files.
++set_and_check(GTWRAP_PYTHON_PACKAGE_DIR @PACKAGE_INSTALL_LIB_DIR@)
 +
 +# Load all the CMake scripts from the standard location
-+include(${GTWRAP_CMAKE_DIR}/PybindWrap.cmake)
-+include(${GTWRAP_CMAKE_DIR}/GtwrapUtils.cmake)
++include(@PACKAGE_INSTALL_CMAKE_DIR@/PybindWrap.cmake)
++include(@PACKAGE_INSTALL_CMAKE_DIR@/MatlabWrap.cmake)
++include(@PACKAGE_INSTALL_CMAKE_DIR@/GtwrapUtils.cmake)
 +
 +# Set the variables for the wrapping scripts to be used in the build.
-+set(PYBIND_WRAP_SCRIPT "${GTWRAP_SCRIPT_DIR}/pybind_wrap.py")
-+set(MATLAB_WRAP_SCRIPT "${GTWRAP_SCRIPT_DIR}/matlab_wrap.py")
++set_and_check(PYBIND_WRAP_SCRIPT "@PACKAGE_INSTALL_BIN_DIR@/pybind_wrap.py")
++set_and_check(MATLAB_WRAP_SCRIPT "@PACKAGE_INSTALL_BIN_DIR@/matlab_wrap.py")
 +
 +# Load the pybind11 code from the library installation path
-+add_subdirectory(${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap/pybind11 pybind11)
++add_subdirectory(@PACKAGE_INSTALL_LIB_DIR@/pybind11 pybind11)
++
++check_required_components(gtwrap)
 --- /dev/null
 +++ gtsam-4.1.0/wrap/docs/parser/doxygen.conf
 @@ -0,0 +1,2564 @@
@@ -31860,7 +32067,7 @@ Last-Update: 2021-03-29
 +pyparsing.ParserElement.enablePackrat()
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/interface_parser/classes.py
-@@ -0,0 +1,282 @@
+@@ -0,0 +1,357 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -31873,15 +32080,15 @@ Last-Update: 2021-03-29
 +Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 +"""
 +
-+from typing import List, Union
++from typing import Iterable, List, Union
 +
-+from pyparsing import Optional, ZeroOrMore
++from pyparsing import Optional, ZeroOrMore, Literal
 +
 +from .function import ArgumentList, ReturnType
 +from .template import Template
 +from .tokens import (CLASS, COLON, CONST, IDENT, LBRACE, LPAREN, RBRACE,
-+                     RPAREN, SEMI_COLON, STATIC, VIRTUAL)
-+from .type import Type, Typename
++                     RPAREN, SEMI_COLON, STATIC, VIRTUAL, OPERATOR)
++from .type import TemplatedType, Type, Typename
 +
 +
 +class Method:
@@ -32011,18 +32218,81 @@ Last-Update: 2021-03-29
 +    ````
 +    """
 +    rule = (
-+        Type.rule("ctype")  #
++        (Type.rule ^ TemplatedType.rule)("ctype")  #
 +        + IDENT("name")  #
 +        + SEMI_COLON  #
 +    ).setParseAction(lambda t: Property(t.ctype, t.name))
 +
 +    def __init__(self, ctype: Type, name: str, parent=''):
-+        self.ctype = ctype
++        self.ctype = ctype[0]  # ParseResult is a list
 +        self.name = name
 +        self.parent = parent
 +
 +    def __repr__(self) -> str:
 +        return '{} {}'.format(self.ctype.__repr__(), self.name)
++
++
++class Operator:
++    """
++    Rule for parsing operator overloads.
++
++    E.g.
++    ```
++    class Overload {
++        Vector2 operator+(const Vector2 &v) const;
++    };
++    """
++    rule = (
++        ReturnType.rule("return_type")  #
++        + Literal("operator")("name")  #
++        + OPERATOR("operator")  #
++        + LPAREN  #
++        + ArgumentList.rule("args_list")  #
++        + RPAREN  #
++        + CONST("is_const")  #
++        + SEMI_COLON  # BR
++    ).setParseAction(lambda t: Operator(t.name, t.operator, t.return_type, t.
++                                        args_list, t.is_const))
++
++    def __init__(self,
++                 name: str,
++                 operator: str,
++                 return_type: ReturnType,
++                 args: ArgumentList,
++                 is_const: str,
++                 parent: Union[str, "Class"] = ''):
++        self.name = name
++        self.operator = operator
++        self.return_type = return_type
++        self.args = args
++        self.is_const = is_const
++        self.is_unary = len(args) == 0
++
++        self.parent = parent
++
++        # Check for valid unary operators
++        if self.is_unary and self.operator not in ('+', '-'):
++            raise ValueError("Invalid unary operator {} used for {}".format(
++                self.operator, self))
++
++        # Check that number of arguments are either 0 or 1
++        assert 0 <= len(args) < 2, \
++            "Operator overload should be at most 1 argument, " \
++                "{} arguments provided".format(len(args))
++
++        # Check to ensure arg and return type are the same.
++        if len(args) == 1 and self.operator not in ("()", "[]"):
++            assert args.args_list[0].ctype.typename.name == return_type.type1.typename.name, \
++                "Mixed type overloading not supported. Both arg and return type must be the same."
++
++    def __repr__(self) -> str:
++        return "Operator: {}{}{}({}) {}".format(
++            self.return_type,
++            self.name,
++            self.operator,
++            self.args,
++            self.is_const,
++        )
 +
 +
 +def collect_namespaces(obj):
@@ -32051,21 +32321,23 @@ Last-Update: 2021-03-29
 +    };
 +    ```
 +    """
-+    class MethodsAndProperties:
++    class Members:
 +        """
-+        Rule for all the methods and properties within a class.
++        Rule for all the members within a class.
 +        """
 +        rule = ZeroOrMore(Constructor.rule ^ StaticMethod.rule ^ Method.rule
-+                          ^ Property.rule).setParseAction(
-+                              lambda t: Class.MethodsAndProperties(t.asList()))
++                          ^ Property.rule ^ Operator.rule).setParseAction(
++                              lambda t: Class.Members(t.asList()))
 +
-+        def __init__(self, methods_props: List[Union[Constructor, Method,
-+                                                     StaticMethod, Property]]):
++        def __init__(self,
++                     members: List[Union[Constructor, Method, StaticMethod,
++                                         Property, Operator]]):
 +            self.ctors = []
 +            self.methods = []
 +            self.static_methods = []
 +            self.properties = []
-+            for m in methods_props:
++            self.operators = []
++            for m in members:
 +                if isinstance(m, Constructor):
 +                    self.ctors.append(m)
 +                elif isinstance(m, Method):
@@ -32074,6 +32346,8 @@ Last-Update: 2021-03-29
 +                    self.static_methods.append(m)
 +                elif isinstance(m, Property):
 +                    self.properties.append(m)
++                elif isinstance(m, Operator):
++                    self.operators.append(m)
 +
 +    _parent = COLON + Typename.rule("parent_class")
 +    rule = (
@@ -32083,7 +32357,7 @@ Last-Update: 2021-03-29
 +        + IDENT("name")  #
 +        + Optional(_parent)  #
 +        + LBRACE  #
-+        + MethodsAndProperties.rule("methods_props")  #
++        + Members.rule("members")  #
 +        + RBRACE  #
 +        + SEMI_COLON  # BR
 +    ).setParseAction(lambda t: Class(
@@ -32091,10 +32365,11 @@ Last-Update: 2021-03-29
 +        t.is_virtual,
 +        t.name,
 +        t.parent_class,
-+        t.methods_props.ctors,
-+        t.methods_props.methods,
-+        t.methods_props.static_methods,
-+        t.methods_props.properties,
++        t.members.ctors,
++        t.members.methods,
++        t.members.static_methods,
++        t.members.properties,
++        t.members.operators,
 +    ))
 +
 +    def __init__(
@@ -32107,13 +32382,18 @@ Last-Update: 2021-03-29
 +        methods: List[Method],
 +        static_methods: List[StaticMethod],
 +        properties: List[Property],
++        operators: List[Operator],
 +        parent: str = '',
 +    ):
 +        self.template = template
 +        self.is_virtual = is_virtual
 +        self.name = name
 +        if parent_class:
-+            self.parent_class = Typename.from_parse_result(parent_class)
++            if isinstance(parent_class, Iterable):
++                self.parent_class = parent_class[0]
++            else:
++                self.parent_class = parent_class
++
 +        else:
 +            self.parent_class = ''
 +
@@ -32121,7 +32401,9 @@ Last-Update: 2021-03-29
 +        self.methods = methods
 +        self.static_methods = static_methods
 +        self.properties = properties
++        self.operators = operators
 +        self.parent = parent
++
 +        # Make sure ctors' names and class name are the same.
 +        for ctor in self.ctors:
 +            if ctor.name != self.name:
@@ -32196,7 +32478,7 @@ Last-Update: 2021-03-29
 +                 parent: str = ''):
 +        self.name = name
 +        if parent_type:
-+            self.parent_type = Typename.from_parse_result(parent_type)
++            self.parent_type = parent_type
 +        else:
 +            self.parent_type = ''
 +
@@ -32208,7 +32490,7 @@ Last-Update: 2021-03-29
 +                                                      self.name, self.parent)
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/interface_parser/function.py
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,175 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -32221,14 +32503,14 @@ Last-Update: 2021-03-29
 +Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 +"""
 +
-+from typing import List, Union
++from typing import Iterable, List, Union
 +
 +from pyparsing import Optional, ParseResults, delimitedList
 +
 +from .template import Template
 +from .tokens import (COMMA, IDENT, LOPBRACK, LPAREN, PAIR, ROPBRACK, RPAREN,
 +                     SEMI_COLON)
-+from .type import Type
++from .type import TemplatedType, Type
 +
 +
 +class Argument:
@@ -32240,16 +32522,23 @@ Last-Update: 2021-03-29
 +    void sayHello(/*`s` is the method argument with type `const string&`*/ const string& s);
 +    ```
 +    """
-+    rule = (Type.rule("ctype") +
++    rule = ((Type.rule ^ TemplatedType.rule)("ctype") +
 +            IDENT("name")).setParseAction(lambda t: Argument(t.ctype, t.name))
 +
-+    def __init__(self, ctype: Type, name: str):
-+        self.ctype = ctype
++    def __init__(self, ctype: Union[Type, TemplatedType], name: str):
++        if isinstance(ctype, Iterable):
++            self.ctype = ctype[0]
++        else:
++            self.ctype = ctype
 +        self.name = name
 +        self.parent: Union[ArgumentList, None] = None
 +
 +    def __repr__(self) -> str:
-+        return '{} {}'.format(self.ctype.__repr__(), self.name)
++        return self.to_cpp()
++
++    def to_cpp(self) -> str:
++        """Return full C++ representation of argument."""
++        return '{} {}'.format(repr(self.ctype), self.name)
 +
 +
 +class ArgumentList:
@@ -32304,11 +32593,13 @@ Last-Update: 2021-03-29
 +        + Type.rule("type2")  #
 +        + ROPBRACK  #
 +    )
-+    rule = (_pair ^ Type.rule("type1")).setParseAction(  # BR
-+        lambda t: ReturnType(t.type1, t.type2))
++    rule = (_pair ^
++            (Type.rule ^ TemplatedType.rule)("type1")).setParseAction(  # BR
++                lambda t: ReturnType(t.type1, t.type2))
 +
-+    def __init__(self, type1: Type, type2: Type):
-+        self.type1 = type1
++    def __init__(self, type1: Union[Type, TemplatedType], type2: Type):
++        # If a TemplatedType, the return is a ParseResults, so we extract out the type.
++        self.type1 = type1[0] if isinstance(type1, ParseResults) else type1
 +        self.type2 = type2
 +        # The parent object which contains the return type
 +        # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
@@ -32566,7 +32857,7 @@ Last-Update: 2021-03-29
 +        return ancestors
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/interface_parser/template.py
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,101 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -32585,7 +32876,7 @@ Last-Update: 2021-03-29
 +
 +from .tokens import (EQUAL, IDENT, LBRACE, LOPBRACK, RBRACE, ROPBRACK,
 +                     SEMI_COLON, TEMPLATE, TYPEDEF)
-+from .type import Typename
++from .type import Typename, TemplatedType
 +
 +
 +class Template:
@@ -32607,7 +32898,8 @@ Last-Update: 2021-03-29
 +            + Optional(  #
 +                EQUAL  #
 +                + LBRACE  #
-+                + ((delimitedList(Typename.rule)("instantiations")))  #
++                + ((delimitedList(TemplatedType.rule ^ Typename.rule)
++                    ("instantiations")))  #
 +                + RBRACE  #
 +            )).setParseAction(lambda t: Template.TypenameAndInstantiations(
 +                t.typename, t.instantiations))
@@ -32615,10 +32907,12 @@ Last-Update: 2021-03-29
 +        def __init__(self, typename: str, instantiations: ParseResults):
 +            self.typename = typename
 +
++            self.instantiations = []
 +            if instantiations:
-+                self.instantiations = instantiations.asList()
-+            else:
-+                self.instantiations = []
++                for inst in instantiations:
++                    x = inst.typename if isinstance(inst,
++                                                    TemplatedType) else inst
++                    self.instantiations.append(x)
 +
 +    rule = (  # BR
 +        TEMPLATE  #
@@ -32649,17 +32943,25 @@ Last-Update: 2021-03-29
 +    typedef SuperComplexName<Arg1, Arg2, Arg3> EasierName;
 +    ```
 +    """
-+    rule = (TYPEDEF + Typename.rule("typename") + IDENT("new_name") +
++    rule = (TYPEDEF + TemplatedType.rule("templated_type") +
++            IDENT("new_name") +
 +            SEMI_COLON).setParseAction(lambda t: TypedefTemplateInstantiation(
-+                Typename.from_parse_result(t.typename), t.new_name))
++                t.templated_type[0], t.new_name))
 +
-+    def __init__(self, typename: Typename, new_name: str, parent: str = ''):
-+        self.typename = typename
++    def __init__(self,
++                 templated_type: TemplatedType,
++                 new_name: str,
++                 parent: str = ''):
++        self.typename = templated_type.typename
 +        self.new_name = new_name
 +        self.parent = parent
++
++    def __repr__(self):
++        return "Typedef: {new_name} = {typename}".format(
++            new_name=self.new_name, typename=self.typename)
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/interface_parser/tokens.py
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,87 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -32672,7 +32974,7 @@ Last-Update: 2021-03-29
 +Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 +"""
 +
-+from pyparsing import Keyword, Literal, Suppress, Word, alphanums, alphas, nums
++from pyparsing import Keyword, Literal, Suppress, Word, alphanums, alphas, nums, Or
 +
 +# rule for identifiers (e.g. variable names)
 +IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
@@ -32708,9 +33010,48 @@ Last-Update: 2021-03-29
 +        "float",
 +    ],
 +)
++
++OPERATOR = Or(
++    map(
++        Literal,
++        [
++            '+',  # __add__, __pos__
++            '-',  # __sub__, __neg__
++            '*',  # __mul__
++            '/',  # __truediv__
++            '%',  # __mod__
++            '^',  # __xor__
++            '&',  # __and__
++            '|',  # __or__
++            # '~',  # __invert__
++            '+=',  # __iadd__
++            '-=',  # __isub__
++            '*=',  # __imul__
++            '/=',  # __itruediv__
++            '%=',  # __imod__
++            '^=',  # __ixor__
++            '&=',  # __iand__
++            '|=',  # __ior__
++            '<<',  # __lshift__
++            '<<=',  # __ilshift__
++            '>>',  # __rshift__
++            '>>=',  # __irshift__
++            '==',  # __eq__
++            '!=',  # __ne__
++            '<',  # __lt__
++            '>',  # __gt__
++            '<=',  # __le__
++            '>=',  # __ge__
++            # '!',  # Use `not` in python
++            # '&&',  # Use `and` in python
++            # '||',  # Use `or` in python
++            '()',  # __call__
++            '[]',  # __getitem__
++        ],
++    ))
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/interface_parser/type.py
-@@ -0,0 +1,232 @@
+@@ -0,0 +1,315 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -32725,7 +33066,7 @@ Last-Update: 2021-03-29
 +
 +# pylint: disable=unnecessary-lambda, expression-not-assigned
 +
-+from typing import Iterable, Union
++from typing import Iterable, List, Union
 +
 +from pyparsing import Forward, Optional, Or, ParseResults, delimitedList
 +
@@ -32755,20 +33096,15 @@ Last-Update: 2021-03-29
 +
 +    namespaces_name_rule = delimitedList(IDENT, "::")
 +    instantiation_name_rule = delimitedList(IDENT, "::")
-+    rule = Forward()
-+    rule << (
++    rule = (
 +        namespaces_name_rule("namespaces_and_name")  #
-+        + Optional(
-+            (LOPBRACK + delimitedList(rule, ",")
-+             ("instantiations") + ROPBRACK))).setParseAction(
-+                 lambda t: Typename(t.namespaces_and_name, t.instantiations))
++    ).setParseAction(lambda t: Typename(t))
 +
 +    def __init__(self,
-+                 namespaces_and_name: ParseResults,
++                 t: ParseResults,
 +                 instantiations: Union[tuple, list, str, ParseResults] = ()):
-+        self.name = namespaces_and_name[
-+            -1]  # the name is the last element in this list
-+        self.namespaces = namespaces_and_name[:-1]
++        self.name = t[-1]  # the name is the last element in this list
++        self.namespaces = t[:-1]
 +
 +        if instantiations:
 +            if isinstance(instantiations, Iterable):
@@ -32796,6 +33132,10 @@ Last-Update: 2021-03-29
 +            res += instantiation.instantiated_name()
 +        return res
 +
++    def qualified_name(self):
++        """Return the fully qualified name, e.g. `gtsam::internal::PoseKey`."""
++        return "::".join(self.namespaces + [self.name])
++
 +    def to_cpp(self) -> str:
 +        """Generate the C++ code for wrapping."""
 +        idx = 1 if self.namespaces and not self.namespaces[0] else 0
@@ -32821,72 +33161,76 @@ Last-Update: 2021-03-29
 +        return not res
 +
 +
-+class QualifiedType:
-+    """Type with qualifiers, such as `const`."""
-+
-+    rule = (
-+        Typename.rule("typename")  #
-+        + Optional(
-+            SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
-+            | REF("is_ref"))).setParseAction(lambda t: QualifiedType(t))
-+
-+    def __init__(self, t: ParseResults):
-+        self.typename = Typename.from_parse_result(t.typename)
-+        self.is_shared_ptr = t.is_shared_ptr
-+        self.is_ptr = t.is_ptr
-+        self.is_ref = t.is_ref
-+
-+
-+class BasisType:
++class BasicType:
 +    """
-+    Basis types are the built-in types in C++ such as double, int, char, etc.
++    Basic types are the fundamental built-in types in C++ such as double, int, char, etc.
 +
 +    When using templates, the basis type will take on the same form as the template.
 +
 +    E.g.
-+        ```
-+        template<T = {double}>
-+        void func(const T& x);
-+        ```
++    ```
++    template<T = {double}>
++    void func(const T& x);
++    ```
 +
-+        will give
++    will give
 +
-+        ```
-+        m_.def("CoolFunctionDoubleDouble",[](const double& s) {
-+            return wrap_example::CoolFunction<double,double>(s);
-+        }, py::arg("s"));
-+        ```
++    ```
++    m_.def("CoolFunctionDoubleDouble",[](const double& s) {
++        return wrap_example::CoolFunction<double,double>(s);
++    }, py::arg("s"));
++    ```
 +    """
 +
-+    rule = (
-+        Or(BASIS_TYPES)("typename")  #
-+        + Optional(
-+            SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
-+            | REF("is_ref"))  #
-+    ).setParseAction(lambda t: BasisType(t))
++    rule = (Or(BASIS_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
 +
 +    def __init__(self, t: ParseResults):
-+        self.typename = Typename([t.typename])
-+        self.is_ptr = t.is_ptr
-+        self.is_shared_ptr = t.is_shared_ptr
-+        self.is_ref = t.is_ref
++        self.typename = Typename(t.asList())
++
++
++class CustomType:
++    """
++    Custom defined types with the namespace.
++    Essentially any C++ data type that is not a BasicType.
++
++    E.g.
++    ```
++    gtsam::Matrix wTc;
++    ```
++
++    Here `gtsam::Matrix` is a custom type.
++    """
++
++    rule = (Typename.rule("typename")).setParseAction(lambda t: CustomType(t))
++
++    def __init__(self, t: ParseResults):
++        self.typename = Typename(t)
 +
 +
 +class Type:
-+    """The type value that is parsed, e.g. void, string, size_t."""
++    """
++    Parsed datatype, can be either a fundamental type or a custom datatype.
++    E.g. void, double, size_t, Matrix.
++
++    The type can optionally be a raw pointer, shared pointer or reference.
++    Can also be optionally qualified with a `const`, e.g. `const int`.
++    """
 +    rule = (
 +        Optional(CONST("is_const"))  #
-+        + (BasisType.rule("basis") | QualifiedType.rule("qualified"))  # BR
++        + (BasicType.rule("basis") | CustomType.rule("qualified"))  # BR
++        + Optional(
++            SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
++            | REF("is_ref"))  #
 +    ).setParseAction(lambda t: Type.from_parse_result(t))
 +
 +    def __init__(self, typename: Typename, is_const: str, is_shared_ptr: str,
-+                 is_ptr: str, is_ref: str, is_basis: bool):
++                 is_ptr: str, is_ref: str, is_basic: bool):
 +        self.typename = typename
 +        self.is_const = is_const
 +        self.is_shared_ptr = is_shared_ptr
 +        self.is_ptr = is_ptr
 +        self.is_ref = is_ref
-+        self.is_basis = is_basis
++        self.is_basic = is_basic
 +
 +    @staticmethod
 +    def from_parse_result(t: ParseResults):
@@ -32895,26 +33239,26 @@ Last-Update: 2021-03-29
 +            return Type(
 +                typename=t.basis.typename,
 +                is_const=t.is_const,
-+                is_shared_ptr=t.basis.is_shared_ptr,
-+                is_ptr=t.basis.is_ptr,
-+                is_ref=t.basis.is_ref,
-+                is_basis=True,
++                is_shared_ptr=t.is_shared_ptr,
++                is_ptr=t.is_ptr,
++                is_ref=t.is_ref,
++                is_basic=True,
 +            )
 +        elif t.qualified:
 +            return Type(
 +                typename=t.qualified.typename,
 +                is_const=t.is_const,
-+                is_shared_ptr=t.qualified.is_shared_ptr,
-+                is_ptr=t.qualified.is_ptr,
-+                is_ref=t.qualified.is_ref,
-+                is_basis=False,
++                is_shared_ptr=t.is_shared_ptr,
++                is_ptr=t.is_ptr,
++                is_ref=t.is_ref,
++                is_basic=False,
 +            )
 +        else:
 +            raise ValueError("Parse result is not a Type")
 +
 +    def __repr__(self) -> str:
-+        return "{self.typename} " \
-+            "{self.is_const}{self.is_shared_ptr}{self.is_ptr}{self.is_ref}".format(
++        return "{self.is_const} {self.typename} " \
++            "{self.is_shared_ptr}{self.is_ptr}{self.is_ref}".format(
 +            self=self)
 +
 +    def to_cpp(self, use_boost: bool) -> str:
@@ -32923,12 +33267,14 @@ Last-Update: 2021-03-29
 +
 +        Treat all pointers as "const shared_ptr<T>&"
 +        Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
++
++        Args:
++            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
 +        """
 +        shared_ptr_ns = "boost" if use_boost else "std"
 +
 +        if self.is_shared_ptr:
-+            # always pass by reference: https://stackoverflow.com/a/8741626/1236990
-+            typename = "{ns}::shared_ptr<{typename}>&".format(
++            typename = "{ns}::shared_ptr<{typename}>".format(
 +                ns=shared_ptr_ns, typename=self.typename.to_cpp())
 +        elif self.is_ptr:
 +            typename = "{typename}*".format(typename=self.typename.to_cpp())
@@ -32937,6 +33283,84 @@ Last-Update: 2021-03-29
 +                typename=self.typename.to_cpp())
 +        else:
 +            typename = self.typename.to_cpp()
++
++        return ("{const}{typename}".format(
++            const="const " if
++            (self.is_const
++             or self.typename.name in ["Matrix", "Vector"]) else "",
++            typename=typename))
++
++
++class TemplatedType:
++    """
++    Parser rule for data types which are templated.
++    This is done so that the template parameters can be pointers/references.
++
++    E.g. std::vector<double>, BearingRange<Pose3, Point3>
++    """
++
++    rule = Forward()
++    rule << (
++        Optional(CONST("is_const"))  #
++        + Typename.rule("typename")  #
++        + (
++            LOPBRACK  #
++            + delimitedList(Type.rule ^ rule, ",")("template_params")  #
++            + ROPBRACK)  #
++        + Optional(
++            SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
++            | REF("is_ref"))  #
++    ).setParseAction(lambda t: TemplatedType.from_parse_result(t))
++
++    def __init__(self, typename: Typename, template_params: List[Type],
++                 is_const: str, is_shared_ptr: str, is_ptr: str, is_ref: str):
++        instantiations = [param.typename for param in template_params]
++        # Recreate the typename but with the template params as instantiations.
++        self.typename = Typename(typename.namespaces + [typename.name],
++                                 instantiations)
++
++        self.template_params = template_params
++
++        self.is_const = is_const
++        self.is_shared_ptr = is_shared_ptr
++        self.is_ptr = is_ptr
++        self.is_ref = is_ref
++
++    @staticmethod
++    def from_parse_result(t: ParseResults):
++        """Get the TemplatedType from the parser results."""
++        return TemplatedType(t.typename, t.template_params, t.is_const,
++                             t.is_shared_ptr, t.is_ptr, t.is_ref)
++
++    def __repr__(self):
++        return "TemplatedType({typename.namespaces}::{typename.name})".format(
++            typename=self.typename)
++
++    def to_cpp(self, use_boost: bool):
++        """
++        Generate the C++ code for wrapping.
++
++        Args:
++            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
++        """
++        # Use Type.to_cpp to do the heavy lifting for the template parameters.
++        template_args = ", ".join(
++            [t.to_cpp(use_boost) for t in self.template_params])
++
++        typename = "{typename}<{template_args}>".format(
++            typename=self.typename.qualified_name(),
++            template_args=template_args)
++
++        shared_ptr_ns = "boost" if use_boost else "std"
++        if self.is_shared_ptr:
++            typename = "{ns}::shared_ptr<{typename}>".format(ns=shared_ptr_ns,
++                                                             typename=typename)
++        elif self.is_ptr:
++            typename = "{typename}*".format(typename=typename)
++        elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
++            typename = typename = "{typename}&".format(typename=typename)
++        else:
++            pass
 +
 +        return ("{const}{typename}".format(
 +            const="const " if
@@ -34888,7 +35312,7 @@ Last-Update: 2021-03-29
 +                f.write(c[1])
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/pybind_wrapper.py
-@@ -0,0 +1,361 @@
+@@ -0,0 +1,382 @@
 +#!/usr/bin/env python3
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
@@ -35084,6 +35508,24 @@ Last-Update: 2021-03-29
 +                    ))
 +        return res
 +
++    def wrap_operators(self, operators, cpp_class, prefix='\n' + ' ' * 8):
++        """Wrap all the overloaded operators in the `cpp_class`."""
++        res = ""
++        template = "{prefix}.def({{0}})".format(prefix=prefix)
++        for op in operators:
++            if op.operator == "[]":  # __getitem__
++                res += "{prefix}.def(\"__getitem__\", &{cpp_class}::operator[])".format(
++                    prefix=prefix, cpp_class=cpp_class)
++            elif op.operator == "()":  # __call__
++                res += "{prefix}.def(\"__call__\", &{cpp_class}::operator())".format(
++                    prefix=prefix, cpp_class=cpp_class)
++            elif op.is_unary:
++                res += template.format("{0}py::self".format(op.operator))
++            else:
++                res += template.format("py::self {0} py::self".format(
++                    op.operator))
++        return res
++
 +    def wrap_instantiated_class(self, instantiated_class):
 +        """Wrap the class."""
 +        module_var = self._gen_module_var(instantiated_class.namespaces())
@@ -35096,12 +35538,14 @@ Last-Update: 2021-03-29
 +            '{wrapped_ctors}'
 +            '{wrapped_methods}'
 +            '{wrapped_static_methods}'
-+            '{wrapped_properties};\n'.format(
++            '{wrapped_properties}'
++            '{wrapped_operators};\n'.format(
 +                shared_ptr_type=('boost' if self.use_boost else 'std'),
 +                cpp_class=cpp_class,
 +                class_name=instantiated_class.name,
-+                class_parent=str(instantiated_class.parent_class) +
-+                (', ' if instantiated_class.parent_class else ''),
++                class_parent="{instantiated_class.parent_class}, ".format(
++                    instantiated_class=instantiated_class)
++                if instantiated_class.parent_class else '',
 +                module_var=module_var,
 +                wrapped_ctors=self.wrap_ctors(instantiated_class),
 +                wrapped_methods=self.wrap_methods(instantiated_class.methods,
@@ -35110,7 +35554,8 @@ Last-Update: 2021-03-29
 +                    instantiated_class.static_methods, cpp_class),
 +                wrapped_properties=self.wrap_properties(
 +                    instantiated_class.properties, cpp_class),
-+            ))
++                wrapped_operators=self.wrap_operators(
++                    instantiated_class.operators, cpp_class)))
 +
 +    def wrap_stl_class(self, stl_class):
 +        """Wrap STL containers."""
@@ -35252,7 +35697,7 @@ Last-Update: 2021-03-29
 +        )
 --- /dev/null
 +++ gtsam-4.1.0/wrap/gtwrap/template_instantiator.py
-@@ -0,0 +1,544 @@
+@@ -0,0 +1,583 @@
 +"""Code to help instantiate templated classes, methods and functions."""
 +
 +# pylint: disable=too-many-arguments, too-many-instance-attributes, no-self-use, no-else-return, too-many-arguments, unused-format-string-argument, unused-variable
@@ -35303,7 +35748,7 @@ Last-Update: 2021-03-29
 +            is_shared_ptr=ctype.is_shared_ptr,
 +            is_ptr=ctype.is_ptr,
 +            is_ref=ctype.is_ref,
-+            is_basis=ctype.is_basis,
++            is_basic=ctype.is_basic,
 +        )
 +    elif str_arg_typename == 'This':
 +        if instantiated_class:
@@ -35323,7 +35768,7 @@ Last-Update: 2021-03-29
 +            is_shared_ptr=ctype.is_shared_ptr,
 +            is_ptr=ctype.is_ptr,
 +            is_ref=ctype.is_ref,
-+            is_basis=ctype.is_basis,
++            is_basic=ctype.is_basic,
 +        )
 +    else:
 +        return ctype
@@ -35461,7 +35906,7 @@ Last-Update: 2021-03-29
 +    """
 +    We can only instantiate template methods with a single template parameter.
 +    """
-+    def __init__(self, original, instantiations: List[parser.Typename]=''):
++    def __init__(self, original, instantiations: List[parser.Typename] = ''):
 +        self.original = original
 +        self.instantiations = instantiations
 +        self.template = ''
@@ -35547,11 +35992,15 @@ Last-Update: 2021-03-29
 +        # This will allow the `This` keyword to be used in both templated and non-templated classes.
 +        typenames = self.original.template.typenames if self.original.template else []
 +
-+        # Instantiate the constructors, static methods, properties
-+        # and instance methods, respectively.
++        # Instantiate the constructors, static methods, properties, respectively.
 +        self.ctors = self.instantiate_ctors(typenames)
 +        self.static_methods = self.instantiate_static_methods(typenames)
 +        self.properties = self.instantiate_properties(typenames)
++
++        # Instantiate all operator overloads
++        self.operators = self.instantiate_operators(typenames)
++
++        # Instantiate all instance methods
 +        instantiated_methods = \
 +            self.instantiate_class_templates_in_methods(typenames)
 +
@@ -35578,6 +36027,7 @@ Last-Update: 2021-03-29
 +            self.methods,
 +            self.static_methods,
 +            self.properties,
++            self.operators,
 +            parent=self.parent,
 +        )
 +
@@ -35588,10 +36038,11 @@ Last-Update: 2021-03-29
 +               name=self.name,
 +               cpp_class=self.cpp_class(),
 +               parent_class=self.parent,
-+               ctors="\n".join([ctor.__repr__() for ctor in self.ctors]),
-+               methods="\n".join([m.__repr__() for m in self.methods]),
-+               static_methods="\n".join([m.__repr__()
++               ctors="\n".join([repr(ctor) for ctor in self.ctors]),
++               methods="\n".join([repr(m) for m in self.methods]),
++               static_methods="\n".join([repr(m)
 +                                         for m in self.static_methods]),
++               operators="\n".join([repr(op) for op in self.operators])
 +            )
 +
 +    def instantiate_ctors(self, typenames):
@@ -35689,6 +36140,39 @@ Last-Update: 2021-03-29
 +                    parent=self,
 +                ))
 +        return class_instantiated_methods
++
++    def instantiate_operators(self, typenames):
++        """
++        Instantiate the class-level template in the operator overload.
++
++        Args:
++            typenames: List of template types to instantiate.
++
++        Return: List of methods instantiated with provided template args on the class.
++        """
++        instantiated_operators = []
++        for operator in self.original.operators:
++            instantiated_args = instantiate_args_list(
++                operator.args.args_list,
++                typenames,
++                self.instantiations,
++                self.cpp_typename(),
++            )
++            instantiated_operators.append(
++                parser.Operator(
++                    name=operator.name,
++                    operator=operator.operator,
++                    return_type=instantiate_return_type(
++                        operator.return_type,
++                        typenames,
++                        self.instantiations,
++                        self.cpp_typename(),
++                    ),
++                    args=parser.ArgumentList(instantiated_args),
++                    is_const=operator.is_const,
++                    parent=self,
++                ))
++        return instantiated_operators
 +
 +    def instantiate_properties(self, typenames):
 +        """
@@ -47676,12 +48160,13 @@ Last-Update: 2021-03-29
 +#include <map>
 --- /dev/null
 +++ gtsam-4.1.0/wrap/templates/pybind_wrapper.tpl.example
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,31 @@
 +{include_boost}
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/base/serialization.h"
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
@@ -47768,7 +48253,7 @@ Last-Update: 2021-03-29
 +    function obj = PinholeCameraCal3Bundler(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        special_cases_wrapper(3, my_ptr);
++        special_cases_wrapper(5, my_ptr);
 +      else
 +        error('Arguments do not match any overload of gtsam.PinholeCameraCal3Bundler constructor');
 +      end
@@ -47776,7 +48261,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      special_cases_wrapper(4, obj.ptr_gtsamPinholeCameraCal3Bundler);
++      special_cases_wrapper(6, obj.ptr_gtsamPinholeCameraCal3Bundler);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -48566,7 +49051,7 @@ Last-Update: 2021-03-29
 +    function obj = MultipleTemplatesIntDouble(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(44, my_ptr);
++        class_wrapper(48, my_ptr);
 +      else
 +        error('Arguments do not match any overload of MultipleTemplatesIntDouble constructor');
 +      end
@@ -48574,7 +49059,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(45, obj.ptr_MultipleTemplatesIntDouble);
++      class_wrapper(49, obj.ptr_MultipleTemplatesIntDouble);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -48600,7 +49085,7 @@ Last-Update: 2021-03-29
 +    function obj = MultipleTemplatesIntFloat(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(46, my_ptr);
++        class_wrapper(50, my_ptr);
 +      else
 +        error('Arguments do not match any overload of MultipleTemplatesIntFloat constructor');
 +      end
@@ -48608,7 +49093,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(47, obj.ptr_MultipleTemplatesIntFloat);
++      class_wrapper(51, obj.ptr_MultipleTemplatesIntFloat);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -48675,9 +49160,9 @@ Last-Update: 2021-03-29
 +    function obj = MyFactorPosePoint2(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(48, my_ptr);
++        class_wrapper(52, my_ptr);
 +      elseif nargin == 4 && isa(varargin{1},'numeric') && isa(varargin{2},'numeric') && isa(varargin{3},'double') && isa(varargin{4},'gtsam.noiseModel.Base')
-+        my_ptr = class_wrapper(49, varargin{1}, varargin{2}, varargin{3}, varargin{4});
++        my_ptr = class_wrapper(53, varargin{1}, varargin{2}, varargin{3}, varargin{4});
 +      else
 +        error('Arguments do not match any overload of MyFactorPosePoint2 constructor');
 +      end
@@ -48685,7 +49170,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(50, obj.ptr_MyFactorPosePoint2);
++      class_wrapper(54, obj.ptr_MyFactorPosePoint2);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -49084,9 +49569,9 @@ Last-Update: 2021-03-29
 +    function obj = MyVector12(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(41, my_ptr);
++        class_wrapper(45, my_ptr);
 +      elseif nargin == 0
-+        my_ptr = class_wrapper(42);
++        my_ptr = class_wrapper(46);
 +      else
 +        error('Arguments do not match any overload of MyVector12 constructor');
 +      end
@@ -49094,7 +49579,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(43, obj.ptr_MyVector12);
++      class_wrapper(47, obj.ptr_MyVector12);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -49123,9 +49608,9 @@ Last-Update: 2021-03-29
 +    function obj = MyVector3(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(38, my_ptr);
++        class_wrapper(42, my_ptr);
 +      elseif nargin == 0
-+        my_ptr = class_wrapper(39);
++        my_ptr = class_wrapper(43);
 +      else
 +        error('Arguments do not match any overload of MyVector3 constructor');
 +      end
@@ -49133,7 +49618,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(40, obj.ptr_MyVector3);
++      class_wrapper(44, obj.ptr_MyVector3);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -49169,9 +49654,9 @@ Last-Update: 2021-03-29
 +    function obj = PrimitiveRefDouble(varargin)
 +      if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
 +        my_ptr = varargin{2};
-+        class_wrapper(34, my_ptr);
++        class_wrapper(38, my_ptr);
 +      elseif nargin == 0
-+        my_ptr = class_wrapper(35);
++        my_ptr = class_wrapper(39);
 +      else
 +        error('Arguments do not match any overload of PrimitiveRefDouble constructor');
 +      end
@@ -49179,7 +49664,7 @@ Last-Update: 2021-03-29
 +    end
 +
 +    function delete(obj)
-+      class_wrapper(36, obj.ptr_PrimitiveRefDouble);
++      class_wrapper(40, obj.ptr_PrimitiveRefDouble);
 +    end
 +
 +    function display(obj), obj.print(''); end
@@ -49193,7 +49678,7 @@ Last-Update: 2021-03-29
 +      % BRUTAL usage: Brutal(double t) : returns PrimitiveRefdouble
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double')
-+        varargout{1} = class_wrapper(37, varargin{:});
++        varargout{1} = class_wrapper(41, varargin{:});
 +        return
 +      end
 +
@@ -49213,7 +49698,7 @@ Last-Update: 2021-03-29
 +      end
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/matlab/Test.m
-@@ -0,0 +1,257 @@
+@@ -0,0 +1,293 @@
 +%class Test, see Doxygen page for details
 +%at https://gtsam.org/doxygen/
 +%
@@ -49225,6 +49710,7 @@ Last-Update: 2021-03-29
 +%arg_EigenConstRef(Matrix value) : returns void
 +%create_MixedPtrs() : returns pair< Test, Test >
 +%create_ptrs() : returns pair< Test, Test >
++%get_container() : returns std::vector<testing::Test>
 +%print() : returns void
 +%return_Point2Ptr(bool value) : returns Point2
 +%return_Test(Test value) : returns Test
@@ -49242,6 +49728,9 @@ Last-Update: 2021-03-29
 +%return_string(string value) : returns string
 +%return_vector1(Vector value) : returns Vector
 +%return_vector2(Vector value) : returns Vector
++%set_container(vector<Test> container) : returns void
++%set_container(vector<Test> container) : returns void
++%set_container(vector<Test> container) : returns void
 +%
 +classdef Test < handle
 +  properties
@@ -49300,11 +49789,21 @@ Last-Update: 2021-03-29
 +      error('Arguments do not match any overload of function Test.create_ptrs');
 +    end
 +
++    function varargout = get_container(this, varargin)
++      % GET_CONTAINER usage: get_container() : returns std.vectorTest
++      % Doxygen can be found at https://gtsam.org/doxygen/
++      if length(varargin) == 0
++        varargout{1} = class_wrapper(17, this, varargin{:});
++        return
++      end
++      error('Arguments do not match any overload of function Test.get_container');
++    end
++
 +    function varargout = print(this, varargin)
 +      % PRINT usage: print() : returns void
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 0
-+        class_wrapper(17, this, varargin{:});
++        class_wrapper(18, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.print');
@@ -49314,7 +49813,7 @@ Last-Update: 2021-03-29
 +      % RETURN_POINT2PTR usage: return_Point2Ptr(bool value) : returns Point2
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'logical')
-+        varargout{1} = class_wrapper(18, this, varargin{:});
++        varargout{1} = class_wrapper(19, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_Point2Ptr');
@@ -49324,7 +49823,7 @@ Last-Update: 2021-03-29
 +      % RETURN_TEST usage: return_Test(Test value) : returns Test
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'Test')
-+        varargout{1} = class_wrapper(19, this, varargin{:});
++        varargout{1} = class_wrapper(20, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_Test');
@@ -49334,7 +49833,7 @@ Last-Update: 2021-03-29
 +      % RETURN_TESTPTR usage: return_TestPtr(Test value) : returns Test
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'Test')
-+        varargout{1} = class_wrapper(20, this, varargin{:});
++        varargout{1} = class_wrapper(21, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_TestPtr');
@@ -49344,7 +49843,7 @@ Last-Update: 2021-03-29
 +      % RETURN_BOOL usage: return_bool(bool value) : returns bool
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'logical')
-+        varargout{1} = class_wrapper(21, this, varargin{:});
++        varargout{1} = class_wrapper(22, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_bool');
@@ -49354,7 +49853,7 @@ Last-Update: 2021-03-29
 +      % RETURN_DOUBLE usage: return_double(double value) : returns double
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double')
-+        varargout{1} = class_wrapper(22, this, varargin{:});
++        varargout{1} = class_wrapper(23, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_double');
@@ -49364,7 +49863,7 @@ Last-Update: 2021-03-29
 +      % RETURN_FIELD usage: return_field(Test t) : returns bool
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'Test')
-+        varargout{1} = class_wrapper(23, this, varargin{:});
++        varargout{1} = class_wrapper(24, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_field');
@@ -49374,7 +49873,7 @@ Last-Update: 2021-03-29
 +      % RETURN_INT usage: return_int(int value) : returns int
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'numeric')
-+        varargout{1} = class_wrapper(24, this, varargin{:});
++        varargout{1} = class_wrapper(25, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_int');
@@ -49384,7 +49883,7 @@ Last-Update: 2021-03-29
 +      % RETURN_MATRIX1 usage: return_matrix1(Matrix value) : returns Matrix
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double')
-+        varargout{1} = class_wrapper(25, this, varargin{:});
++        varargout{1} = class_wrapper(26, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_matrix1');
@@ -49394,7 +49893,7 @@ Last-Update: 2021-03-29
 +      % RETURN_MATRIX2 usage: return_matrix2(Matrix value) : returns Matrix
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double')
-+        varargout{1} = class_wrapper(26, this, varargin{:});
++        varargout{1} = class_wrapper(27, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_matrix2');
@@ -49404,13 +49903,13 @@ Last-Update: 2021-03-29
 +      % RETURN_PAIR usage: return_pair(Vector v, Matrix A) : returns pair< Vector, Matrix >
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 2 && isa(varargin{1},'double') && size(varargin{1},2)==1 && isa(varargin{2},'double')
-+        [ varargout{1} varargout{2} ] = class_wrapper(27, this, varargin{:});
++        [ varargout{1} varargout{2} ] = class_wrapper(28, this, varargin{:});
 +        return
 +      end
 +      % RETURN_PAIR usage: return_pair(Vector v) : returns pair< Vector, Matrix >
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-+        [ varargout{1} varargout{2} ] = class_wrapper(28, this, varargin{:});
++        [ varargout{1} varargout{2} ] = class_wrapper(29, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_pair');
@@ -49420,7 +49919,7 @@ Last-Update: 2021-03-29
 +      % RETURN_PTRS usage: return_ptrs(Test p1, Test p2) : returns pair< Test, Test >
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 2 && isa(varargin{1},'Test') && isa(varargin{2},'Test')
-+        [ varargout{1} varargout{2} ] = class_wrapper(29, this, varargin{:});
++        [ varargout{1} varargout{2} ] = class_wrapper(30, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_ptrs');
@@ -49430,7 +49929,7 @@ Last-Update: 2021-03-29
 +      % RETURN_SIZE_T usage: return_size_t(size_t value) : returns size_t
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'numeric')
-+        varargout{1} = class_wrapper(30, this, varargin{:});
++        varargout{1} = class_wrapper(31, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_size_t');
@@ -49440,7 +49939,7 @@ Last-Update: 2021-03-29
 +      % RETURN_STRING usage: return_string(string value) : returns string
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'char')
-+        varargout{1} = class_wrapper(31, this, varargin{:});
++        varargout{1} = class_wrapper(32, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_string');
@@ -49450,7 +49949,7 @@ Last-Update: 2021-03-29
 +      % RETURN_VECTOR1 usage: return_vector1(Vector value) : returns Vector
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-+        varargout{1} = class_wrapper(32, this, varargin{:});
++        varargout{1} = class_wrapper(33, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_vector1');
@@ -49460,10 +49959,32 @@ Last-Update: 2021-03-29
 +      % RETURN_VECTOR2 usage: return_vector2(Vector value) : returns Vector
 +      % Doxygen can be found at https://gtsam.org/doxygen/
 +      if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-+        varargout{1} = class_wrapper(33, this, varargin{:});
++        varargout{1} = class_wrapper(34, this, varargin{:});
 +        return
 +      end
 +      error('Arguments do not match any overload of function Test.return_vector2');
++    end
++
++    function varargout = set_container(this, varargin)
++      % SET_CONTAINER usage: set_container(vector<Test> container) : returns void
++      % Doxygen can be found at https://gtsam.org/doxygen/
++      if length(varargin) == 1 && isa(varargin{1},'std.vectorTest')
++        class_wrapper(35, this, varargin{:});
++        return
++      end
++      % SET_CONTAINER usage: set_container(vector<Test> container) : returns void
++      % Doxygen can be found at https://gtsam.org/doxygen/
++      if length(varargin) == 1 && isa(varargin{1},'std.vectorTest')
++        class_wrapper(36, this, varargin{:});
++        return
++      end
++      % SET_CONTAINER usage: set_container(vector<Test> container) : returns void
++      % Doxygen can be found at https://gtsam.org/doxygen/
++      if length(varargin) == 1 && isa(varargin{1},'std.vectorTest')
++        class_wrapper(37, this, varargin{:});
++        return
++      end
++      error('Arguments do not match any overload of function Test.set_container');
 +    end
 +
 +  end
@@ -49482,7 +50003,7 @@ Last-Update: 2021-03-29
 +      end
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/matlab/class_wrapper.cpp
-@@ -0,0 +1,804 @@
+@@ -0,0 +1,847 @@
 +#include <gtwrap/matlab.h>
 +#include <map>
 +
@@ -49782,14 +50303,21 @@ Last-Update: 2021-03-29
 +  out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 +}
 +
-+void Test_print_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_get_container_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  checkArguments("get_container",nargout,nargin-1,0);
++  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
++  out[0] = wrap_shared_ptr(boost::make_shared<std::vector<testing::Test>>(obj->get_container()),"std.vectorTest", false);
++}
++
++void Test_print_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("print",nargout,nargin-1,0);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
 +  obj->print();
 +}
 +
-+void Test_return_Point2Ptr_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_Point2Ptr_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_Point2Ptr",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49800,7 +50328,7 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void Test_return_Test_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_Test_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_Test",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49808,7 +50336,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap_shared_ptr(boost::make_shared<Test>(obj->return_Test(value)),"Test", false);
 +}
 +
-+void Test_return_TestPtr_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_TestPtr_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_TestPtr",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49816,7 +50344,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap_shared_ptr(obj->return_TestPtr(value),"Test", false);
 +}
 +
-+void Test_return_bool_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_bool_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_bool",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49824,7 +50352,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< bool >(obj->return_bool(value));
 +}
 +
-+void Test_return_double_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_double_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_double",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49832,7 +50360,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< double >(obj->return_double(value));
 +}
 +
-+void Test_return_field_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_field_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_field",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49840,7 +50368,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< bool >(obj->return_field(t));
 +}
 +
-+void Test_return_int_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_int_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_int",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49848,7 +50376,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< int >(obj->return_int(value));
 +}
 +
-+void Test_return_matrix1_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_matrix1_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_matrix1",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49856,7 +50384,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< Matrix >(obj->return_matrix1(value));
 +}
 +
-+void Test_return_matrix2_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_matrix2_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_matrix2",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49864,7 +50392,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< Matrix >(obj->return_matrix2(value));
 +}
 +
-+void Test_return_pair_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_pair_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_pair",nargout,nargin-1,2);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49875,7 +50403,7 @@ Last-Update: 2021-03-29
 +  out[1] = wrap< Matrix >(pairResult.second);
 +}
 +
-+void Test_return_pair_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_pair_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_pair",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49885,7 +50413,7 @@ Last-Update: 2021-03-29
 +  out[1] = wrap< Matrix >(pairResult.second);
 +}
 +
-+void Test_return_ptrs_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_ptrs_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_ptrs",nargout,nargin-1,2);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49896,7 +50424,7 @@ Last-Update: 2021-03-29
 +  out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
 +}
 +
-+void Test_return_size_t_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_size_t_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_size_t",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49904,7 +50432,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< size_t >(obj->return_size_t(value));
 +}
 +
-+void Test_return_string_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_string_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_string",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49912,7 +50440,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< string >(obj->return_string(value));
 +}
 +
-+void Test_return_vector1_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_vector1_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_vector1",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49920,7 +50448,7 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< Vector >(obj->return_vector1(value));
 +}
 +
-+void Test_return_vector2_33(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_return_vector2_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("return_vector2",nargout,nargin-1,1);
 +  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
@@ -49928,7 +50456,31 @@ Last-Update: 2021-03-29
 +  out[0] = wrap< Vector >(obj->return_vector2(value));
 +}
 +
-+void PrimitiveRefDouble_collectorInsertAndMakeBase_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void Test_set_container_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  checkArguments("set_container",nargout,nargin-1,1);
++  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
++  boost::shared_ptr<std::vector<testing::Test>> container = unwrap_shared_ptr< std::vector<testing::Test> >(in[1], "ptr_stdvectorTest");
++  obj->set_container(*container);
++}
++
++void Test_set_container_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  checkArguments("set_container",nargout,nargin-1,1);
++  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
++  boost::shared_ptr<std::vector<testing::Test>> container = unwrap_shared_ptr< std::vector<testing::Test> >(in[1], "ptr_stdvectorTest");
++  obj->set_container(*container);
++}
++
++void Test_set_container_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  checkArguments("set_container",nargout,nargin-1,1);
++  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
++  boost::shared_ptr<std::vector<testing::Test>> container = unwrap_shared_ptr< std::vector<testing::Test> >(in[1], "ptr_stdvectorTest");
++  obj->set_container(*container);
++}
++
++void PrimitiveRefDouble_collectorInsertAndMakeBase_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<PrimitiveRef<double>> Shared;
@@ -49937,7 +50489,7 @@ Last-Update: 2021-03-29
 +  collector_PrimitiveRefDouble.insert(self);
 +}
 +
-+void PrimitiveRefDouble_constructor_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void PrimitiveRefDouble_constructor_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<PrimitiveRef<double>> Shared;
@@ -49948,7 +50500,7 @@ Last-Update: 2021-03-29
 +  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 +}
 +
-+void PrimitiveRefDouble_deconstructor_36(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void PrimitiveRefDouble_deconstructor_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<PrimitiveRef<double>> Shared;
 +  checkArguments("delete_PrimitiveRefDouble",nargout,nargin,1);
@@ -49961,14 +50513,14 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void PrimitiveRefDouble_Brutal_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void PrimitiveRefDouble_Brutal_41(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  checkArguments("PrimitiveRefDouble.Brutal",nargout,nargin,1);
 +  double t = unwrap< double >(in[0]);
 +  out[0] = wrap_shared_ptr(boost::make_shared<PrimitiveRef<double>>(PrimitiveRef<double>::Brutal(t)),"PrimitiveRefdouble", false);
 +}
 +
-+void MyVector3_collectorInsertAndMakeBase_38(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector3_collectorInsertAndMakeBase_42(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyVector<3>> Shared;
@@ -49977,7 +50529,7 @@ Last-Update: 2021-03-29
 +  collector_MyVector3.insert(self);
 +}
 +
-+void MyVector3_constructor_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector3_constructor_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyVector<3>> Shared;
@@ -49988,7 +50540,7 @@ Last-Update: 2021-03-29
 +  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 +}
 +
-+void MyVector3_deconstructor_40(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector3_deconstructor_44(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<MyVector<3>> Shared;
 +  checkArguments("delete_MyVector3",nargout,nargin,1);
@@ -50001,7 +50553,7 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void MyVector12_collectorInsertAndMakeBase_41(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector12_collectorInsertAndMakeBase_45(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyVector<12>> Shared;
@@ -50010,7 +50562,7 @@ Last-Update: 2021-03-29
 +  collector_MyVector12.insert(self);
 +}
 +
-+void MyVector12_constructor_42(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector12_constructor_46(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyVector<12>> Shared;
@@ -50021,7 +50573,7 @@ Last-Update: 2021-03-29
 +  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 +}
 +
-+void MyVector12_deconstructor_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyVector12_deconstructor_47(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<MyVector<12>> Shared;
 +  checkArguments("delete_MyVector12",nargout,nargin,1);
@@ -50034,7 +50586,7 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void MultipleTemplatesIntDouble_collectorInsertAndMakeBase_44(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MultipleTemplatesIntDouble_collectorInsertAndMakeBase_48(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MultipleTemplates<int, double>> Shared;
@@ -50043,7 +50595,7 @@ Last-Update: 2021-03-29
 +  collector_MultipleTemplatesIntDouble.insert(self);
 +}
 +
-+void MultipleTemplatesIntDouble_deconstructor_45(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MultipleTemplatesIntDouble_deconstructor_49(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<MultipleTemplates<int, double>> Shared;
 +  checkArguments("delete_MultipleTemplatesIntDouble",nargout,nargin,1);
@@ -50056,7 +50608,7 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void MultipleTemplatesIntFloat_collectorInsertAndMakeBase_46(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MultipleTemplatesIntFloat_collectorInsertAndMakeBase_50(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MultipleTemplates<int, float>> Shared;
@@ -50065,7 +50617,7 @@ Last-Update: 2021-03-29
 +  collector_MultipleTemplatesIntFloat.insert(self);
 +}
 +
-+void MultipleTemplatesIntFloat_deconstructor_47(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MultipleTemplatesIntFloat_deconstructor_51(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<MultipleTemplates<int, float>> Shared;
 +  checkArguments("delete_MultipleTemplatesIntFloat",nargout,nargin,1);
@@ -50078,7 +50630,7 @@ Last-Update: 2021-03-29
 +  }
 +}
 +
-+void MyFactorPosePoint2_collectorInsertAndMakeBase_48(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyFactorPosePoint2_collectorInsertAndMakeBase_52(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
@@ -50087,7 +50639,7 @@ Last-Update: 2021-03-29
 +  collector_MyFactorPosePoint2.insert(self);
 +}
 +
-+void MyFactorPosePoint2_constructor_49(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyFactorPosePoint2_constructor_53(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
@@ -50102,7 +50654,7 @@ Last-Update: 2021-03-29
 +  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 +}
 +
-+void MyFactorPosePoint2_deconstructor_50(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void MyFactorPosePoint2_deconstructor_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
 +  checkArguments("delete_MyFactorPosePoint2",nargout,nargin,1);
@@ -50179,106 +50731,118 @@ Last-Update: 2021-03-29
 +      Test_create_ptrs_16(nargout, out, nargin-1, in+1);
 +      break;
 +    case 17:
-+      Test_print_17(nargout, out, nargin-1, in+1);
++      Test_get_container_17(nargout, out, nargin-1, in+1);
 +      break;
 +    case 18:
-+      Test_return_Point2Ptr_18(nargout, out, nargin-1, in+1);
++      Test_print_18(nargout, out, nargin-1, in+1);
 +      break;
 +    case 19:
-+      Test_return_Test_19(nargout, out, nargin-1, in+1);
++      Test_return_Point2Ptr_19(nargout, out, nargin-1, in+1);
 +      break;
 +    case 20:
-+      Test_return_TestPtr_20(nargout, out, nargin-1, in+1);
++      Test_return_Test_20(nargout, out, nargin-1, in+1);
 +      break;
 +    case 21:
-+      Test_return_bool_21(nargout, out, nargin-1, in+1);
++      Test_return_TestPtr_21(nargout, out, nargin-1, in+1);
 +      break;
 +    case 22:
-+      Test_return_double_22(nargout, out, nargin-1, in+1);
++      Test_return_bool_22(nargout, out, nargin-1, in+1);
 +      break;
 +    case 23:
-+      Test_return_field_23(nargout, out, nargin-1, in+1);
++      Test_return_double_23(nargout, out, nargin-1, in+1);
 +      break;
 +    case 24:
-+      Test_return_int_24(nargout, out, nargin-1, in+1);
++      Test_return_field_24(nargout, out, nargin-1, in+1);
 +      break;
 +    case 25:
-+      Test_return_matrix1_25(nargout, out, nargin-1, in+1);
++      Test_return_int_25(nargout, out, nargin-1, in+1);
 +      break;
 +    case 26:
-+      Test_return_matrix2_26(nargout, out, nargin-1, in+1);
++      Test_return_matrix1_26(nargout, out, nargin-1, in+1);
 +      break;
 +    case 27:
-+      Test_return_pair_27(nargout, out, nargin-1, in+1);
++      Test_return_matrix2_27(nargout, out, nargin-1, in+1);
 +      break;
 +    case 28:
 +      Test_return_pair_28(nargout, out, nargin-1, in+1);
 +      break;
 +    case 29:
-+      Test_return_ptrs_29(nargout, out, nargin-1, in+1);
++      Test_return_pair_29(nargout, out, nargin-1, in+1);
 +      break;
 +    case 30:
-+      Test_return_size_t_30(nargout, out, nargin-1, in+1);
++      Test_return_ptrs_30(nargout, out, nargin-1, in+1);
 +      break;
 +    case 31:
-+      Test_return_string_31(nargout, out, nargin-1, in+1);
++      Test_return_size_t_31(nargout, out, nargin-1, in+1);
 +      break;
 +    case 32:
-+      Test_return_vector1_32(nargout, out, nargin-1, in+1);
++      Test_return_string_32(nargout, out, nargin-1, in+1);
 +      break;
 +    case 33:
-+      Test_return_vector2_33(nargout, out, nargin-1, in+1);
++      Test_return_vector1_33(nargout, out, nargin-1, in+1);
 +      break;
 +    case 34:
-+      PrimitiveRefDouble_collectorInsertAndMakeBase_34(nargout, out, nargin-1, in+1);
++      Test_return_vector2_34(nargout, out, nargin-1, in+1);
 +      break;
 +    case 35:
-+      PrimitiveRefDouble_constructor_35(nargout, out, nargin-1, in+1);
++      Test_set_container_35(nargout, out, nargin-1, in+1);
 +      break;
 +    case 36:
-+      PrimitiveRefDouble_deconstructor_36(nargout, out, nargin-1, in+1);
++      Test_set_container_36(nargout, out, nargin-1, in+1);
 +      break;
 +    case 37:
-+      PrimitiveRefDouble_Brutal_37(nargout, out, nargin-1, in+1);
++      Test_set_container_37(nargout, out, nargin-1, in+1);
 +      break;
 +    case 38:
-+      MyVector3_collectorInsertAndMakeBase_38(nargout, out, nargin-1, in+1);
++      PrimitiveRefDouble_collectorInsertAndMakeBase_38(nargout, out, nargin-1, in+1);
 +      break;
 +    case 39:
-+      MyVector3_constructor_39(nargout, out, nargin-1, in+1);
++      PrimitiveRefDouble_constructor_39(nargout, out, nargin-1, in+1);
 +      break;
 +    case 40:
-+      MyVector3_deconstructor_40(nargout, out, nargin-1, in+1);
++      PrimitiveRefDouble_deconstructor_40(nargout, out, nargin-1, in+1);
 +      break;
 +    case 41:
-+      MyVector12_collectorInsertAndMakeBase_41(nargout, out, nargin-1, in+1);
++      PrimitiveRefDouble_Brutal_41(nargout, out, nargin-1, in+1);
 +      break;
 +    case 42:
-+      MyVector12_constructor_42(nargout, out, nargin-1, in+1);
++      MyVector3_collectorInsertAndMakeBase_42(nargout, out, nargin-1, in+1);
 +      break;
 +    case 43:
-+      MyVector12_deconstructor_43(nargout, out, nargin-1, in+1);
++      MyVector3_constructor_43(nargout, out, nargin-1, in+1);
 +      break;
 +    case 44:
-+      MultipleTemplatesIntDouble_collectorInsertAndMakeBase_44(nargout, out, nargin-1, in+1);
++      MyVector3_deconstructor_44(nargout, out, nargin-1, in+1);
 +      break;
 +    case 45:
-+      MultipleTemplatesIntDouble_deconstructor_45(nargout, out, nargin-1, in+1);
++      MyVector12_collectorInsertAndMakeBase_45(nargout, out, nargin-1, in+1);
 +      break;
 +    case 46:
-+      MultipleTemplatesIntFloat_collectorInsertAndMakeBase_46(nargout, out, nargin-1, in+1);
++      MyVector12_constructor_46(nargout, out, nargin-1, in+1);
 +      break;
 +    case 47:
-+      MultipleTemplatesIntFloat_deconstructor_47(nargout, out, nargin-1, in+1);
++      MyVector12_deconstructor_47(nargout, out, nargin-1, in+1);
 +      break;
 +    case 48:
-+      MyFactorPosePoint2_collectorInsertAndMakeBase_48(nargout, out, nargin-1, in+1);
++      MultipleTemplatesIntDouble_collectorInsertAndMakeBase_48(nargout, out, nargin-1, in+1);
 +      break;
 +    case 49:
-+      MyFactorPosePoint2_constructor_49(nargout, out, nargin-1, in+1);
++      MultipleTemplatesIntDouble_deconstructor_49(nargout, out, nargin-1, in+1);
 +      break;
 +    case 50:
-+      MyFactorPosePoint2_deconstructor_50(nargout, out, nargin-1, in+1);
++      MultipleTemplatesIntFloat_collectorInsertAndMakeBase_50(nargout, out, nargin-1, in+1);
++      break;
++    case 51:
++      MultipleTemplatesIntFloat_deconstructor_51(nargout, out, nargin-1, in+1);
++      break;
++    case 52:
++      MyFactorPosePoint2_collectorInsertAndMakeBase_52(nargout, out, nargin-1, in+1);
++      break;
++    case 53:
++      MyFactorPosePoint2_constructor_53(nargout, out, nargin-1, in+1);
++      break;
++    case 54:
++      MyFactorPosePoint2_deconstructor_54(nargout, out, nargin-1, in+1);
 +      break;
 +    }
 +  } catch(const std::exception& e) {
@@ -52317,7 +52881,7 @@ Last-Update: 2021-03-29
 +      end
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/matlab/special_cases_wrapper.cpp
-@@ -0,0 +1,340 @@
+@@ -0,0 +1,413 @@
 +#include <gtwrap/matlab.h>
 +#include <map>
 +
@@ -52345,6 +52909,7 @@ Last-Update: 2021-03-29
 +typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 +typedef MyTemplate<gtsam::Matrix> MyTemplateMatrix;
 +typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
++typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 +
 +BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
 +BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");
@@ -52391,8 +52956,12 @@ Last-Update: 2021-03-29
 +static Collector_ClassD collector_ClassD;
 +typedef std::set<boost::shared_ptr<gtsam::NonlinearFactorGraph>*> Collector_gtsamNonlinearFactorGraph;
 +static Collector_gtsamNonlinearFactorGraph collector_gtsamNonlinearFactorGraph;
++typedef std::set<boost::shared_ptr<gtsam::SfmTrack>*> Collector_gtsamSfmTrack;
++static Collector_gtsamSfmTrack collector_gtsamSfmTrack;
 +typedef std::set<boost::shared_ptr<PinholeCameraCal3Bundler>*> Collector_gtsamPinholeCameraCal3Bundler;
 +static Collector_gtsamPinholeCameraCal3Bundler collector_gtsamPinholeCameraCal3Bundler;
++typedef std::set<boost::shared_ptr<GeneralSFMFactorCal3Bundler>*> Collector_gtsamGeneralSFMFactorCal3Bundler;
++static Collector_gtsamGeneralSFMFactorCal3Bundler collector_gtsamGeneralSFMFactorCal3Bundler;
 +
 +void _deleteAllObjects()
 +{
@@ -52526,10 +53095,22 @@ Last-Update: 2021-03-29
 +    collector_gtsamNonlinearFactorGraph.erase(iter++);
 +    anyDeleted = true;
 +  } }
++  { for(Collector_gtsamSfmTrack::iterator iter = collector_gtsamSfmTrack.begin();
++      iter != collector_gtsamSfmTrack.end(); ) {
++    delete *iter;
++    collector_gtsamSfmTrack.erase(iter++);
++    anyDeleted = true;
++  } }
 +  { for(Collector_gtsamPinholeCameraCal3Bundler::iterator iter = collector_gtsamPinholeCameraCal3Bundler.begin();
 +      iter != collector_gtsamPinholeCameraCal3Bundler.end(); ) {
 +    delete *iter;
 +    collector_gtsamPinholeCameraCal3Bundler.erase(iter++);
++    anyDeleted = true;
++  } }
++  { for(Collector_gtsamGeneralSFMFactorCal3Bundler::iterator iter = collector_gtsamGeneralSFMFactorCal3Bundler.begin();
++      iter != collector_gtsamGeneralSFMFactorCal3Bundler.end(); ) {
++    delete *iter;
++    collector_gtsamGeneralSFMFactorCal3Bundler.erase(iter++);
 +    anyDeleted = true;
 +  } }
 +  if(anyDeleted)
@@ -52602,7 +53183,29 @@ Last-Update: 2021-03-29
 +  obj->addPrior<gtsam::PinholeCamera<gtsam::Cal3Bundler>>(key,prior,noiseModel);
 +}
 +
-+void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void gtsamSfmTrack_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  mexAtExit(&_deleteAllObjects);
++  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
++
++  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
++  collector_gtsamSfmTrack.insert(self);
++}
++
++void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
++  checkArguments("delete_gtsamSfmTrack",nargout,nargin,1);
++  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
++  Collector_gtsamSfmTrack::iterator item;
++  item = collector_gtsamSfmTrack.find(self);
++  if(item != collector_gtsamSfmTrack.end()) {
++    delete self;
++    collector_gtsamSfmTrack.erase(item);
++  }
++}
++
++void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  mexAtExit(&_deleteAllObjects);
 +  typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
@@ -52611,7 +53214,7 @@ Last-Update: 2021-03-29
 +  collector_gtsamPinholeCameraCal3Bundler.insert(self);
 +}
 +
-+void gtsamPinholeCameraCal3Bundler_deconstructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++void gtsamPinholeCameraCal3Bundler_deconstructor_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 +{
 +  typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
 +  checkArguments("delete_gtsamPinholeCameraCal3Bundler",nargout,nargin,1);
@@ -52621,6 +53224,28 @@ Last-Update: 2021-03-29
 +  if(item != collector_gtsamPinholeCameraCal3Bundler.end()) {
 +    delete self;
 +    collector_gtsamPinholeCameraCal3Bundler.erase(item);
++  }
++}
++
++void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  mexAtExit(&_deleteAllObjects);
++  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
++
++  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
++  collector_gtsamGeneralSFMFactorCal3Bundler.insert(self);
++}
++
++void gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
++{
++  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
++  checkArguments("delete_gtsamGeneralSFMFactorCal3Bundler",nargout,nargin,1);
++  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
++  Collector_gtsamGeneralSFMFactorCal3Bundler::iterator item;
++  item = collector_gtsamGeneralSFMFactorCal3Bundler.find(self);
++  if(item != collector_gtsamGeneralSFMFactorCal3Bundler.end()) {
++    delete self;
++    collector_gtsamGeneralSFMFactorCal3Bundler.erase(item);
 +  }
 +}
 +
@@ -52646,10 +53271,22 @@ Last-Update: 2021-03-29
 +      gtsamNonlinearFactorGraph_addPrior_2(nargout, out, nargin-1, in+1);
 +      break;
 +    case 3:
-+      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
++      gtsamSfmTrack_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
 +      break;
 +    case 4:
-+      gtsamPinholeCameraCal3Bundler_deconstructor_4(nargout, out, nargin-1, in+1);
++      gtsamSfmTrack_deconstructor_4(nargout, out, nargin-1, in+1);
++      break;
++    case 5:
++      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(nargout, out, nargin-1, in+1);
++      break;
++    case 6:
++      gtsamPinholeCameraCal3Bundler_deconstructor_6(nargout, out, nargin-1, in+1);
++      break;
++    case 7:
++      gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(nargout, out, nargin-1, in+1);
++      break;
++    case 8:
++      gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(nargout, out, nargin-1, in+1);
 +      break;
 +    }
 +  } catch(const std::exception& e) {
@@ -52660,12 +53297,13 @@ Last-Update: 2021-03-29
 +}
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/python/class_pybind.cpp
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,92 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +#include "folder/path/to/Test.h"
@@ -52711,12 +53349,12 @@ Last-Update: 2021-03-29
 +        .def("return_matrix2",[](Test* self, const gtsam::Matrix& value){return self->return_matrix2(value);}, py::arg("value"))
 +        .def("arg_EigenConstRef",[](Test* self, const gtsam::Matrix& value){ self->arg_EigenConstRef(value);}, py::arg("value"))
 +        .def("return_field",[](Test* self, const Test& t){return self->return_field(t);}, py::arg("t"))
-+        .def("return_TestPtr",[](Test* self, const std::shared_ptr<Test>& value){return self->return_TestPtr(value);}, py::arg("value"))
-+        .def("return_Test",[](Test* self, std::shared_ptr<Test>& value){return self->return_Test(value);}, py::arg("value"))
++        .def("return_TestPtr",[](Test* self, const std::shared_ptr<Test> value){return self->return_TestPtr(value);}, py::arg("value"))
++        .def("return_Test",[](Test* self, std::shared_ptr<Test> value){return self->return_Test(value);}, py::arg("value"))
 +        .def("return_Point2Ptr",[](Test* self, bool value){return self->return_Point2Ptr(value);}, py::arg("value"))
 +        .def("create_ptrs",[](Test* self){return self->create_ptrs();})
 +        .def("create_MixedPtrs",[](Test* self){return self->create_MixedPtrs();})
-+        .def("return_ptrs",[](Test* self, std::shared_ptr<Test>& p1, std::shared_ptr<Test>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
++        .def("return_ptrs",[](Test* self, std::shared_ptr<Test> p1, std::shared_ptr<Test> p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
 +        .def("print_",[](Test* self){ self->print();})
 +        .def("__repr__",
 +                    [](const Test &a) {
@@ -52724,6 +53362,10 @@ Last-Update: 2021-03-29
 +                        a.print();
 +                        return redirect.str();
 +                    })
++        .def("set_container",[](Test* self, std::vector<testing::Test> container){ self->set_container(container);}, py::arg("container"))
++        .def("set_container",[](Test* self, std::vector<std::shared_ptr<testing::Test>> container){ self->set_container(container);}, py::arg("container"))
++        .def("set_container",[](Test* self, std::vector<testing::Test&> container){ self->set_container(container);}, py::arg("container"))
++        .def("get_container",[](Test* self){return self->get_container();})
 +        .def_readwrite("model_ptr", &Test::model_ptr);
 +
 +    py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble")
@@ -52741,7 +53383,7 @@ Last-Update: 2021-03-29
 +    py::class_<MultipleTemplates<int, float>, std::shared_ptr<MultipleTemplates<int, float>>>(m_, "MultipleTemplatesIntFloat");
 +
 +    py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
-+        .def(py::init<size_t, size_t, double, const std::shared_ptr<gtsam::noiseModel::Base>&>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"));
++        .def(py::init<size_t, size_t, double, const std::shared_ptr<gtsam::noiseModel::Base>>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"));
 +
 +
 +#include "python/specializations.h"
@@ -52750,12 +53392,13 @@ Last-Update: 2021-03-29
 +
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/python/functions_pybind.cpp
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,38 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +
@@ -52774,8 +53417,8 @@ Last-Update: 2021-03-29
 +    m_.doc() = "pybind11 wrapper of functions_py";
 +
 +
-+    m_.def("load2D",[](string filename, std::shared_ptr<Test>& model, int maxID, bool addNoise, bool smart){return ::load2D(filename, model, maxID, addNoise, smart);}, py::arg("filename"), py::arg("model"), py::arg("maxID"), py::arg("addNoise"), py::arg("smart"));
-+    m_.def("load2D",[](string filename, const std::shared_ptr<gtsam::noiseModel::Diagonal>& model, int maxID, bool addNoise, bool smart){return ::load2D(filename, model, maxID, addNoise, smart);}, py::arg("filename"), py::arg("model"), py::arg("maxID"), py::arg("addNoise"), py::arg("smart"));
++    m_.def("load2D",[](string filename, std::shared_ptr<Test> model, int maxID, bool addNoise, bool smart){return ::load2D(filename, model, maxID, addNoise, smart);}, py::arg("filename"), py::arg("model"), py::arg("maxID"), py::arg("addNoise"), py::arg("smart"));
++    m_.def("load2D",[](string filename, const std::shared_ptr<gtsam::noiseModel::Diagonal> model, int maxID, bool addNoise, bool smart){return ::load2D(filename, model, maxID, addNoise, smart);}, py::arg("filename"), py::arg("model"), py::arg("maxID"), py::arg("addNoise"), py::arg("smart"));
 +    m_.def("load2D",[](string filename, gtsam::noiseModel::Diagonal* model){return ::load2D(filename, model);}, py::arg("filename"), py::arg("model"));
 +    m_.def("aGlobalFunction",[](){return ::aGlobalFunction();});
 +    m_.def("overloadedGlobalFunction",[](int a){return ::overloadedGlobalFunction(a);}, py::arg("a"));
@@ -52790,12 +53433,13 @@ Last-Update: 2021-03-29
 +
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/python/geometry_pybind.cpp
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,68 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +#include "gtsam/geometry/Point2.h"
@@ -52827,10 +53471,10 @@ Last-Update: 2021-03-29
 +        .def("dim",[](gtsam::Point2* self){return self->dim();})
 +        .def("returnChar",[](gtsam::Point2* self){return self->returnChar();})
 +        .def("argChar",[](gtsam::Point2* self, char a){ self->argChar(a);}, py::arg("a"))
-+        .def("argChar",[](gtsam::Point2* self, std::shared_ptr<char>& a){ self->argChar(a);}, py::arg("a"))
++        .def("argChar",[](gtsam::Point2* self, std::shared_ptr<char> a){ self->argChar(a);}, py::arg("a"))
 +        .def("argChar",[](gtsam::Point2* self, char& a){ self->argChar(a);}, py::arg("a"))
 +        .def("argChar",[](gtsam::Point2* self, char* a){ self->argChar(a);}, py::arg("a"))
-+        .def("argChar",[](gtsam::Point2* self, const std::shared_ptr<char>& a){ self->argChar(a);}, py::arg("a"))
++        .def("argChar",[](gtsam::Point2* self, const std::shared_ptr<char> a){ self->argChar(a);}, py::arg("a"))
 +        .def("argChar",[](gtsam::Point2* self, const char& a){ self->argChar(a);}, py::arg("a"))
 +        .def("argChar",[](gtsam::Point2* self, const char* a){ self->argChar(a);}, py::arg("a"))
 +        .def("argUChar",[](gtsam::Point2* self, unsigned char a){ self->argUChar(a);}, py::arg("a"))
@@ -52860,12 +53504,13 @@ Last-Update: 2021-03-29
 +
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/python/inheritance_pybind.cpp
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,61 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +
@@ -52893,12 +53538,12 @@ Last-Update: 2021-03-29
 +        .def("templatedMethodVector",[](MyTemplate<gtsam::Point2>* self, const gtsam::Vector& t){return self->templatedMethod<gtsam::Vector>(t);}, py::arg("t"))
 +        .def("templatedMethodMatrix",[](MyTemplate<gtsam::Point2>* self, const gtsam::Matrix& t){return self->templatedMethod<gtsam::Matrix>(t);}, py::arg("t"))
 +        .def("accept_T",[](MyTemplate<gtsam::Point2>* self, const gtsam::Point2& value){ self->accept_T(value);}, py::arg("value"))
-+        .def("accept_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2>& value){ self->accept_Tptr(value);}, py::arg("value"))
-+        .def("return_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2>& value){return self->return_Tptr(value);}, py::arg("value"))
++        .def("accept_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> value){ self->accept_Tptr(value);}, py::arg("value"))
++        .def("return_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> value){return self->return_Tptr(value);}, py::arg("value"))
 +        .def("return_T",[](MyTemplate<gtsam::Point2>* self, gtsam::Point2* value){return self->return_T(value);}, py::arg("value"))
 +        .def("create_ptrs",[](MyTemplate<gtsam::Point2>* self){return self->create_ptrs();})
 +        .def("create_MixedPtrs",[](MyTemplate<gtsam::Point2>* self){return self->create_MixedPtrs();})
-+        .def("return_ptrs",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2>& p1, std::shared_ptr<gtsam::Point2>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
++        .def("return_ptrs",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> p1, std::shared_ptr<gtsam::Point2> p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
 +        .def_static("Level",[](const gtsam::Point2& K){return MyTemplate<gtsam::Point2>::Level(K);}, py::arg("K"));
 +
 +    py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix")
@@ -52908,12 +53553,12 @@ Last-Update: 2021-03-29
 +        .def("templatedMethodVector",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Vector& t){return self->templatedMethod<gtsam::Vector>(t);}, py::arg("t"))
 +        .def("templatedMethodMatrix",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Matrix& t){return self->templatedMethod<gtsam::Matrix>(t);}, py::arg("t"))
 +        .def("accept_T",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Matrix& value){ self->accept_T(value);}, py::arg("value"))
-+        .def("accept_Tptr",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix>& value){ self->accept_Tptr(value);}, py::arg("value"))
-+        .def("return_Tptr",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix>& value){return self->return_Tptr(value);}, py::arg("value"))
++        .def("accept_Tptr",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix> value){ self->accept_Tptr(value);}, py::arg("value"))
++        .def("return_Tptr",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix> value){return self->return_Tptr(value);}, py::arg("value"))
 +        .def("return_T",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Matrix* value){return self->return_T(value);}, py::arg("value"))
 +        .def("create_ptrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_ptrs();})
 +        .def("create_MixedPtrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_MixedPtrs();})
-+        .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix>& p1, const std::shared_ptr<gtsam::Matrix>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
++        .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix> p1, const std::shared_ptr<gtsam::Matrix> p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
 +        .def_static("Level",[](const gtsam::Matrix& K){return MyTemplate<gtsam::Matrix>::Level(K);}, py::arg("K"));
 +
 +
@@ -52923,12 +53568,13 @@ Last-Update: 2021-03-29
 +
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/expected/python/namespaces_pybind.cpp
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,63 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +#include "path/to/ns1.h"
@@ -52987,13 +53633,57 @@ Last-Update: 2021-03-29
 +}
 +
 --- /dev/null
-+++ gtsam-4.1.0/wrap/tests/expected/python/special_cases_pybind.cpp
-@@ -0,0 +1,35 @@
++++ gtsam-4.1.0/wrap/tests/expected/python/operator_pybind.cpp
+@@ -0,0 +1,40 @@
 +
 +
 +#include <pybind11/eigen.h>
 +#include <pybind11/stl_bind.h>
 +#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
++#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
++
++#include "gtsam/geometry/Pose3.h"
++
++#include "wrap/serialization.h"
++#include <boost/serialization/export.hpp>
++
++
++
++
++
++using namespace std;
++
++namespace py = pybind11;
++
++PYBIND11_MODULE(operator_py, m_) {
++    m_.doc() = "pybind11 wrapper of operator_py";
++
++    pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
++
++    py::class_<gtsam::Pose3, std::shared_ptr<gtsam::Pose3>>(m_gtsam, "Pose3")
++        .def(py::init<>())
++        .def(py::init<gtsam::Rot3, gtsam::Point3>(), py::arg("R"), py::arg("t"))
++        .def(py::self * py::self);
++
++    py::class_<gtsam::Container<gtsam::Matrix>, std::shared_ptr<gtsam::Container<gtsam::Matrix>>>(m_gtsam, "ContainerMatrix")
++        .def("__call__", &gtsam::Container<gtsam::Matrix>::operator())
++        .def("__getitem__", &gtsam::Container<gtsam::Matrix>::operator[]);
++
++
++#include "python/specializations.h"
++
++}
++
+--- /dev/null
++++ gtsam-4.1.0/wrap/tests/expected/python/special_cases_pybind.cpp
+@@ -0,0 +1,41 @@
++
++
++#include <pybind11/eigen.h>
++#include <pybind11/stl_bind.h>
++#include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
 +#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 +
 +#include "gtsam/geometry/Cal3Bundler.h"
@@ -53015,9 +53705,14 @@ Last-Update: 2021-03-29
 +    pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
 +
 +    py::class_<gtsam::NonlinearFactorGraph, std::shared_ptr<gtsam::NonlinearFactorGraph>>(m_gtsam, "NonlinearFactorGraph")
-+        .def("addPriorPinholeCameraCal3Bundler",[](gtsam::NonlinearFactorGraph* self, size_t key, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& prior, const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel){ self->addPrior<gtsam::PinholeCamera<gtsam::Cal3Bundler>>(key, prior, noiseModel);}, py::arg("key"), py::arg("prior"), py::arg("noiseModel"));
++        .def("addPriorPinholeCameraCal3Bundler",[](gtsam::NonlinearFactorGraph* self, size_t key, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& prior, const std::shared_ptr<gtsam::noiseModel::Base> noiseModel){ self->addPrior<gtsam::PinholeCamera<gtsam::Cal3Bundler>>(key, prior, noiseModel);}, py::arg("key"), py::arg("prior"), py::arg("noiseModel"));
++
++    py::class_<gtsam::SfmTrack, std::shared_ptr<gtsam::SfmTrack>>(m_gtsam, "SfmTrack")
++        .def_readwrite("measurements", &gtsam::SfmTrack::measurements);
 +
 +    py::class_<gtsam::PinholeCamera<gtsam::Cal3Bundler>, std::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>>>(m_gtsam, "PinholeCameraCal3Bundler");
++
++    py::class_<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>, std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>>(m_gtsam, "GeneralSFMFactorCal3Bundler");
 +
 +
 +#include "python/specializations.h"
@@ -58882,7 +59577,7 @@ Last-Update: 2021-03-29
 +</doxygen>
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/fixtures/class.i
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,106 @@
 +class FunRange {
 +  FunRange();
 +  This range(double d);
@@ -58947,6 +59642,11 @@ Last-Update: 2021-03-29
 +  pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
 +
 +  void print() const;
++
++  void set_container(std::vector<testing::Test> container);
++  void set_container(std::vector<testing::Test*> container);
++  void set_container(std::vector<testing::Test&> container);
++  std::vector<testing::Test*> get_container() const;
 +
 +  // comments at the end!
 +
@@ -59158,8 +59858,27 @@ Last-Update: 2021-03-29
 +
 +
 --- /dev/null
++++ gtsam-4.1.0/wrap/tests/fixtures/operator.i
+@@ -0,0 +1,16 @@
++namespace gtsam {
++
++#include <gtsam/geometry/Pose3.h>
++class Pose3 {
++  Pose3();
++  Pose3(gtsam::Rot3 R, gtsam::Point3 t);
++
++  gtsam::Pose3 operator*(gtsam::Pose3 other) const;
++};
++
++template<T = {Matrix}>
++class Container {
++  gtsam::JacobianFactor operator()(const T& m) const;
++  T operator[](size_t idx) const;
++};
++}
+--- /dev/null
 +++ gtsam-4.1.0/wrap/tests/fixtures/special_cases.i
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,28 @@
 +// Check for templated class as template argument for method!
 +namespace gtsam {
 +
@@ -59172,15 +59891,33 @@ Last-Update: 2021-03-29
 +typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 +
 +class NonlinearFactorGraph {
-+  template<T = {gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
-+  void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
++  template <T = {gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
++  void addPrior(size_t key, const T& prior,
++                const gtsam::noiseModel::Base* noiseModel);
 +};
 +
-+}
-\ No newline at end of file
++// Typedef with template as template arg.
++template<CALIBRATION, POINT>
++class GeneralSFMFactor {};
++typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
++
++// Template as template arg for class property.
++class SfmTrack {
++  std::vector<std::pair<size_t, gtsam::Point2>> measurements;
++};
++
++}  // namespace gtsam
 --- gtsam-4.1.0.orig/wrap/tests/pybind_wrapper.tpl
 +++ gtsam-4.1.0/wrap/tests/pybind_wrapper.tpl
-@@ -11,7 +11,7 @@
+@@ -3,6 +3,7 @@
+ #include <pybind11/eigen.h>
+ #include <pybind11/stl_bind.h>
+ #include <pybind11/pybind11.h>
++#include <pybind11/operators.h>
+ #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
+ 
+ {includes}
+@@ -11,7 +12,7 @@
  
  {boost_class_export}
  
@@ -59368,7 +60105,7 @@ Last-Update: 2021-03-29
          docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
 --- /dev/null
 +++ gtsam-4.1.0/wrap/tests/test_interface_parser.py
-@@ -0,0 +1,370 @@
+@@ -0,0 +1,486 @@
 +"""
 +GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 +Atlanta, Georgia 30332-0415
@@ -59392,7 +60129,8 @@ Last-Update: 2021-03-29
 +from gtwrap.interface_parser import (ArgumentList, Class, Constructor,
 +                                     ForwardDeclaration, GlobalFunction,
 +                                     Include, Method, Module, Namespace,
-+                                     ReturnType, StaticMethod, Type,
++                                     Operator, ReturnType, StaticMethod,
++                                     TemplatedType, Type,
 +                                     TypedefTemplateInstantiation, Typename)
 +
 +
@@ -59403,27 +60141,103 @@ Last-Update: 2021-03-29
 +        typename = Typename.rule.parseString("size_t")[0]
 +        self.assertEqual("size_t", typename.name)
 +
-+        typename = Typename.rule.parseString(
-+            "gtsam::PinholeCamera<gtsam::Cal3S2>")[0]
-+        self.assertEqual("PinholeCamera", typename.name)
-+        self.assertEqual(["gtsam"], typename.namespaces)
-+        self.assertEqual("Cal3S2", typename.instantiations[0].name)
-+        self.assertEqual(["gtsam"], typename.instantiations[0].namespaces)
-+
-+    def test_type(self):
-+        """Test for Type."""
++    def test_basic_type(self):
++        """Tests for BasicType."""
++        # Check basis type
 +        t = Type.rule.parseString("int x")[0]
 +        self.assertEqual("int", t.typename.name)
-+        self.assertTrue(t.is_basis)
++        self.assertTrue(t.is_basic)
 +
-+        t = Type.rule.parseString("T x")[0]
-+        self.assertEqual("T", t.typename.name)
-+        self.assertTrue(not t.is_basis)
-+
++        # Check const
 +        t = Type.rule.parseString("const int x")[0]
 +        self.assertEqual("int", t.typename.name)
-+        self.assertTrue(t.is_basis)
++        self.assertTrue(t.is_basic)
 +        self.assertTrue(t.is_const)
++
++        # Check shared pointer
++        t = Type.rule.parseString("int* x")[0]
++        self.assertEqual("int", t.typename.name)
++        self.assertTrue(t.is_shared_ptr)
++
++        # Check raw pointer
++        t = Type.rule.parseString("int@ x")[0]
++        self.assertEqual("int", t.typename.name)
++        self.assertTrue(t.is_ptr)
++
++        # Check reference
++        t = Type.rule.parseString("int& x")[0]
++        self.assertEqual("int", t.typename.name)
++        self.assertTrue(t.is_ref)
++
++        # Check const reference
++        t = Type.rule.parseString("const int& x")[0]
++        self.assertEqual("int", t.typename.name)
++        self.assertTrue(t.is_const)
++        self.assertTrue(t.is_ref)
++
++    def test_custom_type(self):
++        """Tests for CustomType."""
++        # Check qualified type
++        t = Type.rule.parseString("gtsam::Pose3 x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(not t.is_basic)
++
++        # Check const
++        t = Type.rule.parseString("const gtsam::Pose3 x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(t.is_const)
++
++        # Check shared pointer
++        t = Type.rule.parseString("gtsam::Pose3* x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(t.is_shared_ptr)
++        self.assertEqual("std::shared_ptr<gtsam::Pose3>",
++                         t.to_cpp(use_boost=False))
++        self.assertEqual("boost::shared_ptr<gtsam::Pose3>",
++                         t.to_cpp(use_boost=True))
++
++        # Check raw pointer
++        t = Type.rule.parseString("gtsam::Pose3@ x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(t.is_ptr)
++
++        # Check reference
++        t = Type.rule.parseString("gtsam::Pose3& x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(t.is_ref)
++
++        # Check const reference
++        t = Type.rule.parseString("const gtsam::Pose3& x")[0]
++        self.assertEqual("Pose3", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertTrue(t.is_const)
++        self.assertTrue(t.is_ref)
++
++    def test_templated_type(self):
++        """Test a templated type."""
++        t = TemplatedType.rule.parseString("Eigen::Matrix<double, 3, 4>")[0]
++        self.assertEqual("Matrix", t.typename.name)
++        self.assertEqual(["Eigen"], t.typename.namespaces)
++        self.assertEqual("double", t.typename.instantiations[0].name)
++        self.assertEqual("3", t.typename.instantiations[1].name)
++        self.assertEqual("4", t.typename.instantiations[2].name)
++
++        t = TemplatedType.rule.parseString(
++            "gtsam::PinholeCamera<gtsam::Cal3S2>")[0]
++        self.assertEqual("PinholeCamera", t.typename.name)
++        self.assertEqual(["gtsam"], t.typename.namespaces)
++        self.assertEqual("Cal3S2", t.typename.instantiations[0].name)
++        self.assertEqual(["gtsam"], t.typename.instantiations[0].namespaces)
++
++        t = TemplatedType.rule.parseString("PinholeCamera<Cal3S2*>")[0]
++        self.assertEqual("PinholeCamera", t.typename.name)
++        self.assertEqual("Cal3S2", t.typename.instantiations[0].name)
++        self.assertTrue(t.template_params[0].is_shared_ptr)
 +
 +    def test_empty_arguments(self):
 +        """Test no arguments."""
@@ -59460,28 +60274,41 @@ Last-Update: 2021-03-29
 +        self.assertTrue(args[6].ctype.is_ref and args[6].ctype.is_const)
 +        self.assertTrue(args[7].ctype.is_ptr and args[7].ctype.is_const)
 +
++    def test_argument_list_templated(self):
++        """Test arguments list where the arguments can be templated."""
++        arg_string = "std::pair<string, double> steps, vector<T*> vector_of_pointers"
++        args = ArgumentList.rule.parseString(arg_string)[0]
++        args_list = args.args_list
++        self.assertEqual(2, len(args_list))
++        self.assertEqual("std::pair<string, double>",
++                         args_list[0].ctype.to_cpp(False))
++        self.assertEqual("vector<std::shared_ptr<T>>",
++                         args_list[1].ctype.to_cpp(False))
++        self.assertEqual("vector<boost::shared_ptr<T>>",
++                         args_list[1].ctype.to_cpp(True))
++
 +    def test_return_type(self):
 +        """Test ReturnType"""
 +        # Test void
 +        return_type = ReturnType.rule.parseString("void")[0]
 +        self.assertEqual("void", return_type.type1.typename.name)
-+        self.assertTrue(return_type.type1.is_basis)
++        self.assertTrue(return_type.type1.is_basic)
 +
 +        # Test basis type
 +        return_type = ReturnType.rule.parseString("size_t")[0]
 +        self.assertEqual("size_t", return_type.type1.typename.name)
 +        self.assertTrue(not return_type.type2)
-+        self.assertTrue(return_type.type1.is_basis)
++        self.assertTrue(return_type.type1.is_basic)
 +
 +        # Test with qualifiers
 +        return_type = ReturnType.rule.parseString("int&")[0]
 +        self.assertEqual("int", return_type.type1.typename.name)
-+        self.assertTrue(return_type.type1.is_basis
++        self.assertTrue(return_type.type1.is_basic
 +                        and return_type.type1.is_ref)
 +
 +        return_type = ReturnType.rule.parseString("const int")[0]
 +        self.assertEqual("int", return_type.type1.typename.name)
-+        self.assertTrue(return_type.type1.is_basis
++        self.assertTrue(return_type.type1.is_basic
 +                        and return_type.type1.is_const)
 +
 +        # Test pair return
@@ -59527,6 +60354,32 @@ Last-Update: 2021-03-29
 +            "f(const int x, const Class& c, Class* t);")[0]
 +        self.assertEqual("f", ret.name)
 +        self.assertEqual(3, len(ret.args))
++
++    def test_operator_overload(self):
++        """Test for operator overloading."""
++        # Unary operator
++        wrap_string = "gtsam::Vector2 operator-() const;"
++        ret = Operator.rule.parseString(wrap_string)[0]
++        self.assertEqual("operator", ret.name)
++        self.assertEqual("-", ret.operator)
++        self.assertEqual("Vector2", ret.return_type.type1.typename.name)
++        self.assertEqual("gtsam::Vector2",
++                         ret.return_type.type1.typename.to_cpp())
++        self.assertTrue(len(ret.args) == 0)
++        self.assertTrue(ret.is_unary)
++
++        # Binary operator
++        wrap_string = "gtsam::Vector2 operator*(const gtsam::Vector2 &v) const;"
++        ret = Operator.rule.parseString(wrap_string)[0]
++        self.assertEqual("operator", ret.name)
++        self.assertEqual("*", ret.operator)
++        self.assertEqual("Vector2", ret.return_type.type1.typename.name)
++        self.assertEqual("gtsam::Vector2",
++                         ret.return_type.type1.typename.to_cpp())
++        self.assertTrue(len(ret.args) == 1)
++        self.assertEqual("const gtsam::Vector2 &",
++                         repr(ret.args.args_list[0].ctype))
++        self.assertTrue(not ret.is_unary)
 +
 +    def test_typedef_template_instantiation(self):
 +        """Test for typedef'd instantiation of a template."""
@@ -59654,7 +60507,7 @@ Last-Update: 2021-03-29
 +        fwd = ForwardDeclaration.rule.parseString(
 +            "virtual class Test:gtsam::Point3;")[0]
 +
-+        fwd_name = fwd.name.asList()[0]
++        fwd_name = fwd.name
 +        self.assertEqual("Test", fwd_name.name)
 +        self.assertTrue(fwd.is_virtual)
 +
@@ -60105,7 +60958,7 @@ Last-Update: 2021-03-29
      unittest.main()
 --- gtsam-4.1.0.orig/wrap/tests/test_pybind_wrapper.py
 +++ gtsam-4.1.0/wrap/tests/test_pybind_wrapper.py
-@@ -1,71 +1,151 @@
+@@ -1,71 +1,163 @@
  """
  Unit test for Pybind wrap program
 -Author: Matthew Sklar
@@ -60121,8 +60974,11 @@ Last-Update: 2021-03-29
  import sys
  import unittest
 -import filecmp
- 
+-
 -import os.path as path
+ 
+-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+-sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
 +sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 +sys.path.append(
 +    osp.normpath(osp.abspath(osp.join(__file__, '../../../build/wrap'))))
@@ -60131,9 +60987,6 @@ Last-Update: 2021-03-29
 +import gtwrap.template_instantiator as instantiator
 +from gtwrap.pybind_wrapper import PybindWrapper
  
--sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
--sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
--
 -from pybind_wrapper import PybindWrapper
 -import interface_parser as parser
 -import template_instantiator as instantiator
@@ -60277,6 +61130,18 @@ Last-Update: 2021-03-29
 +                                   self.PYTHON_ACTUAL_DIR)
 +
 +        self.compare_and_diff('namespaces_pybind.cpp', output)
++
++    def test_operator_overload(self):
++        """
++        Tests for operator overloading.
++        """
++        with open(osp.join(self.INTERFACE_DIR, 'operator.i'), 'r') as f:
++            content = f.read()
++
++        output = self.wrap_content(content, 'operator_py',
++                                   self.PYTHON_ACTUAL_DIR)
++
++        self.compare_and_diff('operator_pybind.cpp', output)
 +
 +    def test_special_cases(self):
 +        """
