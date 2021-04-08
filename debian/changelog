@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~141.gbp19205e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~142.gbpe35641) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e35641762afed3216c317ee8ad78824d3e76aacb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @19205e223f21fc70c09d3e9fe03003b050670eaa **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 05 Apr 2021 03:18:40 +0000
+  [ Varun Agrawal ]
+  * added double as a template for PriorFactor, NavState retract and local, some formatting
+  * disable Wrapper CI for GCC 5 until we optimize the wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 Apr 2021 03:16:23 +0000
 
 gtsam (4.1.0-1ubuntu2~140.gbp34fe9f) focal; urgency=medium
 
