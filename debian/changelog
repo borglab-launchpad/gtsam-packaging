@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~145.gbp8dc4b4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~146.gbp9deb2f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9deb2fd03de03b73ea80a6ad8c405589efdeee2b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8dc4b4405e86e719dac60719417cb0a73cbc5fec **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 Apr 2021 03:19:55 +0000
+  [ Aleksei Evlampev ]
+  * fix boost serialization version includes
+  * remove unnecessary includes in SubgraphBuilder.h
+
+  [ Varun Agrawal ]
+  * change KeyFormatter from boost::function to std::function
+  * bunch of minor fixes
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Gerry Chen ]
+  * remove boost::function from Key.h
+
+  [ Aleksei Evlampev ]
+  * return back including boost version.hpp header
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Apr 2021 03:08:54 +0000
 
 gtsam (4.1.0-1ubuntu2~144.gbp356d7a) focal; urgency=medium
 
