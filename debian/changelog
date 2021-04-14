@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~149.gbp045f0e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~150.gbp41f7b4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @41f7b41037815962bd4f17919208e418041f5b9f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @045f0e84851327266bd0a730aec365856e6d46b7 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Apr 2021 03:12:23 +0000
+  [ Gerry Chen ]
+  * Squashed 'wrap/' changes from 5ddaff8ba..bae34fac8
+  * include pybind::iostream to the python wrapper cpp template
+  * documentation about wrap update instructions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Apr 2021 03:12:02 +0000
 
 gtsam (4.1.0-1ubuntu2~148.gbpce06c9) focal; urgency=medium
 
