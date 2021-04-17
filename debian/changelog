@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~153.gbp947e45) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~154.gbp3bafe6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3bafe6c809b1e1feb63b66e3160a7d587c430261 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @947e45b0279e526e6e8dce5ece55613253146f0a **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Apr 2021 03:16:02 +0000
+  [ Navid Mahabadi ]
+  * fix: UnaryFactor Jacobian
+  * update: use avialble rot2 class
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 Apr 2021 03:11:48 +0000
 
 gtsam (4.1.0-1ubuntu2~152.gbp8e2138) focal; urgency=medium
 
