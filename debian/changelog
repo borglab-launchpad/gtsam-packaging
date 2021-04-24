@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~177.gbpc96763) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~178.gbp4ed572) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4ed572c0b49be0b944bd9132d9f5e56e6161363e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c96763d63ecf0a40e2b02c3404547c10b6c5e7a2 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 22 Apr 2021 03:17:28 +0000
+  [ Varun Agrawal ]
+  * fix printing of preintegration params
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Apr 2021 03:13:34 +0000
 
 gtsam (4.1.0-1ubuntu2~176.gbp92944d) focal; urgency=medium
 
