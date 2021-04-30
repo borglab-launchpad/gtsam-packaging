@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~185.gbpea603d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~186.gbpce7d22) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ce7d22e491faadb689500aadacb96ee1e3343c10 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ea603d89b40105883881773bf188d79b7ecdba32 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Apr 2021 03:10:35 +0000
+  [ Gerry Chen ]
+  * Squashed 'wrap/' changes from 5ddaff8ba..b43f7c6d7
+  * update gtsam.i print function declarations
+  * update default args to match with c++
+  * include pybind11/function
+
+  [ Varun Agrawal ]
+  * print default arguments update
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Apr 2021 03:09:11 +0000
 
 gtsam (4.1.0-1ubuntu2~184.gbp8e0b77) focal; urgency=medium
 
