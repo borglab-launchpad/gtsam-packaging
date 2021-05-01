@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~189.gbpc5f2b5) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~190.gbpedd691) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @edd691483423a4c61d7e1a494d44a62a0f16d760 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c5f2b5fd3600450266c29789dbcc955603e7fc89 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Apr 2021 03:13:10 +0000
+  [ Varun Agrawal ]
+  * override print methods and update wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove virtual from overridden methods, add virtual destructors to appease compiler
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 May 2021 03:10:22 +0000
 
 gtsam (4.1.0-1ubuntu2~188.gbpfd465d) focal; urgency=medium
 
