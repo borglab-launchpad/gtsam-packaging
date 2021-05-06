@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~197.gbp1faa61) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~198.gbpc43ac7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c43ac7466f0c71d1ed9e7e3cc24be8840d41107f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1faa6185ce0d7ed831c5911643afa5c719f6e135 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 May 2021 03:08:58 +0000
+  [ Varun Agrawal ]
+  * fix some interface todos
+  * add pybind11/operators.h to interface template
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 May 2021 03:05:46 +0000
 
 gtsam (4.1.0-1ubuntu2~196.gbpd5851d) focal; urgency=medium
 
