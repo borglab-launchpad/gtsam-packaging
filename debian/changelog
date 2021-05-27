@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~201.gbp9c2873) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~202.gbpc9aa2c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c9aa2cdef430bdcc94f309cd82800530bd441d3b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9c2873674ab68859f3864a9df604a174002329f8 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 May 2021 03:09:19 +0000
+  [ lcarlone ]
+  * addeed gnc example
+  * added GNC example
+  * adding knownOutlier input to GNC
+  * all tests done!
+  * user can now also set the weights to initialize gnc!
+  * added comment on example interface
+  * amended
+  * fixed formatting glitch
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 May 2021 04:02:24 +0000
 
 gtsam (4.1.0-1ubuntu2~200.gbp77f179) focal; urgency=medium
 
