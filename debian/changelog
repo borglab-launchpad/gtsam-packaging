@@ -1,10 +1,62 @@
-gtsam (4.1.0-1ubuntu2~205.gbp564ac8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~206.gbpf4ae37) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f4ae37bbf6e78fdefafb88797e46f9a6943cf2f9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @564ac87341797922d682beaf81d2aaf356f87484 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 May 2021 04:05:58 +0000
+  [ lcarlone ]
+  * starting to implement tests and class for DisplacedPinholeCamera
+  * removed new class and test
+  * added test
+  * created .h
+  * done factor!
+  * compiles and all tests pass!!
+  * simple tests are passing, but now we start on the serious ones
+  * fixed equals
+  * error computation also looks fine!
+  * moving to other tests
+  * moving to noisy tests
+  * fixed unit test
+  * got it!
+  * test failure: now we can start computing jacobians
+  * trying to figure out jacobians
+  * isolated schur complement!
+  * pipeline up and running, need to fix Jacobians next, then Schur complement
+  * debugging jacobians
+  * still segfaults
+  * working on new sym matrix
+  * solving key problem
+  * trying to fix crucial test
+  * fixed optimization test: now we have to (i) allow reuse of same calibration, (ii) enable all other tests, (iii) remove cout
+  * adding test with single key
+  * removed tests that are not applicable - merging to develop now
+  * fixed print, removed cout, test still failing
+  * amended
+  * moving to more appropriate construction of Hessian
+  * getting better
+  * test still failing
+  * now I have a working prototype!
+  * works now!!
+  * getting ready to enable monocular operation
+  * 2 tests to go
+  * 1 test to go!
+  * need to clean up templates and remove 2 redundant lines
+  * removed extra "else"
+  * added extra unit test
+  * formatting
+  * improved naming, formatting, comments
+  * cleanup
+  * fixed glitch highlighted by CI
+  * trying to fix CI error
+  * added comment
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 May 2021 04:29:29 +0000
 
 gtsam (4.1.0-1ubuntu2~204.gbp373a36) focal; urgency=medium
 
