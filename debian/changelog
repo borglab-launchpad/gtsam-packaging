@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~213.gbp4e1f54) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~214.gbp4ee04e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4ee04ea292b2a63743fe602bd5c58e073af41330 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4e1f540d2b09a959657a5c1db44c7b66d388c8d5 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Jun 2021 05:39:06 +0000
+  [ Varun Agrawal ]
+  * added destructor for CameraSet to remove warning
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Jun 2021 05:05:20 +0000
 
 gtsam (4.1.0-1ubuntu2~212.gbp3435ee) focal; urgency=medium
 
