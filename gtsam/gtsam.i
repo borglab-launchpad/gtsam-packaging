@@ -1063,7 +1063,9 @@ class Similarity3 {
   Similarity3(const Matrix& R, const Vector& t, double s);
   Similarity3(const Matrix& T);
 
+  gtsam::Point3 transformFrom(const gtsam::Point3& p) const;
   gtsam::Pose3 transformFrom(const gtsam::Pose3& T);
+
   static gtsam::Similarity3 Align(const gtsam::Point3Pairs & abPointPairs);
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
 
@@ -2166,6 +2168,34 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   Vector whitenedError(const gtsam::Values& x) const;
 };
 
+#include <gtsam/nonlinear/CustomFactor.h>
+virtual class CustomFactor: gtsam::NoiseModelFactor {
+  /*
+   * Note CustomFactor will not be wrapped for MATLAB, as there is no supporting machinery there.
+   * This is achieved by adding `gtsam::CustomFactor` to the ignore list in `matlab/CMakeLists.txt`.
+   */
+  CustomFactor();
+  /*
+   * Example:
+   * ```
+   * def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+   *    <calculated error>
+   *    if not H is None:
+   *        <calculate the Jacobian>
+   *        H[0] = J1 # 2-d numpy array for a Jacobian block
+   *        H[1] = J2
+   *        ...
+   *    return error # 1-d numpy array
+   *
+   * cf = CustomFactor(noise_model, keys, error_func)
+   * ```
+   */
+  CustomFactor(const gtsam::SharedNoiseModel& noiseModel, const gtsam::KeyVector& keys,
+               const gtsam::CustomErrorFunction& errorFunction);
+
+  void print(string s = "", gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter);
+};
+
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
@@ -2227,6 +2257,7 @@ class Values {
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
+  void insert(size_t j, double c);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
@@ -2248,13 +2279,31 @@ class Values {
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
+  void update(size_t j, double c);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
+  template <T = {gtsam::Point2,
+                 gtsam::Point3,
+                 gtsam::Rot2,
+                 gtsam::Pose2,
+                 gtsam::SO3,
+                 gtsam::SO4,
+                 gtsam::SOn,
+                 gtsam::Rot3,
+                 gtsam::Pose3,
+                 gtsam::Unit3,
+                 gtsam::Cal3_S2,
+                 gtsam::Cal3DS2,
+                 gtsam::Cal3Bundler,
+                 gtsam::EssentialMatrix,
+                 gtsam::PinholeCameraCal3_S2,
+                 gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::imuBias::ConstantBias,
+                 gtsam::NavState,
+                 Vector,
+                 Matrix,
+                 double}>
   T at(size_t j);
 
-  /// version for double
-  void insertDouble(size_t j, double c);
-  double atDouble(size_t j) const;
 };
 
 #include <gtsam/nonlinear/Marginals.h>
