@@ -1,10 +1,152 @@
-gtsam (4.1.0-1ubuntu2~217.gbpc02825) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~218.gbp335b52) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @335b52ac5d243a251e0fe338ac4dd95fca44eb26 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c028252edba9635334dd89893356bdbfcf61ebba **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Jun 2021 05:08:50 +0000
+  [ Milo Knowles ]
+  * Add MagPoseFactor
+  * Compute error in the body frame and fix print()
+  * Improve docs
+
+  [ Ayush Baid ]
+  * Adding factor with shared calibration as a variable
+  * fixing tests by moving to Cal3_S2
+  * using fixed size matrix, and adding jacobian in homogeneous conversion
+  * renaming key variable
+  * fixing docstring
+  * reverting jacobian computation from homogeneous function
+  * adding prior on calibrations
+
+  [ Fan Jiang ]
+  * Working CustomFactor
+  * Change to using nullptr
+  * Allow KeyVector to just be lists
+  * Add comment on functor signature
+  * Add comment in gtsam.i
+  * Add printing for CustomFactor
+  * Remove unnecessary comment
+  * Add documentation
+  * Address Frank's comments
+  * Add more comments
+
+  [ HMellor ]
+  * Correct ImuFactorExamples frame description
+
+  [ Varun Agrawal ]
+  * update docstrings and format
+  * Add Akshay's Cal3Bundler test
+  * account for radial distortion in initial guess for `calibrate`
+
+  [ Tim McGrath ]
+  * fix bug on computation of SO(3) logmap
+
+  [ Milo Knowles ]
+  * Update commment syntax and replace typedef with using
+
+  [ Varun Agrawal ]
+  * initialize with intrinsic coordinates which has radial distortion modeled
+  * add all of Akshay's tests for default model
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * addressed comments and added an additional test
+  * make rr and g as const
+
+  [ Dan Barladeanu ]
+  * Comments Only.
+  * fix comment to docstring
+
+  [ Frank Dellaert ]
+  * Added Range to Point2
+
+  [ Fan Jiang ]
+  * Fixed Python factor for TBB
+  * Trajectory Estimation example
+  * Add unit test for optimization a factor graph
+  * Address Frank's comments
+  * Fix example in docs
+
+  [ Varun Agrawal ]
+  * fix bug in LinearContainerFactor and warnings about Point3
+  * added test for this issue
+
+  [ Ayush Baid ]
+  * updating tests
+  * creating 18 point example
+
+  [ Milo Knowles ]
+  * Move MagPoseFactor to gtsam
+
+  [ Ayush Baid ]
+  * switching to sampson point line error
+  * fixing jacobians and reformatting
+  * changing error values in test
+  * adding jacobians on input points
+  * adding jacobians on input points
+  * moving to squared sampson error
+  * using correct jacobian computation for calibration
+  * fixing unit tests
+
+  [ John Lambert ]
+  * add transformFrom() for Point3 in Similarity3
+
+  [ Ayush Baid ]
+  * adding 11 point example for cal3bundler
+  * fixing test cases
+
+  [ Jose Luis Blanco Claraco ]
+  * add expressions for cross() and dot()
+
+  [ Varun Agrawal ]
+  * merge double into Values templates
+  * add cmake command to run GTSAM python tests
+
+  [ Akshay Krishnan ]
+  * removing Sampson error + some tests cleanup
+  * increasing calibrate() tolerance
+  * small covariance change
+
+  [ akrishnan86 ]
+  * formatting changes
+  * removing duplicate data file
+
+  [ acxz ]
+  * use size_t variable type
+  * update timeLago.cpp with newer Sampler interface
+  * use size_t variable type
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 0124bcc45..07330d100
+
+  [ Akshay Krishnan ]
+  * removing failing test and unused data
+
+  [ akrishnan86 ]
+  * updating documentation for factor
+
+  [ acxz ]
+  * replace deprecated tbb functionality
+  * add comment for purpose of variable
+
+  [ Akshay Krishnan ]
+  * updating points name, constexpr
+  * changing to macro EssenstialMatrixfactor4
+  * all jacobian tests for essential matrix use macro
+
+  [ akrishnan86 ]
+  * formatting example
+
+  [ Varun Agrawal ]
+  * update the pgp servers to get the LLVM GPG key
+  * update key server in other workflow files
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jun 2021 03:05:04 +0000
 
 gtsam (4.1.0-1ubuntu2~216.gbpe4fa26) focal; urgency=medium
 
