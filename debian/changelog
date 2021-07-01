@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~221.gbp9f59e3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~222.gbpd13af1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d13af1e8ed1b224831d3c758a8a70f065c87db68 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9f59e38833fe76bb54d9ad0f01e4b5c08e4fc42a **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jun 2021 03:08:43 +0000
+  [ Jay Elrod ]
+  * Add user-defined copy constructor for Rot2
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Jul 2021 03:07:26 +0000
 
 gtsam (4.1.0-1ubuntu2~220.gbpbbeed8) focal; urgency=medium
 
