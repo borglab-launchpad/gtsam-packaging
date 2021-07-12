@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~237.gbp06c107) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~238.gbp79cd5d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @79cd5d13b48effab67257502320b3d6347c2629d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @06c10779918327e40265e22943be67ffd011187d **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 11 Jul 2021 03:07:59 +0000
+  [ Varun Agrawal ]
+  * replaced boost with std for placeholders, bind and function
+  * update all the tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jul 2021 03:04:46 +0000
 
 gtsam (4.1.0-1ubuntu2~236.gbp4b0649) focal; urgency=medium
 
