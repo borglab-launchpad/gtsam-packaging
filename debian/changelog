@@ -1,10 +1,37 @@
-gtsam (4.1.0-1ubuntu2~241.gbp84076a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~242.gbpe9fd52) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e9fd52fa1f3a1324f09960ae2c05c6b764359d88 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @84076a5a92c8d1367ace19d93fcc018616835b72 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jul 2021 03:08:06 +0000
+  [ John Lambert ]
+  * Update ShonanAveraging.h
+  * add interface in C++, and helper extractRot2Measurements()
+  * fix typo
+  * add ShonanAveraging2 constructor to wrapper, that accepts BetweenFactorPose2s as input
+  * add conversion function for Pose2 -> BinaryMeasurement<Rot2>
+  * fix typo on 3x3 matrix def
+  * use default parameters if none provided, and remove gtsam namespace prefix in .h file
+  * check in python unit test for new functionality
+  * add missing import to python unit test
+  * set pmin and pmax in unit test
+  * fix typo in block indexing, 3x3 covariance for Pose2 should have just 1x1 block for theta
+  * try increasing pmax to pass test
+  * fix typo
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ John Lambert ]
+  * use simple example for unit test
+  * use mod when comparing angles
+  * fix assert on angles
+  * update logic in angular error comparison
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Jul 2021 03:04:47 +0000
 
 gtsam (4.1.0-1ubuntu2~240.gbp9be350) focal; urgency=medium
 
