@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~249.gbp25a5aa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~250.gbpfdcb5a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fdcb5a438ccaa7fcdbdc7301cdfc65904540fc9b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @25a5aa6b779aa47dbda572c8d7d3e158eeb360c0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 15 Jul 2021 03:07:50 +0000
+  [ Varun Agrawal ]
+  * break interface file into multiple files
+  * break up preamble and specializations so there are no duplicate includes
+  * update template for wrapper
+  * move RedirectCout to base/utilities.h
+  * update CMake
+  * wrapper updates
+  * enable CI builds
+  * fixes
+  * Squashed 'wrap/' changes from 07330d100..d9ae5ce03
+  * matlab wrapper header update
+  * update interface files with latest develop
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove extraneous file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 Jul 2021 03:04:53 +0000
 
 gtsam (4.1.0-1ubuntu2~248.gbpb2298c) focal; urgency=medium
 
