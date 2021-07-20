@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~257.gbp8109a5) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~258.gbpd43f0d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d43f0def7046a37aa2403c3918e022d22e6cf0a7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8109a5c28db47120aebbfa4fff3696536d059688 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Jul 2021 03:08:16 +0000
+  [ yetongumich ]
+  * refactor tests and add comments
+  * resolve some nits
+
+  [ Scott ]
+  * Fix serialization of ISAM2 class
+  * Added ISAM2 serialize test
+  * Try macOS fix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 20 Jul 2021 03:04:53 +0000
 
 gtsam (4.1.0-1ubuntu2~256.gbp70087d) focal; urgency=medium
 
