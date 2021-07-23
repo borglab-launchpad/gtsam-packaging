@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~261.gbp077420) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~262.gbp35791d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @35791d027e2a45f6157fde6fa1f555cf506b78db **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0774208f183b6fd90bb8f7fdd7f19cc5d0b4e09a **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 20 Jul 2021 03:08:18 +0000
+  [ John Lambert ]
+  * use upper 3x3 sub-block of covariance matrix for converting BetweenFactor to BinaryMeasurement, and use Isotropic in ShonanAveraging2
+  * add comments about tangent space and covariance matrix ordering
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Jul 2021 03:04:46 +0000
 
 gtsam (4.1.0-1ubuntu2~260.gbp4237ad) focal; urgency=medium
 
