@@ -1,4 +1,4 @@
-gtsam (4.1.0-1ubuntu2~266.gbp4e967a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~266.gbp4e967a) xenial; urgency=medium
 
   ** SNAPSHOT build @4e967ac738e412b08cc334a1b1529e591cd76b65 **
 
