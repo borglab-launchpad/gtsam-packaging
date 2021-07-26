@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~269.gbp137831) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~270.gbpf0eda4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f0eda49e872a18ccb5fd63686ae31cbee66af83d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @13783181c0ebe8424ba5ef0080e73c9d8308dbf1 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Jul 2021 03:09:09 +0000
+  [ Akshay Krishnan ]
+  * wrapping triangulate nonlinear
+
+  [ akrishnan86 ]
+  * adding gtsam scope
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Jul 2021 03:04:48 +0000
 
 gtsam (4.1.0-1ubuntu2~268.gbpce1a9c) focal; urgency=medium
 
