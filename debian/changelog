@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~273.gbp028544) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~274.gbp74d7a9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @74d7a9cd35af0c5ccb2bd9358104ab19d86332ab **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @028544248fb1034a7df62b254b2f751c206570c3 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Jul 2021 03:08:12 +0000
+  [ Varun Agrawal ]
+  * add Windows export symbols for PinholeCamera
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Aug 2021 03:05:01 +0000
 
 gtsam (4.1.0-1ubuntu2~272.gbpde91a1) focal; urgency=medium
 
