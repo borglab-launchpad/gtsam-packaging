@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~277.gbpce67c1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~278.gbp9e2198) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9e2198f0cb90599b188d28babeaf078f23d63427 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ce67c1adc24bc488496a4c75957b9d423e5bbad3 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Aug 2021 03:08:43 +0000
+  [ Varun Agrawal ]
+  * speed up boost install
+  * improvements to CI files
+  * Install boost directly from binary
+  * use Boost 1.67.0 for Windows
+  * use env variables and fix setting of GITHUB_ENV
+  * use more cores for make on unix systems
+  * improvements to windows builds
+  * Boost 1.72.0 for Windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Aug 2021 03:05:10 +0000
 
 gtsam (4.1.0-1ubuntu2~276.gbp2028e8) focal; urgency=medium
 
