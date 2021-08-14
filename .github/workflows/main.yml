@@ -28,4 +28,21 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.ACTION_PUSH_PAT }}
       - name: build GTSAM ubuntu package
-        run: ./build_ubuntu/snapshot_script.bash -p ppa:borglab/gtsam-develop -v ubuntu -b 4.1.0 -u https://github.com/borglab/gtsam.git -k 95C3A575ABC855CE7D271B2A5C288700CB82A210 -n "Borglab Builder"  -e borglab.launchpad@gmail.com
+        run: ./build_ubuntu/snapshot_script.bash -f gtsam -p ppa:borglab/gtsam-develop -v ubuntu -b 4.1.0 -u https://github.com/borglab/gtsam.git -k 95C3A575ABC855CE7D271B2A5C288700CB82A210 -n "Borglab Builder"  -e borglab.launchpad@gmail.com -d snapshot
+  build_no_tbb_ubuntu_job:
+    runs-on: ubuntu-latest
+    container:
+      image: berndpfrommer/gtsam-u20.04:latest
+    name: build gtsam ubuntu source package without tbb
+    steps:
+      - name: import gpg key
+        uses: crazy-max/ghaction-import-gpg@v3
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+      - name: check out github repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ACTION_PUSH_PAT }}
+      - name: build GTSAM ubuntu package without tbb
+        run: ./build_ubuntu/snapshot_script.bash -f gtsam_no_tbb -p ppa:borglab/gtsam-develop -v ubuntu -b 4.1.0 -u https://github.com/borglab/gtsam.git -k 95C3A575ABC855CE7D271B2A5C288700CB82A210 -n "Borglab Builder"  -e borglab.launchpad@gmail.com -d snapshot_no_tbb

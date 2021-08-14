@@ -300,6 +300,7 @@ That's pretty straight forward:
     git clone https://github.com/borglab-launchpad/gtsam-packaging.git
     cd gtsam-packaging
     git checkout $branch
+    git pull # (to get the latest changes)
     # .... now make changes to debian files
     git commit -a -m "changed debian files"
     git push origin $branch

@@ -20,13 +20,15 @@ usage() {
     echo "    development version, e.g. https://github.com/borglab/gtsam.git"
     echo " -v <vendor>. Currently only ubuntu is supported as vendor"
     echo " -p <url of ppa>. Url of ppa, e.g. ppa:myusername/myppa"
+    echo " -f <flavor>. Which library flavor to build (gtsam, gtsam_no_tbb, ...)"
     echo " -n <username>. Username, e.g. \"My Name\" (in quotes!). This name"
     echo "    will be used in commit messages"
+    echo " -d <debian_branch>. debian packaging branch used will be: $vendor/$debian_branch"
     echo " -e <email>. Email, e.g. user@foo.bar. Must be your github registered email"
 }
 
 OPTIND=1
-while getopts "h?v:p:b:u:k:n:e:" opt; do
+while getopts "h?v:p:b:u:k:n:d:e:f:" opt; do
     case "$opt" in
 	h|\?)
 	    usage
@@ -42,7 +44,11 @@ while getopts "h?v:p:b:u:k:n:e:" opt; do
 	   ;;
 	n) user_name=$OPTARG
 	   ;;
+	d) debian_branch=$OPTARG
+	   ;;
 	e) email=$OPTARG
+	   ;;
+	f) flavor=$OPTARG
 	   ;;
 	k) gpg_key=$OPTARG
 	   ;;
@@ -53,15 +59,19 @@ shift $((OPTIND-1))
 
 [ "${1:-}" = "--" ] && shift
 
-if [ -z ${vendor+x} ] || [ -z ${ppa+x} ] || [ -z ${snapshot_base+x} ] || [ -z ${upstream+x} ] || [ -z ${gpg_key+x} ] || [ -z ${user_name+x} ] || [ -z ${email+x} ] ]; then
+if [ -z ${vendor+x} ] || [ -z ${ppa+x} ] || [ -z ${snapshot_base+x} ] || [ -z ${upstream+x} ] || [ -z ${gpg_key+x} ] || [ -z ${user_name+x} ] || [ -z ${email+x} ] || [ -z ${flavor+x} ] || [ -z ${debian_branch+x} ] ; then
     echo " ERROR: missing command line parameter. All parameters must be present!"
     echo
     usage
     exit 1
 fi
-    
+
+packaging_branch=${vendor}/${debian_branch}
+
 echo "--------------------------------------"
 echo "snapshot base version: $snapshot_base"
+echo "flavor:                $flavor"
+echo "packaging branch:      $packaging_branch"
 echo "upstream repo:         $upstream"
 echo "upload ppa:            $ppa"
 echo "using key:             $gpg_key"
@@ -98,7 +108,7 @@ git branch -r
 echo 'git config before checkout out'
 git config -l
 echo 'checking out last snapshot'
-git checkout ${vendor}/snapshot  # switch to snapshot tracking branch
+git checkout ${packaging_branch}  # switch to snapshot tracking branch
 
 hash_store_file=debian/git_last_snapshot_hash.txt
 if grep -q $git_hash "$hash_store_file"; then
@@ -124,7 +134,7 @@ git merge upstream/develop -m "merge develop branch"
 # The 'snapshot' feature automatically increments the version number
 # from the changelog file. It also sets the distribution to UNRELEASED,
 # no matter what you pass in as "distribution".
-gbp dch --debian-branch=${vendor}/snapshot --distribution=UNRELEASED --snapshot --git-author
+gbp dch --debian-branch=${packaging_branch} --distribution=UNRELEASED --snapshot --git-author
 
 # get the new snapshot version from changelog
 snap=`head -1 debian/changelog | sed 's/.*[(]//g; s/[)].*//g'`
@@ -148,7 +158,7 @@ git commit -a -m "updated changelog and patch files for snapshot $snap"
 for distro in xenial bionic focal
 do
     # remove any old build files
-    rm -f ../gtsam_*.dsc ../gtsam_*.build ../gtsam_*.buildinfo ../gtsam_*.changes ../*.upload
+    rm -f ../${flavor}_*.dsc ../${flavor}_*.build ../${flavor}_*.buildinfo ../${flavor}_*.changes ../*.upload
 
     # in-place replace of UNRELEASED; with specific distro in changelog file.
     # the -z option only replaces the first occurence
@@ -159,11 +169,11 @@ do
     git commit -m "modified changelog for distro $distro"
     # this will actually build the source package, i.e. create the
     # stuff that can be uploaded to ubuntu's ppa farm for building
-    gbp buildpackage -k${gpg_key} -S -sa --git-debian-branch=${vendor}/snapshot --source-option="--include-removal"
+    gbp buildpackage -k${gpg_key} -S -sa --git-debian-branch=${packaging_branch} --source-option="--include-removal"
 
     # upload to ubuntu ppa server for building
     pushd ..
-    dput "$ppa" gtsam_*_source.changes
+    dput "$ppa" ${flavor}_*_source.changes
     popd
     
     # now update the changelog to capture the new commits. This will
@@ -171,7 +181,7 @@ do
     # needs to happen because the ubuntu build server will reject
     # anything that does not have an increasing version number over the
     # previously uploaded source package
-    gbp dch --debian-branch=${vendor}/snapshot --distribution=UNRELEASED --snapshot --git-author
+    gbp dch --debian-branch=${packaging_branch} --distribution=UNRELEASED --snapshot --git-author
 
     # update snapshot version, which will be used in the next iteration
     snap=`head -1 debian/changelog | sed 's/.*[(]//g; s/[)].*//g'`
@@ -196,4 +206,4 @@ git commit -m "commit of final snapshot version number update"
 
 # finally, push the changes to the snapshot branch back home
 git branch -r
-git push origin ${vendor}/snapshot
+git push origin ${packaging_branch}
