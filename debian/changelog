@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~285.gbpdc406d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~286.gbp23d11f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @23d11f70893872bf5da439e103d1ebdf4793bbc0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dc406dc0d4216ff5ffa781a415618b2dc0dc516e **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Aug 2021 03:08:53 +0000
+  [ John Lambert ]
+  * start wrapping GNC
+  * Remove std prefix in .i fn signatures
+  * Remove ‘class’ from template specifications
+  * try imports
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ John Lambert ]
+  * provide template list of typedef
+  * test GNC along with other non-linear optimizers in python unit tests
+  * remove Dogleg from GNC-supported base-optimizers, and use nested templates
+  * add virtual to all classes in the .i file
+  * add GTSAM_EXPORT to GncParams.h
+  * add GTSAM_EXPORT to GncOptimizer.h
+  * use custom typedefs for GNC + GaussNewton and GNC + LM
+  * import GncLMParams, GncLMOptimizer to prevent pybind's automatic long names from name concat
+  * add missing gtsam prefix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 14 Aug 2021 01:38:37 +0000
 
 gtsam (4.1.0-1ubuntu2~284.gbpde89be) focal; urgency=medium
 
