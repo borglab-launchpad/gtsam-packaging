@@ -1,4 +1,4 @@
-Source: gtsam
+Source: gtsam_no_tbb
 Section: libs
 Priority: optional
 Maintainer: Frank Dellaert <frank@cc.gatech.edu>
@@ -7,16 +7,15 @@ Build-Depends: cmake,
     debhelper (>=9),
     libboost-all-dev (>= 1.58),
     libeigen3-dev,
-    libtbb-dev,
     libcpputest-dev,
     libgeographic-dev
 Standards-Version: 4.5.0
 Homepage: https://github.com/borglab/gtsam
 
-Package: libgtsam-dev
+Package: libgtsam_no_tbb-dev
 Section: libdevel
 Architecture: any
-Depends: libgtsam4 (= ${binary:Version}), ${misc:Depends},
+Depends: libgtsam_no_tbb4 (= ${binary:Version}), ${misc:Depends},
     libboost-serialization-dev,
     libboost-system-dev,
     libboost-filesystem-dev,
@@ -27,38 +26,42 @@ Depends: libgtsam4 (= ${binary:Version}), ${misc:Depends},
     libboost-chrono-dev,
     libboost-regex-dev,
     libeigen3-dev
-Description: GTSAM library header and config files
+Conflicts: libgtsam-dev
+Description: GTSAM library header and config files (without TBB)
  A collection of C++ classes related to SLAM
  .
  This package contains the development files.
 
 
-Package: libgtsam4
+Package: libgtsam_no_tbb4
 Section: libs
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: GTSAM Georgia Tech Smoothing and Mapping Library
+Conflicts: libgtsam4
+Description: GTSAM Georgia Tech Smoothing and Mapping Library (without TBB)
  A collection of C++ classes related to SLAM
 
 
-Package: libgtsam-unstable4
+Package: libgtsam_no_tbb-unstable4
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libgtsam4 (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtsam_no_tbb4 (= ${binary:Version})
+Conflicts: libgtsam-unstable4
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
-Description: Unstable parts of the GTSAM Georgia Tech Smoothing and Mapping Library
+Description: Unstable parts of the GTSAM Georgia Tech Smoothing and Mapping Library (without TBB)
  A collection of C++ classes related to SLAM
  .
  This package contains the unstable parts of it
 
-Package: libgtsam-unstable-dev
+Package: libgtsam_no_tbb-unstable-dev
 Architecture: any
 Section: libdevel
-Depends: libgtsam-unstable4 (= ${binary:Version}), ${misc:Depends},
-    libgtsam-dev (= ${binary:Version})
-Description: GTSAM unstable library header and config files
+Depends: libgtsam_no_tbb-unstable4 (= ${binary:Version}), ${misc:Depends},
+    libgtsam_no_tbb-dev (= ${binary:Version})
+Conflicts: libgtsam-unstable-dev
+Description: GTSAM unstable library header and config files (without TBB)
  A collection of unstable C++ classes related to SLAM
  .
  This package contains the development files.
