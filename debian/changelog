@@ -1,3 +1,12 @@
+unknown (unknown~1.gbp6a60b7) bionic; urgency=medium
+
+  ** SNAPSHOT build @6a60b7625bdb9be0bb4b214d15dbc9597ca5bfca **
+
+  * updated changelog and patch files for snapshot unknown~1.gbpcc1a68
+  * modified changelog for distro xenial
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Aug 2021 03:05:10 +0000
+
 unknown (unknown~1.gbpcc1a68) xenial; urgency=medium
 
   ** SNAPSHOT build @cc1a6833ca3af8d8188cc72d43be14d04b35c925 **
