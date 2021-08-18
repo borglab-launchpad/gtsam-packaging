@@ -1,3 +1,11 @@
+unknown (unknown~1.gbp04f81f) focal; urgency=medium
+
+  ** SNAPSHOT build @04f81f16a2f76ee2699f921e74fb9f0ec5009826 **
+
+  * modified changelog for distro bionic
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Aug 2021 03:06:11 +0000
+
 unknown (unknown~1.gbp6a60b7) bionic; urgency=medium
 
   ** SNAPSHOT build @6a60b7625bdb9be0bb4b214d15dbc9597ca5bfca **
