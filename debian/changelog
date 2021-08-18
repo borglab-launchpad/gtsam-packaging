@@ -1,10 +1,26 @@
-gtsam_no_tbb (4.1.0-1ubuntu2~289.gbpa514f9) UNRELEASED; urgency=medium
+unknown (unknown~1.gbpcc1a68) UNRELEASED; urgency=medium
 
-  ** SNAPSHOT build @a514f9b28eaa4af556dd46dd1265bc9ed843c413 **
+  ** SNAPSHOT build @cc1a6833ca3af8d8188cc72d43be14d04b35c925 **
 
-  * modified changelog for distro focal
+  [ Borglab Builder ]
+  * clean up test_Pose3SLAMExample.py
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 14 Aug 2021 01:42:22 +0000
+  [ John Lambert ]
+  * add type hints, use numpy instead of math module
+  * add type hints to visual_data_generator.py
+  * clean up plot.py with modern type hints
+  * add more missing type hints
+  * add missing type hint
+  * add missing docstring for an input arg
+  * add Optional type annotations where needed
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ borglab.launchpad ]
+  * made changes to packaging to "no_tbb" version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Aug 2021 03:05:09 +0000
 
 gtsam (4.1.0-1ubuntu2~288.gbpcbf820) focal; urgency=medium
 
