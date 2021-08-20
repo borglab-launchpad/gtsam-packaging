@@ -45,4 +45,4 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.ACTION_PUSH_PAT }}
       - name: build GTSAM ubuntu package without tbb
-        run: ./build_ubuntu/snapshot_script.bash -f gtsam_no_tbb -p ppa:borglab/gtsam-develop -v ubuntu -b 4.1.0 -u https://github.com/borglab/gtsam.git -k 95C3A575ABC855CE7D271B2A5C288700CB82A210 -n "Borglab Builder"  -e borglab.launchpad@gmail.com -d snapshot_no_tbb
+        run: ./build_ubuntu/snapshot_script.bash -f gtsam-no-tbb -p ppa:borglab/gtsam-develop -v ubuntu -b 4.1.0 -u https://github.com/borglab/gtsam.git -k 95C3A575ABC855CE7D271B2A5C288700CB82A210 -n "Borglab Builder"  -e borglab.launchpad@gmail.com -d snapshot_no_tbb

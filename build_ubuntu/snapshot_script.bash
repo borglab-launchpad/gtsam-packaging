@@ -20,7 +20,7 @@ usage() {
     echo "    development version, e.g. https://github.com/borglab/gtsam.git"
     echo " -v <vendor>. Currently only ubuntu is supported as vendor"
     echo " -p <url of ppa>. Url of ppa, e.g. ppa:myusername/myppa"
-    echo " -f <flavor>. Which library flavor to build (gtsam, gtsam_no_tbb, ...)"
+    echo " -f <flavor>. Which library flavor to build (gtsam, gtsam-no-tbb, ...)"
     echo " -n <username>. Username, e.g. \"My Name\" (in quotes!). This name"
     echo "    will be used in commit messages"
     echo " -d <debian_branch>. debian packaging branch used will be: $vendor/$debian_branch"
