@@ -1,3 +1,11 @@
+unknown (unknown~1.gbpb0272b) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @b0272bd5c2e4d0e36726f7cd266de4a837153f02 **
+
+  * modified changelog for distro focal
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Aug 2021 12:13:31 +0000
+
 unknown (unknown~1.gbpa3b25f) focal; urgency=medium
 
   ** SNAPSHOT build @a3b25ff5defceb13e406ab34c580e9980c40135c **
