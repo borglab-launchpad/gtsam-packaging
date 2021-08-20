@@ -1,7 +1,14 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~289.gbpa514f9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~290.gbp383a00) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @383a00ef11b2037207e83b40ad0880e522e77a43 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b0272bd5c2e4d0e36726f7cd266de4a837153f02 **
 
   * start of building no-tbb version
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Aug 2021 12:13:31 +0000
+  [ borglab.launchpad ]
+  * renamed _no_tbb -> -no-tbb
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Aug 2021 15:47:20 +0000
