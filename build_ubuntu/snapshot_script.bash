@@ -112,7 +112,7 @@ git checkout ${packaging_branch}  # switch to snapshot tracking branch
 
 hash_store_file=debian/git_last_snapshot_hash.txt
 if grep -q $git_hash "$hash_store_file"; then
-#    echo "snapshot of $git_hash was already taken, aborting!"
+    echo "snapshot of $git_hash was already taken, aborting!"
 #    exit 0
 fi
 
