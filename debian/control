@@ -1,4 +1,4 @@
-Source: gtsam_no_tbb
+Source: gtsam-no-tbb
 Section: libs
 Priority: optional
 Maintainer: Frank Dellaert <frank@cc.gatech.edu>
@@ -12,10 +12,10 @@ Build-Depends: cmake,
 Standards-Version: 4.5.0
 Homepage: https://github.com/borglab/gtsam
 
-Package: libgtsam_no_tbb-dev
+Package: libgtsam-no-tbb-dev
 Section: libdevel
 Architecture: any
-Depends: libgtsam_no_tbb4 (= ${binary:Version}), ${misc:Depends},
+Depends: libgtsam-no-tbb4 (= ${binary:Version}), ${misc:Depends},
     libboost-serialization-dev,
     libboost-system-dev,
     libboost-filesystem-dev,
@@ -33,7 +33,7 @@ Description: GTSAM library header and config files (without TBB)
  This package contains the development files.
 
 
-Package: libgtsam_no_tbb4
+Package: libgtsam-no-tbb4
 Section: libs
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
@@ -44,9 +44,9 @@ Description: GTSAM Georgia Tech Smoothing and Mapping Library (without TBB)
  A collection of C++ classes related to SLAM
 
 
-Package: libgtsam_no_tbb-unstable4
+Package: libgtsam-no-tbb-unstable4
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libgtsam_no_tbb4 (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtsam-no-tbb4 (= ${binary:Version})
 Conflicts: libgtsam-unstable4
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
@@ -55,11 +55,11 @@ Description: Unstable parts of the GTSAM Georgia Tech Smoothing and Mapping Libr
  .
  This package contains the unstable parts of it
 
-Package: libgtsam_no_tbb-unstable-dev
+Package: libgtsam-no-tbb-unstable-dev
 Architecture: any
 Section: libdevel
-Depends: libgtsam_no_tbb-unstable4 (= ${binary:Version}), ${misc:Depends},
-    libgtsam_no_tbb-dev (= ${binary:Version})
+Depends: libgtsam-no-tbb-unstable4 (= ${binary:Version}), ${misc:Depends},
+    libgtsam-no-tbb-dev (= ${binary:Version})
 Conflicts: libgtsam-unstable-dev
 Description: GTSAM unstable library header and config files (without TBB)
  A collection of unstable C++ classes related to SLAM
