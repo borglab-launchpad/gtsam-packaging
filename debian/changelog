@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~293.gbp471acc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~294.gbp24237e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @24237e6e3c014e857f4c28b2b1691eaadc187a5e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @471acc131977be34f3b8321ce9887d0388c45b33 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Aug 2021 15:50:40 +0000
+  [ Varun Agrawal ]
+  * fix extractPoint2/3 and added C++ tests
+  * added Python tests
+  * updated docs
+  * full slew of tests
+  * update wrapper with defaults
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Aug 2021 03:04:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~292.gbp3ba786) focal; urgency=medium
 
