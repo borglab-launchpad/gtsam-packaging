@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~301.gbpb71521) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~302.gbpd24d01) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d24d011b8b58839d0cdb22b321c52eea3a2d83a3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b71521a2cadf2061a542ea5eac6789d1286d0ba0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Aug 2021 15:50:55 +0000
+  [ Varun Agrawal ]
+  * fix extractPoint2/3 and added C++ tests
+  * added Python tests
+  * updated docs
+  * full slew of tests
+  * update wrapper with defaults
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Aug 2021 03:04:53 +0000
 
 gtsam (4.1.0-1ubuntu2~300.gbp03f82a) focal; urgency=medium
 
