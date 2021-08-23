@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~305.gbpaa87ef) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~306.gbp97ede3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @97ede300485b71f6e76eb5ac3ee13f09da58d6cd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aa87ef07af6c4f5c1b40a55e8c647128b3fba476 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Aug 2021 03:08:26 +0000
+  [ Varun Agrawal ]
+  * modernize NonlinearEquality.h
+  * update docs to reflect min Boost version
+  * small wrapper updates
+  * set lowest common boost version
+  * Link to GTSAM-EXPORT doc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Eric ]
+  * Small clarification and md cleanup
+
+  [ John Lambert ]
+  * Expand DSF map unit tests
+  * improve docstring
+  * clean up SFMdata
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Aug 2021 03:05:30 +0000
 
 gtsam (4.1.0-1ubuntu2~304.gbpc73915) focal; urgency=medium
 
