@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~309.gbp186915) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~310.gbpd190b2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d190b23701c6d319fe91f4af03aee3f06b6369c3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @186915038a05a9947b2d08b6280ed88fcce8fae7 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Aug 2021 03:09:04 +0000
+  [ Varun Agrawal ]
+  * format and modernize NonlinearEquality2
+  * wrap NonlinearEquality2 + python unit test
+  * Update `make python-test` so that it works even if GTSAM is already installed
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Aug 2021 03:05:51 +0000
 
 gtsam (4.1.0-1ubuntu2~308.gbpe9840f) focal; urgency=medium
 
