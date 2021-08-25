@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~313.gbpc3e37e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~314.gbp2f16fb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2f16fb8f904fc3e32238675b76faf72fdad8a64e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c3e37e953e6dc51644573d5d836bee720d31924d **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Aug 2021 03:09:25 +0000
+  [ Varun Agrawal ]
+  * add missing import of Pose3
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Aug 2021 03:05:19 +0000
 
 gtsam (4.1.0-1ubuntu2~312.gbp507db1) focal; urgency=medium
 
