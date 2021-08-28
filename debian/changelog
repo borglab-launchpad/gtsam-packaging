@@ -1,4 +1,4 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~310.gbp65c47f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~310.gbp65c47f) xenial; urgency=medium
 
   ** SNAPSHOT build @65c47f5b4bf52278006ad879d904546d6568cebb **
 
