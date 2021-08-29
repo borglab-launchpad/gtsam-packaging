@@ -1,10 +1,72 @@
-gtsam (4.1.0-1ubuntu2~321.gbp738df6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~322.gbp1bbdf4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1bbdf41c858149f2834465a5eee4644cf7ad178a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @738df633092e224323663906e5ae0201bfdfbd55 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 28 Aug 2021 03:08:49 +0000
+  [ yotams ]
+  * rolling shutter projection factor
+
+  [ lcarlone ]
+  * added templates for factors
+  * setting up .h and tests - compiles and tests pass.
+  * put in place initial functions
+  * removed cpp
+  * now I need to move to testing and interpolation
+  * added interpolation function from shteren1
+  * removed interp from Pose3, starting to take pass on projection factor and test
+  * amended
+  * pass on projection factor, but looks great overall
+  * everything working out so far with the tests
+  * all tests are passing!
+  * added nice test on cheirality exception - done with projectionFactorRollingShutter
+  * started serious testing: all tests pass for now
+  * solidified add and equal
+  * finding best way to test RS errors
+  * yay! error test passes!
+  * jacobians are good to go!
+  * jacobians and errors are well tested now
+  * got to the final monster. Now I need to implement createHessian
+  * stuck on compile issue
+  * all pass!
+  * all pass!
+  * moved common function to cameraSet. commented issues with templated calls to functions in cameraSet
+  * removed comments. Code is complete now. Need few more unit tests and we are good to go
+  * removed printout, solved CI issue
+  * fixed another test, few more to go
+  * fixed test with lmk distance
+  * test with EPI fixed
+  * working on testing + cosmetic improvements to print for smart factors
+  * fixed another test.
+  * done with tests, now I only have to rename gamma to keep consistency with the projection factors RS
+  * renamed params. need one last test
+  * extra cleanup
+  * added timing test
+  * CHECK -> EXPECT
+  * test still in progress; removed a tmp function
+  * fixed last test - this is good to go!
+  * fixing ci issue
+  * now using MakeJacobian
+  * simplified jacobian computation, improved comments
+  * reformatted using google style
+  * renamed interp param to alpha, improved comments, added cpp
+  * plot twist: templating new factor on CAMERA
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Added override
+  * Some formatting
+  * Got rid of SchurComplementAndRearrangeBlocks_3_12_6
+  * Check equals not assert_equal
+  * Google-style formatting in new files.
+  * Cleaned up interpolate
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Aug 2021 03:05:15 +0000
 
 gtsam (4.1.0-1ubuntu2~320.gbpf10c18) focal; urgency=medium
 
