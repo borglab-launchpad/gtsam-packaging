@@ -1,10 +1,29 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~317.gbpba1631) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~318.gbp0996ef) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0996efa9fec2dc6280d1678d4abe785a4fe2dbbd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ba1631658228fbce698b4ce5c6bd3446694b0f80 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Aug 2021 03:09:01 +0000
+  [ Gerry Chen ]
+  * python unit test for FitBasis
+  * add <pybind/stl.h> and fix constructor argument order
+  * docstrings and formatting
+
+  [ Varun Agrawal ]
+  * fix python tests and make verbose so they are easy to debug
+  * verbose python testing
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Fix bug in FourierBasis
+  * break down tests to make reporting clearer
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Aug 2021 03:05:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~316.gbp5576ef) focal; urgency=medium
 
