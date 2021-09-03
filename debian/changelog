@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~329.gbpf0e752) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~330.gbpddeded) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ddeded04a2070c30aa6f981f6ac184fcc78f9687 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f0e7525a169452e4e34f8e9dfcca31aaa1d8b702 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Aug 2021 03:08:43 +0000
+  [ John Lambert ]
+  * add Pose2.align() to wrapper
+  * add Point2Pairs typedef to Point2.h
+  * add gtsam::Point2Pairs to CMakeLists.txt
+  * add Point2Pairs to specializations
+  * move align as function, not as class method
+  * start python unit test for align()
+  * add python unit test on Pose2.align()
+  * fix missing imports
+  * import align from gtsam directly
+  * directly import only classes from gtsam
+  * use boost::optional in .i file directly
+
+  [ Varun Agrawal ]
+  * add support for boost::optional return type in geometry.i
+  * formatting
+  * update documentation for boost::optional binding
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Sep 2021 03:05:42 +0000
 
 gtsam (4.1.0-1ubuntu2~328.gbp90dbaf) focal; urgency=medium
 
