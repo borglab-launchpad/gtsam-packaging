@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~329.gbpb0aa63) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~330.gbp3de2bd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3de2bdc31dec8b9bc9a68c8a4f8c6588e13c672f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b0aa63a478566724ae3404fa66582f1b63c2bab8 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Sep 2021 03:09:14 +0000
+  [ Frank Dellaert ]
+  * Switched to borglab hub
+  * Updated README
+  * Fixed TODOs
+
+  [ Frank dellaert ]
+  * Fixed VNC docs for Mac
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Sep 2021 03:05:28 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~328.gbpc9e0e3) focal; urgency=medium
 
