@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~341.gbpf948e9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~342.gbpad86d1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ad86d175e6c084ade6183f46f023ba8a2fec8584 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f948e91b7adddc57a40db04898f713c192655637 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Sep 2021 03:09:18 +0000
+  [ Varun Agrawal ]
+  * formatting
+  * wrap key printing funcs and remove redundancy
+  * wrap more JacobianFactor constructors
+  * update template to record correct name of cpp file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Sep 2021 03:05:20 +0000
 
 gtsam (4.1.0-1ubuntu2~340.gbpd050fa) focal; urgency=medium
 
