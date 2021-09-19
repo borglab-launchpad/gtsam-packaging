@@ -1,10 +1,34 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~337.gbp06d9c0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~338.gbp1911dd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1911ddf1d4051475052e33d76e90af15586e52c8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @06d9c0c0c97d4788dd88fc5169929b085f3d8790 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Sep 2021 03:08:56 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Use METIS system library if so selected
+
+  [ John Lambert ]
+  * Start wrapping the verbosity options for GNC
+
+  [ Varun Agrawal ]
+  * add guards for system Metis
+  * CI special case for using system version of 3rd party libraries
+  * formatting
+  * add appropriate guards for metis
+
+  [ John Lambert ]
+  * use updated wrap syntax for Verbosity enum in .i file
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 571c23952..add6075e8
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Sep 2021 03:04:57 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~336.gbpf8533f) focal; urgency=medium
 
