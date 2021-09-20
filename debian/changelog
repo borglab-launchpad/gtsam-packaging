@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~349.gbp599fa6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~350.gbp3dc3f5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3dc3f5c4ed92018df9f55e2d6e73eca17773ddfa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @599fa60392344c3080dcced4eb3992ff5de7f5ec **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Sep 2021 03:08:40 +0000
+  [ Akash Sharma ]
+  * Update Find TBB to handle TBB installed with homebrew on OS X Better Error message for TBB handling with versions greater than 2021.1 on OS X
+
+  [ Varun Agrawal ]
+  * make TBB finding depend on the GTSAM_WITH_TBB flag
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Sep 2021 03:05:45 +0000
 
 gtsam (4.1.0-1ubuntu2~348.gbpfd778d) focal; urgency=medium
 
