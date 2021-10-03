@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~357.gbp86e733) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~358.gbp5f0e27) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5f0e276f6169fce98e0d5817c91b5e65fed44355 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @86e73360f95c3700970041c972cbc31d2a1a6210 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 29 Sep 2021 03:09:46 +0000
+  [ borglab.launchpad ]
+  * use system provided libmetis
+  * fixed lintian warnings about copyright
+  * remove triggers file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 03 Oct 2021 17:51:18 +0000
 
 gtsam (4.1.0-1ubuntu2~356.gbp4ba6b2) focal; urgency=medium
 
