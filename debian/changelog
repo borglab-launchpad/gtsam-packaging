@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~369.gbpdf3aab) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~370.gbpaa3448) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @aa3448a6856cb7ce47437a89c93831f0ab868946 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @df3aabf69860599b7736972d2ec185cb9a3d7abc **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Oct 2021 03:09:31 +0000
+  [ Gerry Chen ]
+  * OptionalJacobian fixed constructor with dynamic pointer
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Oct 2021 03:06:38 +0000
 
 gtsam (4.1.0-1ubuntu2~368.gbp6f36b1) focal; urgency=medium
 
