@@ -1,3 +1,12 @@
+gtsam-no-tbb (4.1.0-1ubuntu2~371.gbp144eda) bionic; urgency=medium
+
+  ** SNAPSHOT build @144eda55f031e60a054956b5dcf56a404913e3a4 **
+
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~370.gbp78674b
+  * modified changelog for distro xenial
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Oct 2021 03:07:18 +0000
+
 gtsam-no-tbb (4.1.0-1ubuntu2~370.gbp78674b) xenial; urgency=medium
 
   ** SNAPSHOT build @78674b44dba1358b16b07bc04c5ad022527359c1 **
