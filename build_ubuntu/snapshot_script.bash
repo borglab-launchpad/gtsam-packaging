@@ -113,7 +113,6 @@ git checkout ${packaging_branch}  # switch to snapshot tracking branch
 hash_store_file=debian/git_last_snapshot_hash.txt
 if grep -q $git_hash "$hash_store_file"; then
     echo "snapshot of $git_hash was already taken, aborting!"
-#    exit 0
 fi
 
 # retrieve the pristine tarball from the pristine-tar branch
@@ -155,7 +154,7 @@ git commit -a -m "updated changelog and patch files for snapshot $snap"
 #
 # loop over distros so we can bump the version number for each one
 #
-for distro in xenial bionic focal
+for distro in bionic focal
 do
     # remove any old build files
     rm -f ../${flavor}_*.dsc ../${flavor}_*.build ../${flavor}_*.buildinfo ../${flavor}_*.changes ../*.upload
