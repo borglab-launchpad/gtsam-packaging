@@ -1,10 +1,146 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~381.gbpb4bf04) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~382.gbp35e78a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @35e78ad9955c089c507de75d976c27a674aebcd8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b4bf04686e967472c08c6a710f2565ca3d0114bc **
 
   * modified changelog for distro focal
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~290.gbp2938c9
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~294.gbpbc8feb
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~298.gbp79048a
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~302.gbpd24d01
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~306.gbp97ede3
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~310.gbpd190b2
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~314.gbp2f16fb
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~318.gbpfac706
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~322.gbp1bbdf4
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~326.gbpb0abeb
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~330.gbpddeded
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~334.gbpf7ab3f
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~338.gbp0dcaca
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~342.gbpad86d1
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~346.gbp0b4cec
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~350.gbp3dc3f5
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~354.gbp0b53c8
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 09 Oct 2021 03:08:50 +0000
+  [ borglab.launchpad ]
+  * use system provided libmetis
+  * fixed lintian warnings about copyright
+  * remove triggers file
+
+  [ Borglab Builder ]
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~358.gbp5f0e27
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~362.gbpef7574
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~366.gbp0003fe
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~370.gbpaa3448
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~374.gbp4ea04d
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~378.gbp033626
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~382.gbpb2cd3f
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~386.gbp33ce37
+  * modified changelog for distro xenial
+  * modified changelog for distro bionic
+  * modified changelog for distro focal
+  * commit of final snapshot version number update
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 09 Oct 2021 10:24:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~380.gbp16eaba) focal; urgency=medium
 
