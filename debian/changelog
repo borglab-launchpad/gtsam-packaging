@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~396.gbp70631e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~397.gbpa0952c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a0952c35d4c0b8d98bc60c7f775021723c3d7c94 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @70631eeeaab4624a5f6d5e22da62e1364904514e **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 13 Oct 2021 03:08:06 +0000
+  [ John Lambert ]
+  * add failing unit test on axisAngle for Rot3 in c++
+  * add python unit test for Rot3
+  * fix typo
+  * fix assert
+
+  [ Fan Jiang ]
+  * Revert "Revert "replace deprecated tbb functionality""
+  * Fixed numerical problems near +-pi
+  * Revert "Revert "Revert "replace deprecated tbb functionality"""
+  * Cleanup equation
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * simplify logic of biggest diagonal
+  * Fix typo
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Oct 2021 03:05:55 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~395.gbp9e3329) focal; urgency=medium
 
