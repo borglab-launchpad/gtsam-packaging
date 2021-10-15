@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~399.gbp00b6b5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~400.gbp597a58) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @597a580ba94829518dce1f6b8ad7c6739614e4cb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @00b6b5ebca612ee334180b65ba60e0c7a5bbffc7 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Oct 2021 03:08:01 +0000
+  [ John Lambert ]
+  * Add specific examples to stress-test the log map
+  * loosen tolerance on trace(R) == -1
+
+  [ Fan Jiang ]
+  * Fix again with better approximation
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 15 Oct 2021 03:05:53 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~398.gbpa7011b) focal; urgency=medium
 
