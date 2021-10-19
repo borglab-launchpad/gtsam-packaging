@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~419.gbpb6e3d4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~420.gbp170455) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @17045510354bd0eafd1fc54789e886d8f7548b68 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b6e3d433293667bf87c51e5366ebf083771d6e51 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Oct 2021 03:09:16 +0000
+  [ Varun Agrawal ]
+  * use variables to store targets
+  * clean up the __init__ file
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 19 Oct 2021 03:06:30 +0000
 
 gtsam (4.1.0-1ubuntu2~418.gbp63cbd5) focal; urgency=medium
 
