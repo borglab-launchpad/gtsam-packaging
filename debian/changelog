@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~428.gbp3975e8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~429.gbpf8cde3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f8cde374af47d7d8e68d16e2a55679b90b063a64 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3975e8ccd15374859a2d3d853842176d12b15168 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Oct 2021 03:08:01 +0000
+  [ Varun Agrawal ]
+  * add a cmake flag for easy toggling BetweenFactor jacobian computations
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Oct 2021 03:06:12 +0000
 
 gtsam (4.1.0-1ubuntu2~427.gbpa4f77a) focal; urgency=medium
 
