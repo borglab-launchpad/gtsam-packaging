@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~423.gbpa147b3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~424.gbp08e494) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @08e494cc6420a4e08131b2d62a790c4879c1cba5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a147b3822bd7d62e80195e0702631fdec10517ac **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Oct 2021 03:08:09 +0000
+  [ Varun Agrawal ]
+  * first pass at IMUKittiExampleGPS.py
+  * only format c++ file (no code changes)
+  * working implementation
+
+  [ John Lambert ]
+  * add LAGO (for Pose2) to python wrapper
+
+  [ Ivor Wanders ]
+  * Fix dangling reference in static allocation.
+
+  [ John Lambert ]
+  * add LAGO example to Python
+  * use nested namespace in wrapper from Varun's suggestion
+  * use nested namespace
+
+  [ Varun Agrawal ]
+  * add type annotations
+  * fix type annotation
+  * use python f-strings
+
+  [ John Lambert ]
+  * fix typos in python example file
+  * add lago unit test, since lago namespace cannot be imported properly be wrapper
+
+  [ Varun Agrawal ]
+  * refactor the example to make it cleaner
+  * replace static variable with variable of greater scope in cpp example
+  * fix the included_imu_measurement_count scope
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ John Lambert ]
+  * use unittest framework instead of pytest
+  * add missing default arg on useOdometricPath
+  * use Point3 instead of artificial vector3
+  * use Point3 instead of artificial vector3
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 23 Oct 2021 03:06:13 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~422.gbp711a78) focal; urgency=medium
 
