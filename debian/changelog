@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~429.gbp1532d8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~430.gbp871576) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8715761cb497e63d51d5abeb10d7866804b66fee **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1532d80a62b6083721deb4954875b0dbf41cd397 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 24 Oct 2021 03:09:47 +0000
+  [ Varun Agrawal ]
+  * add conjoining constructor for VectorValues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 25 Oct 2021 03:06:48 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~428.gbp816e5b) focal; urgency=medium
 
