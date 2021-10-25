@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~437.gbp6b1045) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~438.gbp5c790b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5c790bc8983681c69fc779145c8fba0290937973 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6b10452fd3c1087c67147219cc05bf37fba61693 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 24 Oct 2021 03:09:36 +0000
+  [ Varun Agrawal ]
+  * add conjoining constructor for VectorValues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 25 Oct 2021 03:06:42 +0000
 
 gtsam (4.1.0-1ubuntu2~436.gbpbc51dc) focal; urgency=medium
 
