@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~440.gbp7985d2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~441.gbpc7cfdc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c7cfdc211fa257eaf4b9665054efdc693cfbfd74 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7985d245a2ea10e72ca2329e41f2ad9bb709c84c **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 25 Oct 2021 03:08:47 +0000
+  [ Varun Agrawal ]
+  * generate GTSAM_UNSTABLE Cmake exports
+  * update cmake function to set default package version number
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from d6350c214..0ab10c359
+  * update CMake
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 26 Oct 2021 03:06:38 +0000
 
 gtsam (4.1.0-1ubuntu2~439.gbp2b656a) focal; urgency=medium
 
