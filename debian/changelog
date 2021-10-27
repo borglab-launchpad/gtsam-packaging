@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~435.gbp690ac7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~436.gbp5d68c7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5d68c71f198078d08bcffdd7ebefa0a718123b77 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @690ac78d1dca9d57e997346946d2be73eb3ca207 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 26 Oct 2021 03:08:34 +0000
+  [ Varun Agrawal ]
+  * Add tests for Lie::interpolate jacobians
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 27 Oct 2021 03:06:25 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~434.gbp02edf6) focal; urgency=medium
 
