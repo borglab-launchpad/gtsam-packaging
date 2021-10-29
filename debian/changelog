@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~449.gbpa7874c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~450.gbp60f698) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @60f698f18e2d373222274b2b8d27500d67208f34 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a7874c2b3b967f37cf6a2fc42d21a6cccd95ba4f **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 28 Oct 2021 03:08:27 +0000
+  [ Fan Jiang ]
+  * Revert "Revert "replace deprecated tbb functionality""
+  * TBB revival
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Oct 2021 03:06:25 +0000
 
 gtsam (4.1.0-1ubuntu2~448.gbp623591) focal; urgency=medium
 
