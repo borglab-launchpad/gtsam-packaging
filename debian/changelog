@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~441.gbp912193) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~442.gbpa8b894) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a8b894aa1b7fbd2f4a54202a1343d153f9242981 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9121932c8374af437abac1d5274103981a8df133 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 28 Oct 2021 03:08:23 +0000
+  [ Fan Jiang ]
+  * Revert "Revert "replace deprecated tbb functionality""
+  * TBB revival
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Oct 2021 03:06:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~440.gbp405933) focal; urgency=medium
 
