@@ -1,10 +1,43 @@
-gtsam (4.1.0-1ubuntu2~452.gbp3e8437) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~453.gbp357c74) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @357c74992da45ddd7c8d558bd93d7830128156ba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3e8437e34a92a02565fdb044f8673d12a28839ab **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Oct 2021 03:08:36 +0000
+  [ Varun Agrawal ]
+  * clean up and refactoring to use custom preintegration params
+
+  [ jerredchen ]
+  * added new Python examples using iSAM2
+  * Added minor comments for documentation
+  * adjusted docstrings to match google style guide
+  * made changes according to Frank
+
+  [ Varun Agrawal ]
+  * address review comments
+  * fix small bug
+  * specify optional args as Optional type
+
+  [ jerredchen ]
+  * removed ground truth; angles set in deg and converted to rad
+  * removed ground truth; set ang in deg and convert to rad for Pose3iSAM2
+
+  [ Varun Agrawal ]
+  * address review comments
+
+  [ jerredchen ]
+  * formatting by Google style
+
+  [ Varun Agrawal ]
+  * address review comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 30 Oct 2021 03:06:43 +0000
 
 gtsam (4.1.0-1ubuntu2~451.gbp48c675) focal; urgency=medium
 
