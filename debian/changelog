@@ -1,10 +1,39 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~453.gbp4fea57) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~454.gbp43cf5b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @43cf5b68c1e1f5d7c84dcf780b8bae5b76de7197 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4fea573430d12638bbdf282b1857784149445390 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 01 Nov 2021 03:10:59 +0000
+  [ Gerry Chen ]
+  * AdjointMap jacobians for Pose3
+  * only compute jacobians when needed
+  * AdjointTranspose
+  * only compute intermediate jacobians when needed
+  * review comment: move check outside lambda
+
+  [ Varun Agrawal ]
+  * update proxy functions to use the Adjoint and AdjointTranpose methods
+  * add docs explaining why pRw_H_t is the same as Rw_H_R
+  * make threshold more lenient
+
+  [ Gerry Chen ]
+  * correct jacobians
+  * documentation
+  * explicitly define simpified jacobian expressions for efficiency
+  * stricter tolerances
+  * Revert "stricter tolerances"
+  * address frank review comments
+  * much cleaner Adjoint jacobian
+  * delete "FIXME" because `compose` unit tests check `AdjointMap`
+  * Address review comments: negative sign and AdjointTranspose section
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Nov 2021 03:06:23 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~452.gbp43b635) focal; urgency=medium
 
