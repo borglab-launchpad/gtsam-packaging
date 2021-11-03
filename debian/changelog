@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~456.gbpa42335) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~457.gbpcc93b6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cc93b6568faf94d79cad544ff1d3cc37bb8b8008 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a42335ee30f3250a7dbccd36e049e69240fe0d15 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Nov 2021 03:08:31 +0000
+  [ yetongumich ]
+  * enable expression double multiply
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 03 Nov 2021 03:06:34 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~455.gbpa98a30) focal; urgency=medium
 
