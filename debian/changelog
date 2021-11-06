@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~465.gbpe62967) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~466.gbpf276b3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f276b3fc4811890129960ac942160c96bdd57549 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e6296755eae573deb389916ba753b44fe1fd2e7d **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 05 Nov 2021 03:08:46 +0000
+  [ Varun Agrawal ]
+  * add printErrors method to GaussianFactorGraph
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 06 Nov 2021 03:07:48 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~464.gbpf3a15d) focal; urgency=medium
 
