@@ -1,4 +1,4 @@
-gtsam (4.1.0-1ubuntu2~474.gbpc3cda4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~474.gbpc3cda4) bionic; urgency=medium
 
   ** SNAPSHOT build @c3cda4c8359006b25362d36704d450787a916eda **
 
