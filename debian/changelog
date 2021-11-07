@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~468.gbp075713) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~469.gbp50a8cc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @50a8cc014f98c85fe6f670102ca9a769a02acc91 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @075713f3f814a02aaadbf18d9da8b91e9a72fdb6 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 06 Nov 2021 03:09:45 +0000
+  [ Frank Dellaert ]
+  * Use Eigen expressions more effectively and kill & in code.
+  * Cleaner Jacobian.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Nov 2021 03:06:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~467.gbp287e05) focal; urgency=medium
 
