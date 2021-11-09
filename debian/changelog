@@ -1,10 +1,74 @@
-gtsam (4.1.0-1ubuntu2~482.gbp77a538) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~483.gbp867d5f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @867d5f198eae239f6dcd17fc884a1f2c5aba02f5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @77a538735a9014076b17e538af958ece0e52ab9f **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 08 Nov 2021 03:08:55 +0000
+  [ lcarlone ]
+  * starting to make templates for smart projection factors uniform (all on cameras)
+  * investigating potential templating alternatives
+  * don't like it - going to create a different class
+  * reverted all changes back to master
+  * and created a new factor instead - moving to testing now
+  * compiles, testing now
+  * fixed bug
+  * progress on tests
+  * removed line
+  * still challenging to parse extrinsics
+  * tests finally passing!
+  * added capability to use multiple measurements from the same pose. unfortunately still had to define a non-templated function from cameraSet
+  * all tests pass except one on serialization
+  * passing tough test - nice!
+  * done with all tests
+  * Merge branch 'develop' into feature/cameraTemplateForAllSmartFactors
+
+  [ Frank Dellaert ]
+  * Removed types defined in Base class
+  * Documented linear factors better.
+  * Formatting and better documentation
+  * Added two ReadMe files to document the plethora of smart factors.
+  * Address review comments, docs only.
+
+  [ lcarlone ]
+  * renamed smartProjectionFactorP -> smartProjectionRigFactor
+  * modernized factor
+  * fixed equal
+  * fixing tests
+  * halfway there
+  * working on tests
+  * all tests work except serialization
+  * added extra test with multi cam
+  * added more comments here and there
+  * changing API for rolling shutter
+  * bug fix - finalizing last few tests
+  * all tests are passing!
+  * done with tests
+  * now I only need to fix comments in rolling shutter factor
+  * all set here!
+  * fixed formatting (plus small fix: std::vector -> fastVector)
+  * formatting + const&
+  * more const&
+  * now throwing exception is params are incorrect
+  * added variable in loop
+  * point2 -> measurement
+  * this will need to be applied in #861
+  * disabled timing for test
+  * fixed readme
+  * serialization is still off
+  * final cosmetics
+  * added intermediate camera variable for clarity
+  * got rid of second constructor
+  * further cleanup before moving to sharedPtrs
+  * moved rig to use shared ptrs
+  * now using shared ptrs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 09 Nov 2021 03:06:25 +0000
 
 gtsam (4.1.0-1ubuntu2~481.gbp44ee64) focal; urgency=medium
 
