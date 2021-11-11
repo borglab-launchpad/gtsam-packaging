@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~488.gbp091c4d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~489.gbp9ab096) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9ab0965c772548fc67dd20da84950f45e0b0befd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @091c4da4f9cc2c077ad1a1b8701debfbd8c42ef9 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 10 Nov 2021 03:08:57 +0000
+  [ Jose Luis Blanco Claraco ]
+  * Fix warnings raised by GCC -Wpedactic
+  * more consistent notation of macros
+  * prefer semicolon in definitions
+  * more extra semicolon warnings fixed
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 11 Nov 2021 03:06:43 +0000
 
 gtsam (4.1.0-1ubuntu2~487.gbp8fe438) focal; urgency=medium
 
