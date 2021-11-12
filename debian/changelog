@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~491.gbp842c8c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~492.gbp25d191) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @25d19109fc82d3f3e14393c4b01f945bf23bb01b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @842c8c5a6a30114232a2f63b7120a1cbe2848d36 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 11 Nov 2021 03:08:49 +0000
+  [ Gerry Chen ]
+  * add jacobian of second argument to adjoint and adjointTranpsose
+
+  [ Varun Agrawal ]
+  * fix warning
+  * reduce call stack
+  * use safer eigen indexing syntax
+  * wrap Colamd function
+  * format and refactor the SFM BAL example
+  * address reviewer comments
+  * add return type definitions
+  * update cmake to copy python tests whenever they are updated
+
+  [ Gerry Chen ]
+  * update python wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Nov 2021 03:06:26 +0000
 
 gtsam (4.1.0-1ubuntu2~490.gbp75753f) focal; urgency=medium
 
