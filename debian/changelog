@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~483.gbp1632a7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~484.gbp1d5f28) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1d5f286f5edfad99aa20cc11b4543503657aca3e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1632a7dc1599599d92060d1eadbc0cfb524d6f0c **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 11 Nov 2021 03:08:40 +0000
+  [ Gerry Chen ]
+  * add jacobian of second argument to adjoint and adjointTranpsose
+
+  [ Varun Agrawal ]
+  * fix warning
+  * reduce call stack
+  * use safer eigen indexing syntax
+  * wrap Colamd function
+  * format and refactor the SFM BAL example
+  * address reviewer comments
+  * add return type definitions
+  * update cmake to copy python tests whenever they are updated
+
+  [ Gerry Chen ]
+  * update python wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Nov 2021 03:06:12 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~482.gbp6fb119) focal; urgency=medium
 
