@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~486.gbp6d88f6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~487.gbp35ecdd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @35ecdd215f0c6225d168eaae67529377df25c95a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6d88f6baf86b91bfcd4c2d78bd64b2ff9d37aeab **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Nov 2021 03:08:12 +0000
+  [ Varun Agrawal ]
+  * properly deprecate eliminate functions
+  * fix OrderingType declaration
+  * properly deprecate additional methods to fully finish deprecation
+  * fix VectorValues include
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 13 Nov 2021 03:06:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~485.gbp728094) focal; urgency=medium
 
