@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~503.gbp5475d2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~504.gbp6727c3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6727c3260dc2f12d767967a1dd8384d11085fed8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5475d25831a19e1ba1c15a84f3edf437165909bf **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 15 Nov 2021 03:08:43 +0000
+  [ duembgen ]
+  * Add namespace to ambiguous placeholders
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 16 Nov 2021 03:06:31 +0000
 
 gtsam (4.1.0-1ubuntu2~502.gbp68816a) focal; urgency=medium
 
