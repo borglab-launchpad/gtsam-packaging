@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~507.gbp72921d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~508.gbp5ba4be) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5ba4be525b7e6310fa895e67c0f9e9f3fd97a8a0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @72921de7f564ea84447b79dd1bc2afc8ab1ee603 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 19 Nov 2021 03:09:23 +0000
+  [ Varun Agrawal ]
+  * wrap KeyVector methods
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 20 Nov 2021 03:06:03 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~506.gbp8aba08) focal; urgency=medium
 
