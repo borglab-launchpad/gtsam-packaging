@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~524.gbp25e077) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~525.gbp309a80) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @309a806ff0f05f14166e8d31d45586b94542efcd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @25e07705f4c0e5674bafd15caffbdfc2dc934a24 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 22 Nov 2021 03:08:57 +0000
+  [ Fan Jiang ]
+  * Add deprecations
+  * Fix windows build
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ beetleskin ]
+  * Use FastDefaultAllocator for Values to adhere allocation compile flags
+
+  [ Fan Jiang ]
+  * Remove Exports
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 23 Nov 2021 03:07:19 +0000
 
 gtsam (4.1.0-1ubuntu2~523.gbpe306ac) focal; urgency=medium
 
