@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~542.gbp01b86c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~543.gbpbb0cf3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bb0cf375665ad13ac231532ed7413c95b9b3b2d0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @01b86ce6d2c47d4a6de6fa2d5dd153c3057c07a9 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Nov 2021 03:09:59 +0000
+  [ roderick-koehle ]
+  * Forward declaration of PinholeCameraCal3Fisheye
+  * Test of jacobian of Cal3Fisheye for on-axis point
+  * Test jacobian of Cal3Unified for on-axis point
+  * Avoid division by zero in jacobian calculation
+  * Check numeric stability close to optical axis
+  * Numerically stable refactoring of fisheye jacobian
+  * Fix missing semicolons
+  * Undo change in scaling function
+  * Fix type in extression for dyd_dyi
+  * Convergence of equidistant scaling utilizing atan2
+  * Fix calling scaling_factor static method.
+  * Removed comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 29 Nov 2021 03:07:04 +0000
 
 gtsam (4.1.0-1ubuntu2~541.gbp929d36) focal; urgency=medium
 
