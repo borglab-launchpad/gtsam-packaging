@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~545.gbpd471bc) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~546.gbp4ea0a7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4ea0a7fb5156d321a50050e88bd6f08a9c9f3d0d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d471bc9f7be3d8289df892a06c18084e84f01db9 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 29 Nov 2021 03:09:08 +0000
+  [ Varun Agrawal ]
+  * fix all axpy deprecations
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 30 Nov 2021 03:04:50 +0000
 
 gtsam (4.1.0-1ubuntu2~544.gbpdb8f0a) focal; urgency=medium
 
