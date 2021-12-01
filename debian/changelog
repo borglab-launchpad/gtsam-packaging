@@ -1,10 +1,50 @@
-gtsam (4.1.0-1ubuntu2~548.gbp198a73) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~549.gbp1bad35) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1bad3532c84c9648d5d74b385959fd47aa47bcb3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @198a73a341c5e3a4cc5217a1b65e4021b1d0d768 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 30 Nov 2021 03:06:51 +0000
+  [ Michael Bosse ]
+  * Make variable names consistent with math
+
+  [ Varun Agrawal ]
+  * update completed TODOs
+  * add unit test for NonlinearFactor weight with different noise models
+
+  [ Frank Dellaert ]
+  * use emplace_shared
+  * Got rid of sharedValues
+  * Got rid of straggling typedefs
+  * Fixed all examples
+
+  [ Varun Agrawal ]
+  * wrap additional ISAM2 methods
+  * comment out method
+  * make noise model default constructors available for serialization
+  * enable pickling for a bunch of objects
+  * comment out incomplete code
+  * remove commented out code
+  * update the packaged Eigen to 3.3.9
+  * Revert "update the packaged Eigen to 3.3.9"
+  * add workaround for Eigen serialization issue
+  * Add Eigen/Core header
+  * make LinearContainerFactor public for serialization
+  * wrap other ISAM2 methods
+  * wrap alternate ISAM2::update method
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Brice Rebsamen ]
+  * .gitignore: swp files
+  * don't return a const
+  * missing shared_ptr include
+  * ParseMeasurement<Pose2> initializer list needs an extra argument
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Dec 2021 03:08:17 +0000
 
 gtsam (4.1.0-1ubuntu2~547.gbpaaea68) focal; urgency=medium
 
