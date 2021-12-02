@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~543.gbp69533e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~544.gbp880e6c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @880e6c39bb55cef0833f8d371fe18b6c4d5217d1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @69533ee612cdc31d39f28db3afa2baa40bc9dd87 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Dec 2021 03:10:18 +0000
+  [ Frank Dellaert ]
+  * Revamped arc consistency
+  * Formatting only
+  * use emplace_shared
+  * Cleaned up AC1 implementation
+  * Fixed up sudoku tests after merge
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ beetleskin ]
+  * add missing interface for PoseTranslationPrior
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Dec 2021 03:07:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~542.gbp213a98) focal; urgency=medium
 
