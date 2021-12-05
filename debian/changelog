@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~560.gbp430bc9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~561.gbp9cbd40) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9cbd4039160b152cdc35f6d85c4012b7a840d4a0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @430bc9616608e6af6e01823c79d1bc9b55987d09 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 04 Dec 2021 03:08:53 +0000
+  [ Fan Jiang ]
+  * Fix quaternion on M1
+  * Only keep essentials
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Dec 2021 03:07:23 +0000
 
 gtsam (4.1.0-1ubuntu2~559.gbp882400) focal; urgency=medium
 
