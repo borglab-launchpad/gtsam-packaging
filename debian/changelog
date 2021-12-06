@@ -1,10 +1,53 @@
-gtsam (4.1.0-1ubuntu2~563.gbp816a8b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~564.gbp379661) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @379661bf4ad186de404dc96486d6574726b12846 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @816a8b20a7b74502cbcf83875d1efdb47a33aa86 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Dec 2021 03:09:26 +0000
+  [ lcarlone ]
+  * adding basic function, get ready for testing
+  * done with tests
+  * testing mode: step 1: need to figure out the manifold stuff
+  * testing mode: still stuck, getting closer to the problem
+  * nice cleanup to triangulation, moved get camera matrix to cameras, to generalize to other cameras
+  * linear triangulation solved!
+  * good progress - still need to work on TriangulatePoint3
+  * habemus triangulation
+  * all tests are ready. 2 minor refinements to go: - remove default error - leverage full range of spherical camera in triangulation
+  * polished empty calibration
+  * adjusted rolling shutter as well
+  * almost done: need to: - fix jacobian for reprojection error of the spherical camera - need to improve DLT to fully leverage range of spherical camera
+  * fixed reproj error jacobians and added solid tests
+  * supertriangulation! with spherical camera
+  * all tests pass also with THROW cheirality
+  * added test on rank Tol for different camera model
+  * done!
+  * added comment on rankTol
+  * vector<Key>  -> keyVector
+  * Merge branch 'develop' into feature/sphericalCamera
+  * fixed test, but what decreased basin of convergence?
+  * applied formatting to modified files
+  * added template arguments to triangulatePoint3 in test
+  * adding to python?
+  * removed again
+  * added template argument
+
+  [ Fan Jiang ]
+  * Fix the template substitution
+
+  [ lcarlone ]
+  * renamed README
+  * added test, removed check that was not supposed to work
+  * formatting/comment
+  * addressed final comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Dec 2021 03:06:55 +0000
 
 gtsam (4.1.0-1ubuntu2~562.gbp405eb1) focal; urgency=medium
 
