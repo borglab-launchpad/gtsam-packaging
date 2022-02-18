@@ -1,10 +1,578 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~567.gbp820159) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~568.gbpcdafcf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cdafcfc58a68e27209f7223a0d69dbf75f89ef8b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @82015928403ac17b250ab1bfa2804d9dec255cf9 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Dec 2021 03:09:34 +0000
+  [ Fan Jiang ]
+  * Remove pybind11
+
+  [ Frank Dellaert ]
+  * Added wrapper files
+  * Added WIP python test
+
+  [ Fan Jiang ]
+  * Add wrapping and tests
+
+  [ Frank Dellaert ]
+  * Add main
+
+  [ David Wisth ]
+  * add override keyword to functions
+  * remove "virtual" keyword for functions with "override"
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Gerry Chen ]
+  * Matlab Wrapper function to extract Vectors from a Values object (#733)
+
+  [ Varun Agrawal ]
+  * Windows Fixes (#904)
+  * Add new upsert method to Values
+
+  [ Frank Dellaert ]
+  * Fixed small typos
+  * wrapped and tested EssentialMatrixConstraint
+  * Fix spelling
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 248971868..086be59be
+
+  [ Frank Dellaert ]
+  * Get rid of "and" business
+  * Added DiscreteValues file
+
+  [ Varun Agrawal ]
+  * remove previously added parameters now that we support defaults
+
+  [ Frank Dellaert ]
+  * Use DiscreteValues everywhere
+  * Moved traits
+  * Added value, for wrapper
+
+  [ peterQFR ]
+  * Set the install path to be colconone
+
+  [ Frank Dellaert ]
+  * Wrapped more DiscreteFactorGraph functionality
+  * Use evaluate not value
+  * Simplified parsing as we moved on from this boost version
+  * New, non-fancy constructors
+
+  [ Varun Agrawal ]
+  * replace upsert with insert_or_assign
+
+  [ Frank Dellaert ]
+  * Added chooseAsFactor method for wrapper
+  * Wrapped and test Discrete Bayes Nets
+
+  [ Varun Agrawal ]
+  * add default constructor for DiscreteKeys and minor improvements
+
+  [ Frank Dellaert ]
+  * Add operators
+  * Add documentation and test for it
+  * Wrap () operators
+  * Attempt at fixing CI issue
+
+  [ peterQFR ]
+  * Add Barometric Factor
+  * Remove custom install for ament environment
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 086be59be..2cbaf7a3a
+
+  [ Frank Dellaert ]
+  * Added dot methods
+
+  [ Varun Agrawal ]
+  * remove pickle declarations from interface files
+
+  [ Frank Dellaert ]
+  * dot methods
+  * wrap and test dot method
+  * dot methods for Bayes tree
+  * reversed order of nodes in dot
+
+  [ peterQFR ]
+  * Add non-zero tests, error
+  * Apply Google Format
+
+  [ Frank Dellaert ]
+  * wrap and notebook
+  * compilation issue
+  * Generic dot export with DotWriter
+  * Show factor graph in notebook
+  * GraphvizFormatting refactor - separate file - inherit from DotWriter - made dot/dot/saveGraph the pattern - deprecated saveGraph(ostream) method
+  * fixed method naming convention
+
+  [ Varun Agrawal ]
+  * fix axpy warning
+
+  [ Fan Jiang ]
+  * Bump version to 4.1.1
+
+  [ peterQFR ]
+  * Use translation method to get jacobian for pose in pose coordinates
+  * Apply google format
+
+  [ Varun Agrawal ]
+  * add alignment macro and modernize typedefs
+  * add class-level GTSAM_EXPORT
+  * remove unnecessary instantiations
+  * use passed in calibration for initialization and add EmptyCal serialization
+  * initialize all EmptyCal shared pointers
+
+  [ Frank Dellaert ]
+  * Use non-deprecated graphviz methods
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 2cbaf7a3a..3e076c9ac
+  * make gtsam_unstable conform to python wrapping layout
+
+  [ Frank Dellaert ]
+  * Update README.md
+  * Better Bayestree wrapping
+  * Test and dot file
+  * Create markdown representation in DTFactor
+  * Formatting, unused variable
+  * Added print with keyformatter
+  * Add formatter
+  * Added conditional markdown formatter
+  * Fix compilation issues
+  * Expose key formatter in wrapper
+  * More sophisticated markdown
+  * Push fix for windows
+  * markdown for Bayes nets
+  * markdown for DiscreteFactorGraph
+  * Made parent-less vertical, like a factor
+  * markdown for DiscreteBayesTree
+
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 3e076c9ac..767a74718
+  * replace _repr_markdown_ with markdown
+  * Add DiscreteConditional unit test for markdown printing
+
+  [ Frank Dellaert ]
+  * Fix markdown names (that somehow reverted)
+  * switch formatter and writer arguments
+  * Fix missing argument
+  * Fix test
+  * Fix some typos
+  * DiscretePrior class
+  * Wrap DiscretePrior
+  * single argument variants
+  * cpp file
+  * Wrap single-argument methods
+  * Additional DiscreteConditional constructors to support wrapper.
+  * markdown that renders better on github/pages
+  * Add no-argument solve and sample to DiscretePrior
+  * Specialized DecisionTreeFactor constructors
+  * Replaced add variants with single variadic template
+  * Allow a vector of doubles for single-variable factors
+  * likelihood
+  * Fix typo in test
+  * enumerate
+  * Removed all specialized constructors, because wrapper is awesome!
+  * Removed 2 and 3 key constructors for DecisionTreeFactor because wrapper is awesome!
+  * single-value sample()
+  * Version logic + version bump to 4.2a0
+  * Fix ambiguity
+  * Add auto
+  * Removed shared_ptr from Bayes nets and factor graphs
+  * Fix compilation issues
+  * Fix wrap of subgraph
+
+  [ John Lambert ]
+  * forece nonnegative scale for Sim(3)
+
+  [ Frank Dellaert ]
+  * Moved empty to Factor base class.
+  * Revive BetweenFactorEM, without LieVector
+  * Remove Deprecated Lie* classes
+  * "fixed" Unstable MATLAB examples - untested
+  * Fix unstable c++ examples
+  * Tested python wrapper without Lie*
+  * Global replace to V42
+  * Fix everything to work with no deprecated methods allowed.
+  * Remove deprecated methods from wrapper
+
+  [ Varun Agrawal ]
+  * fix decision tree equality and move default constructor to public
+  * add formatting capabilities to DecisionTree
+  * revert incorrect change
+  * new DecisionTree constructor and methods that takes an op to convert from one type to another
+  * minor format
+  * added SFINAE methods for Leaf node equality checks
+  * replace dot with DOT to prevent collision with vector dot product
+  * minor fix
+  * undo change to test
+  * formatter passed as reference and added a default formatter method
+  * undo dot changes
+  * add comparator as argument to equals method
+  * address more review comments
+  * rename comparator to compare and capture tol in the function lambda.
+
+  [ Frank Dellaert ]
+  * Removed copy/paste convert
+  * Define empty and check for it in apply variants
+  * Refactor print, equals, convert
+  * Fixed dot to have right arguments
+  * Renamed protected method convert -> convertFrom
+  * Fix compile error on windows
+  * Added an optional names argument for discrete markdown renderers
+  * Fix sample()
+  * italicized parent values
+  * Fixed some examples
+  * Fixed issues with sample
+  * Fixed python test
+
+  [ Varun Agrawal ]
+  * Move DefaultFormatter to base class and add defaults. Also replace Super with Base and add using.
+  * kill commented out code
+  * replace typedef with using and improve docstrings
+
+  [ David Wisth ]
+  * fix destructor virtual keyword
+  * change from SharedGaussian to SharedNoiseModel
+  * remove unnessecary constructor - use default arguments instead
+  * fix constructor documentation
+  * change a couple of variables to const
+
+  [ Varun Agrawal ]
+  * Undo DefaultFormatter change
+
+  [ Frank Dellaert ]
+  * Undo changes in 3dparty
+  * Added more GTSAM_DEPRECATED directives
+  * Some small doc changes
+  * Address comments
+  * Added test and fixed constructor
+  * Straight-up depth-first fold method
+  * visit and visitWith
+  * Use template parameter for functions, enables auto
+  * Fix compile issues on Ubuntu/windows
+  * Use make-shared where possible
+  * Avoid internal warnings with GTSAM_ALLOW_DEPRECATED_SINCE_V42 ON
+  * Fix small bug with names not being passed if no parents
+  * Bump prerelease version to alpha 1
+  * Fix segfault when showZero==false
+  * Added tests
+
+  [ Fan Jiang ]
+  * Remove Potentials
+  * remove Potentials.cpp
+  * Address comments
+
+  [ Varun Agrawal ]
+  * undo deprecation in BayesTree until later
+
+  [ Frank Dellaert ]
+  * fail fast in linux matrix
+
+  [ lcarlone ]
+  * added robustness to triangulation
+  * moved invDepth-related variables
+
+  [ Frank Dellaert ]
+  * Initial attempt at html
+  * Remove styling: use css
+  * Refactor of markdown
+  * Working html for conditionals
+  * Fix include
+  * html for all graphs
+  * Made cartesian product static, and added specialization in DiscreteValues. Added markdown and html methods for the latter.
+  * Make free versions and wrap
+  * Fix failing test
+  * Bump version
+  * Fix failing test
+  * Fix single quotes
+  * Fix single quotes
+
+  [ Jose Luis Blanco-Claraco ]
+  * FG print(): fix empty lines on nullptr; avoid endl
+
+  [ John Lambert ]
+  * Update test_Triangulation.py
+  * fix syntax errors
+  * add missing type hint
+  * yapf pep8 reformat
+  * wrap new noise model arg for gtsam.triangulatePoint3
+  * add missing type hint import
+
+  [ Varun Agrawal ]
+  * add better tests for probPrime and add a fix
+
+  [ John Lambert ]
+  * add missing type hint annotation import
+
+  [ Calvin ]
+  * Added a convenience function for plotting 2D points.
+
+  [ Frank Dellaert ]
+  * Constructor from PMF
+  * exposing more factor methods
+  * Comments only
+  * Replace buggy/awkward Combine with principled operator*, remove toFactor
+  * Wrapped multiplication
+  * marginals without parents
+
+  [ Varun Agrawal ]
+  * fix tests
+
+  [ Frank Dellaert ]
+  * Rename DiscretePrior -> DiscreteDistribution
+  * Bump version to 4.2a3
+  * sample variants
+
+  [ Calvin ]
+  * Removed a spurious commented line and included a comment about what the K value signifies.
+
+  [ Frank Dellaert ]
+  * Some reformatting/docs/using
+  * Wrap push_back methods
+  * Change default to not confuse people
+  * New, more powerful choose, yields a Conditional now
+  * Fix unit tests after default changed
+  * Add formatter
+  * Wrap partial eliminate
+  * Use key formatter for dot
+  * Fix docs
+  * cleanup
+  * Better print and new `max` variant
+  * `optimize` now computes MPE
+  * New lookup classes
+  * Deprecated solve
+  * Now doing MPE with DAG class
+  * deprecated solve
+  * deprecated optimize
+  * MPE now works
+  * made internal protected choose to avoid copy/paste in Lookup
+  * optimalAssignment -> optimize. Not deprecating as in unstable.
+  * Added optimize variants that take custom ordering
+  * fix typos
+  * Fix wrapper
+  * updates to fix various issues
+  * moved argmax to conditional
+  * Fix python tests
+  * Fix examples
+
+  [ Varun Agrawal ]
+  * fix for setup.py install deprecation
+
+  [ senselessDev ]
+  * expose some iSAM2/FixedLagSmoothing functionality for the bindings
+
+  [ Varun Agrawal ]
+  * Update python install in CI to use pip
+
+  [ Frank Dellaert ]
+  * cpp file for utilities
+  * Default constructor
+  * New constructor
+  * discreteKeys method
+  * expNormalize, from Kevin Doherty
+  * discreteKeys method
+  * remove export, typo
+  * more precise printing
+  * typo
+  * test new unzip method
+  * Change template type
+  * exact equality
+  * expose advanced interface
+  * exact equality
+
+  [ Varun Agrawal ]
+  * Update python install in CI to use pip
+
+  [ senselessDev ]
+  * use direct memeber access for ISAM2Params
+  * use default for parameter instead of overloading
+
+  [ Frank Dellaert ]
+  * Fix most lint errors
+  * Fix formatting
+  * Thresholding test
+  * New test on marginal
+  * linting
+  * linting
+  * linting
+  * Added missing header
+  * Added cautionary notes about fold/visit
+  * Fixed thresholding and fold example
+
+  [ senselessDev ]
+  * add position to Point2 nodes in GraphViz
+  * expose GraphvizFormatting and test it in Python
+  * add python test files to test target dependencies
+  * consider CMAKE_INSTALL_PREFIX for python-install target
+  * dont copy GT copyright
+  * remove --prefix for setup.py
+
+  [ Frank Dellaert ]
+  * Added sumProduct as a convenient alias
+  * Python
+  * Fix return type
+  * Fix docs (#1064)
+  * Added inference module
+  * Made all Bayesnets derive from BayesNet
+
+  [ John Lambert ]
+  * Update slam.i
+  * fix typo
+  * fix typo
+
+  [ Frank Dellaert ]
+  * Remove obsolete definitions
+  * Variable positions for Bayes nets
+
+  [ John Lambert ]
+  * fix template bug
+  * add new type for vector of Rot3's
+  * add Rot3Vector type to specializations
+  * add Rot3Vector to python/CMakeLists.txt
+  * make vector of Rot3's opaque
+
+  [ Frank Dellaert ]
+  * Expose things in the wrapper
+  * fix unit test
+
+  [ John Lambert ]
+  * Address Akshay comments
+  * fix templated function
+
+  [ Frank Dellaert ]
+  * Added position hints
+  * allow for boxes!
+
+  [ John Lambert ]
+  * define FindKarcherMean in .i file
+
+  [ Frank Dellaert ]
+  * Add dot in all wrappers
+  * Distinguish writer from formatting
+  * allow factorPositions
+
+  [ John Lambert ]
+  * use Eigen::aligned_allocator
+  * use Eigen::aligned_allocator
+  * use aligned allocator for Rot3Vector
+
+  [ Frank Dellaert ]
+  * Bump version
+  * Fix wrapping
+
+  [ senselessDev ]
+  * revert FactorIndices default argument to overloading for now
+  * remove last overseen stub for bindings
+  * adapt examples to new direct member access
+  * expose iSAM2 parameter factorization enum
+  * expose iSAM object for iFLS, fix __repr__ of iFLS, bFLS
+
+  [ Frank Dellaert ]
+  * add space after commas
+  * use const &
+  * fix argument name
+  * Better wrap of load
+  * Add rangeFactor typedefs
+  * wrap more eliminate variants (and dot)
+  * Expose all ordering methods
+  * fix python example
+  * Moved Sfm classes to their own files
+  * Deprecated incorrectly named methods
+  * Fix test
+  * Moved loading code
+  * moved tests
+  * moved wrapping
+  * fix CI issue
+  * Fix DiscreteBayesTree test
+  * nr -> number
+  * Made reading static named constructors
+  * Add to wrapper
+  * fix typo
+  * Keys for poses/cameras are naked
+  * Fix test
+  * Fixed print_ -> print
+  * Fix ugly printing
+  * bump version
+  * Address comments
+  * str !
+
+  [ Varun Agrawal ]
+  * Fixes to get matlab wrapper working properly
+  * Get matlab wrapping for discrete.i working
+  * Squashed 'wrap/' changes from 767a74718..56e7c0c81
+
+  [ Scott ]
+  * Add default constructor to PoseRotationPrior to fix serialization
+
+  [ David Wisth ]
+  * Add shared_ptr definition for remainder of camera objects
+
+  [ Frank Dellaert ]
+  * Add test for dot
+  * remove stray output
+  * Add header back in
+  * wrap GaussianDensity::FromMeanAndStddev
+  * Working with sigma in matrices
+  * Use noiseModel for named constructors
+  * Sampling from GaussianConditional
+  * Sampling from GaussianBayesNet
+  * wrap sampling methods
+  * Add a static method to actually sample
+  * Make all sampling methods take random number generator
+  * Fix test that used FromMeandAndStddev
+  * Comment out non-repeatable regressions
+  * VectorValues html
+  * likelihood method for GaussianConditionals
+
+  [ Varun Agrawal ]
+  * add Eigen alignment macro to frobenius factor classes
+
+  [ Frank Dellaert ]
+  * Make work with boost 1.74
+  * fix TBB ordering issue
+  * Fix tiny issues
+  * Add boost version guard
+
+  [ Mike Sheffler ]
+  * EXPORT statements to help Windows build. In Constraint.h, there was a GTSAM_EXPORT that should have been GTSAM_UNSTABLE_EXPORT, and in DiscreteKey.h, there should be a GTSAM_EXPORT in front of an operator definition for a class that is being exported.
+  * Per https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md , classes with no methods defined in a .cpp file shouldn't have the GTSAM_EXPORT or GTSAM_UNSTABLE_EXPORT modifier. This was causing problems with the building of gtsam_unstable on MSVC / Windows.
+
+  [ Frank Dellaert ]
+  * Fix check.geometry
+  * fix check.sam
+  * fix check.discrete
+  * Fix check.slam
+  * fixed check.navigation
+  * fixed check.basis
+  * Fix more stuff in check.slam
+  * use anonymous namespace
+  * Try if combined tests are faster
+  * Try grouped tests - again
+  * Fixed another serialization clash
+  * Move Vector serialization to separate file
+  * Move Matrix serialization to separate file and remove spurious headers
+  * rename
+  * rename again
+  * add using...
+  * Compilation issues with linux system
+  * rename to avoid conflict with tests
+  * Fix serialization class name
+  * avoid more warnings on Linux
+  * use anonymous namespace
+  * Add headers in the place they are needed
+  * Base wrapper needs Matrix serialization
+  * Add missing header
+  * Added missing header in header
+  * Remove duplicate header
+  * Use at least 2 cores
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Feb 2022 03:17:14 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~566.gbpbe982b) focal; urgency=medium
 
