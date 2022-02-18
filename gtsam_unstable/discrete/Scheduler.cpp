@@ -130,13 +130,13 @@ void Scheduler::addStudentSpecificConstraints(size_t i,
       // get all constraints then specialize to slot
       size_t dummyIndex = maxNrStudents_ * 3 + maxNrStudents_;
       DiscreteKey dummy(dummyIndex, nrTimeSlots());
-      Potentials::ADT p(dummy & areaKey,
+      AlgebraicDecisionTree<Key> p(dummy & areaKey,
                         available_);  // available_ is Doodle string
-      Potentials::ADT q = p.choose(dummyIndex, *slot);
-      DiscreteFactor::shared_ptr f(new DecisionTreeFactor(areaKey, q));
-      CSP::push_back(f);
+      auto q = p.choose(dummyIndex, *slot);
+      CSP::add(areaKey, q);
     } else {
-      CSP::add(s.key_, areaKey, available_);  // available_ is Doodle string
+      DiscreteKeys keys {s.key_, areaKey};
+      CSP::add(keys, available_);  // available_ is Doodle string
     }
   }
 
@@ -202,7 +202,7 @@ void Scheduler::print(const string& s, const KeyFormatter& formatter) const {
 }  // print
 
 /** Print readable form of assignment */
-void Scheduler::printAssignment(const Values& assignment) const {
+void Scheduler::printAssignment(const DiscreteValues& assignment) const {
   // Not intended to be general! Assumes very particular ordering !
   cout << endl;
   for (size_t s = 0; s < nrStudents(); s++) {
@@ -220,8 +220,8 @@ void Scheduler::printAssignment(const Values& assignment) const {
 }
 
 /** Special print for single-student case */
-void Scheduler::printSpecial(const Values& assignment) const {
-  Values::const_iterator it = assignment.begin();
+void Scheduler::printSpecial(const DiscreteValues& assignment) const {
+  DiscreteValues::const_iterator it = assignment.begin();
   for (size_t area = 0; area < 3; area++, it++) {
     size_t f = it->second;
     cout << setw(12) << studentArea(0, area) << ": " << facultyName_[f] << endl;
@@ -230,7 +230,7 @@ void Scheduler::printSpecial(const Values& assignment) const {
 }
 
 /** Accumulate faculty stats */
-void Scheduler::accumulateStats(const Values& assignment,
+void Scheduler::accumulateStats(const DiscreteValues& assignment,
                                 vector<size_t>& stats) const {
   for (size_t s = 0; s < nrStudents(); s++) {
     Key base = 3 * s;
@@ -255,33 +255,16 @@ DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
   return chordal;
 }
 
-/** Find the best total assignment - can be expensive */
-Scheduler::Values Scheduler::optimalAssignment() const {
-  DiscreteBayesNet::shared_ptr chordal = eliminate();
-
-  if (ISDEBUG("Scheduler::optimalAssignment")) {
-    DiscreteBayesNet::const_iterator it = chordal->end() - 1;
-    const Student& student = students_.front();
-    cout << endl;
-    (*it)->print(student.name_);
-  }
-
-  gttic(my_optimize);
-  Values mpe = chordal->optimize();
-  gttoc(my_optimize);
-  return mpe;
-}
-
 /** find the assignment of students to slots with most possible committees */
-Scheduler::Values Scheduler::bestSchedule() const {
-  Values best;
+DiscreteValues Scheduler::bestSchedule() const {
+  DiscreteValues best;
   throw runtime_error("bestSchedule not implemented");
   return best;
 }
 
 /** find the corresponding most desirable committee assignment */
-Scheduler::Values Scheduler::bestAssignment(const Values& bestSchedule) const {
-  Values best;
+DiscreteValues Scheduler::bestAssignment(const DiscreteValues& bestSchedule) const {
+  DiscreteValues best;
   throw runtime_error("bestAssignment not implemented");
   return best;
 }

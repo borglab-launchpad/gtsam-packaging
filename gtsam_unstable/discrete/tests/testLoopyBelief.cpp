@@ -8,6 +8,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/VariableIndex.h>
 
 #include <boost/assign/list_of.hpp>
@@ -126,7 +127,7 @@ class LoopyBelief {
       // normalize belief
       double sum = 0.0;
       for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
-        DiscreteFactor::Values val;
+        DiscreteValues val;
         val[key] = v;
         sum += (*beliefAtKey)(val);
       }

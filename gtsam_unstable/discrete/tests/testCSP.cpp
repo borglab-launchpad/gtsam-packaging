@@ -112,14 +112,14 @@ TEST(CSP, allInOne) {
   csp.addAllDiff(UT, AZ);
 
   // Check an invalid combination, with ID==UT==AZ all same color
-  DiscreteFactor::Values invalid;
+  DiscreteValues invalid;
   invalid[ID.first] = 0;
   invalid[UT.first] = 0;
   invalid[AZ.first] = 0;
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
-  DiscreteFactor::Values valid;
+  DiscreteValues valid;
   valid[ID.first] = 0;
   valid[UT.first] = 1;
   valid[AZ.first] = 0;
@@ -132,8 +132,8 @@ TEST(CSP, allInOne) {
   EXPECT(assert_equal(expectedProduct, product));
 
   // Solve
-  auto mpe = csp.optimalAssignment();
-  CSP::Values expected;
+  auto mpe = csp.optimize();
+  DiscreteValues expected;
   insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 1);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
@@ -172,22 +172,18 @@ TEST(CSP, WesternUS) {
   csp.addAllDiff(WY, CO);
   csp.addAllDiff(CO, NM);
 
+  DiscreteValues mpe;
+  insert(mpe)(0, 2)(1, 3)(2, 2)(3, 1)(4, 1)(5, 3)(6, 3)(7, 2)(8, 0)(9, 1)(10, 0);
+
   // Create ordering according to example in ND-CSP.lyx
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7),
       Key(8), Key(9), Key(10);
-  // Solve using that ordering:
-  auto mpe = csp.optimalAssignment(ordering);
-  // GTSAM_PRINT(mpe);
-  CSP::Values expected;
-  insert(expected)(WA.first, 1)(CA.first, 1)(NV.first, 3)(OR.first, 0)(
-      MT.first, 1)(WY.first, 0)(NM.first, 3)(CO.first, 2)(ID.first, 2)(
-      UT.first, 1)(AZ.first, 0);
 
-  // TODO: Fix me! mpe result seems to be right. (See the printing)
-  // It has the same prob as the expected solution.
-  // Is mpe another solution, or the expected solution is unique???
-  EXPECT(assert_equal(expected, mpe));
+  // Solve using that ordering:
+  auto actualMPE = csp.optimize(ordering);
+
+  EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 
   // Write out the dual graph for hmetis
@@ -213,22 +209,22 @@ TEST(CSP, ArcConsistency) {
   // GTSAM_PRINT(csp);
 
   // Check an invalid combination, with ID==UT==AZ all same color
-  DiscreteFactor::Values invalid;
+  DiscreteValues invalid;
   invalid[ID.first] = 0;
   invalid[UT.first] = 1;
   invalid[AZ.first] = 0;
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
-  DiscreteFactor::Values valid;
+  DiscreteValues valid;
   valid[ID.first] = 0;
   valid[UT.first] = 1;
   valid[AZ.first] = 2;
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Solve
-  auto mpe = csp.optimalAssignment();
-  CSP::Values expected;
+  auto mpe = csp.optimize();
+  DiscreteValues expected;
   insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 2);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
@@ -250,7 +246,7 @@ TEST(CSP, ArcConsistency) {
   LONGS_EQUAL(2, domains.at(2).nrValues());
 
   // Parial application, version 1
-  DiscreteFactor::Values known;
+  DiscreteValues known;
   known[AZ.first] = 2;
   DiscreteFactor::shared_ptr reduced1 = alldiff.partiallyApply(known);
   DecisionTreeFactor f3(ID & UT, "0 1 1  1 0 1  1 1 0");
