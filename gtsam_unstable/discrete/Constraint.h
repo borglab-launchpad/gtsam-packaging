@@ -18,9 +18,11 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
 #include <boost/assign.hpp>
+#include <boost/format.hpp>
 #include <map>
 
 namespace gtsam {
@@ -32,7 +34,7 @@ using Domains = std::map<Key, Domain>;
  * Base class for constraint factors
  * Derived classes include SingleValue, BinaryAllDiff, and AllDiff.
  */
-class GTSAM_EXPORT Constraint : public DiscreteFactor {
+class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
  public:
   typedef boost::shared_ptr<Constraint> shared_ptr;
 
@@ -75,10 +77,26 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
   virtual bool ensureArcConsistency(Key j, Domains* domains) const = 0;
 
   /// Partially apply known values
-  virtual shared_ptr partiallyApply(const Values&) const = 0;
+  virtual shared_ptr partiallyApply(const DiscreteValues&) const = 0;
 
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;
+  /// @}
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown table.
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const override {
+    return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
+  }
+
+  /// Render as html table.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const override {
+    return (boost::format("<p>Constraint on %1% variables</p>") % (size())).str();
+  }
+
   /// @}
 };
 // DiscreteFactor
