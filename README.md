@@ -230,12 +230,12 @@ accomplish this:
         # this should be the gpg key deposited with ubuntu launchpad
         gpg_key=95C3A575ABC855CE7D271B2A5C288700CB82A210
         # does this have to match the email used for ubuntu launchpad?
-        export DEBEMAIL="Borglab Builder <borglab.launchpad@gmail.com>
+        export DEBEMAIL="Borglab Builder <borglab.launchpad@gmail.com>"
         ppa="ppa:my-launchpad-login/my-ppa-name"
 
 2) Perform these step by step:
 
-        git clone https://github.com/borglab-launchpad/gtsam-packaging.git
+        git clone git@github.com:borglab-launchpad/gtsam-packaging.git
         cd gtsam-packaging
         git remote add gtsam https://github.com/borglab/gtsam.git
         git fetch --all --tag
