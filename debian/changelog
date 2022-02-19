@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~578.gbp8356b8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~579.gbp0e1c25) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0e1c2558ebf3d019fbcd7e7d47c241ca2f1b8b91 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8356b8b69c1fbfbf7ce9b1cf3d5c7d2569f0ca59 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Feb 2022 03:19:15 +0000
+  [ Yun Chang ]
+  * correctly parse optimizer params for base optimizer in gnc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Andre Nguyen ]
+  * fix: typo
+
+  [ lcarlone ]
+  * added unit test on params
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 19 Feb 2022 03:16:19 +0000
 
 gtsam (4.1.0-1ubuntu2~577.gbpe223a3) focal; urgency=medium
 
