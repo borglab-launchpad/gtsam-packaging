@@ -1,10 +1,44 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~579.gbpd95889) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~580.gbp04ccd3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @04ccd3e0c8337d64abbc08c0156d0b392e988566 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d95889c43f6e3acf7b3bd281fd8757611ea0ea0d **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 21 Feb 2022 03:19:00 +0000
+  [ Varun Agrawal ]
+  * basis module tests pass
+  * update METIS test for _WIN32
+  * sfm tests pass
+  * symbolic tests pass
+  * navigation tests passing
+  * fixed dllexport issues in nonlinear, only tests failing
+  * fixed dllexport issues in slam, only tests failing
+  * move Line3 transformTo definition to header to resolve ambiguity
+  * fixed dllexport issues in geometry, only tests failing
+  * Fix discrete module
+  * documentation updates
+  * suppress spurious warnings
+  * build (almost) all GTSAM test targets in CI
+  * formatting updates
+  * comment out gtsam_unstable test target
+  * Move transformTo declaration to the top to avoid ambiguous linkage
+
+  [ Mike Sheffler ]
+  * Assignment accidentally used in place of equality
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Mike Sheffler ]
+  * * Repaired actual test (needs '49', not '54'?) and LONGS_EQUAL instead of EQUAL -- Please review
+
+  [ Varun Agrawal ]
+  * fix incorrect filename warning
+  * properly set project version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 22 Feb 2022 03:17:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~578.gbp9a5c1c) focal; urgency=medium
 
