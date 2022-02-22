@@ -1,10 +1,44 @@
-gtsam (4.1.0-1ubuntu2~587.gbp69f8c0) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~588.gbpe44b33) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e44b3386ebabd26fb8a93d1062f444037d5e975e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @69f8c07221a64b905bc080e9714ea20895226e56 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 21 Feb 2022 03:19:05 +0000
+  [ Varun Agrawal ]
+  * basis module tests pass
+  * update METIS test for _WIN32
+  * sfm tests pass
+  * symbolic tests pass
+  * navigation tests passing
+  * fixed dllexport issues in nonlinear, only tests failing
+  * fixed dllexport issues in slam, only tests failing
+  * move Line3 transformTo definition to header to resolve ambiguity
+  * fixed dllexport issues in geometry, only tests failing
+  * Fix discrete module
+  * documentation updates
+  * suppress spurious warnings
+  * build (almost) all GTSAM test targets in CI
+  * formatting updates
+  * comment out gtsam_unstable test target
+  * Move transformTo declaration to the top to avoid ambiguous linkage
+
+  [ Mike Sheffler ]
+  * Assignment accidentally used in place of equality
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Mike Sheffler ]
+  * * Repaired actual test (needs '49', not '54'?) and LONGS_EQUAL instead of EQUAL -- Please review
+
+  [ Varun Agrawal ]
+  * fix incorrect filename warning
+  * properly set project version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 22 Feb 2022 03:17:18 +0000
 
 gtsam (4.1.0-1ubuntu2~586.gbp1489bf) focal; urgency=medium
 
