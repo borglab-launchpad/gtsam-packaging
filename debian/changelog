@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~590.gbp347359) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~591.gbp6cb6e7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6cb6e75891360d1925bba1264cb6bcd616a833cc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3473596c1143161be8f62433ef125193c773814a **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 22 Feb 2022 03:19:25 +0000
+  [ acxz ]
+  * add missing header guards under gtsam/
+  * add missing header guards under gtsam_unstable/
+  * add newline at end of file
+  * add missing header guards under timing/ and examples/
+  * add newline at end of file
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Feb 2022 03:16:34 +0000
 
 gtsam (4.1.0-1ubuntu2~589.gbp38c8f1) focal; urgency=medium
 
