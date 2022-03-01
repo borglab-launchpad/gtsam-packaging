@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~600.gbpf6b9e6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~601.gbp602cad) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @602cadca6036db1d141f8b24bd5fcb69ebfda1a3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f6b9e6edf9a47559cb79b8da562e2edfedbccd7c **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Feb 2022 03:19:26 +0000
+  [ Frank Dellaert ]
+  * docs
+  * Add test for ManifoldEvaluationFunctor
+  * Move BasisFactors tests to correct place
+  * Add EvaluationFactor test
+  * Add test for ManifoldEvaluationFactor
+
+  [ acxz ]
+  * filename in repo is w10000 not w10000-odom
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Mar 2022 03:19:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~599.gbpea315d) focal; urgency=medium
 
