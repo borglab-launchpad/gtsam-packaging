@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~614.gbpe40c4f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~615.gbpd4d53d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d4d53d501ce8bd1efe0d08a98ec61346f81df367 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e40c4f2963663eb49b881ea2560f93d8e0ca9571 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Mar 2022 03:19:06 +0000
+  [ Akshay Krishnan ]
+  * use rng in TA initialization
+  * update comment in shonan
+  * updating tolerance in tests
+  * change to pointer
+  * lamda capture all variables
+  * update pointer usage
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Mar 2022 03:18:27 +0000
 
 gtsam (4.1.0-1ubuntu2~613.gbpa056e9) focal; urgency=medium
 
