@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~653.gbpef2cc0) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~654.gbp617d05) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @617d059271a5afcb7ca8c5263b709f023f747366 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ef2cc0442094f4a198e6bbe932dbdc2f7513c594 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 15 Mar 2022 03:20:13 +0000
+  [ Thomas Sayre-McCord ]
+  * fix triangulatePoint3 for calibrations with distortion
+  * add support for second version of triangulatePoint3
+  * set new code to google style and fix doc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Mar 2022 03:19:41 +0000
 
 gtsam (4.1.0-1ubuntu2~652.gbpf91720) focal; urgency=medium
 
