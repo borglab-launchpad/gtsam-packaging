@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~654.gbp8e32fb) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~655.gbp09000c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @09000c986959fcb7ede8460f6a00ee274a956dba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8e32fb12132dddb36f7342656ee15def834c85e6 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Mar 2022 03:21:18 +0000
+  [ Varun Agrawal ]
+  * add test for visitWith with pruned tree
+  * fix visitWith operator() to be more functional
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 19 Mar 2022 03:16:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~653.gbp58a50c) focal; urgency=medium
 
