@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~657.gbp0d6a92) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~658.gbpa9c810) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a9c8106ef6c2d6d4cd9835fde232ac619bdfe1ea **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0d6a92665cbfb17ab8e553aa372f0e24eb4e41da **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 19 Mar 2022 03:18:36 +0000
+  [ Varun Agrawal ]
+  * wrap ParameterMatrix as argument for Values
+  * New apply method which takes op with Assignment
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Mar 2022 03:16:07 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~656.gbp7aacf1) focal; urgency=medium
 
