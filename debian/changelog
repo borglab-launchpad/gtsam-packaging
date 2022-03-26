@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~675.gbp34f194) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~676.gbpf62f25) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f62f25367b375485fa56a36f16cfd999324a6c7f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @34f194f9638b675fda31a7d66b49dcbffd6fa0ad **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Mar 2022 03:23:03 +0000
+  [ Varun Agrawal ]
+  * new method and wrapping for getNewFactorsIndices
+  * wrap measured and add tests
+  * update test for ISAM
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Mar 2022 03:21:15 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~674.gbpba274d) focal; urgency=medium
 
