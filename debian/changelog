@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~678.gbp9949f0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~679.gbp21f2d9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @21f2d9d4631f247b624e063a26ba5e0d6ffb8b18 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9949f0a99bf2fd58f32591a8c2ffb5a4c3bd4d60 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Mar 2022 03:23:26 +0000
+  [ acxz ]
+  * only metis.h is needed to include both system and local metis.h file
+  * use internal metislib.h; extern C for system&local
+
+  [ Akash Patel ]
+  * fix typo
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Mar 2022 03:20:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~677.gbp9f8725) focal; urgency=medium
 
