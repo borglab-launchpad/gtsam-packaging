@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~689.gbp81817d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~690.gbp93c882) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @93c88272c6539a2df11b543486f0d9d46a0ee4f5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @81817df133e662e72647e938ca9dd1bacc7779d4 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Mar 2022 03:22:33 +0000
+  [ Frank Dellaert ]
+  * transformAllFrom/To
+  * name change - no "All" needed
+  * Expose Align, and add matrix version
+  * Use matrix operations, silly me!
+  * Matrix versions for Pose2 group action
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * New prune method for DecisionTreeFactor
+  * doc fix
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Mar 2022 03:32:07 +0000
 
 gtsam (4.1.0-1ubuntu2~688.gbpf79180) focal; urgency=medium
 
