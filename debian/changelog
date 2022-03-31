@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~690.gbp7a8d1c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~691.gbpd0e623) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d0e6234ac121b379e696c6d125a74f3d5ebbfabb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7a8d1cce6de7352e827d62e08abd8ee4f3cd603c **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Mar 2022 03:33:22 +0000
+  [ Varun Agrawal ]
+  * Improve printing
+  * update comment in test
+  * Squashed 'wrap/' changes from 24da9d1be..1a7dc9722
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * undo default print change
+  * fix assertions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Mar 2022 03:29:00 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~689.gbpccdbd6) focal; urgency=medium
 
