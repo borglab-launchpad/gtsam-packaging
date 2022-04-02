@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~696.gbp75884f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~697.gbp489870) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4898701183af446bcc13eb01c42159f48d6e99e7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @75884f56a2c0bfc46ffc70c351119c1b5f1216a3 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Apr 2022 03:46:10 +0000
+  [ Frank Dellaert ]
+  * Deprecated free align in favor of named constructors with (a,b) convention
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Apr 2022 03:28:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~695.gbpcf5499) focal; urgency=medium
 
