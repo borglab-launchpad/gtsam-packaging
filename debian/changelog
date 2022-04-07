@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~711.gbp460556) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~712.gbp35627d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @35627dfb5f81d9551668448d0c02ff62bec98e8e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4605569b2e770962c01082c954eb12946b38f383 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 06 Apr 2022 03:31:41 +0000
+  [ yotams ]
+  * added wrapper for ProjectionFactorRollingShutter
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ yotams ]
+  * added wrapper for ProjectionFactorRollingShutter
+  * added test for the wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Apr 2022 03:27:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~710.gbpdba1e8) focal; urgency=medium
 
