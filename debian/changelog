@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~726.gbpe7b7d1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~727.gbp839abe) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @839abec64ba0345621222e1e9c5ce85bd8f17bef **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e7b7d1cf8e883f9622de612cb8d8848e00b34871 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 11 Apr 2022 03:44:10 +0000
+  [ d-vo ]
+  * InvDepthFactor3: Fix wrong derivative H3
+
+  [ Dominik Van Opdenbosch ]
+  * InvDepthFactor3: Add unit test for Jacobians
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 12 Apr 2022 03:33:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~725.gbpd20232) focal; urgency=medium
 
