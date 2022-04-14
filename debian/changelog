@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~732.gbpbc9e00) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~733.gbpb9f2bb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b9f2bb94df405d3d83356603a6ddaf43f6df3886 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bc9e00a41272f42392e64a9849fad9ad4016be4b **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 13 Apr 2022 03:38:42 +0000
+  [ Varun Agrawal ]
+  * refactor DecisionTree to make a distinction between leaves and assignments
+  * convert DT_NO_PRUNING flag to GTSAM_DT_NO_PRUNING in case we wish to expose it via cmake
+  * add new visitLeaf method that provides the leaf as the function argument
+  * update prune to new max number of assignments scheme
+  * update docs and test
+  * increase precision of ADT printing
+  * update for better docstrings
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Apr 2022 03:38:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~731.gbp579d1b) focal; urgency=medium
 
