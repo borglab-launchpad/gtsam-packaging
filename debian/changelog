@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~743.gbp28c1a1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~744.gbp233b07) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @233b0751ab1420401b7eef98799a2aeae2b1455a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @28c1a18a7aeefa0befe244648416368adb2a40d6 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Apr 2022 03:41:01 +0000
+  [ Fan Jiang ]
+  * Fix slow dynamic cast
+  * Update the other codepath to also use ptr cast
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * Address comments by Frank
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 15 Apr 2022 04:00:42 +0000
 
 gtsam (4.1.0-1ubuntu2~742.gbp654ecc) focal; urgency=medium
 
