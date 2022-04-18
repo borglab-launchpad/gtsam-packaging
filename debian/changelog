@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~752.gbp741a18) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~753.gbpf06910) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f06910f55304d9e783745c4d8239324b31db1811 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @741a18f69ce1ca1372e2118767455f6e198125d6 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 17 Apr 2022 03:32:02 +0000
+  [ Fan Jiang ]
+  * Add camera Jacobian
+  * Use implicit conversion
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * Address comments
+  * Use templated Eigen::Ref wrapper
+  * Added Jacobians for all calibrations
+  * Use rations numbers in test
+  * Add stereo jacobians
+  * Add Cal3Unified unit test
+  * Remove print
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Apr 2022 03:42:06 +0000
 
 gtsam (4.1.0-1ubuntu2~751.gbpadb4ff) focal; urgency=medium
 
