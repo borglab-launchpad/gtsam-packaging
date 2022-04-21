@@ -1,3 +1,11 @@
+gtsam-no-tbb (4.1.0-1ubuntu2~756.gbpd0c362) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @d0c3626ace3f94e28c12227902d13d3ee767eec0 **
+
+  * modified changelog for distro focal
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Apr 2022 04:00:57 +0000
+
 gtsam-no-tbb (4.1.0-1ubuntu2~755.gbp39fdf9) focal; urgency=medium
 
   ** SNAPSHOT build @39fdf95db5832cba03c13bfe083c814d8303dd09 **
