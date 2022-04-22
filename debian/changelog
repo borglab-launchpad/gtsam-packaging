@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~756.gbpd0c362) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~757.gbp929b6a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @929b6a35a8cbff8420591906973670abb73084be **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d0c3626ace3f94e28c12227902d13d3ee767eec0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Apr 2022 04:00:57 +0000
+  [ Gerry Chen ]
+  * fix bug that python utils files don't regenerate upon edit
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Apr 2022 04:04:09 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~755.gbp39fdf9) focal; urgency=medium
 
