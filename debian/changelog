@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~767.gbpe254d9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~768.gbp0f5b4f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0f5b4fdf32ae945272663dcd855a5b3bd488635e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e254d9d679bf7d10ba77447b62be8f211e2bcde3 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Apr 2022 04:06:19 +0000
+  [ Jose Luis Blanco Claraco ]
+  * noise models: Add getters for all model parameters
+  * document loss functions
+  * fix derivative
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Jose Luis Blanco Claraco ]
+  * Revert "fix derivative"
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 23 Apr 2022 03:33:22 +0000
 
 gtsam (4.1.0-1ubuntu2~766.gbpce4ea6) focal; urgency=medium
 
