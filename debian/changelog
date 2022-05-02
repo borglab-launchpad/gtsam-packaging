@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~794.gbpf6a0e7) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~795.gbp472af5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @472af570e4049e302929c7c7d555c8ce7a2fe08c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f6a0e7435cf82f2788fa878ff568d99b19afa24a **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 01 May 2022 03:59:28 +0000
+  [ Varun Agrawal ]
+  * fix type warnings
+  * update IMU factor docs to clarify that the measurements are in sensor frame
+  * use Jose's suggestion
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 May 2022 04:09:44 +0000
 
 gtsam (4.1.0-1ubuntu2~793.gbpcc3a09) focal; urgency=medium
 
