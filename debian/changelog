@@ -1,10 +1,36 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~807.gbp1ab1d7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~808.gbpb30f68) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b30f68a1c0176b893f94e6a262177e60e6ce2978 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1ab1d72cedb00ca639af2c8a67d9002e94f04feb **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 May 2022 03:43:19 +0000
+  [ Fan Jiang ]
+  * Add block Jacobi preconditioner wrap
+  * Added PinholePose in wrap and FromPose3 in EssentialMatrix
+  * Added wrapping for Shonan constructor
+  * Wrap GeneralSFMFactor for PinholePose
+  * added SfmTracks and SfmCameras so we can easily access them in Python
+  * Also copy the preambles and specializations
+  * Address comments
+  * Correct the binding for BinaryMeasurement
+
+  [ Varun Agrawal ]
+  * remove key formatting from keys when defining vertices and edges to avoid syntax errors
+  * add prior factor tests and remove TODO
+  * fix tests and remove additional keyformatter calls
+  * fix python test
+
+  [ Fan Jiang ]
+  * Finally debugged the root cause!
+  * Add fallback entry for MATLAB
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 09 May 2022 03:48:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~806.gbpfd294f) focal; urgency=medium
 
