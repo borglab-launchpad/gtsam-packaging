@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~821.gbpedab02) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~822.gbpac2b91) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ac2b91a0820cd694704fe4d5d95197e2115fd435 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @edab02db6eefd794dab3349ac2493b3c00f59c80 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 May 2022 03:28:57 +0000
+  [ Akshay Krishnan ]
+  * add additional methods to TA + wrapper
+  * change to input params, add docstring
+  * wrapper changes
+  * move betweenTranslations outside params
+  * ../gtsfm/sfm/sfm.i
+  * change params to struct
+  * rename getUniqueKey
+  * move relativeTranslations to run()
+  * wrapper updates
+  * docstring updates
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Akshay Krishnan ]
+  * move values from params to run, remove params struct
+  * fixing merge conflict in wrapper
+  * update python test constructor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 May 2022 03:51:34 +0000
 
 gtsam (4.1.0-1ubuntu2~820.gbp1c48ce) focal; urgency=medium
 
