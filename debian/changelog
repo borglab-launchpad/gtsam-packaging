@@ -1,10 +1,46 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~816.gbpfbacfc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~817.gbp970a29) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @970a29c8ca7441b340405d725254463d334f9d72 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fbacfc7442090006c0ef0038dece05dd80626907 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 May 2022 03:53:38 +0000
+  [ Calvin ]
+  * Modified the scaling values for plotting uncertainty ellipses to properly display 3 standard deviations for both 2D and 3D cases.
+  * Changed all instances of the Sigma value, k, to 5 for plotting the covariance ellipse.
+  * Updated comments to reflect standard deviations instead of variances in the discussions regarding the values for k.
+
+  [ Frank Dellaert ]
+  * Bump version
+  * Notebook
+
+  [ senselessDev ]
+  * update explanation of uncertainty ellipses, try to fix #1067
+
+  [ Frank Dellaert ]
+  * Added notebook with SenselessDev code.
+  * Make status a public field
+  * Wrap TriangulationResult
+  * Be consistent in wrapping templated triangulation versions
+  * Fix unrelated warning
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Wrapped safe triangulation versions
+  * Camera sets
+  * Added safe triangulation tests
+  * Fix pybind11 issue
+  * Include all constructors, methods
+
+  [ Varun Agrawal ]
+  * remove user flag for pip install
+  * include patch version for Python interpreter to help disambiguate
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 May 2022 03:43:06 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~815.gbp4a7b62) focal; urgency=medium
 
