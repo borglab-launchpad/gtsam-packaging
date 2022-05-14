@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~822.gbpdff27e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~823.gbp48f2a8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @48f2a89dc7ea6cf54cb794bbd324e99c820419e3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dff27e2fa3601cdbe9bf8421f6822520a8d918db **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 May 2022 04:06:57 +0000
+  [ Gerry Chen ]
+  * refactor python NonlinearOptimizerTest
+  * add iteration hook to NonlinearOptimizerParams
+  * add comment about matlab not having iteration hook
+  * Update `logging_optimizer.gtsam_optimize` to use NonlinearOptimizerParams::iterationHook
+  * Add comment to docstring of `gtsam_optimize`
+  * Revert "Add comment to docstring of `gtsam_optimize`"
+  * Partially Revert "Update `logging_optimizer.gtsam_optimize` to use NonlinearOptimizerParams::iterationHook"
+  * Create convenience wrapper function in logging_optimizer
+  * reset captured stdout buffer for each test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Gerry Chen ]
+  * Change `optimize_using` to simpler function call
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 14 May 2022 04:38:00 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~821.gbp49e09c) focal; urgency=medium
 
