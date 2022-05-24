@@ -1,4 +1,4 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~853.gbpe11d08) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~853.gbpe11d08) bionic; urgency=medium
 
   ** SNAPSHOT build @e11d08055f267ce086cdf33ccab13ebe649c065d **
 
