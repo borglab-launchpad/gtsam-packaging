@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~887.gbp9b82fa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~888.gbp0ff258) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0ff258f36b396186394377fd10ad01c2d30f64cd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9b82fae1d97fd532327e657d86dca3fdac8d08d7 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Jun 2022 04:27:57 +0000
+  [ Varun Agrawal ]
+  * use This for templated type in geometry.i
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jun 2022 04:04:38 +0000
 
 gtsam (4.1.0-1ubuntu2~886.gbp129f48) focal; urgency=medium
 
