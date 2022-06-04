@@ -1,10 +1,92 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~885.gbpecff2a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~886.gbp94460d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @94460dbc8650d5318c05fbe7ad192a113b609165 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ecff2a970034bd8489a481350c8d81f31efd34eb **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Jun 2022 03:45:47 +0000
+  [ Fan Jiang ]
+  * Fix typo
+  * Prototype a type-erased hybrid machinery
+  * Add better mocking for actual elimination
+  * Fix compilation error
+  * Add shorthand for inserting raw JacobianFactor
+  * Add full elimination
+  * More mock-ups added
+  * Added mixture factor functionality
+  * Added more mockups and color output of the elimination process
+  * add more comments
+  * even better printing and comments
+  * Address comments
+  * Missing pragma onces
+  * Now we have real multifrontal!
+  * Fully working Multifrontal
+  * Add a test for EliminateSequential
+  * Address comments
+  * Remove warning
+  * Address comments
+  * Display debug messages only when DEBUG = true
+  * Add doxygen for GMM
+  * Address compilation error on GCC
+  * Fix GCC error
+  * Add Python bindings
+  * Added more Python examples
+  * Added plotting for nested dissection
+  * Working iSAM for Hybrid
+  * Fix compile
+  * Fix the enable_if_t absence
+  * Remove most debug messages
+  * Address Varun's comments
+  * Fix compile error
+  * Don't crash anymore
+  * Don't use Python dict method since it is not
+  * Trying to make MSVC happy
+  * Address PR comments
+
+  [ Varun Agrawal ]
+  * include missing headers for msvc and fix warning
+  * include GaussianJunctionTree
+  * run formatting and rename wrappedFactors to asGaussianFactorGraphTree
+  * fix equality checks
+  * Hybrid and Gaussian Mixture conditional docs and some refactor
+  * GaussianMixtureFactor docs
+  * Hybrid factor docs and minor refactor
+  * make functional
+  * HybridDiscreteFactor docs and minor refactor
+  * update tests
+  * add demarkers
+  * HybridFactorGraph docs and minor updates
+  * docs update
+  * remove debug statements
+  * fix doxygen section
+  * HybridISAM docs
+  * remove debug statements and add docs
+  * add doc strings to python unit test and add assertions
+  * add docs for HybridFactor
+  * break up EliminateHybrid into smaller functions
+  * update the EliminateHybrid note to be more specific
+  * rename HybridFactorGraph to GaussianHybridFactorGraph
+  * improved equality checks
+  * Rename files so that everything is HybridX
+  * update description of GaussianMixtureConditional
+  * Add more information on conditionals requirement for GaussianMixture
+  * rename GaussianMixtureConditional to GaussianMixture
+  * Add GTSAM_EXPORT and Testable traits
+  * fix python test
+  * if checks for dynamic_cast
+  * separate out summing of frontals into separate function
+  * add comments
+  * update GaussianMixture docstring
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * rename back to HybridJunctionTree
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 04 Jun 2022 03:38:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~884.gbp4066b3) focal; urgency=medium
 
