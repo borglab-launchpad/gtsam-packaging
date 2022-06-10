@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~903.gbp75b00d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~904.gbp14f6d1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @14f6d1f6b8dbe0ff2479ac99fe22192b8b9a599d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @75b00d22ff6561aa4e52b682317c4cf93d4ff8fe **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Jun 2022 03:53:55 +0000
+  [ HViktorTsoi ]
+  * Move Rot3::quaternion to the deprecated block
+  * Replace the usage of Rot3::quaternion to Rot3::toQuaternion in 'timeShonanAveraging.cpp'
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ HViktorTsoi ]
+  * Remove 'Rot3::quaternion()' API from 'geometry.i'
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jun 2022 03:45:37 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~902.gbp199c4d) focal; urgency=medium
 
