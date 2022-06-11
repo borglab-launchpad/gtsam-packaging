@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~906.gbpbdd813) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~907.gbp709ee8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @709ee8dbf1d29af8ee650d210305eb02961fc465 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bdd813c956a2f8479e2e57a492199f3ea06245f3 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jun 2022 03:47:52 +0000
+  [ Varun Agrawal ]
+  * Add GaussianMixture tests
+  * GaussianMixtureFactor tests
+  * some formatting and improved printing
+  * move += operator inside namespace
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Jun 2022 03:43:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~905.gbpa17eab) focal; urgency=medium
 
