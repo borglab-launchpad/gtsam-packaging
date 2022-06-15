@@ -1,4 +1,4 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~919.gbpfc220d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~919.gbpfc220d) bionic; urgency=medium
 
   ** SNAPSHOT build @fc220d4a3fe43bb37c8321de80160c381ebff31b **
 
