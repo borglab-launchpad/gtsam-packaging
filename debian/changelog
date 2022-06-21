@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~944.gbpfaa2a9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~945.gbp2b938c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2b938c3a32de1f59c98a8631f9c3fe8d9cd63a23 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @faa2a9f089d68c07d038e6478bb417aff2db36b0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jun 2022 03:46:50 +0000
+  [ Akshay Krishnan ]
+  * intialize values that may have between factors
+
+  [ Varun Agrawal ]
+  * improvements made during the old hybrid scheme implementation
+
+  [ Akshay Krishnan ]
+  * add unit test, update doc
+  * update docstring
+  * update doc in header
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ vik748 ]
+  * Address matplotlib deprecation warnings for fig.gca() and window.set_title().
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 21 Jun 2022 03:57:14 +0000
 
 gtsam (4.1.0-1ubuntu2~943.gbpe72693) focal; urgency=medium
 
