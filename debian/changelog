@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~977.gbp88379b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~978.gbp49252e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @49252e6904814ed450507db1a6b87115d670db66 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @88379bcc6ff69a20b56b794d13023fbe46ee28f3 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Jul 2022 04:11:49 +0000
+  [ Fan Jiang ]
+  * FIX: Robust loss error calculation
+  * Fix the test
+
+  [ Varun Agrawal ]
+  * add this-> to fix ROS issue
+
+  [ yetongumich ]
+  * fix testNoiseModel
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Jul 2022 04:00:43 +0000
 
 gtsam (4.1.0-1ubuntu2~976.gbpa51651) focal; urgency=medium
 
