@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~983.gbp07783d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~984.gbp27683e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @27683ec277501b01e3fae85f11ba83cf046cabcd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @07783d4aa95f24a8fd56e53e5dfb0ef040306165 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 03 Jul 2022 03:53:45 +0000
+  [ Varun Agrawal ]
+  * replace boost::function with std::function
+  * import VectorSerialization to Point3 to allow serialization for downstream classes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Jul 2022 04:05:46 +0000
 
 gtsam (4.1.0-1ubuntu2~982.gbp63d2eb) focal; urgency=medium
 
