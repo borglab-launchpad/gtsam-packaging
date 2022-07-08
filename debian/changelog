@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~995.gbp19a286) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~996.gbpcb49f2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cb49f2901ccc055bdddca55ce3ece2a4cd5a56ac **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @19a286cce138cd9908e184d20a21dbeb6820d0bf **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Jul 2022 04:05:55 +0000
+  [ lcarlone ]
+  * added clone to play well with gnc
+  * ruled out corner case where weights are outside [0,1] in TLS
+  * thresholded mu to avoid case mu = 0 in TLS. improved verbosity handling
+  * edited
+  * addressed comments in PR
+  * fixed compile issue
+
+  [ yotams ]
+  * added jacobians for all pose3 methods in python wrappers
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ yotams ]
+  * 1. changed interp name to slerp 2. added python tests for jacobians for some pose3 apis
+  * bugfix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Jul 2022 03:59:09 +0000
 
 gtsam (4.1.0-1ubuntu2~994.gbp257912) focal; urgency=medium
 
