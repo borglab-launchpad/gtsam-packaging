@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~998.gbpd4810e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~999.gbp53910f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @53910f35cbcce2069eb812189cac0928058ff9ab **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d4810ed15683541a0d211ce7df356d9d366fc4ee **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Jul 2022 04:01:26 +0000
+  [ Varun Agrawal ]
+  * wrap BearingRange classes and factors
+  * add Python unit tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 09 Jul 2022 03:44:04 +0000
 
 gtsam (4.1.0-1ubuntu2~997.gbp5fb67f) focal; urgency=medium
 
