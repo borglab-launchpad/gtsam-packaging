@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1005.gbpb98edc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1006.gbpe4de07) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e4de07d49af122f64ab480da8d2b9164beab6bc0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b98edc6ca31863de841f0d4d2566eb2050e5b5fe **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 13 Jul 2022 04:00:55 +0000
+  [ Akshay Krishnan ]
+  * initial LOST implementation tested
+  * make noise input, add LOST vs DLT unit test
+  * experimenting with LS and TLS
+  * update triangulation LOST API
+  * Example to run LOST and compare to DLT
+  * unit tests pass
+  * change global variable names in test
+  * add author
+  * update to camelcase names in test
+  * more camelcase changes
+  * more renames to camelcase
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Akshay Krishnan ]
+  * LOST in python wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Jul 2022 04:05:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1004.gbpdf2100) focal; urgency=medium
 
