@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1028.gbp2e545c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1029.gbp98188a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @98188a1d56ad5a6393b26cc95bf4eea687d9b0a2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2e545ca06ce610484e27b4871f6cbe49ec92e3f1 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Jul 2022 04:06:40 +0000
+  [ Scott ]
+  * Clear ConcurrentMap before loading archive data
+  * Add unit test for ConcurrentMap serialization
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 19 Jul 2022 04:19:37 +0000
 
 gtsam (4.1.0-1ubuntu2~1027.gbp7554f9) focal; urgency=medium
 
