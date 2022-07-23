@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1032.gbp9d345c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1033.gbp2f977b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2f977b522dd84c5cd87009fffa1bb10c05c84c1d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9d345c3581fc42c33630629bd40788f9ef4dee70 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Jul 2022 04:08:46 +0000
+  [ Varun Agrawal ]
+  * update macos CI env
+  * fix copying of test files in Cmake
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 23 Jul 2022 03:52:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1031.gbp7e0975) focal; urgency=medium
 
