@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1044.gbpd85d50) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1045.gbpc0d0c9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c0d0c9ce7c5539f49191b5b9adc5d12ea0ddbc9a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d85d50370e3d667d1f4b9d59938d7570b4e45b32 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 26 Jul 2022 04:26:45 +0000
+  [ agilemapper ]
+  * replace addtogroup with ingroup for the SLAM group
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 27 Jul 2022 04:06:28 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1043.gbp1c47f3) focal; urgency=medium
 
