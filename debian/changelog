@@ -1,10 +1,44 @@
-gtsam (4.1.0-1ubuntu2~1058.gbp8a81e0) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1059.gbp37164c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @37164c6afd110332cafcd2062bb6c10e842883dd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8a81e066ed8a71efac48f2aaba916df6459693df **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 28 Jul 2022 04:03:27 +0000
+  [ Amado Antonini ]
+  * Expose GNC params to python
+  * Revert changes to verbosity
+  * Expose remaining attributes, add tests
+  * Adress review comments
+  * Run yapf
+  * Make vector<size_t> opaque
+  * Revert pybind stl include
+
+  [ Varun Agrawal ]
+  * wrap custom factor in a separate file
+  * add gtsam namespace
+
+  [ Amado Antonini ]
+  * Remove pybind/stl.h again
+
+  [ Varun Agrawal ]
+  * remove pybind stl.h
+  * minor fixes
+  * use python 3.7
+  * remove redundant KeyVector definition
+  * use KeyVector for GNC inliers & outliers
+  * Use new GncParams::IndexVector
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * undo CI changes
+  * revert checkout version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Jul 2022 04:05:13 +0000
 
 gtsam (4.1.0-1ubuntu2~1057.gbp3cca94) focal; urgency=medium
 
