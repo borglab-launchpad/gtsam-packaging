@@ -1,3 +1,11 @@
+gtsam (4.1.0-1ubuntu2~1061.gbp7a2a45) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @7a2a4520c083283735c0168d9f9e4a234b3adf4a **
+
+  * modified changelog for distro focal
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Jul 2022 04:07:23 +0000
+
 gtsam (4.1.0-1ubuntu2~1060.gbp37d351) focal; urgency=medium
 
   ** SNAPSHOT build @37d35100030c625515c8fcee6ffc28d471ffbfc0 **
