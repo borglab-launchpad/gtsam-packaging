@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1062.gbpde344d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1063.gbp6f9116) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6f911657c6fdcd3d915e9e8384ee67c32faee3f0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @de344d59e40f850a4cc754c25bfa8cc922922703 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 01 Aug 2022 04:29:02 +0000
+  [ Tobias Fischer ]
+  * Fix exports on Windows
+  * Link to interface library in case system metis is used
+  * Delete FindBoost.cmake
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix matlab compilation
+  * print boost version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Aug 2022 04:25:07 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1061.gbpdfa609) focal; urgency=medium
 
