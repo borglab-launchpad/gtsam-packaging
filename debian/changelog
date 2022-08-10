@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1086.gbp52b23a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1087.gbpbb1afe) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bb1afe59792b86f3b007be86a0657e06e6644ffa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @52b23a6aed0ead97cb51d1163cb0ace0a32217df **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 09 Aug 2022 04:01:34 +0000
+  [ Varun Agrawal ]
+  * Add Zenodo for generating citations
+  * point Zenodo badge to Concept (aka aggregate) version
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 10 Aug 2022 03:38:05 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1085.gbp2db674) focal; urgency=medium
 
