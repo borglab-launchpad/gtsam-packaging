@@ -4,3 +4,5 @@ wrap/pybind11/docs/pybind11_vs_boost_python2.png
 doc/LieGroups.pdf
 doc/gtsam.pdf
 doc/math.pdf
+doc/ImuFactor.pdf
+doc/PreintegratedIMUJacobians.pdf
