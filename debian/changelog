@@ -1,10 +1,62 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1122.gbp39efda) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1123.gbp89106e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @89106e660fafc413c5079778c377f36aca2fc601 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @39efdac4740f4d91d13b7fb96b4995eeb1cbbd2f **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 21 Aug 2022 03:58:51 +0000
+  [ Varun Agrawal ]
+  * minor improvements to CombinedImuFactor
+  * account for bias on position in jacobians of CombinedImuFactor
+  * Add unit test for checking covariance of CombinedImuFactor
+  * additional comments to make understanding the code easier
+  * no need to assign negative to jacobians as they cancel out later
+  * add details about noise propagation for CombinedImuFactor in ImuFactor.pdf
+  * Add the Preintegrated IMU jacobians tech report and mention it in the docs
+  * update ImuFactor reference
+  * add test for checking covariances between ImuFactor and CombinedImuFactor
+  * print statements in ImuFactor
+  * typedef for Vector15
+  * updated CombinedImuFactor covariance with additional off-diagonal elements
+  * CombinedScenarioRunner
+  * actually test the covariances and fix bug
+  * update test with comments
+  * update ImuFactor doc
+  * remove print statements
+  * minor refactoring
+  * updated ImuFactor doc with details about CombinedImuFactor
+  * added details about covariance discretization with references
+  * add test for MC based covariance estimation
+  * undo name change from 984a90
+  * detailed implementation of CombinedImuFactor noise propagation
+  * test passes
+  * lyx update
+  * formatting
+  * update PDF doc
+  * fix test
+  * fix test
+  * minor refactor to follow the math better
+  * use prior naming scheme for bias jacobians
+  * update Lyx document based on Luca's review
+
+  [ Jose Luis Blanco-Claraco ]
+  * Do not optimize native by default
+
+  [ Varun Agrawal ]
+  * Use system Eigen by default only if found
+  * fix small issue
+  * Capitalize Identity trait since it is static
+  * change python CI cores to 1
+  * Revert "change python CI cores to 1"
+  * fix setter and getter for biasAccOmegaInit
+  * revert name change, save for another PR
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 22 Aug 2022 04:21:42 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1121.gbpfd262b) focal; urgency=medium
 
