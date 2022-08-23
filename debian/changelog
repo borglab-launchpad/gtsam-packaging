@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1133.gbpf32dac) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1134.gbp447060) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @447060d788c28b50a0922a5aa845b9f412a15937 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f32dacd91fc385b4e57fc399922cec9776a88625 **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 22 Aug 2022 04:23:49 +0000
+  [ Varun Agrawal ]
+  * upgrade from ubuntu 18.04 to 20.04
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 23 Aug 2022 04:41:27 +0000
 
 gtsam (4.1.0-1ubuntu2~1132.gbp5bc394) focal; urgency=medium
 
