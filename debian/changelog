@@ -1,10 +1,104 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1131.gbp7099ee) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1132.gbpe063ca) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e063ca804f59795ded15c122ebd9d7f9fd9ccd33 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7099ee94c079d2ffb6a13e17820da088a2951b8c **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 24 Aug 2022 04:27:22 +0000
+  [ Varun Agrawal ]
+  * add HybridNonlinearFactor and nonlinear HybridFactorGraph
+  * Add MixtureFactor for nonlinear factor types
+  * convert to cpp
+  * Base Hybrid Factor Graph
+  * make GaussianMixtureFactor a subclass of HybridGaussianFactor
+  * HybridFactorGraph fixes
+  * Make MixtureFactor only work with NonlinearFactors and make some improvements
+  * HybridNonlinearFactor linearize method
+  * push_back for GaussianHybridFactor
+  * clean up testHybridFactorGraph, need to add more tests
+  * GaussianHybridFactorGraph inherits from HybridFactorGraph
+  * Improvements to GaussianHybridFactorGraph, make MixtureFactor a subclass of HybridFactor
+  * Add NonlinearHybridFactorGraph class
+  * fix base class
+  * linearize returns object instead of pointer
+  * remove unneeded method
+  * GaussianMixtureFactor inherits from HybridFactor
+  * More tests working
+  * initial pruning method
+  * record continuous keys separately
+  * formatting and docs update
+  * add pruning to HybridBayesNet
+  * use KeyVector and iterator constructor
+  * Add HybridFactorGraph base class and more methods for adding gaussian factors
+  * refactor testGaussianHybridFactorGraph to include comments and valid tests
+  * Improved hybrid bayes net and tests
+  * fix printing
+  * Add Switching class and make it linear
+  * fixes
+  * local include
+  * make makeBinaryOrdering inline to prevent multiple definition error
+  * makeSwitchingChain is also inline
+  * add docstring for makeBinaryOrdering
+  * address review comments
+  * add new lines
+  * rename to HybridNonlinearFactorGraph
+  * add IsGaussian template check
+  * renaming fixes
+  * remove derived push_back in HybridNonlinearFactorGraph and HybridFactorGraph
+  * add nonlinear switching system tests
+  * get more nonlinear tests to work and make some updates
+  * get all but 2 tests passing
+  * fix discrete only elimination (use EliminateForMPE)
+  * all tests pass!!!
+  * fix discrete conditional test
+  * Wrap DiscreteLookupTable
+  * change discrete key variable from C to M
+  * split HybridNonlinearFactorGraph to .h and .cpp
+  * fix printing and key bug in MixtureFactor linearize
+  * fix adding priors in Switching
+  * HybridGaussianISAM unit tests
+  * fix print tests
+  * cleaner printing
+  * got some more tests working
+  * use templetized constructor for MixtureFactor
+  * more tests running
+  * one more test passing
+
+  [ sjxue ]
+  * HybridValues and optimize() method for hybrid gaussian bayes net
+  * add some comments
+
+  [ Varun Agrawal ]
+  * Address review comments
+  * add incremental pruning to HybridGaussianISAM
+
+  [ sjxue ]
+  * Address review comments
+
+  [ Varun Agrawal ]
+  * last test to get running
+
+  [ sjxue ]
+  * Address review comments
+  * fix error in python unit test
+
+  [ Varun Agrawal ]
+  * check subset rather than equality for GaussianISAM pruning
+  * handle HybridConditional and explicitly set Gaussian Factor Graphs to empty
+  * remove custom orderings, let it happen automatically
+  * add note about sumFrontals
+  * cast to only HybridGaussianFactor
+  * add new line
+  * name file correctly in doc string
+  * fix docstring
+  * add extra tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 Aug 2022 04:38:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1130.gbpdbf29d) focal; urgency=medium
 
