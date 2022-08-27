@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1137.gbpfd9b4e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1138.gbp468afa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @468afa0436fee8e0ca6c1ec94d2f9addc1555d44 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fd9b4e3b37c6b408051d2e1116f80120238dd37c **
 
   * modified changelog for distro focal
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 26 Aug 2022 04:49:20 +0000
+  [ Fan Jiang ]
+  * Add wrapping for hybrid nonlinear
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Aug 2022 04:16:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1136.gbp966525) focal; urgency=medium
 
