@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1146.gbp5affba) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1147.gbpeb3fce) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @eb3fce680cb358f9fce4bebac440161fd7019da1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5affbaa53e34b5803f9a1e4c2c2353fc5b9a9cd2 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 29 Aug 2022 04:43:48 +0000
+  [ Varun Agrawal ]
+  * fix filename in docstring
+  * HybridBayesNet::optimize
+  * HybridBayesTree::optimize
+  * extra test for HybridBayesNet optimize
+  * finish HybridBayesTree test
+  * use Switching constructor arguments for noise covariances
+  * fix issue with TBB
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 30 Aug 2022 04:48:11 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1145.gbp6b7c7c) focal; urgency=medium
 
