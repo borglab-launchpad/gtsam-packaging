@@ -1,10 +1,35 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1152.gbp9b2592) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1153.gbp6668f3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6668f3ec261a0bc15f5cb848d90334e97f962aee **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9b25923dd70dec2ef6e877dcccbd8eddee88329b **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 Aug 2022 05:01:12 +0000
+  [ Varun Agrawal ]
+  * remove HybridLookupDAG
+  * refactor HybridValues
+  * new HybridBayesNet optimize implementation
+  * add HybridBayesTree optimize method
+  * update wrapper for HybridValues
+  * add discrete factors to HybridBayesTree test
+  * fix gbn optimize everywhere for HybridBayesTree
+  * assert for discrete only conditional
+  * helper to return HybridConditional as GaussianConditional
+  * rename atGaussian to atMixture and add new atGaussian for continuous conditionals, fix choose method for all types
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * handle Gaussian conditionals in the BayesTree
+  * fix doxygen
+  * add helpers to get different types of keys from the hybrid graph
+  * wrap BayesTree::optimize
+  * DiscreteKeys::print method
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Sep 2022 04:26:21 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1151.gbp1dfbbb) focal; urgency=medium
 
