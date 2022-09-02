@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1155.gbp08994e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1156.gbp23fc85) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @23fc85faa13628cc5fe94c038031bbc3d446fd3e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @08994e653cba710af5e7b379c51e2bb8ed1be4a0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Sep 2022 04:28:44 +0000
+  [ Varun Agrawal ]
+  * DiscreteKeys serialization
+  * add serialization for HybridFactor and HybridConditional
+  * Make HybridBayesNet testable and add serialization
+  * Make HybridBayesTree testable and add serialization
+  * add serialization test for GaussianBayesNet
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * move DiscreteKeys code to .cpp
+  * move GaussianBayesNet serialization test to testSerializationLinear
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 02 Sep 2022 04:42:49 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1154.gbp966755) focal; urgency=medium
 
