@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1158.gbp3940e3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1159.gbpa4b286) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a4b286544b7775ce7d6b64ebc04405c7af1e252e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3940e34fbfa84000dbfc14338a0d063b4c14e6b1 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 02 Sep 2022 04:44:58 +0000
+  [ Varun Agrawal ]
+  * rewrap KeyVector for Matlab wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Sep 2022 04:18:32 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1157.gbp838eb4) focal; urgency=medium
 
