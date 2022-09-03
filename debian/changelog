@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1163.gbpab6fee) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1164.gbp4af441) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4af44151132ed66dd2a772f96dfec59a89663888 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ab6fee6b2386aeb89bd0d39f917d0b630c1822b0 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 02 Sep 2022 04:44:40 +0000
+  [ Varun Agrawal ]
+  * rewrap KeyVector for Matlab wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Sep 2022 04:18:18 +0000
 
 gtsam (4.1.0-1ubuntu2~1162.gbp930b26) focal; urgency=medium
 
