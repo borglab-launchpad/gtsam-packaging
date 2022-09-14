@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~1196.gbp8c1a48) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1197.gbp9af854) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9af85488948f19e3839db744df158dc77f3fae33 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8c1a48f9ee364bdfec35b4bed4779be80d7bd1eb **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Sep 2022 04:49:58 +0000
+  [ Varun Agrawal ]
+  * add multifrontal test to reproduce issue
+  * refactor HybridBayesTree::optimize
+  * some name cleaning in the HybridJunctionTree
+  * rename myJTNode to junctionTreeNode so we can better subclass ConstructorTraversalData
+  * remove unused variable in testSimilarity2
+  * remove unused blocks
+  * remove nrContinuous since we don't need it
+  * remove redunant statements
+  * add todo
+  * Add check for MixtureFactor to ensure the  continous keys are the same as in the factors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Sep 2022 04:43:10 +0000
 
 gtsam (4.1.0-1ubuntu2~1195.gbp42ca00) focal; urgency=medium
 
