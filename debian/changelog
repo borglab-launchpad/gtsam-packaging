@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~1259.gbpff4723) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1260.gbp9b105b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9b105ba89091b6c0dd3f0e24423a8bd6c9726e1b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ff47235108076c6a70959e3bd007d939746887d5 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 04 Oct 2022 04:10:20 +0000
+  [ Varun Agrawal ]
+  * return shared pointer for HybridNonlinearFactorGraph::linearize
+  * add push_back for containers
+  * HybridNonlinearISAM class
+  * add container SFINAE for hybrid nonlinear factor graph push_back
+  * fix test name for HybridNonlinearISAM
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 Oct 2022 04:01:02 +0000
 
 gtsam (4.1.0-1ubuntu2~1258.gbpab28f7) focal; urgency=medium
 
