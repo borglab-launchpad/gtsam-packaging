@@ -1,10 +1,36 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1263.gbpaa9232) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1264.gbpf4e7b4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f4e7b4b15e7b31083ee22e633898ffdd6d920f9f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aa9232276bb0c96a6249b490b7e4e0d208952b92 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Oct 2022 04:10:04 +0000
+  [ Varun Agrawal ]
+  * prune hybrid gaussian ISAM more efficiently and without the need to specify the root
+  * Add labelformatter to Assignment for convenience
+  * move prune method to HybridBayesTree class
+  * optional maxNrLeaves for HybridGaussianISAM
+  * optional ordering argument for HybridNonlinearISAM::update
+  * minor fix
+  * Only eliminate variables that are in newFactors
+  * add push_back to HybridBayesNet
+  * move renamed allDiscreteKeys and allContinuousKeys to HybridFactorGraph
+  * undo changes
+  * rename testHybridIncremental to testHybridGaussianISAM
+  * rename allDiscreteKeys and allContinuousKeys to discreteKeys and continuousKeys respectively
+  * improved hybrid bayes net pruning
+  * minor cleanup
+  * rename test file to correct form
+  * Add test to expose bug in elimination with gaussian conditionals
+  * fix the bug
+  * more docs for Switching example
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 08 Oct 2022 03:58:47 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1262.gbpf280cb) focal; urgency=medium
 
