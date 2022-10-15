@@ -1,10 +1,41 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1284.gbped6cf1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1285.gbp9eed6e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9eed6e12bf64db00c1f2679af273471450f4f45d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ed6cf1a6c29b3e6423adad9f1604f1ee1296c31a **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Oct 2022 04:52:11 +0000
+  [ Varun Agrawal ]
+  * add code for simplified hybrid estimation
+  * almost done with single legged robot
+  * single leg robot test
+  * add more tests to show scheme doesn't work
+  * remove print statements
+  * remove unnecessary comments
+  * move GTDKeyFormatter to types.h
+  * fix tests
+  * formatting
+  * apply keyformatter to Gaussian iSAM in HybridNonlinearISAM
+  * slight improvement to GaussianMixtureFactor print
+  * PrunerFunc helper function
+  * enumerate missing discrete keys so we can prune all gaussian mixtures
+  * add PrunerFunc to GaussianMixture
+  * clean up the prunerFunc
+  * HybridBayesNet and HybridBayesTree both use similar pruning functions
+  * minor fixes to unit test
+  * add assertions to remove warning
+  * remove print function
+  * add curlyy brackets to for loop
+  * remove custom keyformatter
+  * remove added test file
+  * remove leftover comment
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 15 Oct 2022 04:39:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1283.gbpe1d8f8) focal; urgency=medium
 
