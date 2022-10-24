@@ -1,10 +1,60 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1311.gbp8cf267) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1312.gbp4b897b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4b897bb15c93b618fb2058f425fcbc9cf9335f8c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8cf2672efd849c390bc295e25312ed6427ae974e **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 23 Oct 2022 04:29:25 +0000
+  [ senselessdev1 ]
+  * Start GTSFM's DSF port to C++
+  * Add Python unit test
+  * clean up docstrings
+  * Fix unwrapped SfmTrack2d, and instantiate generator before calling its method
+  * fix all wrapper issues
+  * Remove C++17 decompositions, and address comments
+  * remove stray breakpoint
+
+  [ John Lambert ]
+  * Update style to have bracket on same lines, and autoformat
+
+  [ senselessdev1 ]
+  * hasUniqueCameras to camel case
+  * remove unnecessary extra typedef
+  * pass in IndexPair arguments
+  * add to preamble/specialization
+  * remove opaque on sfmtrack2d
+
+  [ John Lambert ]
+  * Add SfmTrack2dVector to ignore list
+
+  [ senselessdev1 ]
+  * wrap vector of NamedSfmMeasurement
+  * add more methods for accessing members, getting size
+  * expand tests
+  * add docimentation for Keypoints class
+  * rename KeypointsList -> KeypointsVector
+  * add verbose flag for logging messages during DSF track generation
+  * use gtsam.gtsfm namespace for new API
+  * add namespace hack to prevent gtsam.gtsam.gtsfm
+
+  [ Frank Dellaert ]
+  * Split SfmTrack into 2 classes
+  * Use SfmMeasurement and SfmTrack
+  * Refactor into smaller functions
+  * Moved code to cpp file
+  * removed NamedSfmMeasurementVector
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Addressed review comments - removed class in favor of free function
+  * Rename of test
+  * Vectorized interface
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 24 Oct 2022 04:58:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1310.gbpb9c388) focal; urgency=medium
 
