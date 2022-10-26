@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~1322.gbpc0d45f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1323.gbpabfa7a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @abfa7af90b7f775c26da7772d89717fe30815ac3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c0d45ff648149939a7933e4cc6283438cfa6cf84 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 25 Oct 2022 04:57:22 +0000
+  [ Sébastien Gonzalve ]
+  * Use cannonical library name for eigen
+  * Use Eigen Config file for cmake detection
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix CMake so that Eigen discovery and linking is consistent
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 26 Oct 2022 04:10:17 +0000
 
 gtsam (4.1.0-1ubuntu2~1321.gbpa833e4) focal; urgency=medium
 
