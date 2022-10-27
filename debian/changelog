@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1320.gbpd8f722) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1321.gbpa01603) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a01603ba5d67b090b52daa80ff1190674d86e98d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d8f72247a96ddf8fa95bd12e2fef056845991b71 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 26 Oct 2022 04:12:24 +0000
+  [ Varun Agrawal ]
+  * update the directory list in cmake
+  * upgrade the Doxyfile config file
+  * remove invalid dirs tab
+  * update instructions to generate docs
+  * fix doxygen warnings due to groups and and incorrect filenames
+  * fix latex symbol warnings
+  * change from addtogroup to ingroup
+  * add the various groups
+  * better page arrangement to include GTSAM_UNSTABLE
+  * update the groups
+  * add base module
+  * update basis module
+  * update Discrete group
+  * update linear and multifrontal groups
+  * update SAM groups
+  * use ingroup instead of addtogroup
+  * add to hybrid group
+  * update ISAM2 group
+
+  [ Maurice Fallon ]
+  * fix typo in g2o file format parsing
+
+  [ Matias Mattamala ]
+  * Fix in writeG2o when writing Pose3 measurement
+
+  [ Varun Agrawal ]
+  * Add GetOrdering method that can be re-used
+
+  [ Akshay Krishnan ]
+  * fix wrapper argument
+  * add gtsam:: prefix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add docstring to test and fix assert
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Oct 2022 04:05:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1319.gbpe552c5) focal; urgency=medium
 
