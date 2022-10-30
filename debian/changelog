@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1334.gbp856d62) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1335.gbpe9641b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e9641b639f5868512856e5fcbac8de084a313d11 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @856d62e972a96d98fff1137ce30891190325dc68 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 29 Oct 2022 03:58:49 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from ca357ccdd..b37a1fec6
+  * Fix return type wrapping for Matlab wrapper
+  * add matlab test for class property variables
+  * Squashed 'wrap/' changes from b37a1fec6..b3faf3fcd
+  * update namespace for templated class property
+  * Squashed 'wrap/' changes from b3faf3fcd..ba3dcab16
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 30 Oct 2022 04:07:31 +0000
 
 gtsam (4.1.0-1ubuntu2~1333.gbpf7ab95) focal; urgency=medium
 
