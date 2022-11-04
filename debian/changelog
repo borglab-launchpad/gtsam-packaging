@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~1349.gbp598a05) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1350.gbp01e1ff) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @01e1ff1dfef4457d322c61aa9ab1055912111146 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @598a0538f107881f5b670eb6a107af885130ee05 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Nov 2022 03:58:07 +0000
+  [ Varun Agrawal ]
+  * update switching example to accept measurements in constructor
+  * rename discreteFactor to decisionTree
+  * expose DiscreteKeysAsSet as a function
+  * new updateDiscreteConditionals method for after we prune
+  * HybridSmoother based on BayesNet
+  * unit test for end-2-end hybrid estimation
+  * remove extraneous tictoc print
+  * add assertions for HybridEstimation example
+  * simplify conversion of root discrete conditional
+  * Make Switching test fixture 0-indexed to match iMHS paper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 04 Nov 2022 04:00:41 +0000
 
 gtsam (4.1.0-1ubuntu2~1348.gbp3dc2c9) focal; urgency=medium
 
