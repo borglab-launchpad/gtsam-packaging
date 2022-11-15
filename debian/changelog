@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~1382.gbpbe51be) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1383.gbp354567) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @354567f04dab305892af26a67ed7cf4c6c99a809 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @be51be46862e050147bc18ac7d523781e6fb24f3 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 14 Nov 2022 03:58:59 +0000
+  [ Varun Agrawal ]
+  * allow examples to link to gtsam_unstable
+  * better error messages from Pybind
+
+  [ Tae Young Kim ]
+  * Remove unnecessary functions in ImuFactorsExample.cpp
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Add unit test exposing GaussianBayesTree determinant bug
+  * fix bug in GaussianBayesTree::logDeterminant
+  * docstring updates
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 15 Nov 2022 03:45:48 +0000
 
 gtsam (4.1.0-1ubuntu2~1381.gbp676f00) focal; urgency=medium
 
