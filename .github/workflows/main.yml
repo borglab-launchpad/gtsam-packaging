@@ -2,11 +2,15 @@ name: Build GTSAM Ubuntu snapshot
 
 on:
  push:
-    branches:
-      - master
- schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: '57 2 * * *' # run at 02:57:00 UTC
+    branches: [ master ]
+ workflow_dispatch:
+    branches: [ master ]
+#
+# unfortunately the cron job stops running after 60 days w/o commits
+# 
+# schedule:
+#    # * is a special character in YAML so you have to quote this string
+#    - cron: '57 2 * * *' # run at 02:57:00 UTC
 
 jobs:
   build_ubuntu_job:
