@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1383.gbped42b0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1384.gbp4fee36) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4fee36bec219821ffb8b5bc1e03e4960d2c3a9a4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ed42b09049899d230d23b232bc423021d177d703 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 15 Nov 2022 19:01:12 +0000
+  [ Bernd Pfrommer ]
+  * add workflow to trigger ubuntu packaging
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Nov 2022 13:47:32 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1382.gbp4dd8f0) focal; urgency=medium
 
