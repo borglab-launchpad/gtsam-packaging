@@ -1,4 +1,4 @@
-gtsam (4.1.0-1ubuntu2~1389.gbpc22159) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1389.gbpc22159) bionic; urgency=medium
 
   ** SNAPSHOT build @c22159b2a69a0b70a820ba1d98a446aa0f39a70a **
 
