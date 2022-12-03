@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1392.gbp22617e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1393.gbpce75ad) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ce75ad72d8b7ecaa91a60be2fbffa32ac1c940ac **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @22617e8c3956da2d7a511356b3c6de2a9ca7eeed **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Dec 2022 01:30:08 +0000
+  [ Nikhil Khedekar ]
+  * Exposed normalize for Point3_
+  * Added test for normalize
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Dec 2022 01:03:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1391.gbp93871f) focal; urgency=medium
 
