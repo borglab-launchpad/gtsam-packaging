@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1398.gbp4ad8a2) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1399.gbp6f77c9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6f77c9d05fbc8423416a290c22655ff66da5a0da **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4ad8a29cddf24acae42c8c312e0a56cbd44dd9fd **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 Dec 2022 14:51:55 +0000
+  [ ulterzlw ]
+  * Fixed Jacobian in python CustomFactorExample
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Dec 2022 05:03:49 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1397.gbpa6013f) focal; urgency=medium
 
