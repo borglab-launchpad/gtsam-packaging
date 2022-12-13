@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1403.gbpb4e7d6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1404.gbp4ad304) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4ad304176e96af3752ecca9db66c36450696bcf1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b4e7d66701fd143d5ee1f1dba92828d62fad8486 **
 
   * modified changelog for distro focal
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 Dec 2022 14:52:07 +0000
+  [ ulterzlw ]
+  * Fixed Jacobian in python CustomFactorExample
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Dec 2022 05:03:49 +0000
 
 gtsam (4.1.0-1ubuntu2~1402.gbp00275a) focal; urgency=medium
 
