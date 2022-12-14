@@ -1,10 +1,11 @@
-gtsam (4.1.0-1ubuntu2~1411.gbp9a69aa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1412.gbpc18199) UNRELEASED; urgency=medium
 
-  ** SNAPSHOT build @9a69aaf34ecefdeea53cd94642bc3b44bde7c9e8 **
+  ** SNAPSHOT build @c181999fef5263180c0d68972ccdaaeb6af92646 **
 
   * modified changelog for distro kinetic
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Dec 2022 00:21:40 +0000
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Dec 2022 15:04:19 +0000
 
 gtsam (4.1.0-1ubuntu2~1410.gbpbd4454) kinetic; urgency=medium
 
