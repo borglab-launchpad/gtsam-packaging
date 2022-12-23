@@ -1,10 +1,58 @@
-gtsam (4.1.0-1ubuntu2~1419.gbp9a3f67) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1420.gbpbaf02a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @baf02a7398657c2152b496838f73df057dad992a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9a3f67d3ca0c9855e1a198a88bf521443cbd5b87 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 05:58:50 +0000
+  [ Gerry Chen ]
+  * NoiseModelFactorN - fixed-number of variables >6
+  * c++11 doesn't support std::size so use obj.size() instead
+  * alternate make_index_sequence impl if no boost::mp11
+  * optional jacobian overloads backwards compatibility
+  * backward compatibility unit tests for NoiseModelFactor4
+  * NoiseModelFactor4 implemented as derived class of NoiseModelFactorN
+  * converted all NoiseModelFactorX to inherit from NoiseModelFactorN
+  * documentation
+  * avoid inheritance by conditionally defining backwards compatibility types/funcs in NoiseModelFactorN
+  * switch template bool specialization order
+  * can't get "using NoiseModelFactorX = NoiseModelFactorN" to work
+  * alternate option for typedef-ing X1, X2, ...
+  * revert typedef X1, X2, ... to old version, and clean up a little
+  * switch `using NoiseModelFactorX = ...` to `#define ...`.
+  * fix Windows CI issue: VALUE happens to have the same name in PriorFactor
+  * review comments
+  * update doxygen (review comment)
+  * create backwards compatibility unit test for NoiseModelFactor1
+  * revert some template stuff with inheritance for readability NoiseModelFactor123456 are now minimal classes that inherit from NoiseModelFactorN
+  * move boost::index_sequence stuff to utilities file
+  * fix namespace collision with symbol_shorthand::X in unit test
+  * Revert "create backwards compatibility unit test for NoiseModelFactor1"
+  * Serialize test strings generated with Boost 1.65
+  * fix test xml file path
+  * fix expected serialization string
+  * serialization debugging (from stash)
+  * update serialized string
+  * bugfix on serialization
+  * remove debug statements
+  * turn off backwards compatibility test with quaternions or TBB since serialization structure is different
+  * address review comments
+  * fix boost 1.65 patch bug
+  * Revert "fix namespace collision with symbol_shorthand::X in unit test"
+  * Change `X<N>` to `ValueType<N>` and `VALUES` -> `ValueTypes`
+  * address review comments
+  * Check type of CONTAINER constructor tparam This is a byproduct of the overload resolution problem when N=1, then it can be hard to differentiate between: NoiseModelFactorN(noise, key) NoiseModelFactorN(noise, {key})
+  * make SFINAE templates more readable
+  * better docstrings w/ usage examples
+  * Change backwards-compatibility defs to utilize new style
+  * update and fix unit tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 13:45:30 +0000
 
 gtsam (4.1.0-1ubuntu2~1418.gbpf3d280) jammy; urgency=medium
 
