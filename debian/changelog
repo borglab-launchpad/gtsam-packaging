@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1418.gbp4505b5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1419.gbpc3deb9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c3deb9b9ad1bd644ec60cd5f7cfa2efc6e3d9497 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4505b5299256de0ca5bd5d9d1bb0a0e42ad35b8e **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 13:49:18 +0000
+  [ Varun Agrawal ]
+  * GaussianConditional logDeterminant function to remove code duplication.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 14:32:09 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1417.gbpd28e84) jammy; urgency=medium
 
