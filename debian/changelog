@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~1415.gbpe93d22) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1416.gbp11f49c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @11f49c0b16e073bf606bd47b9c30e0b73d261ee8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e93d22847a5c663f1d4ed87c9bd4afd93df60491 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 14 Dec 2022 15:08:03 +0000
+  [ Varun Agrawal ]
+  * Hybrid Mixture error calculation
+  * Add GaussianMixtureFactor::error method and unit test
+  * default string for AlgebraicDecisionTree::print
+  * add unit tests for MixtureFactor
+  * update MixtureFactor so that all tests pass
+  * add newline
+  * add specific assignment error for GaussianMixtureFactor
+  * GaussianMixture error methods
+  * error method for HybridBayesNet
+  * add docstring for HybridBayesNet::error(VectorValues)
+  * fix discrete keys
+  * Allow setting custom leaf value for AlgebraicDecisionTree
+  * add error and probPrime methods to HybridGaussianFactorGraph
+  * add probPrime to HybridBayesNet
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * rename all *Vals to *Values
+  * Update docstrings
+  * address review comments
+  * cleaner way of assigning discrete values
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 05:55:11 +0000
 
 gtsam (4.1.0-1ubuntu2~1414.gbp6de903) jammy; urgency=medium
 
