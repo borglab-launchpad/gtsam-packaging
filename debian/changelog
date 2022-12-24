@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~1431.gbp23f697) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1432.gbp806c2c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @806c2c47494e52859eb9578cba07ae1cb845f600 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @23f697888891cdb85723380e4c8105690448d783 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Dec 2022 22:18:35 +0000
+  [ Varun Agrawal ]
+  * Add optional model parameter to sample methods
+  * hybrid bayes net sample method
+  * add unit test for sampling
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Revert "Add optional model parameter to sample methods"
+  * remove model
+  * remove `factors_` from Bayes net implementation
+  * if noise model not initialized in GaussianConditional, init it to Unit
+  * address review comments
+  * update test
+  * use auto&& in for loops
+  * mark parameters for sample as const
+  * make GaussianBayesNet::sample functional
+  * make sigmas initialization cleaner
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Dec 2022 14:34:02 +0000
 
 gtsam (4.1.0-1ubuntu2~1430.gbp42f12d) jammy; urgency=medium
 
