@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~1435.gbp1f7a41) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1436.gbpe36ed0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e36ed04e2109477095b1f55a01796cd4b012b3c6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1f7a41fd27f2b4b6366e03d907a4a801436d5b99 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Dec 2022 14:37:48 +0000
+  [ Akshay Krishnan ]
+  * Update geometry.i
+  * Update geometry.i
+
+  [ Varun Agrawal ]
+  * fix wrapper warnings
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Akshay Krishnan ]
+  * remove * overator
+
+  [ Varun Agrawal ]
+  * fix some more deprecation warnings
+
+  [ Akshay Krishnan ]
+  * add rotate() test
+  * add unrotate() test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Dec 2022 04:44:13 +0000
 
 gtsam (4.1.0-1ubuntu2~1434.gbpbc160d) jammy; urgency=medium
 
