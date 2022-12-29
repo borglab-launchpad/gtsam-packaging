@@ -1,3 +1,12 @@
+gtsam-no-tbb (4.1.0-1ubuntu2~1436.gbp3856a3) focal; urgency=medium
+
+  ** SNAPSHOT build @3856a31180dc591c367ff47bbdf80b95cf90e48e **
+
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~1435.gbp53cba4
+  * modified changelog for distro bionic
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 02:23:27 +0000
+
 gtsam-no-tbb (4.1.0-1ubuntu2~1435.gbp53cba4) bionic; urgency=medium
 
   ** SNAPSHOT build @53cba4af51c8a0397aee127759db3545f1781009 **
