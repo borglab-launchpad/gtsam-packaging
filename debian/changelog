@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1438.gbpe48119) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1439.gbp69ecaf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @69ecaff053df381215c8c226b8aa4c98429ed440 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e48119ed0d5a79c73a78d0a82f37513b40b2db83 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 02:26:29 +0000
+  [ Frank Dellaert ]
+  * Fix to const &
+  * Test for GBN::sample
+  * Convenience constructors
+  * Add methods in HybridBayesNet
+  * Cleanup
+  * Add evaluate test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove unnecessary preamble and specializations for hybrid wrapping
+  * formatting and fixes to test
+  * add mixture to bayesnet and fix double assert bug
+  * fix wrap preamble
+  * fix formatting and other issues
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 08:24:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1437.gbp181fe4) jammy; urgency=medium
 
