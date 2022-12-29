@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~1439.gbp888f2e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1440.gbpb1f093) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b1f093577259843c6036cee691f502dfa9669529 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @888f2e22ad0e753676d9d6d22027cbf226c1ea4a **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Dec 2022 04:47:57 +0000
+  [ Frank Dellaert ]
+  * Pass reference
+  * HBN::evaluate
+  * GBN::evaluate prototype code works
+  * Added logDensity and evaluate to Gaussian conditional and Bayes net
+  * Correct densities (error already includes 0.5!)
+  * Test sampling using Monte Carlo integration
+  * Evaluate for hybrid Bayes nets
+  * Switch to dynamic pointer cast
+  * Refactor with uniform dynamic pointer cast API
+  * Relaxed test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 02:22:52 +0000
 
 gtsam (4.1.0-1ubuntu2~1438.gbp75d0c1) jammy; urgency=medium
 
