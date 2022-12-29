@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1447.gbpaebfa6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1448.gbpa1d594) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a1d594cbc9da82b8fb74e902c069f1cabc1b93cb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aebfa622e0de4277b8911c7613fe4d7e16c24d7e **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 08:28:43 +0000
+  [ Varun Agrawal ]
+  * PreintegratedAhrsMeasurements wrapped constructors
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Dec 2022 19:33:36 +0000
 
 gtsam (4.1.0-1ubuntu2~1446.gbpd597d0) jammy; urgency=medium
 
