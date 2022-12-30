@@ -1,10 +1,73 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1454.gbp46f6bc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1455.gbp5d6f1a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5d6f1a884b4d83754e71cd822055544ac0577d35 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @46f6bc77bb8305479dad11e9105ca265033c5cdc **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 04:45:52 +0000
+  [ Varun Agrawal ]
+  * minor typo fixes
+  * remove if guards and add timing counters
+  * new WIP test to check the discrete probabilities after elimination
+  * showing difference in computed probabilities
+  * Increase the number of time steps for incremental test case
+  * fix hybrid elimination
+  * figured out how to get the correct continuous errors
+  * allow optional discrete transition probability for Switching test fixture
+  * set up unit test to verify that the probPrimeTree has the same values as individual factor graphs
+  * add methods to perform correct elimination
+  * update HybridSmoother to use the new method
+  * use long sequence in HybridEstimation test
+  * add docs
+  * add optional ordering and fix bug
+  * minor clean up and get tests to pass
+  * update test in testHybridEstimation
+  * separate HybridGaussianFactorGraph::error() using both continuous and discrete values
+  * add HybridGaussianFactorGraph::probPrime method
+  * overload multifrontal elimination
+  * add copy constructor for HybridBayesTreeClique
+  * fix HybridBayesTree::optimize to account for pruned nodes
+  * fix creation of updatedBayesTree
+  * fixup the final tests
+  * update docstring for Ordering::+=
+  * make continuousProbPrimes and continuousDeltas as templates
+  * address review comments
+  * better printing
+  * move multifrontal optimize test to testHybridBayesTree and update docstrings
+  * moved sequential elimination code to HybridEliminationTree
+  * add getters to HybridEliminationTree
+  * override eliminate in HybridJunctionTree
+  * split up the eliminate method to constituent parts
+  * mark helper methods as protected and add docstrings
+  * more unit tests
+  * Add details about the role of the HybridEliminationTree in hybrid elimination
+  * remove unrequired code
+  * update hybrid elimination and corresponding tests
+  * remove commented out code
+  * minor cleanup
+  * add optional model parameter to sample method
+  * sampling test
+  * Revert "add optional model parameter to sample method"
+  * update sampling test to use new sample method
+  * address review comments
+  * compute sampling ratio for one sample and then for multiple samples
+
+  [ Frank Dellaert ]
+  * Implement printing rather than calling factor graph version
+  * Small comments
+  * Refactor elimination setup to not use C declaration style
+  * Separated out NFG setup and added test.
+  * Fix print test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * minor fixes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 08:19:29 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1453.gbpb86fcd) jammy; urgency=medium
 
