@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~1463.gbp82366d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1464.gbp22e3d4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @22e3d4e767ee4027d115578f38a83a5b787110d5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @82366d351b6cb3a93d39b1a04362db06c3b4bb87 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 08:23:14 +0000
+  [ Frank Dellaert ]
+  * allow update
+  * Show that ratio is different for different modes.
+  * Add forwarding constructors and document better.
+  * Comment out printing and asserts
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * comment out problematic code until we figure it out
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 11:35:36 +0000
 
 gtsam (4.1.0-1ubuntu2~1462.gbpd47248) jammy; urgency=medium
 
