@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1450.gbp6a7e43) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1451.gbp67aa72) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @67aa72f8f6a62acccdda7edfbaadf94a096bdbb9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6a7e43c5bc43a0b6fc33b59347175a6a94dc078d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 03:15:07 +0000
+  [ Frank Dellaert ]
+  * Added zero parents FromMeanAndStddev
+  * Renamed add to emplace, add is for shared pointers
+  * Get rid of (redundant and undocumented) FromFactors named constructor.
+  * Made method const
+  * Fixed equals and print
+  * proto code for likelihood
+  * likelihood method (as well as continuousParents)
+  * Remove FromConditionals
+  * Added tests to convert Hybrid BN to corresponding "likelihood" FG
+  * Add error and probPrime variants
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 04:41:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1449.gbpcbbc56) jammy; urgency=medium
 
