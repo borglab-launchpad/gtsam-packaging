@@ -1,10 +1,37 @@
-gtsam (4.1.0-1ubuntu2~1471.gbp674fa7) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1472.gbp9c38d1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9c38d1fe932ce855b63efb6c9ad0db2913838c49 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @674fa7fcbe44879b20e4f87d1b951538c7e3a492 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Dec 2022 15:09:08 +0000
+  [ Varun Agrawal ]
+  * make GaussianMixtureFactor store the normalizing constant as well
+  * update test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Change from pair to small struct
+  * Switch to using HybridValues
+  * Fixed tests
+  * Fixed wrapper
+  * factor_graph_from_bayes_net
+  * Added importance sampling
+  * normalization constant
+  * Fixed likelihood
+  * Fixed error calculation
+  * Fix tests once more
+  * Ratios now work out!
+  * Make a virtual error method
+  * Fix regression test
+  * Check marginals in addition to ratios for non-uniform mode prior
+  * Fix comments for inner.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 31 Dec 2022 06:53:23 +0000
 
 gtsam (4.1.0-1ubuntu2~1470.gbpdb4489) jammy; urgency=medium
 
