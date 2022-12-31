@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1470.gbp363e55) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1471.gbpdb05a1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @db05a1ff1fbde4e9f45e4ea2b38113bd5e842ae2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @363e5545c467567934ea945ad02ada6ec8462a8e **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 31 Dec 2022 06:57:07 +0000
+  [ Frank Dellaert ]
+  * Initializer list and insert/update chaining
+  * Initializer list and insert/update
+  * insert/update
+  * Make sure boost:assign still works.
+  * Use brace initializers for DiscreteValues
+  * Fix insert
+  * Use brace initializers for DiscreteValues in hybrid
+  * Fix wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 31 Dec 2022 15:13:47 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1469.gbp8b5bc3) jammy; urgency=medium
 
