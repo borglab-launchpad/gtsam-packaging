@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~1483.gbp32e12e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1484.gbp3c4a76) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3c4a76a6ed2e7fb1edb5cc8c47a078e4564c6d53 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @32e12ef86b3894d9da13c4a60bfc400a63352524 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 01 Jan 2023 23:15:15 +0000
+  [ GAECHTER TOYA Stefan ]
+  * Check for native architecture and set GTSAM_COMPILE_OPTIONS_PUBLIC accordingly
+  * Improve handling of GTSAM_BUILD_WITH_MARCH_NATIVE flag
+
+  [ Varun Agrawal ]
+  * clean up cmake and add comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Jan 2023 12:43:38 +0000
 
 gtsam (4.1.0-1ubuntu2~1482.gbp49c12b) jammy; urgency=medium
 
