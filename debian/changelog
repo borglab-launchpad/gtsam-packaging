@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1478.gbp537bd0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1479.gbp74b256) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @74b256aa3a1078c8329cb5192b47c43d7e8e3b45 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @537bd0f18c8147af9fbd9ac2d58a8929abbbe18f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 01 Jan 2023 23:14:24 +0000
+  [ GAECHTER TOYA Stefan ]
+  * Check for native architecture and set GTSAM_COMPILE_OPTIONS_PUBLIC accordingly
+  * Improve handling of GTSAM_BUILD_WITH_MARCH_NATIVE flag
+
+  [ Varun Agrawal ]
+  * clean up cmake and add comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Jan 2023 12:43:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1477.gbpd32b30) jammy; urgency=medium
 
