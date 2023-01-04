@@ -1,10 +1,109 @@
-gtsam (4.1.0-1ubuntu2~1491.gbpc4ca93) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1492.gbp1ab97f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1ab97f4c24f485e60119fec6306dfa583e2b00a4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c4ca939a86f6cf80b57055ac74415d038e967893 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Jan 2023 01:23:22 +0000
+  [ Varun Agrawal ]
+  * use FactorAndConstant error()
+  * make DecisionTree docstrings clearer
+  * fix docstring
+  * simplify the error addition
+  * add logNormalizingConstant test for GaussianConditional and make some doc fixes
+  * update all tests and mark things that need to be addressed
+  * GraphAndConstant struct for hybrid elimination
+
+  [ Frank Dellaert ]
+  * Switch to EliminateDiscrete for max-product
+  * Test eliminate
+  * HBN::evaluate
+  * refactoring variables for clarity
+  * Also print mean if no parents
+  * Add static
+  * Tiny Bayes net example
+  * fix comment
+  * continuousSubset
+  * tiny FG
+  * Made SumFrontals a method to test
+  * Added factor and constant and removed factors method
+  * refactored and documented SumFrontals
+  * Test SumFrontals
+  * Add Testable to GraphAndConstant
+  * Fix compile issues after rebase
+  * Fix SumFrontals test
+  * Change to real test
+  * Print estimated marginals and ratios!
+  * Fix quality testing
+  * Now test elimination in c++
+  * attempt to fix elimination
+  * Make testcase exactly 5.0 mean
+  * Refactoring in elimination
+  * Comment on constant
+  * Added two-measurement example
+
+  [ Varun Agrawal ]
+  * minor readjustment
+  * rename eliminate to eliminateFunc
+
+  [ Frank Dellaert ]
+  * Synced two examples
+  * Added missing methods
+  * Added error for all versions - should become logDiensity?
+
+  [ Varun Agrawal ]
+  * check for 0 sum
+  * prune nonlinear by calling method rather than on the bayestree
+
+  [ Frank Dellaert ]
+  * Deterministic example, much more generic importance sampler
+  * Fixed conversion arguments
+  * rename
+  * name change of Sum to GaussianFactorGraphTree and SumFrontals to assembleGraphTree
+  * Right marginals for tiny1
+  * Same correct error with factor_z.error()
+  * Example with 2 measurements agrees with importance sampling
+  * Add mean to test
+  * f(x0, x1, m0; z0, z1) now has constant ratios !
+
+  [ Varun Agrawal ]
+  * disable test instead of commenting out
+  * fix GaussianConditional print test
+  * clean up HybridGaussianFactorGraph
+  * move GraphAndConstant traits definition to HybridFactor
+  * remove extra print statements
+  * fix tests due to change to EliminateDiscrete
+  * remove extra print
+  * check for nullptr in HybridConditional::equals
+  * serialize inner_, need to test
+  * comment out failing tests, need to serialize DecisionTree
+  * kill unnecessary method
+  * make header functions as inline
+  * simplify HybridConditional equality check
+  * DecisionTree serialization
+  * serialization support for DecisionTreeFactor
+  * fix equality of HybridDiscreteFactor and HybridGaussianFactor
+  * hybrid serialization tests
+  * GaussianMixture serialization
+  * fix minor bug in HybridConditional and test its serialization
+  * serialize DiscreteConditional
+  * serialization tests for HybridBayesNet and HybridBayesTree
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * move discrete serialization tests to common file to remove export key collision
+  * enable previously failing test, now works!!
+  * add check in GaussianMixtureFactor::likelihood
+  * remove deferredFactors
+  * implement dim() for MixtureFactor
+  * simplify code
+  * rename getAssignment to assignment, fix printing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Jan 2023 18:31:30 +0000
 
 gtsam (4.1.0-1ubuntu2~1490.gbpebbb35) jammy; urgency=medium
 
