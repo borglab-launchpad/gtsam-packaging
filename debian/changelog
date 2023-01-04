@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1482.gbpa4f96c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1483.gbp51bd30) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @51bd30e415fe23c6e872fe46fa8cb495713363b2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a4f96c3a6e9a868067c49516b22ca3814cde6035 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Jan 2023 12:46:56 +0000
+  [ Frank Dellaert ]
+  * Repro issue #1341
+  * Fix argument to const &
+  * Fix count issue
+  * Fix loop variable
+  * Remove obsolete test
+  * remove obsolete include
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Jan 2023 01:19:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1481.gbp0f50e8) jammy; urgency=medium
 
