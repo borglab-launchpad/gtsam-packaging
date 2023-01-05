@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1499.gbp942522) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1500.gbp5b52e8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5b52e873614f82a2b8a6fb17903763269853f5fb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @942522897a3b6ef459043f4c07027c894f770baf **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Jan 2023 23:43:54 +0000
+  [ Gerry Chen ]
+  * Move `X1-6` aliases into `NoiseModelFactorN` and un-deprecate
+  * revert confusing `->template key<N>()` notations revert to using shortcut form: `key1()`, `key2()`
+  * Revert "revert confusing `->template key<N>()` notations"
+  * Correctly revert confusing `->template key<N>()` notations revert to using shortcut form: `key1()`, `key2()`
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jan 2023 08:38:19 +0000
 
 gtsam (4.1.0-1ubuntu2~1498.gbp46aa1d) jammy; urgency=medium
 
