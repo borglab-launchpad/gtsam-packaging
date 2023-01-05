@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1503.gbp196540) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1504.gbpe5d01a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e5d01a822d5420033ede7ba727d2edeee7facc3f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1965409c548368ce418347b010c6f844d19e8098 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jan 2023 08:42:31 +0000
+  [ Frank Dellaert ]
+  * New test with two modes
+  * toFactorGraph method in HybridBayesNet
+  * Add forwarding template for mean-stddev variants
+  * Test elimination of a switching network with one mode per measurement.
+  * use sharedMeanAndStddev
+  * Reverted variable name change to ease reviewing
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jan 2023 20:02:30 +0000
 
 gtsam (4.1.0-1ubuntu2~1502.gbpf9f99d) jammy; urgency=medium
 
