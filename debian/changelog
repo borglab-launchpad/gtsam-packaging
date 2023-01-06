@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1502.gbp826549) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1503.gbp713343) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @71334386e8c21fa987b2c96edc3f8e706dd64d49 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @826549c6b3746e50a570cb40d29f6fb77321757b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jan 2023 20:05:50 +0000
+  [ Frank Dellaert ]
+  * Fix some comments
+  * Use const &
+  * Simplified API
+  * Rvalues
+  * Fix all tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * remove unnecessary cast
+  * Added lvalue version back in
+  * Fix python wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jan 2023 03:28:53 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1501.gbp8cc410) jammy; urgency=medium
 
