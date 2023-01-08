@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1506.gbpe9d209) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1507.gbp14888d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @14888d91047f837d15c53eb2aa50a14e6d3e7cf9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e9d2097b0ad03316af12fa0002f5685204b7190f **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jan 2023 03:32:34 +0000
+  [ Varun Agrawal ]
+  * DefaultOrderingFunc in EliminationTraits
+  * Make HybridOrdering a function and use it for Hybrid DefaultOrderingFunc
+  * update tests
+  * common return statements
+  * Revert "common return statements"
+  * specify ordering to match that of HybridGaussianISAM
+  * remove extraneous file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Jan 2023 01:36:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1505.gbp4cf57e) jammy; urgency=medium
 
