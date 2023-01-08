@@ -1,10 +1,35 @@
-gtsam (4.1.0-1ubuntu2~1515.gbp47aa37) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1516.gbp8f58e4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8f58e41f4619c28db0bad8101e2e1ab00fedc9c8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @47aa371ba92fe5d1adf1c723c6fa37de2b688804 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Jan 2023 01:40:49 +0000
+  [ Frank Dellaert ]
+  * Document methods, refactor pruning a tiny bit.
+  * Fix (very old) Factor documentation
+  * Make HybridFactorGraph just a FactorGraph<Factor> with extra methods
+  * Remove HybridNonlinearFactor wrapper class as no longer needed
+  * Moved key methods to cpp file
+  * Removed HybridDiscreteFactor wrapper
+  * Made tests compile after purging HybridDiscreteFactor
+  * Use template specialization
+  * Fixed tests
+  * Added handling of naked Gaussian factors added in python
+  * Fix python test to not use add
+  * Remove GaussianFactor wrapper (easy!)
+  * Add all discrete keys
+  * Removed emplace_hybrid, can be done with emplace_shared now...
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix issue with HybridOrdering
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Jan 2023 17:24:46 +0000
 
 gtsam (4.1.0-1ubuntu2~1514.gbp1af496) jammy; urgency=medium
 
