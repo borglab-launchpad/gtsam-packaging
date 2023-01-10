@@ -1,10 +1,57 @@
-gtsam (4.1.0-1ubuntu2~1523.gbpd97cc1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1524.gbp553182) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5531822de9e03ba670506fa56cb84c6a5612bfaf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d97cc19f8b74dd62670145afce9edff1f3a080cd **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Jan 2023 07:32:21 +0000
+  [ Frank Dellaert ]
+  * Make base class constructors available (including initializer lists).
+  * Removed boost headers in DecisionTree-inl.h that are no longer needed.
+  * Inherit constructors for CameraSets to switch to initializer lists.
+  * Got rid of boost::assign in many tests
+  * Got rid of Boost cref_list_of
+  * Removed unused headers
+  * Convert to initializer lists
+  * Rid gtsam/linear of boost::assign (a Herculean task made easier with Copilot)
+  * Add initializer list constructors
+  * Removed copy/pasted but unused boost::assign headers.
+  * Using initializers for almost everything in gtsam now.
+  * Heavy lift on removing boost::assign from symbolic tests.
+  * Remove unused boost::assign headers
+  * Use initializer lists in tests and gtsam_unstable
+  * Moved ListOf helper and MakeKeys to common header.
+  * Renamed MakeKeys to Keys and cleaned up tests.
+  * Cleaned up etree tests
+  * Fix compilation issue on Linux
+  * An attempt to fix Windows issue.
+  * Fix typo
+  * Address review comments
+  * Fix issues with gcc compiler.
+  * Renamed ListOf to something more descriptive
+  * Add FactorGraph-inst.h
+  * Attempts at fixing CI gcc/windows
+  * Fix gcc compilation errors by using correct allocator.
+  * Define Errors as a typedef to FastList<Vector>.
+  * Kill errors wrapper - internal class not used in any tests.
+  * Replace blanket inclusion of constructors (giving trouble on Windows) with initializer-list constructor.
+  * Simplify initializer list constructors.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix issue with initializer constructors
+  * Forgot to add correct type in elimination tree (needed for compilation with tbb).
+  * One last omission
+  * Two more tbb compile issues
+  * Remove const, use size_t everywhere.
+  * Yet another issue with gcc-tbb
+  * Another gcc issue, switch to FastList
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Jan 2023 23:20:43 +0000
 
 gtsam (4.1.0-1ubuntu2~1522.gbp988a43) jammy; urgency=medium
 
