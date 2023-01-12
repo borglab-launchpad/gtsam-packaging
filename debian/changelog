@@ -1,10 +1,44 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1526.gbpad8939) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1527.gbp9dbfb1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9dbfb1452d6e9243345d591bd4cc7dfa63744994 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ad8939026179476380f291ff6157fef3b4132133 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Jan 2023 06:04:49 +0000
+  [ Anthony Cowley ]
+  * BatchFixedLagSmoother: add ability to limit warning debug prints
+
+  [ Frank Dellaert ]
+  * Added nonlinear Values
+  * Added better docs
+  * Declared and defined error method in Factor, getting rid of logDensity, as error is now unambiguously defined as -logDensity in conditional factors.
+  * Fixed tests to work with new definition of error.
+  * small doc edits
+  * Fixed discrete classes.
+  * Easier scheme for error(HybridValues)
+  * Moved factor graph error(HybridValues) to FactorGraph base class.
+  * Fix dogleg unit test (gbn error != linearized error anymore)
+  * Added logProbability/evaluate in conditionals/Bayes net
+  * Implemented all Gaussian versions of logProbability
+  * Symbolic logProbability just throws
+  * Fix sign issue and added test
+  * Fix linking error
+  * discrete now has all logProbability and evaluate versions needed.
+  * Endowed hybrid with logProbability
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Added missing methods
+  * Wrapper and tests for logProbability
+  * Don't use deprecated method.
+  * Resolved review comments.
+  * Return a set of DiscreteKey,  Fixes issue #1384
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Jan 2023 15:49:49 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1525.gbpc29f07) jammy; urgency=medium
 
