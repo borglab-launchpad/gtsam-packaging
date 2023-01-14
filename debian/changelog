@@ -1,4 +1,4 @@
-gtsam (4.1.1-1ubuntu10) focal; urgency=medium
+gtsam (4.1.1-1ubuntu11) bionic; urgency=medium
 
   [ Frank Dellaert ]
   * Added a number of docker images
@@ -2936,7 +2936,7 @@ gtsam (4.1.1-1ubuntu10) focal; urgency=medium
   [ Fan Jiang ]
   * Bump version to 4.1.1
 
- -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Sat, 14 Jan 2023 09:44:57 -0500
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Sat, 14 Jan 2023 10:43:01 -0500
 
 gtsam (4.1.1-1ubuntu5) focal; urgency=medium
 
