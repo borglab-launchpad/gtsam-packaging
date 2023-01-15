@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~1535.gbpc339d6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1536.gbpa77c44) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a77c449631472b2559eee1306e1830dfd333991f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c339d616b127a08a4eb6022570ffbc8aa405cccc **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Jan 2023 15:53:36 +0000
+  [ Frank Dellaert ]
+  * move normalization constant to base class
+  * Add check
+  * Expose correct error versions
+  * Expose correct error versions
+  * Consistency test in testGaussianConditional
+  * Made CheckInvariants a static method in Conditional.*
+  * check invariants
+  * Adapt to continuous densities
+  * Checking mixture invariants, WIP
+  * Resolve GaussianMixture error crisis
+  * Expose all needed versions of evaluate, operator(), error
+  * Test all HybridConditionals in all possible calling conventions.
+  * Make sure all conditional methods can be called in wrappers and satisfy invariants there, as well.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 15 Jan 2023 16:16:48 +0000
 
 gtsam (4.1.0-1ubuntu2~1534.gbpd2f265) jammy; urgency=medium
 
