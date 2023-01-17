@@ -1,10 +1,48 @@
-gtsam (4.1.0-1ubuntu2~1543.gbp519f93) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1544.gbp47a178) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @47a178a3022ce76efac64e45b881eaad9b06b17f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @519f933f7ad528b926b8e6bd7c0f9db46fb4926e **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Jan 2023 09:06:10 +0000
+  [ Frank Dellaert ]
+  * normalizationConstants returns all constants as a DecisionTreeFactor
+  * All tests still work with zero constant!
+  * Removed FactorAndConstant, no longer needed
+  * Add discrete contribution to logProbability
+  * Expose toFactorGraph to wrapper
+  * Simplify elimination
+  * insert_or_assign
+  * Some test refactoring
+  * Improved docs
+  * Check for error>0 and proper normalization constant
+  * Fix print
+  * Compute log-normalization constant as the max of the individual normalization constants.
+  * Refactored tests and removed incorrect (R not upper-triangular) test.
+  * Implemented the "hidden constant" scheme.
+  * Explicitly implement logNormalizationConstant
+  * Fixed toFactorGraph and added test to verify
+  * Fixed test to work with "hidden constant" scheme
+  * Fix python tests (and expose HybridBayesNet.error)
+  * Eradicated GraphAndConstant
+  * Added DEBUG_MARGINALS flag
+  * Added comment
+  * Trap if conditional==null.
+  * Fix logProbability tests
+  * Ratio test succeeds on fg, but not on posterior yet,
+  * Removed obsolete normalizationConstants method
+  * Add math related to hybrid classes
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Added partial elimination test
+  * Added correction with the normalization constant in the second elimination path.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Jan 2023 20:39:17 +0000
 
 gtsam (4.1.0-1ubuntu2~1542.gbpc0d5e1) jammy; urgency=medium
 
