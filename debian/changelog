@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~1539.gbpd184f3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1540.gbpabee1f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @abee1f92aabf1c585b3f94afc2ef45e88f14ea77 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d184f3a6f94dbafdd148c36b8ac2c16304d40e0d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 15 Jan 2023 16:20:42 +0000
+  [ Varun Agrawal ]
+  * return DiscreteKeys as a vector instead of a set
+  * STL-based efficient transformation
+  * implement MixtureFactor::error
+  * add formatter to GaussianConditional mean printing
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * switch to boost::shared_ptr
+  * switch from DiscreteKeys back to std::set<DiscreteKey>
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Jan 2023 09:02:19 +0000
 
 gtsam (4.1.0-1ubuntu2~1538.gbp789924) jammy; urgency=medium
 
