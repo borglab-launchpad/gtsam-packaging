@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1542.gbp8d6300) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1543.gbp78417a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @78417ad97b024da0534f4e4bc7558bf702ad342c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8d6300c1d118c2521c573ab93aa9f0654cbcae3d **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Jan 2023 20:42:56 +0000
+  [ Varun Agrawal ]
+  * update function names and docs to be correct
+  * add a TODO about reorder_relinearize
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jan 2023 17:10:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1541.gbp1d9d94) jammy; urgency=medium
 
