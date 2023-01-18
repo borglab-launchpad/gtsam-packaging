@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1546.gbpe269ff) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1547.gbp51287d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @51287d1a9f6802eca75e627b1da7c0de2149d0ec **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e269ff15d8715f30cb34e53b85cfcd9690fed8be **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jan 2023 17:14:19 +0000
+  [ Frank Dellaert ]
+  * Switch pruning test to probabilities.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jan 2023 20:47:42 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1545.gbp918094) jammy; urgency=medium
 
