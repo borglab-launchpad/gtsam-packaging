@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1555.gbp6a05cd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1556.gbp9526c0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9526c0382ced3a969ea3fce6149b0bdce34ff29e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6a05cdd04ea8c59bc03f914c0a53eb457f35ddc0 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jan 2023 20:52:15 +0000
+  [ Frank Dellaert ]
+  * Switch to version 4.3a0 and to c++17.
+  * Updated docs to reflect switch.
+  * Added c++17 flags to build functions
+  * commented out problematic python tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Jan 2023 14:43:42 +0000
 
 gtsam (4.1.0-1ubuntu2~1554.gbp0968e8) jammy; urgency=medium
 
