@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1559.gbpdfb61c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1560.gbp72d2cf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @72d2cf38d29e618fbbf48c9e741f398b54013bbf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dfb61c68a91eeccada3164cc20f0306aea2ba61e **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Jan 2023 14:47:31 +0000
+  [ Frank Dellaert ]
+  * Deprecate `filter` in favor of `extract`, which copies to std::map without boost.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Jan 2023 23:04:27 +0000
 
 gtsam (4.1.0-1ubuntu2~1558.gbp7ce003) jammy; urgency=medium
 
