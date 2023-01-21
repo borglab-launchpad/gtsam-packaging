@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1558.gbp352dee) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1559.gbpfe7f2a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fe7f2a3ff669ad9f28c172499112f0cc325e13cd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @352dee9fdabe7e8d8f07da650021475412fcb795 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Jan 2023 23:08:09 +0000
+  [ kartik arcot ]
+  * compile definitions for conditionally compiling
+  * changed interface for both unwhitenedError and evaluateError
+  * breaks
+  * works now
+  * type checking works now
+  * type checing in evaluateError works
+  * changed signatures to use OptionalMatrix keyword
+  * some changes that get testPriorFactor compiling
+  * added using keyword to expose the evaluateError overloads to the derived classes
+  * everything compiles but tests fail in no boost mode
+  * both boost and ptr version compile. ptr version tests failt
+  * optional jacobian fix
+  * all of gtsam compiles and tests pass with ptrs instead of optional matrix refererences
+  * removed NO_BOOST definitions and evaluateErrorInterface from expressionfactor
+  * added some comments and fixed some formatting
+  * removed some more boost optional matrix references
+  * timePose2 updates
+  * some more comments
+  * gps factor replace bind calls
+  * fixing some mr comments. added new lines
+  * addressed MR comments on nonlinearfactor
+  * return before using statement
+  * use auto instead
+  * fixed some mr comments: use auto, change comment style
+  * removed some new lines
+  * fixed smart factor and camera set for boost optional references
+  * iterative solver
+  * linear algorithms
+  * VariableIndex
+  * testGaussian
+  * simwall2d
+  * testGaussianISAM2 cleanup
+  * rewrite evaluateError to use SFINAE instead of conditional compilation
+  * minor reformatting
+  * diabled two python tests
+  * comment is simpler
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Jan 2023 06:50:10 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1557.gbp7eba04) jammy; urgency=medium
 
