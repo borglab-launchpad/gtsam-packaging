@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~1567.gbpbd5d35) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1568.gbpe8b67f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e8b67f514d24bfcf5d59fded59edde3e74271cc6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bd5d35040882acff65fabaec78bd18850982efe7 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Jan 2023 06:53:45 +0000
+  [ Frank Dellaert ]
+  * removed deprecated code
+  * Fixed docs
+  * Switch flag to V43
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Removed obsolete flag and TODOs
+  * Removed filter from examples and timing scripts
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 22 Jan 2023 00:46:33 +0000
 
 gtsam (4.1.0-1ubuntu2~1566.gbp17da6c) jammy; urgency=medium
 
