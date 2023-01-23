@@ -1,10 +1,58 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1570.gbp4aae1e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1571.gbpff5778) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ff57787565b8d72720e8027f4f8ef313d4c7f6d4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4aae1e18e1383c41562e6928e57d5c93bc736ee9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 00:26:03 +0000
+  [ kartik arcot ]
+  * compile definitions for conditionally compiling
+  * slam folder. serialize std::optional
+  * hybrid folder
+  * examples folder
+  * testable assertions work
+  * discrete folder
+  * point2.h
+  * pose2.h
+  * pose3.h
+  * triangulation.h
+  * unit3
+  * inference
+  * linear, navigation, std::optional serialization tests
+  * nonlinear
+  * sfm
+  * gtsam_unstable/discrete
+  * gtsam_unstable/nonlinear
+  * gtsam_unstable/partition
+  * unstable/slam
+  * eliminateable fg
+  * OptionalJacobian
+  * .i files
+  * disabled two python tests
+  * remove optional headers
+  * make temp variable std optional
+  * fix ci issue
+  * optional jacobian with matrix references
+
+  [ Kartik Arcot ]
+  * use ref wrapper in eliminateable factor graph
+  * remove set cxx17
+  * fix defaultorderingfunc
+  * more tests on optional serialization
+  * fixed MR comments. Brought back a testable assertion feature. Added a test to test that assertion
+  * remove deprecated file
+  * use {}
+  * hope this resolves ci issue
+  * risky code added
+  * better documentation
+  * fix rot3
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 00:58:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1569.gbp6ad558) jammy; urgency=medium
 
