@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1566.gbp88dfcb) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1567.gbpd9976b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d9976b54cd06bb76c5aee8036097a9a01a973413 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @88dfcb8c16090a353796ecb3a3096b0a808d9aed **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 22 Jan 2023 00:50:24 +0000
+  [ Frank Dellaert ]
+  * Upgraded to Eigen 3.4.0
+  * Fixed some stragglers in timing
+  * Add missing files that were omitted due to case-insensitive ignore.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 00:21:14 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1565.gbp5e078d) jammy; urgency=medium
 
