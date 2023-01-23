@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1583.gbp2cf695) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1584.gbpf72655) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f7265564c64f9fe0020ab91fa9d821055b5bcdbf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2cf69575b38872f953e71ea459387db7c9617e89 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 05:37:05 +0000
+  [ Frank Dellaert ]
+  * Move some Eigen methods to cpp
+  * Deprecated boost iterators in Values
+  * Fix some CI issues (running in Debug, with TBB)
+  * Cleaning up warnings and boost::none
+  * Fix link
+  * Remove Values code deprecated in 4.2
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 16:01:18 +0000
 
 gtsam (4.1.0-1ubuntu2~1582.gbp1757be) jammy; urgency=medium
 
