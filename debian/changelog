@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~1587.gbpb83c87) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1588.gbp09999a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @09999a781da04bafd88b028e5994f71e4adc40b1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b83c8707ea7b2058be2c5fd38ccc1b4fd1a79b9f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Jan 2023 16:05:34 +0000
+  [ kartik arcot ]
+  * ifdefs for gtsam folder on serialize
+  * serialization function comment moved
+  * gtsam_unstable, test folders ifdefs
+  * removed boost serialization headers
+  * cmake lists changes
+  * gtsam compiles and tests run with and without boost serialization
+
+  [ Kartik Arcot ]
+  * cassert
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ kartik arcot ]
+  * move the option to enable boost serialization to a different file
+  * fix CI issue
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 01:59:13 +0000
 
 gtsam (4.1.0-1ubuntu2~1586.gbpeeeb59) jammy; urgency=medium
 
