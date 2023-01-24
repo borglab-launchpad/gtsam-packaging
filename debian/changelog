@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1591.gbp00a46a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1592.gbpdb3e56) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @db3e56cbd5e971d1beeaf7b771dd1ba67d56fcba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @00a46a3caaf1d03dc67644dc17311dadff1779a7 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 02:03:31 +0000
+  [ Frank Dellaert ]
+  * Replace boost::ptr_map with a std::map of unique pointers.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 17:38:46 +0000
 
 gtsam (4.1.0-1ubuntu2~1590.gbp525ae7) jammy; urgency=medium
 
