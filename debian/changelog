@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1586.gbp39aeaa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1587.gbp3846da) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3846da59d2cdb4d914cc9a207d3fac4769797d9a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @39aeaa2803942f6fd451e8b5c415bf2273d2172d **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 02:03:43 +0000
+  [ Frank Dellaert ]
+  * Replace boost::ptr_map with a std::map of unique pointers.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 17:38:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1585.gbpf3a7ab) jammy; urgency=medium
 
