@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1590.gbp167f7c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1591.gbp8a552e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8a552e6e5042c2f32167f10a057c325efd1e9303 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @167f7c461e3abed5a024546792aabeb63ee599c0 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Jan 2023 17:42:57 +0000
+  [ kartik arcot ]
+  * global find/replace. Does not compile
+  * combine replaced
+  * map_values eliminated
+  * removed iterator_range calls
+  * remove all adaptors
+  * remove adaptor headers
+  * remove tuple header
+  * replace last combine call
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Resolve review comments
+  * Fixed arguments in constructors
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Jan 2023 04:48:08 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1589.gbp173322) jammy; urgency=medium
 
