@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1599.gbpe4faed) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1600.gbpccb556) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ccb556639b42483247b444e48620bb39f0d12514 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e4faed5e25a8dfae72a34fe19ebeb96854b8273c **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Jan 2023 04:52:32 +0000
+  [ Frank Dellaert ]
+  * Added a const_iterator back in
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Jan 2023 17:54:50 +0000
 
 gtsam (4.1.0-1ubuntu2~1598.gbp7106f2) jammy; urgency=medium
 
