@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~1603.gbp579a34) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1604.gbp43196a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @43196ad6b1973079ed04ffc877a42113c3c00389 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @579a3419bb081ce3f26937c6f1e1760dcd839a4e **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Jan 2023 17:59:01 +0000
+  [ chris ]
+  * Fix (issue #1336) dangling pointer access violation.
+
+  [ Bernd Pfrommer ]
+  * fix boost 1.74 error by including library_version_type.hpp
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Jan 2023 07:01:24 +0000
 
 gtsam (4.1.0-1ubuntu2~1602.gbp113dac) jammy; urgency=medium
 
