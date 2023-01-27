@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1598.gbpb1509a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1599.gbp24e5ef) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @24e5efc71d1b5bc7cee0f912e3e6aec593e56c87 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b1509a7f3b415db7adb60c7935c7a30bde8b5a9b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Jan 2023 17:59:28 +0000
+  [ chris ]
+  * Fix (issue #1336) dangling pointer access violation.
+
+  [ Bernd Pfrommer ]
+  * fix boost 1.74 error by including library_version_type.hpp
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Jan 2023 07:01:23 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1597.gbp5c133e) jammy; urgency=medium
 
