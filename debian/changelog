@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~1607.gbpe9ef5b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1608.gbp5f7ec6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5f7ec60777677aa0e09810996fb811fed13798fe **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e9ef5b3a09fb69b4a9317b1b3b4474d2bc025110 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Jan 2023 07:06:02 +0000
+  [ ShuangLiu1992 ]
+  * fix ambiguous template variadic variable issue
+  * fix SmartFactorBase as well
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 28 Jan 2023 01:24:48 +0000
 
 gtsam (4.1.0-1ubuntu2~1606.gbp399d01) jammy; urgency=medium
 
