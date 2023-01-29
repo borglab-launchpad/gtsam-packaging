@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1606.gbp47fa81) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1607.gbp9d7593) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9d7593286bf07321738bf771bb63f7fa3d31cd83 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @47fa810748adb47ab8a053f46cc967c7a4cbab32 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 28 Jan 2023 01:29:32 +0000
+  [ Jose Luis Blanco Claraco ]
+  * Update ROS package.xml format to v3 and update gtsam version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Jan 2023 17:36:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1605.gbpbb5284) jammy; urgency=medium
 
