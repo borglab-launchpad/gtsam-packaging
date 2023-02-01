@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1614.gbp2d2deb) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1615.gbp7958c7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7958c796cabd87ac07c8f2735f8ee6b0db37242e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2d2debcb89d959d4e37645497e6d0cdd44d7c92a **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Jan 2023 01:05:40 +0000
+  [ Jose Luis Blanco Claraco ]
+  * More details on source licenses
+
+  [ Jose Luis Blanco-Claraco ]
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Feb 2023 06:40:47 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1613.gbpdb7f52) jammy; urgency=medium
 
