@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1619.gbpb830db) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1620.gbp6e3f83) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6e3f83ae94e8c71d18596e8509dd82753b44705e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b830db793dfe733e960647fdee89089a92b34590 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Jan 2023 01:05:23 +0000
+  [ Jose Luis Blanco Claraco ]
+  * More details on source licenses
+
+  [ Jose Luis Blanco-Claraco ]
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+  * Update package.xml
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Feb 2023 06:40:46 +0000
 
 gtsam (4.1.0-1ubuntu2~1618.gbp09cf55) jammy; urgency=medium
 
