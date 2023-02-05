@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~1623.gbp166d23) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1624.gbpbf7527) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bf7527658bdcadfabca5f74792c531961e42b387 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @166d230c1e1e70cd9d830f8ac81e89f55d14875a **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 01 Feb 2023 06:45:02 +0000
+  [ Frank Dellaert ]
+  * c++17 style eliminatePartialSequential calls
+  * Hunt down std::map::emplace candidates
+  * Replace make_pair with {}
+  * Replace std::tie with c++17 pattern matching
+  * Use c++17 in examples
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Feb 2023 05:05:12 +0000
 
 gtsam (4.1.0-1ubuntu2~1622.gbp825f7b) jammy; urgency=medium
 
