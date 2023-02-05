@@ -1,10 +1,66 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1626.gbp0779d4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1627.gbp8827d2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8827d254bdeedd7cf98b3356573e269af4170279 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0779d4b283343847303bf206dc744f4e157d1620 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Feb 2023 21:34:44 +0000
+  [ kartik arcot ]
+  * replace boost::format
+  * remove format headers
+  * math
+  * is_base_of
+  * to_upper
+  * filesystem change
+  * boost::bind and placeholders
+  * use transform instead of boost to_upper
+  * use std::replace
+  * is_same
+  * true type, and is_same
+  * execution trace use std aligned storage
+  * use chrono instead of ptime
+
+  [ Frank Dellaert ]
+  * Use snprintf
+  * Fix timing script to use c++17 and not boost foreach.
+  * Fix filesystem issue on gcc7
+  * Do not use std...
+  * Fix namespace
+  * Get rid of unused function
+  * Fix missing namespace
+
+  [ kartik arcot ]
+  * replace boost phoenix parser with SignatureParser
+
+  [ Frank Dellaert ]
+  * Clean up code and docs
+  * PascalCase test names
+  * density -> distribution nomenclature
+  * Refactored to return an optional Table
+  * Try alignment flag
+  * Refactor CI (no more gcc 7)
+  * Fix up workflows, and make all fail fast
+  * Put windows directive before includes
+  * Debugging yaml file
+  * More CI hacking
+  * Sidestep alignment issue by using 16 (default for Eigen).
+  * Try jammy repo
+  * Fix typo
+  * Fix another typo :-(
+  * Install Eigen
+  * Install metis
+  * Upgrade checkout action
+  * Comment out Metis
+  * Fix printing
+  * No emplace in case of tbb
+  * Try adding directive in cmake
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Feb 2023 22:21:35 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1625.gbp5fd728) jammy; urgency=medium
 
