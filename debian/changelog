@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~1627.gbp761d27) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1628.gbp4e7d3b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4e7d3b1bad6ca657b30853de9fb850996edfd8a6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @761d27c2e4af8a42db9b44c1b22bbc7944b7df73 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Feb 2023 05:10:07 +0000
+  [ Ankur Roy Chowdhury ]
+  * factor out class methods 'weights' and 'kruskal' into free-functions
+  * add unit test for 'assignWeights'
+  * Factors out 'kruskal' into it's own header and adds tests
+  * Cleanup unused variables from test
+  * remove commented code section
+  * WIP: replace instances of calling the graph-inl version of 'findMinimumSpanningTree' with the lago version
+  * replaces all instances of calling the graph-inl version of 'findMinimumSpanningTree' with the lago version
+  * Some cleanup
+  * Removes import 'graph.h' inside 'lago.h'
+  * removes unused argument 'ordering' from 'kruskal'
+  * fix testKruskal
+  * remove extraneous argument 'ordering' from SubGraphBuilder::buildTree
+  * adds docstring
+  * Fix formatting
+  * minor edit
+  * cleanup some formatting and comments
+  * Removes extra space
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Ankur Roy Chowdhury ]
+  * Address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Feb 2023 21:30:35 +0000
 
 gtsam (4.1.0-1ubuntu2~1626.gbp6bf8fa) jammy; urgency=medium
 
