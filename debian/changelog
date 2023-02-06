@@ -1,10 +1,68 @@
-gtsam (4.1.0-1ubuntu2~1643.gbp19560d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1644.gbp1a7110) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1a71103d7b7a254728bb421cc578ceefdfdc969b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @19560d67b5540d425b107f074f81d0ff5ea3d43d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Feb 2023 07:14:16 +0000
+  [ kartik arcot ]
+  * disable scheduler since it uses boost::escaped_list_tokenizer
+  * excluding some examples and moved index_sequence implementation to gtsam namespace
+  * removed a message
+  * timer
+  * remove ListOneContainer
+  * fix timing flag
+  * don't compile Gnc when there is no boost
+  * fix ordering
+  * modification
+  * CMakeList changes
+
+  [ Frank Dellaert ]
+  * Fix parser
+  * Re-format flags
+  * Get rid of all (pre c++11) += calls to create Orderings.
+  * Truly don't include boost
+  * Omit serialization test
+  * Got rid or ifdefed many boost headers
+  * No more list_inserter
+  * Replace boost::bimap
+  * Got rid of intrusive_ptr
+  * Excluding more files
+  * Kill more boost headers
+  * Turn off timing
+  * Exclude more files
+  * include assert header
+  * Replace boost lexical casts in CppUnitLite
+  * fail slow again
+  * add missing header
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * use static_assert
+  * Cleaned up ++ stragglers
+  * GTSAM_CONCEPT_ASSERT to replace BOOST equivalent.
+  * use emplace_shared
+  * support 4 concept asserts
+  * More emplace_shared usage
+  * Excluding sources/headers/tests
+  * Remove serialization header
+  * Fix up timing and examples
+  * Make concepts work in the boost path
+  * Run with no boost in special cases workflow
+
+  [ Varun Agrawal ]
+  * update CppUnitLite to not rely on boost
+
+  [ Frank Dellaert ]
+  * Add missing header
+  * Some more emplace_shared instances prompted by code review.
+  * Add GncOptimizer back into the wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Feb 2023 20:58:33 +0000
 
 gtsam (4.1.0-1ubuntu2~1642.gbp015cbc) jammy; urgency=medium
 
