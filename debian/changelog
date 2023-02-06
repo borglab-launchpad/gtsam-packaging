@@ -1,10 +1,35 @@
-gtsam (4.1.0-1ubuntu2~1639.gbp26d044) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1640.gbpa3b30f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a3b30f2eb4df827363b072ccfceb9a28770d1c1b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @26d044b6cb375fa3629c1155a45a05b56bc8246c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Feb 2023 04:34:42 +0000
+  [ kartik arcot ]
+  * boost::variant -> std::variant
+
+  [ Frank Dellaert ]
+  * Removed variant as it did not play well with the python wrapper.
+  * Removed extra code that was needed for variant
+  * Fix compile issue on TBB
+  * Fix warning
+  * Get rid of indentation warnings in Eigen
+  * Get rid of format warnings
+  * Added tests for BayesTree variants
+  * Fix serialized test files for testSerializationSlam.cpp
+  * Turn GTSAM_SINGLE_TEST_EXE OFF as I debug issue
+  * Better comments
+  * remove now obsolete `cref` calls
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Exclude testSmartStereoProjectionFactorPP
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Feb 2023 07:10:04 +0000
 
 gtsam (4.1.0-1ubuntu2~1638.gbp16d575) jammy; urgency=medium
 
