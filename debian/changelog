@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1642.gbp06fd33) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1643.gbp33213f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @33213f3952182c3ec21292df2f0952e93216e4ef **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @06fd33250cf8209a94411e5c808f2712c2c17b8f **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Feb 2023 21:03:40 +0000
+  [ Kevin ]
+  * Add normalization to max-product, avoiding underflow.
+  * Add toy problem testing max-product underflow.
+  * Use simpler normalization for max-product.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Feb 2023 15:16:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1641.gbpc86f71) jammy; urgency=medium
 
