@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~1651.gbpc8253c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1652.gbp92670b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @92670b2303784437e2ec63533e37aa2bfa1fcb97 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c8253ca015e9154b322c48dc08c0898f537780dc **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Feb 2023 15:21:09 +0000
+  [ Kuangyuan.Sun ]
+  * try fixing stack overflow issue for large tree
+  * ent
+  * a better solution for ISUEE-1433
+
+  [ wanmeihuali ]
+  * Remove useless deps
+  * move the destructor implementation from .h to -inst.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Feb 2023 03:09:03 +0000
 
 gtsam (4.1.0-1ubuntu2~1650.gbp6fb436) jammy; urgency=medium
 
