@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~1655.gbp2dd782) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1656.gbpcce0f3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cce0f3b01b36502baf8c39163ddc1fb83ee71ae6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2dd782fbc5efe66f574422bb7bb02c884ae3a4c1 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Feb 2023 03:13:45 +0000
+  [ Kevin ]
+  * Add normalization trick to sum-product.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Kevin ]
+  * Patch discrete factor graph test to normalize expected result.
+  * First pass at underflow test for sum-product.
+  * Normalize products by max in discrete elimination.
+  * Test sum-product in discrete factor graph up to scale.
+  * Simply sum-product test in Python.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 07:36:06 +0000
 
 gtsam (4.1.0-1ubuntu2~1654.gbpfd1104) jammy; urgency=medium
 
