@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1658.gbp02cc1f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1659.gbpb0d953) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b0d953f9474099f3234fd4dd272758bf60d0bb18 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @02cc1f9522685463c44602e33b1d72858eb0c626 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 15:08:59 +0000
+  [ Frank Dellaert ]
+  * Fix warnings
+  * New unified allocAligned scheme
+  * Fix warnings and use new allocAligned scheme
+  * Make sure pointer arithmetic is correct
+  * Work with raw char pointers to have correct pointer arithmetic and avoid buffer overflow.
+  * Avoid issues on platforms where Eigen decides it needs 32 byte alignment.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 22:26:02 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1657.gbp288075) jammy; urgency=medium
 
