@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1654.gbp22ad74) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1655.gbp40fb63) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @40fb6363f34e84b6ef97f1937ac3226f0864fd10 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @22ad74a8a3f9121e2731e68507751bbbd7ecf639 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 07:40:15 +0000
+  [ Frank Dellaert ]
+  * Fixed warnings that arise from stricter compiler flags
+  * Fix TBB compilation issue
+  * Fix whitespace
+  * Remove more redundant virtual destructors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 15:04:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1653.gbp4cdbf1) jammy; urgency=medium
 
