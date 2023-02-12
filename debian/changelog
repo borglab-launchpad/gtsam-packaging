@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~1659.gbpe6ac26) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1660.gbp3e5975) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3e5975cf7e1e4c1ecc461d01f513284749f91f49 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e6ac265f308c695f35a84a46a74c528a193763ec **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 07:40:16 +0000
+  [ Frank Dellaert ]
+  * Fixed warnings that arise from stricter compiler flags
+  * Fix TBB compilation issue
+  * Fix whitespace
+  * Remove more redundant virtual destructors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Feb 2023 15:04:39 +0000
 
 gtsam (4.1.0-1ubuntu2~1658.gbpfdf31b) jammy; urgency=medium
 
