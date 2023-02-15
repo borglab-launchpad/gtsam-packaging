@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1671.gbp12535e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1672.gbpa2b4f3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a2b4f3a95ec2457038f4a0cc916c817ca38fbfcc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @12535ea746b099290bcede835adb3180800defc0 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 13 Feb 2023 00:53:04 +0000
+  [ Varun Agrawal ]
+  * clean up cmake
+  * improved CMake for Boost serialization flag
+  * enforce C++17 standards
+  * Revert "enforce C++17 standards"
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Feb 2023 06:31:36 +0000
 
 gtsam (4.1.0-1ubuntu2~1670.gbpedb58f) jammy; urgency=medium
 
