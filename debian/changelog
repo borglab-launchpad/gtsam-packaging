@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1670.gbpcdb29a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1671.gbp27f2fc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @27f2fc8b612808faff4aaa8f7a3b2c5176a650b4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cdb29ada8e4442d17ec9498d372d46e2ff59ed59 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Feb 2023 06:35:39 +0000
+  [ Varun Agrawal ]
+  * only print cmake compile options for current build version
+  * remove commented Cmake commands
+  * Add better hybrid support
+  * add ordering method for HybridSmoother
+  * fix to remove leftover boost
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Feb 2023 06:24:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1669.gbp9ac024) jammy; urgency=medium
 
