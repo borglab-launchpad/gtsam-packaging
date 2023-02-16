@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1674.gbp7ec748) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1675.gbp7ae747) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7ae74797d2cfd757808ce6f7fd6466211242d664 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7ec748219b7e041cd7f1fef547fc6f4d5b1c920b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Feb 2023 06:29:24 +0000
+  [ Lawrence Ibarria ]
+  * Allow override of BUILD_SHARED_LIBS
+  * Minor cleanup on HandleEigen.cmake
+  * Fix cmake issue with msvc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * make cmake compatible with version 3.10
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Feb 2023 19:01:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1673.gbp5bb1ba) jammy; urgency=medium
 
