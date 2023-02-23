@@ -1,10 +1,35 @@
-gtsam (4.1.0-1ubuntu2~1683.gbp1a02a8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1684.gbpb0e1b1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b0e1b13959708d2f9cb28309d22e226c47452b16 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1a02a8e9c1db2aa968a060cd21802142874d441a **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Feb 2023 19:05:34 +0000
+  [ Bernd Pfrommer ]
+  * switched off BUILD_TYPE_POSTFIXES to allow debug sym packaging
+
+  [ Ankur Roy Chowdhury ]
+  * Moves 'BatchFixedLagSmoother' to 'gtsam' from 'gtsam_unstable'
+  * Make GTSAM_CONCEPT_ASSERTS work with '-Wextra-semi'
+  * Deal with '-Wunused-exception-parameter' from 'nonliner/utilities.h'
+
+  [ Frank Dellaert ]
+  * Added deprecated headers
+  * Fixed examples
+  * Fixed python wrapper
+  * Remove disable of warning not consistent across different clang versions
+  * Try CI fix to save space
+  * Fixed export macros
+  * Only most recent compilers
+  * Remove old compilers
+  * Another CI fix
+  * Build Release only
+  * Fix warnings on gcc
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Feb 2023 16:06:43 +0000
 
 gtsam (4.1.0-1ubuntu2~1682.gbp38641b) jammy; urgency=medium
 
