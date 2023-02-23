@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1682.gbpbbbb94) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1683.gbpe63f1e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e63f1ef861d1fc328ecb3b05b7914dfbe82744d7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bbbb94eda5bdace133d4097abf2ee7246930387c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Feb 2023 16:12:04 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from ba3dcab16..076a5e3a9
+  * update wrapper files to new version
+
+  [ Frank Dellaert ]
+  * Try -j1
+  * revert to j2
+  * Fix warnings on gcc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Feb 2023 19:26:37 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1681.gbp514078) jammy; urgency=medium
 
