@@ -1,10 +1,33 @@
-gtsam (4.1.0-1ubuntu2~1691.gbpcbd66b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1692.gbpe93401) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e93401e91fbc130a7b5adc1d32281934e905b377 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cbd66bdbadc82dc49c031262ff1db4325d7019db **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Feb 2023 19:30:57 +0000
+  [ Varun Agrawal ]
+  * move PreintegrationCombinedParams to its own file
+  * Add python example for CombinedImuFactor
+  * rename jacobian variables so it matches the math in ImuFactor.pdf
+  * update resetIntegration to set the initial covariance of the bias
+  * reorder operations in resetIntegration and add docstrings
+  * update CombinedScenarioRunner to accept preintMeasCov
+  * update PreintegratedCombinedMeasurements constructor to take default preintMeasCov
+  * update CombinedImuFactor test to better test for integration reset
+  * remove biasAccOmegaInit default reset
+  * update test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix docstring
+  * fix ImuFactor examples to show correct prediction values
+  * convert from boost to std shared pointers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Mar 2023 16:58:01 +0000
 
 gtsam (4.1.0-1ubuntu2~1690.gbp31996b) jammy; urgency=medium
 
