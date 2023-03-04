@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~1695.gbp4ac7c3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1696.gbp9355f6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9355f6cb9ecc57fb2d1b35a47c687abcf12ae0bb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4ac7c39c3dc8d94911f772de52bf349ef6e717a2 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Mar 2023 17:03:03 +0000
+  [ Varun Agrawal ]
+  * install boost for Ubuntu with apt
+  * remove old boost specific flags
+  * remove redundant cmake flag in unix.sh and set max processes for linux to 4
+  * format Python CI yaml file
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * don't print warnings to CI
+  * increase swap space for special builds
+  * remove redundant push action from build-linux
+  * create shared library for special builds to save memory
+
+  [ Bernd Pfrommer ]
+  * added debian flag to build shared libs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 04 Mar 2023 19:58:40 +0000
 
 gtsam (4.1.0-1ubuntu2~1694.gbp728cef) jammy; urgency=medium
 
