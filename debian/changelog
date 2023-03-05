@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~1699.gbpdddb72) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1700.gbp6b043c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6b043cb5cfdbf35f7e8534cfc73c7cc4add43e9c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dddb72e62b21a7cb1ac47ce0bda537fd00977847 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 04 Mar 2023 20:02:53 +0000
+  [ Varun Agrawal ]
+  * function to add constant term for correcting HybridGaussianFactorGraph
+  * some cleanup
+  * differing noise models for multi-dimensional problem
+  * include bitset header
+  * improve the mixture factor handling so it uses the factor directly
+  * fix typo
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * some fixes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Mar 2023 14:59:02 +0000
 
 gtsam (4.1.0-1ubuntu2~1698.gbp840f73) jammy; urgency=medium
 
