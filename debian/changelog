@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1703.gbpc48c97) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1704.gbp025dd5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @025dd5753693a826a50f0051085c211fa9ece8ae **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c48c97f834899fdad12448357b2bc8bca1cce3af **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 05 Mar 2023 15:03:52 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Update CodingGuidelines.lyx
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Mar 2023 15:11:18 +0000
 
 gtsam (4.1.0-1ubuntu2~1702.gbpacf364) jammy; urgency=medium
 
