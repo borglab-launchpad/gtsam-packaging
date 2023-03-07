@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1706.gbp687658) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1707.gbp1049d0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1049d064b41560783fc94c61b38ae8475b92ecac **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @687658f383dd21a0d3bea0bf85324232ecb4b336 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 21:03:25 +0000
+  [ Jose Luis Blanco Claraco ]
+  * Allow using system pybind11 if it exists.
+  * Go back to default shared libraries, and fix unhandled case.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Revert "create shared library for special builds to save memory"
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 23:44:22 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1705.gbpb0e2fe) jammy; urgency=medium
 
