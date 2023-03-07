@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1702.gbpd94682) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1703.gbpec6400) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ec640021489528e30659ae4a9f743ace03cbb7fd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d946820166d3dc05cf2a760d9125ec17d5751ce4 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Mar 2023 15:15:33 +0000
+  [ Ankur Roy Chowdhury ]
+  * A few minor fixes to allow compiling 'boost-free' gtsam without compiling 'gtsam_unstable'.
+  * Moves examples/FixedLagSmootherExample.cpp -> gtsam_unstable/examples/FixedLagSmootherExample.cpp
+  * Undo spurious change
+  * import missing header
+  * Adds a 'no-unstable' configuration to CI
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Ankur Roy Chowdhury ]
+  * 'push_back' entire factor graph instead of individual 'factors'
+  * Get rid of 'shadow-field' errors/warnings
+  * Fix import
+  * Conditionally include 'gtsam_unstable/dllexport.h'
+  * seperately include  'gtsam_unstable/dllexport.h' inside IncrementalFixedLagSmoother.h
+  * Use quotes to include 'gtsam_instable/dllexport.h'
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 20:58:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1701.gbp02c505) jammy; urgency=medium
 
