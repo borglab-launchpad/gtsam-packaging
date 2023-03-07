@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~1711.gbp05d8be) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1712.gbpca14af) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ca14afae1e7cc16ae6673ba13b43112db3bf35b1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @05d8bed7fe1430353bc55c6a7f4b34f1dbae6cee **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 21:02:47 +0000
+  [ Jose Luis Blanco Claraco ]
+  * Allow using system pybind11 if it exists.
+  * Go back to default shared libraries, and fix unhandled case.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Revert "create shared library for special builds to save memory"
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 23:44:23 +0000
 
 gtsam (4.1.0-1ubuntu2~1710.gbp43e8da) jammy; urgency=medium
 
