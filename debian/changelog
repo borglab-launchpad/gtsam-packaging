@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1710.gbpc66f2b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1711.gbp8f24b9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8f24b920c6d33b39a94c0289cebb8405c8e0d345 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c66f2bfbe4e3771d12e3d0d1fee26860197649e8 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Mar 2023 23:48:33 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * cmake: explicitly specifying the linker language for gtsam
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Mar 2023 01:57:22 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1709.gbpf1387e) jammy; urgency=medium
 
