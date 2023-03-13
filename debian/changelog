@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1714.gbpc43c9c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1715.gbpfdce90) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fdce903d10f895ba7b4ea684cd239a9fc337367f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c43c9c4ec94b1265524617cb58c87452203ea5ff **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Mar 2023 02:02:14 +0000
+  [ Varun Agrawal ]
+  * replaced concept check no op with alternate that doesn't cause a segfault
+  * remove extra semicolons
+  * remove unnecessary header that needs boost
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 13 Mar 2023 20:18:52 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1713.gbp3b1cd0) jammy; urgency=medium
 
