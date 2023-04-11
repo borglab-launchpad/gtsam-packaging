@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1723.gbp636e1d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1724.gbp3a8bc3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3a8bc3216c0f33a9912a0f657a95116ce9c0113f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @636e1d26baf1d3c49db578b98887a0d9d757aa87 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 13 Mar 2023 20:23:37 +0000
+  [ Varun Agrawal ]
+  * change from /std:c++latest to /std:c++17 for Visual Studio
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 11 Apr 2023 23:42:27 +0000
 
 gtsam (4.1.0-1ubuntu2~1722.gbp0d9845) jammy; urgency=medium
 
