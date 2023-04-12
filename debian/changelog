@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1727.gbp4638aa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1728.gbp1e740e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1e740e3515d9dc589e77a2f3e75eaf181cd726e5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4638aa55968209293018e28124d3e8b9d1d280ab **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 11 Apr 2023 23:46:44 +0000
+  [ Varun Agrawal ]
+  * fix doc typo
+  * add curly braces to make code more readable
+  * avoid multiple std::string() calls in toc function
+  * update HybridSmoother to be more like HybridISAM, compute ordering if not given
+  * fix hybrid timing calls to allow working with outer scope
+  * remove extra semi-colon
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 12 Apr 2023 22:49:50 +0000
 
 gtsam (4.1.0-1ubuntu2~1726.gbpb9287d) jammy; urgency=medium
 
