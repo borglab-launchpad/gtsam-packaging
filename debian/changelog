@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1731.gbp7ed526) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1732.gbpff1e46) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ff1e464ad15201ce70f58947fb94eec5a1577762 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7ed5266473a99d252b0413dad75a005bf167f7b4 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 12 Apr 2023 22:54:03 +0000
+  [ zubingtan ]
+  * use auto for map for-loop
+  * format std_optional_serialization load function
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Apr 2023 04:58:09 +0000
 
 gtsam (4.1.0-1ubuntu2~1730.gbp343ff5) jammy; urgency=medium
 
