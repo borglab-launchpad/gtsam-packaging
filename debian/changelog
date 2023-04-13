@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1739.gbpb16971) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1740.gbp4d57fa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4d57fae6e848dc0450e732d0d9240cbff001badf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b1697169cf42dda4da29a570efbe3158f67bab23 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Apr 2023 05:34:18 +0000
+  [ zubingtan ]
+  * fix jacobian to line in Line3::transformTo
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Apr 2023 15:31:55 +0000
 
 gtsam (4.1.0-1ubuntu2~1738.gbp05b78d) jammy; urgency=medium
 
