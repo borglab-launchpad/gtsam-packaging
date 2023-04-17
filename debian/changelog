@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1738.gbp24050b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1739.gbp710722) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @71072295e0369e373b7fe402c5e3ea42cae827bc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @24050b1200b5c0815daae1359a722158886b267f **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Apr 2023 15:36:37 +0000
+  [ Michael R. Walker II ]
+  * Windows fix for CMake copy test files
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Apr 2023 19:58:09 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1737.gbp7e5a92) jammy; urgency=medium
 
