@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1742.gbp1e712f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1743.gbp2a51bf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2a51bf6d5bdb77cd29ec6850d44771c105e90eb1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1e712f853ed4b1f9883c6660c87a9ceb754c3ccd **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Apr 2023 20:02:28 +0000
+  [ roderick-koehle ]
+  * Fix invalid rotation matrix in test_rotate()
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 23 Apr 2023 21:46:03 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1741.gbp5f33f2) jammy; urgency=medium
 
