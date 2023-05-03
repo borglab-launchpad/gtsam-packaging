@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1746.gbpaff53b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1747.gbp31a8e0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @31a8e0f3b155df86a7f98210b0194cac45feaa32 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aff53ba79beb565e1e364298262ef94b3c9c18a5 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 23 Apr 2023 21:50:20 +0000
+  [ Varun Agrawal ]
+  * wrap Unit3 methods with Jacobians
+
+  [ Travis Driver ]
+  * Add more wrapped functions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 03 May 2023 18:40:06 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1745.gbp2d9882) jammy; urgency=medium
 
