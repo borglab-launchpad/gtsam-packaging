@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1755.gbpffb688) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1756.gbp30d70c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @30d70c89dc4113352d4fd009f202c249eebdc08a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ffb688032f1c94a279eab82d6216b6446685fbe9 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 03 May 2023 18:45:15 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 076a5e3a9..520dbca0f
+  * matlab tests for enum wrapping
+  * Squashed 'wrap/' changes from 520dbca0f..2f136936d
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 May 2023 13:09:39 +0000
 
 gtsam (4.1.0-1ubuntu2~1754.gbp010fbe) jammy; urgency=medium
 
