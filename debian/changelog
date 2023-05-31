@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1754.gbpe16dca) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1755.gbpc120ce) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c120ce153f226c6e81a03654edf7e5b515c8136c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e16dcabe04ebd4dd379f665805e39808972252d5 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 May 2023 13:14:49 +0000
+  [ Varun Agrawal ]
+  * fix geometry wrapper
+  * additional matlab test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 May 2023 21:05:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1753.gbpd088d8) jammy; urgency=medium
 
