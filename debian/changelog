@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1758.gbp4fb8f6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1759.gbp4a24e7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4a24e7d3dc586c18fe31061740a0090b136df9fb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4fb8f6b84dc226d402ee273b5766e33375cb324d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 May 2023 21:10:43 +0000
+  [ Varun Agrawal ]
+  * re-enable testSmartStereoProjectionFactorPP
+  * install newer version of TBB
+  * install_tbb update in python.sh
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 04 Jun 2023 10:48:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1757.gbp07973d) jammy; urgency=medium
 
