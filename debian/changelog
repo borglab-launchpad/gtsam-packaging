@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~1767.gbp22f978) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1768.gbpb3de27) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b3de27048036e016bd2abd97c4043234a2588e1b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @22f97856caa6a55fee79aa166700592c1f47825f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 04 Jun 2023 10:56:32 +0000
+  [ ykim742 ]
+  * Added TableFactor, a discrete factor optimized for sparsity.
+
+  [ Yoonwoo Kim ]
+  * Fixed build issue, added more detailed explanation of the TableFactor.
+  * added one line comments for variables.
+  * added doc for disceteKey in .h file, formatted in Google style.
+  * added example for Convert function which converts vector into Eigen::SparseVector.
+  * deleted toTableFactor.
+  * added comment for every test and formatted with Google style for testTableFactor.cpp.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 07 Jun 2023 15:11:44 +0000
 
 gtsam (4.1.0-1ubuntu2~1766.gbp14d963) jammy; urgency=medium
 
