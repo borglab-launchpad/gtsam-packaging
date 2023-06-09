@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1770.gbp09091f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1771.gbp433306) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4333067a6368cd025880a3cb6829080718d1e6a7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @09091f7b315f3f66e4029e2d24d09a5a4526742a **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 05:07:45 +0000
+  [ Dan McGann ]
+  * Adds jacobians for Pose2 component extraction
+  * Extends python iface Pose2 component jacobians
+  * Convert Pose2 r/t accessors to inline
+  * Revert changes to Pose2 r(), t()
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 06:48:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1769.gbpb43b01) jammy; urgency=medium
 
