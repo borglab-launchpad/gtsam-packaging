@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1774.gbp7d8344) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1775.gbp6fa955) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6fa95528f13d2ce109d8a65e0a9b3e4bccd8598e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7d834420d56a08c200e57ccb24646947b806ffda **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 06:52:55 +0000
+  [ Varun Agrawal ]
+  * enable windows release build in the CI
+  * configure system Eigen
+  * fix eigen cmake search path
+  * remove need for Eigen install since latest packaged version should work
+  * remove deprecated Windows image
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 23:56:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1773.gbp68c467) jammy; urgency=medium
 
