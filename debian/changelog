@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1766.gbpe2a018) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1767.gbp7c817c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7c817c12207f13d9013786e6bfcea7e8c6c9c956 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e2a018166a611c7bb056c1a2a06a4574780f21e9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 07 Jun 2023 15:15:38 +0000
+  [ Varun Agrawal ]
+  * support Apple silicon
+  * memory sanitizer flag in CMake
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix memory leak
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 05:03:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1765.gbpc342e7) jammy; urgency=medium
 
