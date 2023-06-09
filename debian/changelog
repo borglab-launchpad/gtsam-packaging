@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~1775.gbpdd98c1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1776.gbp56fd5a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @56fd5a43733573c6dfbf77643382888613db8e06 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dd98c1671b1e3e6b985b4961568f49e713681ff9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 05:08:05 +0000
+  [ Dan McGann ]
+  * Adds jacobians for Pose2 component extraction
+  * Extends python iface Pose2 component jacobians
+  * Convert Pose2 r/t accessors to inline
+  * Revert changes to Pose2 r(), t()
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jun 2023 06:48:40 +0000
 
 gtsam (4.1.0-1ubuntu2~1774.gbpdf2bd9) jammy; urgency=medium
 
