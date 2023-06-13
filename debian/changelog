@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1783.gbpfd75b1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1784.gbpa875d2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a875d2383a623d575f9298dc52f8a018751cba0a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fd75b167370f73ba83faca241a3e4f1e7c6e93e9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 10 Jun 2023 00:00:42 +0000
+  [ Travis Driver ]
+  * Added rank threshold to triangulateLOST
+  * Handle q_i = 0 (or NaN) for LOST
+  * Revert formatting for triangulation.cpp
+  * Revert formatting for triangulation.h
+  * Final cleanup
+  * Final final cleanup
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Jun 2023 00:16:56 +0000
 
 gtsam (4.1.0-1ubuntu2~1782.gbpc95541) jammy; urgency=medium
 
