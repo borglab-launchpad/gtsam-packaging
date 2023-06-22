@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~1795.gbp21eb58) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1796.gbp4f225e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4f225e633beaec01561237827c10e7cb3153c628 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @21eb58a82571f839d93c1511964861e76e9d54b4 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 22 Jun 2023 03:47:10 +0000
+  [ Varun Agrawal ]
+  * undo changes to tests to ensure backwards compatibility
+  * add typedefs to ensure backwards compatibility
+
+  [ Adam Rutkowski ]
+  * removed boost from TableFactor and added guards to testSerializationSlam
+
+  [ Varun Agrawal ]
+  * modernize main tests
+  * add tests for Python wrapper backwards compatibility
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Adam Rutkowski ]
+  * Removed boost guards from testSerializationSlam and fixed CMakeLists
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 22 Jun 2023 16:52:16 +0000
 
 gtsam (4.1.0-1ubuntu2~1794.gbpf81557) jammy; urgency=medium
 
