@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~1791.gbp20c258) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1792.gbpc48e96) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c48e96b09c8489ff754c5bdd3be8931dd21c6faa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @20c258be048ba78ccc4b2c64524849b80c61c15a **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 Jun 2023 16:10:42 +0000
+  [ Varun Agrawal ]
+  * added more tests for basis factors
+  * Wrap ManifoldEvaluationFactor for both Rot3 and Pose3
+  * wrap another Colamd ordering method
+  * conditionally compile Chebyshev2 Pose3 test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove template from ParameterMatrix
+  * remove templating and make all Basis code dynamic
+  * update wrapped code
+  * template on multiple bases
+  * remove ParameterMatrix in favor of gtsam::Matrix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 22 Jun 2023 03:42:26 +0000
 
 gtsam (4.1.0-1ubuntu2~1790.gbp36783b) jammy; urgency=medium
 
