@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1794.gbp824b4b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1795.gbp5abc9e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5abc9e74a5d5b5de7a99942ae265f1f03e930c76 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @824b4b07873634cbe7ee4f9cd95910cda7919afd **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 22 Jun 2023 16:57:22 +0000
+  [ IshitaTakeshi ]
+  * Add explanation of the StereoPoint constructor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 Jun 2023 20:46:09 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1793.gbp052035) jammy; urgency=medium
 
