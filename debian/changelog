@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1798.gbpd54c6e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1799.gbp66a0ee) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @66a0ee151e9c82b7efa25ba38cf6185a641690e3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d54c6ed2d61f010c2e00ac79a33a9262c12378cf **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 Jun 2023 20:50:43 +0000
+  [ Tal Regev ]
+  * Add non concurrency to all workflows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 Jul 2023 02:54:18 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1797.gbp6c5d60) jammy; urgency=medium
 
