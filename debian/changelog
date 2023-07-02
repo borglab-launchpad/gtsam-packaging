@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1802.gbp634309) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1803.gbpa13b07) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a13b0797afb88b9c1d2b5a2b0261d4724fe4af39 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @634309bb9fa75082fe3635d82789fb9fb0cb2124 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 Jul 2023 02:58:40 +0000
+  [ Fan Jiang ]
+  * Add missing option in the CMake for Pose2
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * Fix the CI under normal circumstances
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 02 Jul 2023 03:46:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1801.gbpe1d777) jammy; urgency=medium
 
