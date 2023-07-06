@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~1815.gbp6d540c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1816.gbpfe3a79) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fe3a7957f37169a64e1c1113bfb6da3d75c148c7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6d540c2dc7a8bdbced435a94a0b3221c2909fae1 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 Jul 2023 07:43:22 +0000
+  [ Varun Agrawal ]
+  * ISAM2: wrap full update method and error method
+  * added test for full ISAM2 update method
+  * added tests for newly wrapped isam2 methods
+  * get tests working
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * formatting and fix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 Jul 2023 10:10:07 +0000
 
 gtsam (4.1.0-1ubuntu2~1814.gbp8bddc1) jammy; urgency=medium
 
