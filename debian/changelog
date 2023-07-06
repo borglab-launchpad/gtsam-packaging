@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1811.gbp8d8d73) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1812.gbp05a01b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @05a01bc018cb9d0369cbfca96992f7d3d8701cd0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8d8d7310e84e6bbf537464f6923c719f55186ea9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 02 Jul 2023 03:51:16 +0000
+  [ Varun Agrawal ]
+  * fix doxygen issues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 Jul 2023 07:39:02 +0000
 
 gtsam (4.1.0-1ubuntu2~1810.gbpb8e7f7) jammy; urgency=medium
 
