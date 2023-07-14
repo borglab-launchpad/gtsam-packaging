@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~1819.gbpe0d2ce) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1820.gbped704f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ed704ffca0b1768a889ffbe3a01722698e24e366 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e0d2ce8ae8fd23810f623ec7d708480248eae281 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 Jul 2023 10:15:10 +0000
+  [ Adam Rutkowski ]
+  * Added evaluation of expressions when inserting in Values
+  * added boost unique_ptr header that was removed in previous commit
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Jul 2023 21:49:02 +0000
 
 gtsam (4.1.0-1ubuntu2~1818.gbp0055d4) jammy; urgency=medium
 
