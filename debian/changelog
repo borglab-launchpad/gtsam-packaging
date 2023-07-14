@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1814.gbp1643c9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1815.gbp245215) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @245215ad40361bea50b18650491af0e7ddb47737 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1643c9b1a71cbb798b8524f123acc9301d995502 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 06 Jul 2023 10:14:13 +0000
+  [ Adam Rutkowski ]
+  * Added evaluation of expressions when inserting in Values
+  * added boost unique_ptr header that was removed in previous commit
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Jul 2023 21:49:04 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1813.gbp84718d) jammy; urgency=medium
 
