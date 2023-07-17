@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~1831.gbpf09952) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1832.gbp99d597) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @99d59799014cc695cba0db77cb67bbe12ee77904 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f09952c03e0a36b2add6339d5487212c288cd90e **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Jul 2023 06:42:58 +0000
+  [ Varun Agrawal ]
+  * rename variables to be agnostic to underlying data structure
+  * DiscreteFactor serialization
+  * test to construct DecisionTreeFactor from DiscreteConditional
+  * fix DiscreteFactor serialization
+  * DecisionTreeFactor cardinalities getter
+  * add TableFactor constructor from DiscreteConditional
+  * improve comments
+  * move common functions to DiscreteFactor class
+  * add timing checkpoints
+  * remove timers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Jul 2023 16:41:11 +0000
 
 gtsam (4.1.0-1ubuntu2~1830.gbpd3fa43) jammy; urgency=medium
 
