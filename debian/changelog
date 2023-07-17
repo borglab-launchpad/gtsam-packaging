@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~1827.gbp39d1ac) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1828.gbp7f1bbb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7f1bbb8d0e14c5e6e65ceddaa02940c6eb71be03 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @39d1acce345a0a93fef4e62d8a71ed7f395c2599 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Jul 2023 06:33:00 +0000
+  [ Varun Agrawal ]
+  * overload += operator in Ordering
+  * overload += operator in FactorGraph
+  * remove unnecessary headers
+  * add header to timing.cpp
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Jul 2023 06:38:44 +0000
 
 gtsam (4.1.0-1ubuntu2~1826.gbp33ecf5) jammy; urgency=medium
 
