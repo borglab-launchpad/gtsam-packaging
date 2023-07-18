@@ -1,10 +1,35 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1830.gbpe0135d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1831.gbp32c275) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @32c275f84a46eddf1a7307901ea8b5ccf6c0ee19 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e0135dd08a8c4f622ab6aa717e52f4533272a23b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Jul 2023 16:45:17 +0000
+  [ Frank Dellaert ]
+  * Improved documentation and tests
+  * Better documentation and new test
+  * Fixed regression test
+  * wrapped List[float] constructor
+  * Derive factors from gtsam::Factor
+  * Test more things in BayesTree
+  * wrap operator[] in DiscreteBayesTree
+  * Wrapped elimination and junction trees
+  * cartesianProduct
+  * Wrap forgotten max
+  * refactor into smaller tests
+  * multifrontal lookup table tests
+  * multifrontal MPE in python
+  * more discrete BT wrapper + test
+  * Better test names
+  * Fix unit tests
+  * use at(i) instead of [i]
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Jul 2023 09:21:48 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1829.gbpb2385c) jammy; urgency=medium
 
