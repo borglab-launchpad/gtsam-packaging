@@ -1,10 +1,43 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1834.gbpc6bd38) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1835.gbpbc3a52) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bc3a52dd77192c7f0d2eb11308c8bd44e2003b9b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c6bd3862b20f74b6d86a62c7059dbb60d9efbad6 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Jul 2023 09:26:10 +0000
+  [ Varun Agrawal ]
+  * update InconsistentEliminationRequested to show leftover keys
+  * update HybridFactorGraph wrapper
+  * unary apply methods for TableFactor
+  * small improvements
+  * small cleanup
+  * add separate Hybrid ISAM and Smoother tests
+  * overload apply method in DecisionTreeFactor
+  * fix continuousKeySet method
+  * simplify HybridEliminate
+  * initial changes
+  * discreteConditionals returns DiscreteConditional
+  * Revert "remove nrAssignments from the DecisionTree"
+  * Revert "enumerate all assignments for computing probabilities to prune"
+  * Undo TableFactor return in Hybrid GFG so we can group the changes together
+  * templetize functions in Switching fixture
+  * small improvements to comments and code structure
+  * prune joint discrete probability which is faster
+  * fix tests
+  * include fix
+  * improved exception message when there are lots of keys
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Fix spacing in DecisionTree::print
+  * break inferenceExceptions into .h and .cpp files
+  * restore header ordering
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Jul 2023 10:43:26 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1833.gbp8e8678) jammy; urgency=medium
 
