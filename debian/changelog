@@ -1,10 +1,41 @@
-gtsam (4.1.0-1ubuntu2~1855.gbp3e366b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1856.gbpd40be1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d40be14f3df46fc9b6f994d9c4fccc187ba68385 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3e366b6bcefda18194b840b63df422de655b1bc9 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Jul 2023 15:47:22 +0000
+  [ Nathan Hughes ]
+  * fixes issues with TBB not being found when building downstream packages
+
+  [ Varun Agrawal ]
+  * small improvements
+  * initial changes
+  * Use TableFactor in hybrid elimination
+  * TableFactor constructor from DecisionTreeFactor and AlgebraicDecisionTree
+  * simplify return
+  * update HybridFactorGraph wrapper
+  * unary apply methods for TableFactor
+  * DecisionTreeFactor apply methods
+  * efficient probabilities method
+  * use existing cardinalities
+  * use discrete base class in getting discrete factors
+  * update TableFactor to use new version of DT probabilities
+  * undo previous changes
+  * undo some more
+  * remove duplicate definition
+  * remove timers
+  * refactor and better document prune method
+  * undo TableFactor changes
+  * undo more changes in TableFactor
+  * add new TableFactor constructors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Jul 2023 17:11:05 +0000
 
 gtsam (4.1.0-1ubuntu2~1854.gbp3dc0ed) jammy; urgency=medium
 
