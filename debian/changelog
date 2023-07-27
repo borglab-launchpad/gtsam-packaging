@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~1851.gbp461209) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1852.gbpa44339) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a44339961221e4ab6af316541c5c3f3ef365faea **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @461209f3910f095c4a2a73649e9ad011e6510de6 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 23 Jul 2023 19:29:26 +0000
+  [ Tal Regev ]
+  * Fix windows test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Tal Regev ]
+  * Tests are not failing without debug assertion
+  * Change to bash shell to fail on first error
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Jul 2023 15:43:06 +0000
 
 gtsam (4.1.0-1ubuntu2~1850.gbpcd68cd) jammy; urgency=medium
 
