@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~1863.gbpa160dd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1864.gbp178ca0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @178ca0caa7f72de041521f3042f812c526777c50 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a160dd5a6c77ab74314153e804fbd41dda84f06f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Jul 2023 18:01:51 +0000
+  [ Varun Agrawal ]
+  * additional ordering test
+  * keyformatter for NonlinearFactorGraph::printErrors in python
+  * discrete conditional from vector of doubles
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Jul 2023 20:24:48 +0000
 
 gtsam (4.1.0-1ubuntu2~1862.gbp680bd9) jammy; urgency=medium
 
