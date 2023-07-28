@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1858.gbpf180df) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1859.gbp37d701) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @37d701473940713772f30a579213af1f304090c4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f180df0f44864ad5b1bf2949b0daa99bb9fd01eb **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Jul 2023 18:02:28 +0000
+  [ Varun Agrawal ]
+  * additional ordering test
+  * keyformatter for NonlinearFactorGraph::printErrors in python
+  * discrete conditional from vector of doubles
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Jul 2023 20:24:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1857.gbpcda660) jammy; urgency=medium
 
