@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~1867.gbpf4a747) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1868.gbpbf153d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bf153d6148da00b805143cf98a9dd94e39acb402 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f4a747a808313a2ee36fa6c1dd92e7b00b7fab51 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Jul 2023 20:29:48 +0000
+  [ Fan Jiang ]
+  * Add new loss functions
+  * Add unit test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Aug 2023 08:17:41 +0000
 
 gtsam (4.1.0-1ubuntu2~1866.gbpe329a2) jammy; urgency=medium
 
