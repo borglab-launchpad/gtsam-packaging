@@ -1,10 +1,53 @@
-gtsam (4.1.0-1ubuntu2~1871.gbpf82c0e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1872.gbp9ea2c7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9ea2c73da9a4a923fc05818b687f02d5b2556946 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f82c0e7f45816e9245338f8bed7978736d98e641 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Aug 2023 08:22:02 +0000
+  [ Varun Agrawal ]
+  * small improvements
+  * fix for multiply defined symbol error in LPInitSolver
+  * add todo for error in SmartStereoProjectionFactorPP.h
+  * undo changes
+  * use std::map<Key, uint32_t> for Key-Dim maps
+  * Actions file formatting
+  * add GTSAM_EXPORT to additional Ordering methods
+  * mark Pose2 as GTSAM_EXPORT at the class level
+  * CameraSet::project2 SFINAE to resolve overload ambiguity
+  * add GTSAM_EXPORT tags
+  * enable more Windows tests
+  * remove GTSAM_EXPORT from SignatureParser struct
+
+  [ Tal Regev ]
+  * Compile with ninja
+  * Fix linkage errors: unresolved external symbol
+  * Add release to windows tests
+  * Add #include <gtsam/dllexport.h>
+  * Add non concurrency to all workflows
+  * Check more tests
+  * Fix tests
+
+  [ Varun Agrawal ]
+  * reorganize CI workflow file
+  * remove extra GTSAM_EXPORTs from Ordering.h
+  * enable more tests
+  * fix tests in testValues
+  * comment out nonlinear check
+  * fix nonlinear tests
+  * add GTSAM_EXPORT to various ostream operator overloads
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix SphericalCamera traits definition
+  * enable slam tests
+  * address PR comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Aug 2023 16:34:16 +0000
 
 gtsam (4.1.0-1ubuntu2~1870.gbpff7390) jammy; urgency=medium
 
