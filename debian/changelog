@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~1875.gbpc2f91d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1876.gbp10de74) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @10de7441d1f40b7d5fd9c370780a2417e6668a1b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c2f91d94ba05d525ae10d7f6b2a3cd09a21c8fa3 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Aug 2023 16:38:56 +0000
+  [ Grady Williams ]
+  * Adding failing tests for ISAM2 marginalization
+  * Test for not increasing graph size when adding marginal factors
+  * Bugfixes for ISAM2
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * Remove the boost references
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Aug 2023 23:09:19 +0000
 
 gtsam (4.1.0-1ubuntu2~1874.gbp223501) jammy; urgency=medium
 
