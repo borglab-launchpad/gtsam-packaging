@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1879.gbpbbac80) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1880.gbpd5200a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d5200a9b2cbf0f01bde3f95ae61145c013f8ddd0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bbac809fc34dfb009fb4581326e6e90633a43bb0 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Aug 2023 23:13:36 +0000
+  [ Tal Regev ]
+  * Simplify scripts
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 21 Aug 2023 19:02:40 +0000
 
 gtsam (4.1.0-1ubuntu2~1878.gbpa8cf4c) jammy; urgency=medium
 
