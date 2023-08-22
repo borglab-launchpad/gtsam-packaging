@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1878.gbp63df2b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1879.gbp806dad) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @806dadba0d83a11157fce2371010556a569fb83e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @63df2b3409048b43a447322222efa21b009f173e **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 21 Aug 2023 19:06:40 +0000
+  [ Fan Jiang ]
+  * Add a custom loss function for Robust, fix a bug in Asymmetric
+  * Add custom unit test for Python robust function
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 22 Aug 2023 00:23:01 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1877.gbp0dc9cb) jammy; urgency=medium
 
