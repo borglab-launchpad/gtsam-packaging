@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~1895.gbpa244b4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1896.gbpfff0ee) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fff0ee3574f83675809ab66c7e6a882dc6a32318 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a244b47c2a39deb56aabddb8a77033603a13c236 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Aug 2023 01:36:51 +0000
+  [ Varun Agrawal ]
+  * updated Hybrid.lyx to clarify the invariant structure of the GaussianMixture invariant
+  * specify K_{gcm} is K_{gc}(m)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Sep 2023 07:52:22 +0000
 
 gtsam (4.1.0-1ubuntu2~1894.gbp761eff) jammy; urgency=medium
 
