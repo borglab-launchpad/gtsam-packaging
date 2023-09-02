@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1894.gbp854302) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1895.gbp19a285) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @19a28561e84f5b09bf283d9b761ebcaed1eb7bb8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @854302bc994bce35998061747a825e77b2effd9d **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Sep 2023 07:56:25 +0000
+  [ Clark Taylor ]
+  * Update CustomFactors.md to more clearly specify types required
+  * Update CustomFactorExample.py to correctly document return types
+  * Update CustomFactors.md to document return type.
+  * Update CustomFactorExample.py with comments to explain typing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Sep 2023 06:28:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1893.gbpa12f49) jammy; urgency=medium
 
