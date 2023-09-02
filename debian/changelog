@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1899.gbp90b940) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1900.gbpd22f97) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d22f972fb63a03385e05eba104687ca4a9f06766 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @90b94088e895b2b0c3c0df091db63ba46cd1c61f **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 01 Sep 2023 07:57:09 +0000
+  [ Clark Taylor ]
+  * Update CustomFactors.md to more clearly specify types required
+  * Update CustomFactorExample.py to correctly document return types
+  * Update CustomFactors.md to document return type.
+  * Update CustomFactorExample.py with comments to explain typing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Sep 2023 06:28:40 +0000
 
 gtsam (4.1.0-1ubuntu2~1898.gbp4e58f5) jammy; urgency=medium
 
