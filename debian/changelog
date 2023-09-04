@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1902.gbpb542e9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1903.gbpc8769f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c8769f6bae4a7aed47aee2b0c6e48523710355aa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b542e9850e237ed774c6a6efaf3605ef87fdbd78 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Sep 2023 16:28:52 +0000
+  [ Daniel Lu ]
+  * add useLOST to triangulateSafe
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Sep 2023 22:07:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1901.gbp1b176d) jammy; urgency=medium
 
