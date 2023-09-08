@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1914.gbp3fffcd) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1915.gbp47ba2e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @47ba2e58de1af3312a286ccfef24d37050af3b8b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3fffcd6c2f3abb27768c119c87053a4dde7dfaa5 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Sep 2023 10:44:35 +0000
+  [ Varun Agrawal ]
+  * remove std:: from return type pair
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Sep 2023 11:04:15 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1913.gbp5558cd) jammy; urgency=medium
 
