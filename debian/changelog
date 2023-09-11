@@ -1,4 +1,4 @@
-gtsam (4.2.0-1ubuntu2) jammy; urgency=medium
+gtsam (4.2.0-2ubuntu2) focal; urgency=medium
 
   [ Frank Dellaert ]
   * Added a number of docker images
@@ -5245,7 +5245,7 @@ gtsam (4.2.0-1ubuntu2) jammy; urgency=medium
   [ Frank Dellaert ]
   * Fix 4.3 python style
 
- -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Mon, 04 Sep 2023 21:45:43 -0400
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Mon, 11 Sep 2023 09:16:34 -0400
 
 gtsam (4.1.1-1ubuntu15) jammy; urgency=medium
 
