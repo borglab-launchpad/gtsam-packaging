@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1918.gbpc5de43) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1919.gbp5f0ccf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5f0ccfcfc60b158e74ed6a6da9f5c32023b03779 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c5de43692cf586d4324fa8663eab6dfdc63422f6 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Sep 2023 11:08:38 +0000
+  [ achintyamohan ]
+  * Add cpp example for GNC
+  * Modify GNC example, add comments to explain example purpose
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 12 Sep 2023 11:41:29 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1917.gbp0635a1) jammy; urgency=medium
 
