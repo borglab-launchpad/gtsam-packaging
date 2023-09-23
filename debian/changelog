@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~1931.gbpa60926) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1932.gbp7821f8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7821f8ea7f959687e99c801717b6a0305383708e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a60926a0440ca437f35b1511204eda1077e7295e **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 17 Sep 2023 19:54:10 +0000
+  [ Silvio Traversaro ]
+  * Remove setting CMAKE_MACOSX_RPATH to 0 by default
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 23 Sep 2023 09:19:07 +0000
 
 gtsam (4.1.0-1ubuntu2~1930.gbp9d58cd) jammy; urgency=medium
 
