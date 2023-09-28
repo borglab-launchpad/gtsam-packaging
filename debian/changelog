@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~1935.gbp6c8fb6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1936.gbp0e47ff) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0e47ff5ffbfbed82c170c8039b49649f819c9215 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6c8fb667bdabbcb2abfba9b99b10ae40cfb37645 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 23 Sep 2023 09:23:34 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Fix usage of OptionalNone in a different namespace
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 28 Sep 2023 18:55:09 +0000
 
 gtsam (4.1.0-1ubuntu2~1934.gbp78bc8f) jammy; urgency=medium
 
