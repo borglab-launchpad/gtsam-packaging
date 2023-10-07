@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~1947.gbp7e9b21) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1948.gbp811e06) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @811e06369ae940d6e9e0be92e9845195694873d3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7e9b211741b777d68c41eafe4705547ea6d66451 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Oct 2023 18:38:03 +0000
+  [ ShuangLiu1992 ]
+  * Fix precompiled_header.h on MSVC when boost is disabled
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ ShuangLiu1992 ]
+  * guard serialization.h
+
+  [ Varun Agrawal ]
+  * remove previous guard and do some formatting
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Oct 2023 21:34:25 +0000
 
 gtsam (4.1.0-1ubuntu2~1946.gbpac3c3e) jammy; urgency=medium
 
