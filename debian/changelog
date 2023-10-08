@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~1951.gbpd0370c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1952.gbp616d94) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @616d9429f0125e26db7e02b60847d8a8c6a36d69 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d0370ce2c06478d5a1318c1eee426ba8d93999e3 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Oct 2023 21:38:46 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 2f136936d..390cb8092
+  * fix warnings due to PEP 420
+  * separate required and dev dependencies
+  * install dev dependencies using CMake
+  * use variable for Python source directory
+  * remove requirements install step as it is now a part of the cmake process
+  * remove automatic install of python dev dependencies, leave that to the user
+  * install python dependencies in CI
+  * correct way to install dependencies
+  * fix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Oct 2023 15:01:30 +0000
 
 gtsam (4.1.0-1ubuntu2~1950.gbp68b66c) jammy; urgency=medium
 
