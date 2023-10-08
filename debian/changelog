@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1946.gbp914f89) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1947.gbp2f3cae) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2f3cae12b991b55072509be2e78fec9e130dd090 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @914f8978f8fed90ecb951c7cd64b5b5046aa341a **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Oct 2023 21:39:46 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 2f136936d..390cb8092
+  * fix warnings due to PEP 420
+  * separate required and dev dependencies
+  * install dev dependencies using CMake
+  * use variable for Python source directory
+  * remove requirements install step as it is now a part of the cmake process
+  * remove automatic install of python dev dependencies, leave that to the user
+  * install python dependencies in CI
+  * correct way to install dependencies
+  * fix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Oct 2023 15:01:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1945.gbp7a15cc) jammy; urgency=medium
 
