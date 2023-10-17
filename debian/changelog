@@ -1,10 +1,39 @@
-gtsam (4.1.0-1ubuntu2~1955.gbpaec2c3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1956.gbp7ad81a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7ad81a508677e70252b8743393ef9f35bd1eac95 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aec2c325d8daaf30f9f3b5fa3198f25a7642061d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Oct 2023 15:06:13 +0000
+  [ Varun Agrawal ]
+  * use the string argument in DiscreteKeys::print
+  * change TODO to note since calling .eval() in Eigen is valid
+  * remove unnecessary push_back
+  * add Testable traits to DiscreteBayesTree and HybridBayesTree
+  * use STL to make DecisionTreeFactor::combine more efficient
+  * improve docstring for HybridGaussianISAM
+  * remove unused CMake variable
+  * resolve test in testDiscreteMarginals
+  * imrpove bounds checks in Chebyshev2
+  * overload the Chebyshev2::Point method to reduce duplication
+  * fix warnings
+  * re-enable debug CI for linux
+  * wrap print for Sim2 and Sim3
+  * default value for string arg in print
+  * fix docstring
+  * use Pose3Pairs for Similarity3::Align
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Revert "imrpove bounds checks in Chebyshev2"
+  * Revert "overload the Chebyshev2::Point method to reduce duplication"
+  * Revert "re-enable debug CI for linux"
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Oct 2023 21:20:17 +0000
 
 gtsam (4.1.0-1ubuntu2~1954.gbp4a18c7) jammy; urgency=medium
 
