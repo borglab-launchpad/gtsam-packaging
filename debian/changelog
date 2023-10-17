@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1954.gbpb2ee4e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1955.gbp17032c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @17032c6482fbebf725b9ad7f26aa0e806f9ebf29 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b2ee4e938646af6422278457ea46f031d12260e4 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Oct 2023 21:25:37 +0000
+  [ Varun Agrawal ]
+  * handle Symbol vs symbol on case insensitive file systems
+  * Squashed 'wrap/' changes from 2f136936d..bd57210d9
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Oct 2023 23:22:46 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1953.gbpf08e5c) jammy; urgency=medium
 
