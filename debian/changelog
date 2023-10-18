@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~1963.gbp815826) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1964.gbpf25e1c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f25e1c03a85df1d62c1974c5049f8e2416231417 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @815826b6b68ff1d9d14edca941307d70649645c1 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Oct 2023 23:27:01 +0000
+  [ Varun Agrawal ]
+  * add templated at methods for FactorGraph so it can perform typecasting for us
+  * mark private options as advanced and move GTSAM specific options to HandleGeneralOptions.cmake
+  * include cmake files after options have been handled
+  * update gtsamAddExamplesGlob and gtsamAddTimingGlob to take an additional argument rather than using a global variable
+  * Move testing cmake flags back to GtsamTesting
+  * remove extra spaces
+  * rearrange Values::insert to fix 1477
+  * wrap SmartProjectionPoseFactor::point()
+  * correct method ordering as per documentation
+  * make DefaultKeyFormatter an extern variable so it can be updated in downstream applications
+  * add comment
+  * mark DefaultKeyFormatter with GTSAM_EXPORT
+  * overload JacobianFactor::getA method with one that takes a key
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Oct 2023 17:47:41 +0000
 
 gtsam (4.1.0-1ubuntu2~1962.gbp2e86c4) jammy; urgency=medium
 
