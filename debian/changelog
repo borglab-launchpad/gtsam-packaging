@@ -1,10 +1,56 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1966.gbpe6dcd6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1967.gbp22116e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @22116ef500c5e401d967c5cbefb9928ce8703d1c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e6dcd6b7181957bf8d1b0dc6a0b33f220b3b4525 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 31 Oct 2023 12:43:29 +0000
+  [ Varun Agrawal ]
+  * add nrAssignments method for DecisionTree
+  * add unit test showing issue with nrAssignments
+  * updated docs to better describe nrAssignments
+  * WIP for debugging nrAssignments issue
+  * update Unique to be recursive
+  * remove unnecessary code
+  * re-enable DecisionTree tests
+  * add new build method to replace create, and let create call Unique
+  * remove excessive Unique call to improve efficiency
+  * cleanup
+  * mark nrAssignments as const
+  * rename GTSAM_DT_NO_PRUNING to GTSAM_DT_NO_MERGING to help with disambiguation
+  * bottom-up Unique method that works much, much better
+  * print nrAssignments when printing decision trees
+  * formatting
+  * change to GTSAM_DT_MERGING and expose via CMake
+  * remove extra calls to Unique
+  * update DecisionTree::nrAssignments docstring
+  * fix tests to work when GTSAM_DT_MERGING=OFF
+  * print GTSAM_DT_MERGING cmake config
+  * update docstring
+  * fix test case
+  * enumerate all assignments for computing probabilities to prune
+  * remove nrAssignments from the DecisionTree
+  * Revert "remove nrAssignments from the DecisionTree"
+  * Revert "enumerate all assignments for computing probabilities to prune"
+  * fix tests
+  * fix odd behavior in nrAssignments
+  * park changes so I can come back to them later
+  * update tests
+  * remove prints
+  * undo change
+  * remove make_unique flag
+  * remove printing
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove nrAssignments from DecisionTree
+  * fix unittest assertion deprecation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Nov 2023 15:31:40 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1965.gbp9473d8) jammy; urgency=medium
 
