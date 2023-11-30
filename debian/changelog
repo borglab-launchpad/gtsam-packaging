@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~1979.gbpbc3d0d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~1980.gbp424303) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @424303c4c035cea7f2ffdd41fe26f840f10603aa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bc3d0d1d205bd007c59bf9214cf391212d2e065b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Nov 2023 22:13:03 +0000
+  [ klaas kelchtermans ]
+  * add ProjectionFactorPPPCal3Fisheye
+  * typo
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Nov 2023 15:55:23 +0000
 
 gtsam (4.1.0-1ubuntu2~1978.gbpedee38) jammy; urgency=medium
 
