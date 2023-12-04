@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1978.gbp6f0462) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1979.gbp6adc3f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6adc3f219e3b5f9d9f4d5fd6248b235b4e81874c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6f04624a6a2bcc9c3c21507e8233aeb63abf1e1f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Nov 2023 16:01:39 +0000
+  [ Varun Agrawal ]
+  * re-enable debug CI for linux
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Dec 2023 15:51:58 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1977.gbp5a06c7) jammy; urgency=medium
 
