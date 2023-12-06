@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1986.gbp54a65e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1987.gbp797e9a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @797e9ae7f8ad903889d569e2f1fc58d8271d9e68 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @54a65e20ada3ce1cb33c24ce519a4ee1344be99c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Dec 2023 21:00:46 +0000
+  [ Varun Agrawal ]
+  * improve bounds checks in Chebyshev2
+  * overload the Chebyshev2::Point method to reduce duplication
+  * use weights_.size() instead of passing in N
+  * ParameterMatrix as a separate static method
+  * make Chebyshev nodes over N+1 points instead of N
+  * override WeightMatrix for Chebyshev2
+  * Revert "make Chebyshev nodes over N+1 points instead of N"
+  * Chebyshev2::WeightMatrix to take only N points
+  * fix Chebyshev2 ParameterMatrix to take N values
+  * fix unittest assertion deprecation
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove ParameterMatrix method
+  * remove overridden WeightMatrix method
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 06 Dec 2023 06:21:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1985.gbpd9637c) jammy; urgency=medium
 
