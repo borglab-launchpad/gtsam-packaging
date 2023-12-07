@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1990.gbp369d19) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1991.gbp77b550) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @77b550766d81bddb5b862dd95fef37730ec3b00a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @369d19be7beb358dc3b7f5e7214f3537dfed6a3c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 06 Dec 2023 06:25:30 +0000
+  [ Varun Agrawal ]
+  * fix call to Ellipse, plus some formatting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Dec 2023 22:02:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1989.gbpb9a059) jammy; urgency=medium
 
