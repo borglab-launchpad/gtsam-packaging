@@ -1,10 +1,53 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1994.gbp8e247c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1995.gbp506ced) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @506ced1daa4b540319e100240510ba2d2f8330a7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8e247c9a37bf10dd3b1c12902da4a79388439cfe **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Dec 2023 22:07:06 +0000
+  [ Varun Agrawal ]
+  * code for computing quantile of chi-squared distribution
+  * refactor IncompleteGamma class
+  * Simplified IncompleteGamma
+  * remove recursion for Halley update
+  * update GncOptimizer and make it available
+  * use templated is_nan check
+  * try older version
+  * switch from IndexVector to FastVector<size_t> now that pybind/stl.h is enabled
+  * fix chi_squared_quantile
+  * Revert "switch from IndexVector to FastVector<size_t> now that pybind/stl.h is enabled"
+  * small update to GNC IndexVector
+  * rename GncHelpers to chiSquaredInverse and move to internal directory
+  * rename other files accordingly
+  * update paths
+  * much improved chi_squared_quantile, incremental update
+  * compute initial guess for inverse gamma value
+  * gamma inverse functional
+  * add gamma_p_inverse_func
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add more gamma functions
+  * more code
+  * cephes source code
+  * refactor Cephes CMakeLists.txt to allow building from parent directory
+  * Link to cephes from gtsam
+  * minor refactor to be consistent
+  * OS-based improved support
+  * add M_PI definition if unavailable (e.g. in Windows)
+  * additional M_PI definitions
+  * hopefully last of M_ definitions
+  * mark GTSAM_EXPORT and update docstring
+  * another windows fix
+  * kill testChiSquaredInverse
+  * only used built in version of Cephes since there doesn't seem to be an easy packaged version
+  * minor formatting
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Dec 2023 22:27:36 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1993.gbpd0ed67) jammy; urgency=medium
 
