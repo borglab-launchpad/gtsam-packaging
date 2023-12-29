@@ -1,10 +1,53 @@
-gtsam (4.1.0-1ubuntu2~1999.gbp63b81c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2000.gbp02d690) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @02d6901961f3ed8d734298b88af051d05beb3b05 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @63b81c26ec632cf9ceb22ae2d1da20f4af163b7b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Dec 2023 22:07:15 +0000
+  [ Varun Agrawal ]
+  * code for computing quantile of chi-squared distribution
+  * refactor IncompleteGamma class
+  * Simplified IncompleteGamma
+  * remove recursion for Halley update
+  * update GncOptimizer and make it available
+  * use templated is_nan check
+  * try older version
+  * switch from IndexVector to FastVector<size_t> now that pybind/stl.h is enabled
+  * fix chi_squared_quantile
+  * Revert "switch from IndexVector to FastVector<size_t> now that pybind/stl.h is enabled"
+  * small update to GNC IndexVector
+  * rename GncHelpers to chiSquaredInverse and move to internal directory
+  * rename other files accordingly
+  * update paths
+  * much improved chi_squared_quantile, incremental update
+  * compute initial guess for inverse gamma value
+  * gamma inverse functional
+  * add gamma_p_inverse_func
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add more gamma functions
+  * more code
+  * cephes source code
+  * refactor Cephes CMakeLists.txt to allow building from parent directory
+  * Link to cephes from gtsam
+  * minor refactor to be consistent
+  * OS-based improved support
+  * add M_PI definition if unavailable (e.g. in Windows)
+  * additional M_PI definitions
+  * hopefully last of M_ definitions
+  * mark GTSAM_EXPORT and update docstring
+  * another windows fix
+  * kill testChiSquaredInverse
+  * only used built in version of Cephes since there doesn't seem to be an easy packaged version
+  * minor formatting
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Dec 2023 22:27:33 +0000
 
 gtsam (4.1.0-1ubuntu2~1998.gbp2d2885) jammy; urgency=medium
 
