@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2003.gbp714d34) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2004.gbpa64f6d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a64f6d7f89db542ce9348576f7e00d2ae3daebcd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @714d3404f3e6a0a21a08e957f2f6209ffe755e9f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Dec 2023 22:31:32 +0000
+  [ Varun Agrawal ]
+  * replace structured binding with exclusive access
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Bernd Pfrommer ]
+  * also package libcephes-gtsam.so
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Jan 2024 21:12:43 +0000
 
 gtsam (4.1.0-1ubuntu2~2002.gbpcff3cc) jammy; urgency=medium
 
