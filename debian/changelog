@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~1998.gbpa9bf70) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~1999.gbp97bd86) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @97bd86f8e1f94e306775b7180d593d993e373e6e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a9bf7076044786c170fdb7429224369948d5133c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Dec 2023 22:31:30 +0000
+  [ Varun Agrawal ]
+  * replace structured binding with exclusive access
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Bernd Pfrommer ]
+  * also package libcephes-gtsam.so
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Jan 2024 21:12:46 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~1997.gbp2f31c0) jammy; urgency=medium
 
