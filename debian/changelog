@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2006.gbpbfb3e4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2007.gbpb2d7e9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b2d7e9c20a03111f99780f0bdd66f2ba70e3ee93 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bfb3e455a1e03c39a88e19f4ac1ba27754c1f05a **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 04 Jan 2024 18:43:38 +0000
+  [ Varun Agrawal ]
+  * discrete error method that returns an ADT
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * rename error to errorTree when it returns an AlgebraicDecisionTree
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Jan 2024 18:07:02 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2005.gbp36e1a3) jammy; urgency=medium
 
