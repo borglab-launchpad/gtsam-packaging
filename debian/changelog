@@ -1,10 +1,29 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2010.gbp1c14f3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2011.gbp2ead8b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2ead8bfe738657d3140a329311c7754ad058fdd9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1c14f3b63be732360cb67fae80bd034a32117f27 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Jan 2024 18:11:13 +0000
+  [ Varun Agrawal ]
+  * printErrors method for HybridGaussianFactorGraph
+  * printErrors method for HybridNonlinearFactorGraph
+  * use correct key formatter
+  * error method for HybridBayesNet
+  * include BayesNet::error in HybridBayesNet
+  * better docstring for BayesNet::error
+  * add test case for HybridGaussianFactorGraph::printErrors
+  * remove extra newline
+  * comment out print
+  * remove test case
+  * replace error with errorTree
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Jan 2024 18:33:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2009.gbp52e431) jammy; urgency=medium
 
