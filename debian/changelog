@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2014.gbpd100ce) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2015.gbp3aaa0b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3aaa0b92540b5d35ad1210528a6d0f7198776cb8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d100ceef92117829ff1264f8af629e290a838e3b **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Jan 2024 18:37:17 +0000
+  [ Varun Agrawal ]
+  * add Cephes README and License
+  * add cross platform extern marking to cephes.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Bernd Pfrommer ]
+  * fixed bug with libcephes install
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Jan 2024 21:57:49 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2013.gbp4f6296) jammy; urgency=medium
 
