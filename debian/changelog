@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~2019.gbp74a5dd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2020.gbp3712c7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3712c7be7658b989f363e0954e8abf88a314b200 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @74a5dde9143c4989cb00bc04045eb77181d88711 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Jan 2024 18:37:29 +0000
+  [ Varun Agrawal ]
+  * add Cephes README and License
+  * add cross platform extern marking to cephes.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Bernd Pfrommer ]
+  * fix bug in libcephes install for debian packaging
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Jan 2024 21:57:46 +0000
 
 gtsam (4.1.0-1ubuntu2~2018.gbpf8fbaa) jammy; urgency=medium
 
