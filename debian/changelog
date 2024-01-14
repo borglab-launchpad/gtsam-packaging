@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2023.gbpf2f96e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2024.gbpc03f5f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c03f5f2298f89312a95b78238f8d32c89a7f7e5f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f2f96ed8496c47e2bf0e1fd73b87c46f39b244f1 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 12 Jan 2024 22:01:59 +0000
+  [ Bernd Pfrommer ]
+  * libcephes only needs 3.10, allowing build on ubuntu 18.04
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 14 Jan 2024 18:41:30 +0000
 
 gtsam (4.1.0-1ubuntu2~2022.gbpc1e7f2) jammy; urgency=medium
 
