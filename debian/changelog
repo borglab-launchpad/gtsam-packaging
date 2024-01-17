@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~2031.gbp735e42) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2032.gbp888e95) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @888e95599a8168a479bebd5fc330236628099e73 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @735e42fbf054aa6c98fd2fa68e747715fa969cfc **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 00:06:33 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from bd57210d9..cdcf23207
+  * add dunder methods to interface file
+  * tests for dunder methods
+  * fix comment typo
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * delete cephes_names.h to remove collisions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 04:53:47 +0000
 
 gtsam (4.1.0-1ubuntu2~2030.gbpa2260d) jammy; urgency=medium
 
