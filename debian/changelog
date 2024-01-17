@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2022.gbpff3faa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2023.gbpc9801b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c9801bda8d8e81e3c2f8be711c919f7ba99b260c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ff3faa380c224daa593c2b32229fdc10631307fc **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 14 Jan 2024 18:45:55 +0000
+  [ Tal Regev ]
+  * Compile gtsam python for windows
+  * add windows template specialization
+  * revert lines according to review comments.
+  * Add comments explain the windows workaround.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Tal Regev ]
+  * fail-fast: true
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 00:01:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2021.gbp423552) jammy; urgency=medium
 
