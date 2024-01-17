@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2030.gbp9843c7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2031.gbp925529) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @92552944a674d325bf5d199e798a5962f1a11829 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9843c713b3e375132e6283fa10b4f2ca165c4564 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 04:57:50 +0000
+  [ Tal Regev ]
+  * remove swap from python ci
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 14:54:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2029.gbpdb5705) jammy; urgency=medium
 
