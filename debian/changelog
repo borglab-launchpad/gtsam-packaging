@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2039.gbpbee34d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2040.gbp818805) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @818805498e7f3735a620f2e18d1d5fec698941d0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bee34d89c7600774f17700b220d1e1c2255ca908 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 17 Jan 2024 14:58:57 +0000
+  [ Tal Regev ]
+  * Ubuntu 22.04 for python tbb. hopefully will solve the hang problem.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Feb 2024 21:23:45 +0000
 
 gtsam (4.1.0-1ubuntu2~2038.gbpfb8f64) jammy; urgency=medium
 
