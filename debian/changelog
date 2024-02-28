@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2042.gbpedf918) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2043.gbp2e63ad) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2e63ad86f799b05019d3bbff69ca6c52079e18ed **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @edf918ba6f092c229f412cf533d9bb7c5461240d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Feb 2024 17:49:15 +0000
+  [ Varun Agrawal ]
+  * wrap barometric factor
+  * undo serialization header change
+  * Revert "Merge pull request #1719 from talregev/TalR/python_tbb_ubuntu_22_04"
+  * Revert "Merge pull request #1714 from talregev/TalR/remove_swap"
+  * fix for boost serialization collision
+  * change C++ version to check against
+  * correctly fix name collisions due to newly merged Boost PR
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 Feb 2024 15:38:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2041.gbpc0d083) jammy; urgency=medium
 
