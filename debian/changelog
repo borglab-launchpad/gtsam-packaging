@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2046.gbpdc80b1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2047.gbpe23740) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e23740b43d3c96648c94ea91b8924a59d5794f7d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dc80b178d54429c512568e4d35c46c3e57cb8c02 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 Feb 2024 15:44:40 +0000
+  [ Steven Lovegrove ]
+  * Close unmatched endif
+
+  [ Varun Agrawal ]
+  * remove macro block for boost version 108000
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 03 Mar 2024 20:58:36 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2045.gbp07b16c) jammy; urgency=medium
 
