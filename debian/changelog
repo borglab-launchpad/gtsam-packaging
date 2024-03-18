@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2054.gbpa29ff3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2055.gbp3cf7c3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3cf7c3758df1495d706e4d45e95ebc16513d013d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a29ff38be8cdd1f0cc7e1fd3b29cbc6aba29431c **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Mar 2024 17:22:17 +0000
+  [ Tal Regev ]
+  * fix ambiguous call to overloaded function CameraSet.h(331)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Mar 2024 10:13:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2053.gbp9b93c4) jammy; urgency=medium
 
