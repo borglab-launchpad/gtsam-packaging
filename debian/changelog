@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2063.gbp55ae2e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2064.gbpa8016b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a8016b332f8fb92a28a044210a6ea3080f335eac **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @55ae2e9e2128512797ff2d7123dd39946f141010 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Mar 2024 10:18:01 +0000
+  [ Michal Nowicki ]
+  * Fixing strength of bias constraints in IMUKittiExampleGPS.cpp
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Mar 2024 15:38:46 +0000
 
 gtsam (4.1.0-1ubuntu2~2062.gbpce10ab) jammy; urgency=medium
 
