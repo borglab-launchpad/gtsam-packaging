@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2071.gbp62a5f2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2072.gbp7bf5ed) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7bf5ed10b563f878b8a52b8dbc3891db81660cef **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @62a5f24fa5ee80f721feb6f4885d7233af7cb527 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 22 Mar 2024 18:59:49 +0000
+  [ Adam Rutkowski ]
+  * added VectorValues::sorted()
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 04 Apr 2024 12:54:05 +0000
 
 gtsam (4.1.0-1ubuntu2~2070.gbp9860be) jammy; urgency=medium
 
