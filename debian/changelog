@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2075.gbp597faa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2076.gbpd28be7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d28be739004c25cd4d00edd9cf795e61847074ea **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @597faa7cfeb5970825fb98db9371d2a1d60abe6b **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 04 Apr 2024 12:58:02 +0000
+  [ ShuangLiu1992 ]
+  * Fix JacobianFactor and HessianFactor on platforms where Eigen::Index is not the same size as gtsam::Key
+  * Update HessianFactor.cpp
+  * Update HessianFactor.cpp
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 Apr 2024 17:00:25 +0000
 
 gtsam (4.1.0-1ubuntu2~2074.gbpf4a572) jammy; urgency=medium
 
