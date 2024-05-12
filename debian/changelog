@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2074.gbp770c6c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2075.gbpba31d5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ba31d5ae227c49a6b1b02987735e634b152f8c18 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @770c6cbe82b41caeae74d7f8e5d1b1cb2ea405db **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 Apr 2024 17:13:51 +0000
+  [ zzodo ]
+  * Add missing header in 3rdparty/cephes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 May 2024 03:41:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2073.gbpd2edff) jammy; urgency=medium
 
