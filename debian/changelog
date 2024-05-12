@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2079.gbpc8e003) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2080.gbpb641ca) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b641ca1354991f0fcd928cbc7609e6b761f5f92f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c8e0032b9cf8d8232e5f7d8e53fb7a219201ca77 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 25 Apr 2024 17:15:33 +0000
+  [ zzodo ]
+  * Add missing header in 3rdparty/cephes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 May 2024 03:41:30 +0000
 
 gtsam (4.1.0-1ubuntu2~2078.gbp2ae2bd) jammy; urgency=medium
 
