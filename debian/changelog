@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2087.gbp53a95d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2088.gbpe0797a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e0797adb74e891d6e95ca9ba96f452ff2cf4c50f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @53a95d20e7044b40be705c2092a759ae57007abd **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 24 May 2024 14:06:42 +0000
+  [ Fan Jiang ]
+  * Add EliminateQR to Python
+  * Try fixing Windows build
+  * Try fixing Windows build
+  * Remove local changes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 May 2024 18:55:36 +0000
 
 gtsam (4.1.0-1ubuntu2~2086.gbp8360d7) jammy; urgency=medium
 
