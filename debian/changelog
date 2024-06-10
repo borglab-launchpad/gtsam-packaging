@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2086.gbp0bf50b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2087.gbp523f8d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @523f8d5c7f47016c9cffc1e1fad836bb9aba0480 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0bf50ba0855be33185ca4f5db1d429ccc7745228 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 May 2024 18:59:34 +0000
+  [ Easton Potokar ]
+  * Add a few functions to python wrapper
+  * Expanded stereofactor python constructor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Jun 2024 22:15:18 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2085.gbp8cb701) jammy; urgency=medium
 
