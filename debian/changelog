@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2099.gbp5308b3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2100.gbp0bf747) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0bf747467ccc8bab647c1cb76a58b7e8dc1536dd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5308b3e2362129073552c1050d8b02cbe6b95166 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 24 Jun 2024 20:22:06 +0000
+  [ Varun Agrawal ]
+  * update MSVC toolset version
+  * update setup-python action version
+  * restrict numpy to under v2.0.0
+  * more explicit numpy version to avoid compiler issues
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Jun 2024 15:02:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2098.gbp65c711) jammy; urgency=medium
 
