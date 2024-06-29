@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2098.gbpde0ea6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2099.gbp7a7c00) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7a7c00bf178b56538f0f223141f836e4bdf77d04 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @de0ea658b3219f274bf85da3f95d5fc0729f5005 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Jun 2024 15:07:29 +0000
+  [ matlabbe ]
+  * ROS pkg missing propagated dependencies for downstream pkgs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 29 Jun 2024 04:13:35 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2097.gbp938b95) jammy; urgency=medium
 
