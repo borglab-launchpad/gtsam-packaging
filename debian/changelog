@@ -1,10 +1,34 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2102.gbp6f1b1a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2103.gbp9c0500) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9c0500f95fa899944161b689f1ea3c6c2ebf9026 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6f1b1afc2efe83d88c1a8115979eada05e1c6831 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 29 Jun 2024 04:17:32 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from cdcf23207..38a1bfa01
+  * allow numpy version 2.0.0
+  * update gtsam:: namespace in base.i
+  * update gtsam:: namespace in basis.i
+  * update gtsam:: namespace in geometry.i
+  * update gtsam:: namespace in linear.i
+  * update gtsam:: namespace in navigation.i
+  * update gtsam:: namespace in nonlinear.i
+  * update gtsam:: namespace in values.i
+  * update gtsam:: namespace in sfm.i
+  * update gtsam:: namespace in slam.i
+  * update gtsam:: namespace in gtsam.i
+  * update gtsam:: namespace in gtsam_unstable.i
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * upgrade macos CI image to macos-12 and xcode-14.2
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 02 Jul 2024 01:25:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2101.gbp0773a9) jammy; urgency=medium
 
