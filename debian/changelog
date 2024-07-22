@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~2119.gbpcc3b4e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2120.gbp7b999d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7b999d4445e3771fcdb126c706d48f616e059dde **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cc3b4edb3ed781601e5d3dd6a1e267ae75dc67e0 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 11 Jul 2024 13:54:14 +0000
+  [ Varun Agrawal ]
+  * add DiscreteConditional constructor using table
+  * print method for DiscreteKeys
+  * improve DiscreteConditional::argmax method to accept parent values
+  * DiscreteBayesNet::mode method to get maximizing assignment
+  * wrap argmax and mode methods
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * address review comments
+  * turns out we can merge DiscreteConditional and DiscreteLookupTable
+  * use DiscreteLookupDAG for DiscreteBayesNet mode
+  * setup discrete bayes net in mode test with proper ordering
+  * remove DiscreteLookupTable from wrapper
+  * use MaxProduct to compute Discrete Bayes Net mode
+  * kill DiscreteBayesNet::mode
+  * add tie-breaking test
+  * turns out we can merge DiscreteConditional and DiscreteLookupTable
+  * remove DiscreteLookupTable from wrapper
+  * Revert "turns out we can merge DiscreteConditional and DiscreteLookupTable"
+  * Revert "remove DiscreteLookupTable from wrapper"
+  * small fix
+  * undo merge
+  * kill DiscreteConditional::argmaxInPlace
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 22 Jul 2024 13:48:50 +0000
 
 gtsam (4.1.0-1ubuntu2~2118.gbp460648) jammy; urgency=medium
 
