@@ -1,10 +1,36 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2118.gbpdcc0e9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2119.gbp775a6e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @775a6e79991be4b4bb0d0e4fb146540ddd9044e7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dcc0e90263dd6e9c25d0e5dde4fff2cdd9491482 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 22 Jul 2024 13:52:57 +0000
+  [ Frank Dellaert ]
+  * Added clarification
+  * Ignore clangd cache
+  * Cleaned up tests
+  * Actually use displacement in test
+  * Test incrementalRotation
+  * Function object with sane Jacobian
+  * Fixed derivative with transform, deprecated integrateMeasurement
+  * Removed (passing) tests of deprecated
+  * biascorrectedDeltaRij tests
+  * CompareWithPreintegratedRotation
+  * Add a strong end-to-end test
+  * Make sure compiles without deprecated
+  * Attempt to resolve Windows linking
+  * Compile deprecated sections
+  * Add GTSAM_EXPORT
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Jul 2024 02:42:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2117.gbp39b2d2) jammy; urgency=medium
 
