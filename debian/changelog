@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2122.gbpa032fc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2123.gbpedfb2d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @edfb2df450021fa0a714b61e75c063ff6a1d2ad0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a032fcdd98cecbbfbce3192ed938781c166f16af **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Jul 2024 02:46:40 +0000
+  [ Varun Agrawal ]
+  * fix issue in geometry.i file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 20 Aug 2024 16:53:47 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2121.gbp2f9733) jammy; urgency=medium
 
