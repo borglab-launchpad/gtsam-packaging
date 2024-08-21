@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2135.gbp7f4410) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2136.gbp5776c5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5776c5e28694ae699cc48e13cb2aeed6f0b75de2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7f4410912c8a44e43961634c5cd5f99a92a25a26 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Aug 2024 09:22:41 +0000
+  [ Varun Agrawal ]
+  * improvements to GaussianConditional and GaussianBayesNet
+  * update VectorValues::== docstring
+  * update unit test to also check for GaussianBayesNet::logNormalizationConstant
+  * fix test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Aug 2024 20:59:21 +0000
 
 gtsam (4.1.0-1ubuntu2~2134.gbp2d1623) jammy; urgency=medium
 
