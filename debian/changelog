@@ -1,10 +1,65 @@
-gtsam (4.1.0-1ubuntu2~2131.gbp3cc9a9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2132.gbp199f8f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @199f8feab4376238652fb514dc0c2dc2ed69e20a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3cc9a9d87b197f1b443eb7e0f51c28d9ce1657c0 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 20 Aug 2024 17:00:48 +0000
+  [ Varun Agrawal ]
+  * Improved HybridBayesNet::optimize with proper model selection
+  * handle nullptrsin GaussianMixture::error
+  * nicer HybridBayesNet::optimize with normalized errors
+  * HybridValues formatting
+  * sum and normalize helper methods for the AlgebraicDecisionTree
+  * test for differing covariances
+  * differing means test
+  * normalize model selection term
+  * max and min functions for AlgebraicDecisionTree
+  * error normalization and log-sum-exp trick
+  * handle numerical instability
+  * remove stray comment
+  * minor test cleanup
+  * better, more correct version of model selection
+  * Better way of handling assignments
+  * cleaner model selection computation
+  * almost working
+  * improved model selection code
+  * overload == operator for GaussianBayesNet and VectorValues
+  * logNormalizationConstant() for GaussianBayesNet
+  * helper methods in GaussianMixture for model selection
+  * handle pruning in model selection
+  * update wrapper for LM with Ordering parameter
+  * print logNormalizationConstant for Gaussian conditionals
+  * GaussianConditional wrapper for arbitrary number of keys
+  * take comment all the way
+  * add model_selection method to HybridBayesNet
+  * improved docstrings
+  * remove `using std::dynamic_pointer_cast;`
+  * docstring for HybridBayesNet::assembleTree
+  * improved naming and documentation
+  * document return type
+  * better printing of GaussianMixtureFactor
+  * fix namespacing
+  * added more comments and compute GaussianMixture before tau
+  * test for different error values in BN from MixtureFactor
+  * update GaussianMixtureFactor to record normalizers, and add unit tests
+  * different means test both via direct factor definition and toFactorGraph
+  * clean up model selection
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove model selection code
+  * fix testMixtureFactor test
+  * undo change in GaussianMixture
+  * remove changes so we can break up PR into smaller ones
+  * reduce the diff even more
+  * unit tests for AlgebraicDecisionTree helper methods
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Aug 2024 09:16:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2130.gbpd08820) jammy; urgency=medium
 
