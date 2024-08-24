@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2134.gbp5b09d8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2135.gbp818c76) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @818c76f1aa95e4114b08171ffa63e23c4b08e5de **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5b09d8015ed7b559210407409f15830113195180 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Aug 2024 21:06:09 +0000
+  [ Gary ]
+  * Adding test and fix for issue #1596 A Non-active constraint returns a `nullptr`, which needs to be checked for when gathering the keys in `EliminateSymbolic`.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Aug 2024 21:17:30 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2133.gbpaae335) jammy; urgency=medium
 
