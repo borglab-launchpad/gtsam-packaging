@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~2151.gbpb79fb5) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2152.gbp152f19) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @152f195193ac07370314d967097c0fa58cbc4b58 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b79fb50b4c23e6d01a86fda4e1c2ed77cf36ab1d **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 21:08:03 +0000
+  [ Varun Agrawal ]
+  * test and fix for issue 301
+  * update Rot2::fromCosSin docstring
+  * better test documentation
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 23:06:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2150.gbp87223a) jammy; urgency=medium
 
