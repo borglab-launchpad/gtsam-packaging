@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~2147.gbp6ac721) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2148.gbp4eb419) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4eb41911d36cd79375b7bbdbd0ae4c7339c0a743 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6ac721b30ddc6b39e6d459568c41445c1b3cbb10 **
 
   * modified changelog for distro jammy
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 06:20:21 +0000
+  [ Varun Agrawal ]
+  * Make default PartialPriorFactor constructor public
+  * wrap PartialPriorFactor
+  * allow stl binding for pybind11 in gtsam_unstable
+  * localization example script which gives exact same result as C++ version
+  * Updated porting progress
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 21:04:01 +0000
 
 gtsam (4.1.0-1ubuntu2~2146.gbpa6674d) jammy; urgency=medium
 
