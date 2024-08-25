@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2143.gbp4204d4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2144.gbp65e379) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @65e379afa88b02caed00867e6782083900de46c7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4204d4d50a892dc7d4987ef613745402d59e5b6f **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Aug 2024 21:21:36 +0000
+  [ Varun Agrawal ]
+  * fix return type of EliminateQR
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 06:16:10 +0000
 
 gtsam (4.1.0-1ubuntu2~2142.gbp9107d1) jammy; urgency=medium
 
