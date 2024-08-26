@@ -1,10 +1,29 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2154.gbped14f4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2155.gbpd3f00f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d3f00f8ecb75028563e05ddb230975146e8d24ad **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ed14f4177fd181eff1db182c69cc8c5357523268 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 01:55:40 +0000
+  [ Varun Agrawal ]
+  * generate python type hints during pip build
+  * add type hints and make command to test gtsam_unstable for python
+  * remove duplicate target
+  * add mypy to the dev_requirements so we can get stubgen
+  * stubgen only for Windows until we can find the rsync equivalent
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * use older version of mypy
+  * remove extraneous variable
+  * fix if-else mistype
+  * save stubs to 'stubs' directory and use cp instead of rsync
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 16:03:10 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2153.gbp1f470f) jammy; urgency=medium
 
