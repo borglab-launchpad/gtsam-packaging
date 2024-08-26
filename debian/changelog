@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~2163.gbp606eff) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2164.gbp0e88aa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0e88aa5104a4fd5232026c37b45d35c56fbd6560 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @606effb2bdc883ea0cefdbe2441df8b56faa1e54 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 16:12:03 +0000
+  [ Frank Dellaert ]
+  * Fix c++ warnings
+  * Upgrade action
+  * Remove unused variable
+  * Add M1 runner
+  * Add venv on mac
+  * Try activating venv
+  * Fix venv for all subsequent actions
+  * try non-venv way
+  * Add dangerous flag
+  * Add M1 build
+  * Add venv on Mac and do not use --user flag in that case
+  * Correct cmake line
+  * Try w cross-platform install
+  * Elaborate solution that works on windows as well
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 21:00:10 +0000
 
 gtsam (4.1.0-1ubuntu2~2162.gbp66d575) jammy; urgency=medium
 
