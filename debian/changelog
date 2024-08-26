@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2155.gbpe83b16) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2156.gbp877480) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @877480a6d285806fc9301e305b4a84b09d591bd9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e83b169c41161877c88ee17f4f7b0464146b5d9c **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 23:10:14 +0000
+  [ Varun Agrawal ]
+  * always use bundled pybind11 inside wrap
+  * directly add pybind11 subdirectory so files are generated correctly
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 01:51:17 +0000
 
 gtsam (4.1.0-1ubuntu2~2154.gbp4fc5bb) jammy; urgency=medium
 
