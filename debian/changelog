@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2150.gbpce5c5a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2151.gbp8b3f64) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8b3f649911e361aa38f113e625b4abef015d87c6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ce5c5ab26603dcec2d58d3b8bb79775f7f270e49 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Aug 2024 23:10:15 +0000
+  [ Varun Agrawal ]
+  * always use bundled pybind11 inside wrap
+  * directly add pybind11 subdirectory so files are generated correctly
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 01:51:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2149.gbpbbb8c8) jammy; urgency=medium
 
