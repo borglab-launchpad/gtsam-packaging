@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2162.gbpcaa0af) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2163.gbp09c117) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @09c1179356cb0ec8b614909b5bae021cefbb12dc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @caa0af0fd9e74b03ac3868a86c3a27009c58a439 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 21:04:21 +0000
+  [ AndreMichelin ]
+  * Punctuation/scope
+  * Simplify code as we know the Jacobian = R
+  * Adding more tests
+  * Some tests on Expmap/expmap chain rule
+  * Fix jacobian tests
+  * Fix and comment another test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix tolerance for ubuntu quaternion cases
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Aug 2024 23:20:11 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2161.gbp42ba78) jammy; urgency=medium
 
