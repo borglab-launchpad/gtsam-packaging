@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2170.gbpb3affd) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2171.gbp550a2d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @550a2da58a27b232dc907edc0dc1f9406f106516 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b3affdbad095fcb7a4973ed5e0ba8e749b270446 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Aug 2024 03:30:41 +0000
+  [ Fan Jiang ]
+  * fix C++ version issue of CppUnitLite
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Aug 2024 16:46:42 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2169.gbpc668f2) jammy; urgency=medium
 
