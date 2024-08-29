@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2174.gbp4af2b8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2175.gbpc4846b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c4846bcc4cea7631bc990afc81e84ea460731114 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4af2b8933e1712516525c10e19ad5dcb66963f60 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Aug 2024 16:51:12 +0000
+  [ Varun Agrawal ]
+  * IterativeSolver equals method
+  * improved equals method for NonlinearOptimizerParams
+  * better formatting for LM Optimizer summary
+  * move NonlinearOptimizerParams::equals definition to .cpp file and improve slightly
+  * make equals const-qualified
+  * improved check
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Move to cmake 3.5
+  * Set policies
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Aug 2024 23:45:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2173.gbp9ca3dc) jammy; urgency=medium
 
