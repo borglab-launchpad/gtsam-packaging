@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2183.gbpb537e6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2184.gbp7673d1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7673d110deec1591450fb1e23960192a6eb352db **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b537e6c0253a954d831d213f451a4db65a687907 **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Aug 2024 23:49:26 +0000
+  [ Joel Truher ]
+  * added SelfCalibrationExample.py
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Aug 2024 14:51:36 +0000
 
 gtsam (4.1.0-1ubuntu2~2182.gbp98fa7d) jammy; urgency=medium
 
