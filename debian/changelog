@@ -1,10 +1,63 @@
-gtsam (4.1.0-1ubuntu2~2191.gbp553e3b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2192.gbped2906) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ed2906231ced785c826dfc16edafd60d6220a7a9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @553e3b5827b0c4b97015b2dd93dd225e376768cb **
 
   * modified changelog for distro jammy
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Aug 2024 22:08:32 +0000
+  [ Varun Agrawal ]
+  * improved MixtureFactor tests
+  * print main logNormalizationConstant in GaussianMixture
+  * use DiscreteFactorGraph directly
+  * improve GaussianMixture by checking for invalid conditionals and adding 2 new methods
+  * normalize the discrete factor at the continuous-discrete boundary
+  * support for varying normalizers in GaussianMixtureFactor
+  * tests for verification
+  * remove GaussianBayesNetTree methods
+  * throw error if invalid assignment
+  * improve tests
+  * remove augmentation in GaussianMixture in favor of augmentation in GaussianMixtureFactor
+  * Kill == operator in VectorValues
+  * provide logNormalizers directly to the augment method
+  * update GaussianMixture::likelihood to compute the logNormalizers
+  * add docstring and GTSAM_EXPORT for ComputeLogNormalizer
+  * remove augment method in favor of conversion
+  * remove ComputeLogNormalizer function
+  * don't check if GaussianFactor has no contKeys since it may not (e.g. GaussianMixtureModel)
+  * add examples of Hybrid FGs from HBNs as unit tests
+  * allow for GaussianMixtureFactors with 0 continuous keys
+  * better docstring
+  * common logProbability normalization function
+  * fix comments
+  * rename from exponentiateLogProbabilities to probabilitiesFromLogValues
+  * improve the gaussian mixture model tests
+  * improved two state model with different means
+  * update up TwoStateModel test and remove DifferentMeans and DifferentCovariances for later
+  * address some comments
+  * format HybridConditional.h
+  * improved HybridGaussianFactorGraph::printErrors
+  * unpack HybridConditional in errorTree
+  * rename sigmoid to prob_m_z
+  * make GaussianMixture2 test as good as GaussianMixture test
+  * fix bug in prob_m_z
+  * fix motion model for TwoStateModel test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove overwhelming prior and adjust measurements accordingly
+  * account for extra error when sigmas are different
+  * improve docs when computing discreteSeparator
+  * check for valid GaussianConditional
+  * ratio tests for GaussianMixtureFactor
+  * conditionalError method
+  * clean up code
+  * remove tests, will add later
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Sep 2024 13:27:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2190.gbp450d8f) jammy; urgency=medium
 
