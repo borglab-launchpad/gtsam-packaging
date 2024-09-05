@@ -154,7 +154,7 @@ git commit -a -m "updated changelog and patch files for snapshot $snap"
 #
 # loop over distros so we can bump the version number for each one
 #
-for distro in bionic focal jammy
+for distro in focal jammy noble
 do
     # remove any old build files
     rm -f ../${flavor}_*.dsc ../${flavor}_*.build ../${flavor}_*.buildinfo ../${flavor}_*.changes ../*.upload
