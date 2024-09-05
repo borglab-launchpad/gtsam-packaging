@@ -1,10 +1,38 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2194.gbp4fbebc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2195.gbpe1451b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e1451b6b6ec2d0989b49d38b869c8efe75b6f1a2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4fbebcf7042974f3caad044739df74886cab36c6 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Sep 2024 14:32:15 +0000
+  [ Varun Agrawal ]
+  * helper functions for computing leaf error and normalization constants used for model selection
+  * add constructor for HybridFactorGraph which takes a container of factors
+  * model selection for HybridBayesTree
+  * additional clarifying comments
+  * fix comment
+  * fix issue with Boost collisions
+  * better printing
+  * add method to select underlying continuous Gaussian graph given discrete assignment
+  * update model selection code and docs to match the math
+  * additional test based on Frank's colab notebook
+  * wrap DiscreteConditional which takes a vector of doubles
+  * minor formatting in linear.i
+  * wrap logProbability and evaluate methods of GaussianMixtureFactor
+  * don't check for 0 continuous keys when printing GaussianMixtureFactor as it is possible to have non-zero discrete keys
+  * Fix slam module README
+  * remove model selection from hybrid bayes tree
+  * remove unused code in HybridBayesNet
+  * more code cleanup
+  * fix test
+  * better GaussianMixture printing
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Sep 2024 19:13:34 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2193.gbp225e15) noble; urgency=medium
 
