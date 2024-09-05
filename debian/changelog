@@ -1,3 +1,11 @@
+gtsam (4.1.0-1ubuntu2~2203.gbp9464fa) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @9464fafc61845cf1f745865f8eb46000fe22686f **
+
+  * modified changelog for distro noble
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Sep 2024 19:22:13 +0000
+
 gtsam (4.1.0-1ubuntu2~2202.gbp0acd0d) noble; urgency=medium
 
   ** SNAPSHOT build @0acd0d2aad21e7ca52fe226d76410d9600091aef **
