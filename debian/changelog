@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2198.gbp818bd1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2199.gbpbffc90) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bffc90a379bf10b0d7d68d17d68356bfe388c008 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @818bd17a416dd5835cfbcded3ab51416da82c6ed **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Sep 2024 19:19:42 +0000
+  [ Varun Agrawal ]
+  * split HybridValues into .h and .cpp
+  * add improved versions of push_back for HybridBayesNet
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * remove const ref push_back
+  * remove unused templates
+  * simplify test
+  * replace emplace_back with emplace_shared and make shared_ptr const&
+  * update all tests to use emplace_shared
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Sep 2024 16:24:25 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2197.gbpb01586) noble; urgency=medium
 
