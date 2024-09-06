@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2202.gbpbb63e5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2203.gbpef8164) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ef81647d4399759047f77436658c3054db1402a0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bb63e5ecefe3011efdf393c13fd141c6ef302002 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Sep 2024 16:32:20 +0000
+  [ Varun Agrawal ]
+  * remove gcc9+tbb CI for python wrapper since it takes far too long
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Sep 2024 17:24:55 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2201.gbp375642) noble; urgency=medium
 
