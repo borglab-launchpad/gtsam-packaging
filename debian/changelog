@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2211.gbp68a309) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2212.gbp84ee29) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @84ee29ee0f1d1f0c955d7ed52ad9d26aaed9113b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @68a309299f5a41997964c29f32eedac7e157b5fd **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Sep 2024 17:32:27 +0000
+  [ Fan Jiang ]
+  * Use pybind11-stubgen for generating stubs
+  * Fix compile error on Clang 18, tweak for better type generation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Sep 2024 18:59:49 +0000
 
 gtsam (4.1.0-1ubuntu2~2210.gbp094058) noble; urgency=medium
 
