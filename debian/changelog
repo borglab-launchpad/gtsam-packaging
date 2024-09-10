@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2210.gbp89a785) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2211.gbpbae90a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bae90ad6f5864ce0856965e0ac9f85e777006c6d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @89a7850d0d1bbd08273210a71e8a631c967b0a5b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Sep 2024 19:03:57 +0000
+  [ Akshay Krishnan ]
+  * add the bata translation factor, with unit tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Akshay Krishnan ]
+  * add the bata translation factor, with unit tests
+  * rebase and remove boost
+  * add no jacobian version of evaluateerror
+  * add the default option wrapper
+  * minor uint change
+  * make boolean parameter optional
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Sep 2024 14:20:50 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2209.gbpa48c4d) noble; urgency=medium
 
