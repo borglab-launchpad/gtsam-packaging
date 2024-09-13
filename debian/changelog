@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2214.gbp33699a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2215.gbp5c1825) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5c182555882be58ba5bd4e269a912fac901a88ce **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @33699a9e30fe63c1f0f39cb0d4cf4eabc9d9e0ff **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Sep 2024 14:26:39 +0000
+  [ Frank Dellaert ]
+  * Clean up small things
+  * Importance sampling
+  * Add second test
+  * Finishing touches
+  * Inline q, use 100k
+  * Extreme example
+  * Small improvements
+  * Remove redundant doc
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Sep 2024 17:34:58 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2213.gbp6a6484) noble; urgency=medium
 
