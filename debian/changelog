@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~2223.gbp0b5ffa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2224.gbp301d1c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @301d1c77ebfb01cc66b75ab8d7d27f47d4e8fa3c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0b5ffa4d7cfe635543546850aed215ed7f25c1ee **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Sep 2024 17:38:51 +0000
+  [ Varun Agrawal ]
+  * rename GaussianMixtureFactor to HybridGaussianFactor
+  * rename MixtureFactor to HybridNonlinearFactor
+  * rename GaussianMixture to HybridGaussianConditional
+  * rename files
+  * finalize renaming
+  * formatting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * update after merge
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Sep 2024 20:34:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2222.gbp6278ba) noble; urgency=medium
 
