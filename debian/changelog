@@ -1,10 +1,55 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2222.gbpcffd89) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2223.gbp4f2986) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4f2986901d138a2d948c97b88c50e5772a140189 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cffd89989bd80a649bbe5739a3f35f049edeb887 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Sep 2024 20:38:59 +0000
+  [ Varun Agrawal ]
+  * update HybridNonlinearFactor to accept a tree of nonlinear factors and arbitrary scalars
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * HybridGaussianFactor tests passing
+  * update tests
+  * update HybridGaussianFactor to allow for tree of pairs
+  * test TwoStateModel with only differing covariances
+  * update HybridGaussianFactor to leverage constant hiding for the Tree of Pairs
+  * update other classes with correct types
+  * update tests
+  * fix testHybridEstimation test
+  * fix printing tests
+  * fix error using value for HybridNonlinearFactor
+  * cleaner specific factor linearization
+  * HybridNonlinearFactorGraph tests
+  * move ComputeLogNormalizer to NoiseModel.h
+  * address some PR comments
+  * NonlinearFactorValuePair typedef
+  * put ComputeLogNormalizer in the correct namespace
+  * fix python wrapper
+  * leverage hiding inside HybridGaussianFactor
+  * fix python tests
+  * use enum to categorize HybridFactor
+  * renaming
+  * make None the default HybridCategory
+  * remove redundancy from HybridConditional constructors
+  * tree based constructors
+  * correct documentation and test for ComputeLogNormalizer
+  * fix error function
+  * cleaner assignment in augment()
+  * update API to only allow a single DiscreteKey and vector of size the same as the discrete key cardinality
+  * Use DecisionTree for constructing HybridGaussianConditional
+  * fix wrapper
+  * reintroduce vector based HybridGaussianConditional constructor
+  * update python tests
+  * rename to Category and put inside HybridFactor class
+  * update HybridGaussianConditional to use single discrete parent
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Sep 2024 20:19:21 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2221.gbpaca1d7) noble; urgency=medium
 
