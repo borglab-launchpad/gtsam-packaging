@@ -92,13 +92,13 @@ void HybridGaussianFactorGraph::printErrors(
     // Clear the stringstream
     ss.str(std::string());
 
-    if (auto gmf = std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
+    if (auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
       } else {
-        gmf->operator()(values.discrete())->print(ss.str(), keyFormatter);
-        std::cout << "error = " << gmf->error(values) << std::endl;
+        hgf->operator()(values.discrete())->print(ss.str(), keyFormatter);
+        std::cout << "error = " << factor->error(values) << std::endl;
       }
     } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(factor)) {
       if (factor == nullptr) {
@@ -114,10 +114,11 @@ void HybridGaussianFactorGraph::printErrors(
                     << "\n";
         } else {
           // Is hybrid
-          auto mixtureComponent =
+          auto conditionalComponent =
               hc->asMixture()->operator()(values.discrete());
-          mixtureComponent->print(ss.str(), keyFormatter);
-          std::cout << "error = " << mixtureComponent->error(values) << "\n";
+          conditionalComponent->print(ss.str(), keyFormatter);
+          std::cout << "error = " << conditionalComponent->error(values)
+                    << "\n";
         }
       }
     } else if (auto gf = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
@@ -348,7 +349,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
     const KeyVector &continuousSeparator,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
-  auto correct = [&](const Result &pair) -> GaussianFactor::shared_ptr {
+  auto correct = [&](const Result &pair) -> GaussianFactorValuePair {
     const auto &[conditional, factor] = pair;
     if (factor) {
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
@@ -357,10 +358,10 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
       // as per the Hessian definition
       hf->constantTerm() += 2.0 * conditional->logNormalizationConstant();
     }
-    return factor;
+    return {factor, 0.0};
   };
-  DecisionTree<Key, GaussianFactor::shared_ptr> newFactors(eliminationResults,
-                                                           correct);
+  DecisionTree<Key, GaussianFactorValuePair> newFactors(eliminationResults,
+                                                        correct);
 
   return std::make_shared<HybridGaussianFactor>(continuousSeparator,
                                                 discreteSeparator, newFactors);
@@ -411,10 +412,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(
       eliminationResults, [](const Result &pair) { return pair.first; });
-  auto gaussianMixture = std::make_shared<HybridGaussianConditional>(
+  auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
       frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
-  return {std::make_shared<HybridConditional>(gaussianMixture), newFactor};
+  return {std::make_shared<HybridConditional>(hybridGaussian), newFactor};
 }
 
 /* ************************************************************************
@@ -465,7 +466,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // Now we will need to know how to retrieve the corresponding continuous
   // densities for the assignment (c1,c2,c3) (OR (c2,c3,c1), note there is NO
   // defined order!). We also need to consider when there is pruning. Two
-  // mixture factors could have different pruning patterns - one could have
+  // hybrid factors could have different pruning patterns - one could have
   // (c1=0,c2=1) pruned, and another could have (c2=0,c3=1) pruned, and this
   // creates a big problem in how to identify the intersection of non-pruned
   // branches.
@@ -597,10 +598,10 @@ GaussianFactorGraph HybridGaussianFactorGraph::operator()(
       gfg.push_back(gf);
     } else if (auto gc = std::dynamic_pointer_cast<GaussianConditional>(f)) {
       gfg.push_back(gf);
-    } else if (auto gmf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      gfg.push_back((*gmf)(assignment));
-    } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
-      gfg.push_back((*gm)(assignment));
+    } else if (auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+      gfg.push_back((*hgf)(assignment));
+    } else if (auto hgc = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
+      gfg.push_back((*hgc)(assignment));
     } else {
       continue;
     }
