@@ -1,3 +1,11 @@
+gtsam (4.1.0-1ubuntu2~2238.gbpaeb010) noble; urgency=medium
+
+  ** SNAPSHOT build @aeb010194d289147f8aaaaaf034d52a3a8cbf5ed **
+
+  * modified changelog for distro jammy
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 17:32:18 +0000
+
 gtsam (4.1.0-1ubuntu2~2237.gbp4f9708) jammy; urgency=medium
 
   ** SNAPSHOT build @4f9708bf72ce272dabf7fcf9b9f70c354c160a88 **
