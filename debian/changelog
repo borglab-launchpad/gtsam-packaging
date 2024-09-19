@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2235.gbpaace8e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2236.gbpf32d0b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f32d0bbb2b77fd20037fff04fa71b47c31eb7894 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aace8eb7589b2370dff1f7cdc369baf96e29631a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 11:58:34 +0000
+  [ Varun Agrawal ]
+  * update variables and docstrings to remove the mixture terminology
+  * rename asMixture to asHybrid
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 17:28:31 +0000
 
 gtsam (4.1.0-1ubuntu2~2234.gbpfcfcb4) noble; urgency=medium
 
