@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2231.gbp44e74a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2232.gbpd8239f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d8239f65ddc5ade0d8a1d0384c6ca08e859f5d6f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @44e74a4a1d5f150fbfd61b583ff5fdcf0a5e9a91 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Sep 2024 20:25:01 +0000
+  [ Varun Agrawal ]
+  * remove normlization stuff from HybridNonlinearFactor
+  * fix wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 11:50:25 +0000
 
 gtsam (4.1.0-1ubuntu2~2230.gbp6e3239) noble; urgency=medium
 
