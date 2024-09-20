@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2251.gbp16a218) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2252.gbpba6250) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ba625014434405e4ab6c94cdd15fc45d9f5fa168 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @16a218aea8f0746573d60f6897646b364da1fd16 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 19:31:45 +0000
+  [ Joel Truher ]
+  * add example CameraResectioning.py
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 20:13:43 +0000
 
 gtsam (4.1.0-1ubuntu2~2250.gbp86a1a8) noble; urgency=medium
 
