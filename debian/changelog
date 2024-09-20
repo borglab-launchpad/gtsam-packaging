@@ -1,10 +1,48 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2234.gbp09db48) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2235.gbpac4180) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ac4180b55ee801266d7bf4227b2c88ea36380b37 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @09db48a92bfdcbb066ea16ddfa644dc1c098f37c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 17:34:35 +0000
+  [ Varun Agrawal ]
+  * remove extra imports in DiscreteBayesNet.cpp
+  * minor edits
+  * rename X1 to X0 and X2 to X1
+  * provide logNormalizers directly to the augment method
+  * update GaussianMixture::likelihood to compute the logNormalizers
+  * Tests which verify direct factor specification works well
+  * remove extra prints
+  * add docstring and GTSAM_EXPORT for ComputeLogNormalizer
+  * compute logNormalizers and pass to GaussianMixtureFactor
+  * better comments
+  * improved comments
+  * some more refactor and remove redundant test
+  * fix test
+  * replace emplace_back with emplace_shared
+  * fixes
+  * fix tests
+  * undo accidental rename
+  * remove duplicate test and focus only on direct specification
+  * relinearization test
+  * print nonlinear part of HybridValues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add documentation for additive scalar in the error and remove the 0.5 since it gets cancelled out during normalization
+  * rename ComputeLogNormalizer to ComputeLogNormalizerConstant
+  * fix docstring for HybridGaussianFactor
+  * logNormalizationConstant is now a method for Gaussian noise model
+  * update tests
+  * hide sqrt(2*value) so the user doesn't have to premultiply by 2
+  * logDetR method which leverages noise model for efficiency. Build logDeterminant and logNormalizationConstant on top of it.
+  * comprehensive unit testing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 15:06:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2233.gbp968eae) noble; urgency=medium
 
