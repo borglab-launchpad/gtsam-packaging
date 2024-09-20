@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2247.gbp40c7d1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2248.gbpf694f0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f694f028096be4883b98fc1a29022d9458484572 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @40c7d150e23f3c0824b089abe426e5ab03828f2e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 16:02:35 +0000
+  [ Varun Agrawal ]
+  * HybridGaussianConditional inherits from HybridGaussianFactor
+  * rename logConstant_ to logNormalizer_ and add test for error with mode-dependent constants
+  * update naming
+  * remove duplicate method
+  * consistent naming
+  * fix conversion
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 19:27:42 +0000
 
 gtsam (4.1.0-1ubuntu2~2246.gbp39c866) noble; urgency=medium
 
