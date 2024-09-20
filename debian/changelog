@@ -1,10 +1,48 @@
-gtsam (4.1.0-1ubuntu2~2239.gbp40a768) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2240.gbp252cb5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @252cb505c37b4e91011a494acbaa142404d7c69b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @40a7682cc6eb03dd9d7a374928ca9e7498c133ee **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 19 Sep 2024 17:34:27 +0000
+  [ Varun Agrawal ]
+  * remove extra imports in DiscreteBayesNet.cpp
+  * minor edits
+  * rename X1 to X0 and X2 to X1
+  * provide logNormalizers directly to the augment method
+  * update GaussianMixture::likelihood to compute the logNormalizers
+  * Tests which verify direct factor specification works well
+  * remove extra prints
+  * add docstring and GTSAM_EXPORT for ComputeLogNormalizer
+  * compute logNormalizers and pass to GaussianMixtureFactor
+  * better comments
+  * improved comments
+  * some more refactor and remove redundant test
+  * fix test
+  * replace emplace_back with emplace_shared
+  * fixes
+  * fix tests
+  * undo accidental rename
+  * remove duplicate test and focus only on direct specification
+  * relinearization test
+  * print nonlinear part of HybridValues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add documentation for additive scalar in the error and remove the 0.5 since it gets cancelled out during normalization
+  * rename ComputeLogNormalizer to ComputeLogNormalizerConstant
+  * fix docstring for HybridGaussianFactor
+  * logNormalizationConstant is now a method for Gaussian noise model
+  * update tests
+  * hide sqrt(2*value) so the user doesn't have to premultiply by 2
+  * logDetR method which leverages noise model for efficiency. Build logDeterminant and logNormalizationConstant on top of it.
+  * comprehensive unit testing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 15:06:57 +0000
 
 gtsam (4.1.0-1ubuntu2~2238.gbpaeb010) noble; urgency=medium
 
