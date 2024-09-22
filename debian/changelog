@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2250.gbp27beef) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2251.gbp8c02b5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8c02b5154b470567e496360a26e643e0e31fb20a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @27beef925a7901c2393a7027faf64e70d3164c87 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 20 Sep 2024 20:18:06 +0000
+  [ Frank Dellaert ]
+  * New constructor and docs
+  * Use simple constructor
+  * Fixed some stragglers
+  * Address comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 22 Sep 2024 23:32:53 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2249.gbpa73c6b) noble; urgency=medium
 
