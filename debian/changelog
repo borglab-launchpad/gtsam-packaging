@@ -1,10 +1,35 @@
-gtsam (4.1.0-1ubuntu2~2263.gbp46bc44) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2264.gbp1a3ecb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1a3ecbf977d79c030c1341f4836b9f9edba64177 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @46bc441e2d4dcc07137f92b0aa7e866c17c9eaaa **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Sep 2024 17:06:41 +0000
+  [ Varun Agrawal ]
+  * make logNormalizationConstant return -log(k)
+  * update hybrid code to use -log(k) consistently
+  * fix python tests
+  * add errorConstant method and use it for logNormalizationConstant in Conditional
+  * updated tests
+  * wrap errorConstant for HybridConditional
+  * wrap errorConstant for DiscreteConditional
+  * fix numpy deprecation
+  * replace errorConstant with negLogConstant
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * kill logNormalizationConstant in favor of negLogConstant
+  * fix docstring
+  * factor errors in negative log space
+  * rename to negLogProbability
+  * remove normalizationConstant()
+  * better naming
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Sep 2024 21:20:41 +0000
 
 gtsam (4.1.0-1ubuntu2~2262.gbpbcdf4c) noble; urgency=medium
 
