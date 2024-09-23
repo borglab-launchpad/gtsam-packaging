@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2259.gbp3fa8ad) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2260.gbp25b5be) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @25b5bee7bfc56341e3bff8d1acc2a8c42ed76b6e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3fa8ad8f0b74a41d7f65c325af2be33be0444deb **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 22 Sep 2024 23:36:55 +0000
+  [ Varun Agrawal ]
+  * common errorTree method and its use in HybridGaussianFactorGraph
+  * implement errorTree for HybridNonlinearFactor
+  * rename tests to match file
+  * add error(HybridValues) to HybridNonlinearFactorGraph
+  * add HybridNonlinearFactorGraph::error test
+  * comment update
+  * HybridGaussianFactorGraph::errorTree is better encompassing
+
+  [ Frank Dellaert ]
+  * Use 'F' order
+  * Code from Joel
+  * Tests with some help from chatgpt
+  * Use new numdiff functions
+  * Fix small issues
+
+  [ Varun Agrawal ]
+  * remove virtual
+  * check for potentiall pruning
+  * remove unnecessary code in child class
+  * add test for errorTree in incremental scenario
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Sep 2024 16:58:23 +0000
 
 gtsam (4.1.0-1ubuntu2~2258.gbp03db4a) noble; urgency=medium
 
