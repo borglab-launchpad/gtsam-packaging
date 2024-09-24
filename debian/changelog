@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2262.gbpf86749) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2263.gbpf65af3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f65af353d3aaa5ac51870b7ef2f4c901cb4063ad **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f8674978424ba16f96361e1bbf8bf041f51ef6e0 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Sep 2024 21:24:53 +0000
+  [ Frank Dellaert ]
+  * Made HNF constructors like HGF
+  * Clean up some Gaussian stragglers
+  * Apply easy constructor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Sep 2024 18:26:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2261.gbp8d7192) noble; urgency=medium
 
