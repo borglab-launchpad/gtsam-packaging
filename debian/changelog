@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2266.gbpc4063f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2267.gbp1f3e09) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1f3e09f4245b4f83ed38e540909beba529ac422e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c4063fa228fcd736fd6c01043a380a3facb7c8de **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Sep 2024 18:32:21 +0000
+  [ Frank Dellaert ]
+  * Get rid of unreliable timing
+  * Split test
+  * Make sure label is formatted for Choice
+  * Some formatting
+  * Add test for combine
+  * Make key generation more efficient
+  * Address comments on PR #1843
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Sep 2024 19:43:15 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2265.gbpdbd9fd) noble; urgency=medium
 
