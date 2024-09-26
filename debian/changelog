@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2274.gbp83f9a5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2275.gbpedc182) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @edc18281f23ccd7fc047c0559bfb8ab278e17e1a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @83f9a56c18bc8d28f5c6fe46b2e8b7ac5cf62ee0 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Sep 2024 20:43:35 +0000
+  [ Frank Dellaert ]
+  * Moved mixture model tests to its own file
+  * Simplify tests
+  * Test different workflows
+  * Include what you use
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Sep 2024 15:18:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2273.gbpd7d04e) noble; urgency=medium
 
