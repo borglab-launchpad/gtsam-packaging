@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2291.gbp243af2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2292.gbpf3152c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f3152cd3bd580cd874849464b582015d23591e59 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @243af280a612d8b366e613b8f5fd3bace6443c8e **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Sep 2024 21:47:59 +0000
+  [ Varun Agrawal ]
+  * remove postfix for python when compiling with Timing and Profiling
+  * remove extra whitespaces
+  * common macro for setting python library properties
+  * add missing preprocessor guard
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Sep 2024 22:12:09 +0000
 
 gtsam (4.1.0-1ubuntu2~2290.gbp40e25f) noble; urgency=medium
 
