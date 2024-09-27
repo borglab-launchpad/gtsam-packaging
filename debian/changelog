@@ -1,10 +1,45 @@
-gtsam (4.1.0-1ubuntu2~2287.gbp9a03d9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2288.gbp3b4b33) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3b4b3350b61a2dfa5d1d663fa3b270513cef580f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9a03d941370f96903cbd43547e485c2a598bd697 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Sep 2024 22:57:23 +0000
+  [ Frank Dellaert ]
+  * Initial attempt at removing extra arguments
+  * Avoid double traversal
+  * Simplify all call sites
+  * Fix initialization issue with helper class
+  * De-clutter header
+  * Made augment static
+  * Three constructor variants extract keys
+  * Fix all call sites
+  * Working version with helper
+  * Remove error checking
+  * Removed unneeded changes
+  * Fix HybridNonlinearFactor
+  * Fix call sites for HybridNonlinearFactor
+  * Fix wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix more wrapper tests
+  * Move code to cpp file.
+  * Yet another python test
+  * Review comments
+  * Changed order
+  * Major improvement -> no need to copy keys anymore
+  * tiny improvement
+  * major improvement: continuousSeparator no longer needed
+
+  [ Varun Agrawal ]
+  * use User-Agent as Other
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Sep 2024 21:44:03 +0000
 
 gtsam (4.1.0-1ubuntu2~2286.gbpa28125) noble; urgency=medium
 
