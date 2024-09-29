@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2290.gbpe36090) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2291.gbp0570ed) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0570ed0e15c8a56f643acc7b8221bf498bbd51cd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e3609014ea157c2a62df34558ca8eee3697ddf03 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Sep 2024 22:16:05 +0000
+  [ Frank Dellaert ]
+  * Pulled out hybrid motion model tests
+  * Switching to NoiseModelFactor
+  * Fix message
+  * Fix wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Sep 2024 00:25:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2289.gbp58d167) noble; urgency=medium
 
