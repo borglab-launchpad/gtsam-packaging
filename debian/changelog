@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~2299.gbp36a644) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2300.gbp960520) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @960520c40516d557729ce5edd4b91673aa5c31a9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @36a6441ac37e971c00bfacfcf89d00ff9a96ca12 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Sep 2024 00:29:55 +0000
+  [ Varun Agrawal ]
+  * get keys from NonlinearFactors as well
+  * better docstring for prunerFunc and added dividers
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Small things
+  * Make hybrid elimination a method of HGFG
+  * Move test where it belongs
+  * Create mean/stddev constructors
+  * Use new constructors
+  * Remove one bougie constructor
+  * Add conditional constructors as well
+  * Avoid copy/pasta
+  * perfect forwarding magic
+  * Address o1 review comments
+  * Doxygen
+
+  [ Varun Agrawal ]
+  * formatting
+  * remove unnecessary includes
+
+  [ Frank Dellaert ]
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Sep 2024 18:45:03 +0000
 
 gtsam (4.1.0-1ubuntu2~2298.gbpc1f0cf) noble; urgency=medium
 
