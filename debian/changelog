@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2298.gbpa8202e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2299.gbpf1a21e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f1a21e1c475dfa2953a4eafa0fc5a8cec8288703 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a8202e6ce55c76db452d4b5a2696473ba0f1b939 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Sep 2024 18:49:02 +0000
+  [ Frank Dellaert ]
+  * Document and fix bug in modes
+  * Check invariants
+  * Throw if sampling conditions not satisfied
+  * Only sample if not provided
+  * Make testable
+  * Fix equality
+  * choose method
+  * Clarify choose method
+  * Helper method can be static
+  * Much more comprehensive tests
+  * refactor printErrors
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Sep 2024 22:28:10 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2297.gbp07be06) noble; urgency=medium
 
