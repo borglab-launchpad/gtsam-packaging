@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2307.gbpd5d5e4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2308.gbpf7bc93) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f7bc9394e9f72b3f8bf57beeeab9cc55e8b6ae26 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d5d5e4191d1c5895e4999ebf34a7a9e9e6a0860b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Sep 2024 22:33:44 +0000
+  [ Varun Agrawal ]
+  * implement errorTree for HybridNonlinearFactorGraph
+  * add unit test
+  * compute expected error
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Oct 2024 21:29:23 +0000
 
 gtsam (4.1.0-1ubuntu2~2306.gbpb5363c) noble; urgency=medium
 
