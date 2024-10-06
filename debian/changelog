@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~2311.gbp6c0e52) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2312.gbp672b15) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @672b15469e87f7d93c5475d605c9104f22243945 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6c0e524a0ed55b7a37ebd16a6476f5928563cdcc **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Oct 2024 21:33:31 +0000
+  [ Frank Dellaert ]
+  * Make prune functional
+  * Kill obsolete prunerFunc
+  * Inline lambda
+  * Fix pruning in iSAM
+  * discretePosterior
+  * Removed ill-named and confusing method logProbability
+  * discretePosterior for graphs
+  * renamed logProbability and added discretePosterior
+  * Finish tests
+  * Got rid of HBN::errorTree. Weird semantics and not used unless in regression tests.
+  * All tests for tiny work
+  * choose docs
+  * Additional arithmetic
+  * FIX BUG in errorTree
+  * FIX BUG: don't skip discrete factors!
+  * Drastically simplify errorTree
+  * Fix switching docs
+  * Remove printing, add one more test
+  * Add test for prune
+  * Better prune
+  * better, functional prune
+  * Fix smoother
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Oct 2024 17:07:10 +0000
 
 gtsam (4.1.0-1ubuntu2~2310.gbp726724) noble; urgency=medium
 
