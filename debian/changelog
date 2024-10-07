@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2310.gbp876051) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2311.gbp7540e5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7540e50a8d1981110eb532a1b46b3ce8b22284b7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @876051b93d3bb3663a0c0eccf17b982af5a6f393 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Oct 2024 17:11:06 +0000
+  [ Varun Agrawal ]
+  * update pruning comment
+  * take descriptive comment all the way
+  * fix return value of pruned factors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * additional fix
+  * clean up testHybridEstimation
+  * more test improvements
+  * add test for checking pruning
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 07 Oct 2024 21:04:11 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2309.gbpfc6052) noble; urgency=medium
 
