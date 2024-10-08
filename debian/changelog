@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2319.gbp1107d4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2320.gbpdbdb3f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dbdb3fe270a2fe3e92237660a927d8b9f5a3cdfb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1107d4bac6c8abf994bd188e73bcfad9ce2e9a1e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 07 Oct 2024 21:08:09 +0000
+  [ Dan McGann ]
+  * Fix machine precision bug in DogLeg compute blend
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Oct 2024 19:23:18 +0000
 
 gtsam (4.1.0-1ubuntu2~2318.gbp07a356) noble; urgency=medium
 
