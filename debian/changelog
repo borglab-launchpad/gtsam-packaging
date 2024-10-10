@@ -1,10 +1,83 @@
-gtsam (4.1.0-1ubuntu2~2323.gbp4f361c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2324.gbpedf4d3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @edf4d3ca7b606859a448a95da3c5637c8739555f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4f361ccda99f0ed6c58bcc3a6bd8e99036537b88 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Oct 2024 19:27:30 +0000
+  [ Frank Dellaert ]
+  * Store the values
+
+  [ Varun Agrawal ]
+  * implement errorTree for HybridNonlinearFactorGraph
+
+  [ Frank Dellaert ]
+  * discretePosterior in HNFG
+  * New product factor class
+  * Switch to using HybridGaussianProductFactor
+  * Fix conditional==null bug
+  * Squashed commit
+  * Product now has scalars
+  * operator returns pairs, extensive switching test
+  * Cherry-pick Varun's bugfix
+  * Don't normalize probabilities for a mere DiscreteFactor
+  * Extensive new API test
+  * No more hiding!
+  * Less regression, more API tests for s(3).
+  * Store negLogConstant[i] - negLogConstant_
+  * asProductFactor from base class!
+  * Fixed discreteEimination
+  * Minimize formatting changes
+
+  [ Varun Agrawal ]
+  * formatting fixes
+  * add type info
+  * missing include and formatting
+  * update comment
+  * improve HybridGaussianProductFactor
+  * formatting testHybridGaussianFactorGraph
+  * add GTSAM_EXPORT to HybridGaussianProductFactor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * small fix
+  * get HybridBayesNet compiling on Windows
+  * Another Windows fix
+  * include <iostream> in HybridConditional.cpp
+  * maybe it's <string>
+  * include <string> in HybridBayesTree.cpp
+  * add more includes to try and debug this
+  * remove includes
+  * improved type aliasing
+  * include sstream in HybridGaussianProductFactor
+  * add back PotentiallyPrunedComponentError as an inline function
+  * formatting
+  * replace sstream with string
+  * use cout instead of stringstream
+
+  [ Frank Dellaert ]
+  * Pure Google style in clang-format
+  * Shift error values before exponentiating
+
+  [ Varun Agrawal ]
+  * fix printing tests
+  * add serialization to HybridGaussianProductFactor
+  * checking if print is the problem
+  * undo print and remove extra includes
+  * comment out serialization
+  * undo test change
+  * delete constructor from string to fix issue
+  * fix vector type
+  * implement constructor
+  * experiment with removing the constructor
+  * Revert "experiment with removing the constructor"
+  * implement dummy >> operator
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Oct 2024 13:33:18 +0000
 
 gtsam (4.1.0-1ubuntu2~2322.gbpbc2322) noble; urgency=medium
 
