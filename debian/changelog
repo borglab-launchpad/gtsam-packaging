@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2322.gbp8c63d7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2323.gbpb31257) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b3125739407acb6af8f69da3c0f2c7e5639fa7f5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8c63d7f994b5f0a4e746478a2b324592ec544b50 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Oct 2024 13:39:40 +0000
+  [ Varun Agrawal ]
+  * new AlgebraicDecisionTree constructor
+  * normalize potentials
+  * update test
+  * small improvements
+  * more simplification
+  * normalize no longer takes explicit sum, so that it normalizes correctly
+  * fix test TODOs
+  * remove unnecessary TODOs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Oct 2024 14:27:26 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2321.gbp2ba5fc) noble; urgency=medium
 
