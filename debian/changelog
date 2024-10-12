@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2326.gbp09b880) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2327.gbp189b8f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @189b8fbaaed95c999ddb11d9c62f3b383498a9d4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @09b880116f3c6c00e81a1a832a64c3ac939c5c75 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Oct 2024 14:33:58 +0000
+  [ Martin Valgur ]
+  * precompiled_header.h: remove chartTesting.h
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 12 Oct 2024 18:23:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2325.gbp448a9d) noble; urgency=medium
 
