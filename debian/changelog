@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2330.gbpfaa863) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2331.gbp7d54ff) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7d54ffb81a9cfd0075f70c4bdd1cb7bb0dd30555 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @faa863f34ad9da16ed6a70311d1f814a6d0119db **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 12 Oct 2024 18:27:18 +0000
+  [ Frank Dellaert ]
+  * Make compose and convertFrom static
+  * Faster version of convertFrom when no label translation needed
+  * Move semantics
+  * Two more methods are static
+  * Add missing header
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 15 Oct 2024 15:13:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2329.gbpc98a6a) noble; urgency=medium
 
