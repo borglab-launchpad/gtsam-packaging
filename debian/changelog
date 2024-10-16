@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2334.gbped22d1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2335.gbp690e50) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @690e50e9623472825ae52938d0685e5491ad5226 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ed22d1e6645cb1150cb732904ad195d0680433d6 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 15 Oct 2024 15:19:31 +0000
+  [ Varun Agrawal ]
+  * implement errorTree in DiscreteFactor
+  * fix docstring
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Oct 2024 16:18:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2333.gbpb7999b) noble; urgency=medium
 
