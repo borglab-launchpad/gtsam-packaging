@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2343.gbp8ad3ca) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2344.gbp201d93) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @201d9346637e98d70eb078d3448df9b862658085 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8ad3ca9d8e5ab6bf6a011f3ba2280032766ffd99 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Oct 2024 16:24:46 +0000
+  [ Varun Agrawal ]
+  * move test file to nonlinear directory
+  * clean up and formatting
+  * improve PCGSolverParameters
+  * rearrange GaussianFactorGraphSystem
+  * restrict pointer access via methods
+  * improved docstrings
+  * remove unnecessary typedefs
+  * remove System inside NonlinearConjugateGradientOptimizer
+  * remove templates
+  * move all implementation to cpp file
+  * make ConjugateGradientParameters a public struct
+  * make PCGSolverParameters a public struct
+  * update tests
+  * updat example
+  * re-add typedefs
+  * fix tests
+  * update deprecated methods
+  * undo template removal
+  * kill methods with same name in favor of using variables directly
+  * remove extra methods
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Oct 2024 13:56:36 +0000
 
 gtsam (4.1.0-1ubuntu2~2342.gbp392ed5) noble; urgency=medium
 
