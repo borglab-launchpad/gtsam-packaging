@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2347.gbpb8998f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2348.gbpea4495) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ea4495c612c699a9b6a88cff0a25e147b5e09885 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b8998fd1f9f97bb4e301366cfabca5b698f9ff43 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Oct 2024 14:01:03 +0000
+  [ Varun Agrawal ]
+  * add additional direction methods beyond Polak-Ribiere
+  * set default direction method
+  * nonlinearConjugateGradient accepts direction method
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * template the directional methods
+  * add test for different nonlinear CG direction methods
+  * missed two templates
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Oct 2024 20:45:47 +0000
 
 gtsam (4.1.0-1ubuntu2~2346.gbp8dc558) noble; urgency=medium
 
