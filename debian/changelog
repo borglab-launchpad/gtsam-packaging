@@ -1,10 +1,37 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2350.gbp2f7877) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2351.gbpb1f383) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b1f38356130c2d20bdb3fbe235b0aab239e9034f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2f787712282e7d78d69362c806c4af3f3b635417 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Oct 2024 15:34:44 +0000
+  [ Frank Dellaert ]
+  * Get rid of double storage
+  * DT::split
+  * Avoid using slow conditionals()
+  * Make sure we still subtract min()
+  * Const correctness
+  * Move constructor
+  * Use move constructor
+  * Avoid calculating negLogK twice
+  * Prune graphs with nulls on the fly
+  * Change and simplify tests using {}
+  * formatting/spelling only
+  * Restrict dangerous flat access
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Address review comments
+
+  [ Varun Agrawal ]
+  * formatting and comments
+  * helper method to reduce code duplication
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Oct 2024 17:37:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2349.gbpfc0dca) noble; urgency=medium
 
