@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2346.gbp2770aa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2347.gbpa7179c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a7179c7da385f4a43ca4436cac9ae1144c3c7531 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2770aa8d63e03cbdfcd91c5e4bafbfc61dce50b3 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Oct 2024 20:49:57 +0000
+  [ Varun Agrawal ]
+  * Rosenbrock function
+  * lots of small improvements
+  * Rosenbrock function implemented as factor graph
+  * test optimization with Rosenbrock function
+  * minor improvements
+  * fix test
+  * move 2 to the Precision matrix and check if error is correct
+  * fix jacobians
+  * remove sqrt definition
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Oct 2024 15:29:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2345.gbp7bda24) noble; urgency=medium
 
