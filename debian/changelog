@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2358.gbpbc33cd) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2359.gbpdcfc83) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dcfc8359b3fb4154c96f68a6d2a1cf015178674e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bc33cdcb9080e845a19313ee5314326acd3d1c13 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Oct 2024 03:49:09 +0000
+  [ Varun Agrawal ]
+  * remove reference for shared_ptr
+  * fix wrapping for matlab
+  * update issue template
+  * make executable
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * make function inline to avoid multiple definition error
+  * remove redunant assignment of boolean flag
+  * make shared_ptr a reference
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Oct 2024 23:29:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2357.gbp0c2928) noble; urgency=medium
 
