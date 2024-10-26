@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2354.gbp648e0d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2355.gbpa7eee7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a7eee755925d7704e02c8e1ac0afa718f2ca2806 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @648e0d612d62b87a230c27d9365e5e94e146a3b0 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Oct 2024 17:41:37 +0000
+  [ Frank Dellaert ]
+  * Spelling
+  * Initial check-in
+  * Simple F version
+  * Base class
+  * Conversion
+  * Verify triplet epipolar transfer
+  * TripleF and transfer
+  * Kill templates
+  * cpp file
+  * Move transfer to cpp
+  * Fix transfer2, add export
+  * Remove inheritance, use abc language
+  * Add missing export
+  * Just FundamentalMatrix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Oct 2024 03:45:12 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2353.gbp8e3c54) noble; urgency=medium
 
