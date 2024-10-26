@@ -146,7 +146,7 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
   double newError = system.error(newValues);
 
   while (true) {
-    const bool flag = (maxStep - newStep > newStep - minStep) ? true : false;
+    const bool flag = (maxStep - newStep > newStep - minStep);
     const double testStep = flag ? newStep + resphi * (maxStep - newStep)
                                  : newStep - resphi * (newStep - minStep);
 
