@@ -54,6 +54,23 @@ class GTSAM_EXPORT FundamentalMatrix {
    */
   FundamentalMatrix(const Matrix3& F);
 
+  /**
+   * @brief Construct from calibration matrices Ka, Kb, and pose aPb
+   *
+   * Initializes the FundamentalMatrix from the given calibration
+   * matrices Ka and Kb, and the pose aPb.
+   *
+   * @tparam CAL Calibration type, expected to have a matrix() method
+   * @param Ka Calibration matrix for the left camera
+   * @param aPb Pose from the left to the right camera
+   * @param Kb Calibration matrix for the right camera
+   */
+  template <typename CAL>
+  FundamentalMatrix(const CAL& Ka, const Pose3& aPb, const CAL& Kb)
+      : FundamentalMatrix(Ka.K().transpose().inverse() *
+                          EssentialMatrix::FromPose3(aPb).matrix() *
+                          Kb.K().inverse()) {}
+
   /// Return the fundamental matrix representation
   Matrix3 matrix() const;
 
@@ -97,25 +114,32 @@ class GTSAM_EXPORT SimpleFundamentalMatrix {
   Point2 ca_;          ///< Principal point for left camera
   Point2 cb_;          ///< Principal point for right camera
 
+  /// Return the left calibration matrix
+  Matrix3 Ka() const;
+
+  /// Return the right calibration matrix
+  Matrix3 Kb() const;
+
  public:
   /// Default constructor
   SimpleFundamentalMatrix()
       : E_(), fa_(1.0), fb_(1.0), ca_(0.0, 0.0), cb_(0.0, 0.0) {}
 
-  /// Construct from essential matrix and focal lengths
+  /**
+   * @brief Construct from essential matrix and focal lengths
+   * @param E Essential matrix
+   * @param fa Focal length for left camera
+   * @param fb Focal length for right camera
+   * @param ca Principal point for left camera
+   * @param cb Principal point for right camera
+   */
   SimpleFundamentalMatrix(const EssentialMatrix& E,  //
-                          double fa, double fb,
-                          const Point2& ca = Point2(0.0, 0.0),
-                          const Point2& cb = Point2(0.0, 0.0))
+                          double fa, double fb, const Point2& ca,
+                          const Point2& cb)
       : E_(E), fa_(fa), fb_(fb), ca_(ca), cb_(cb) {}
 
-  /// Return the left calibration matrix
-  Matrix3 leftK() const;
-
-  /// Return the right calibration matrix
-  Matrix3 rightK() const;
-
   /// Return the fundamental matrix representation
+  /// F = Ka^(-T) * E * Kb^(-1)
   Matrix3 matrix() const;
 
   /// @name Testable
@@ -147,8 +171,8 @@ class GTSAM_EXPORT SimpleFundamentalMatrix {
  * Take two fundamental matrices Fca and Fcb, and two points pa and pb, and
  * returns the 2D point in view (c) where the epipolar lines intersect.
  */
-GTSAM_EXPORT Point2 Transfer(const Matrix3& Fca, const Point2& pa,
-                             const Matrix3& Fcb, const Point2& pb);
+GTSAM_EXPORT Point2 EpipolarTransfer(const Matrix3& Fca, const Point2& pa,
+                                     const Matrix3& Fcb, const Point2& pb);
 
 /// Represents a set of three fundamental matrices for transferring points
 /// between three cameras.
@@ -158,17 +182,17 @@ struct TripleF {
 
   /// Transfers a point from cameras b,c to camera a.
   Point2 transferToA(const Point2& pb, const Point2& pc) {
-    return Transfer(Fab.matrix(), pb, Fca.matrix().transpose(), pc);
+    return EpipolarTransfer(Fab.matrix(), pb, Fca.matrix().transpose(), pc);
   }
 
   /// Transfers a point from camera a,c to camera b.
   Point2 transferToB(const Point2& pa, const Point2& pc) {
-    return Transfer(Fab.matrix().transpose(), pa, Fbc.matrix(), pc);
+    return EpipolarTransfer(Fab.matrix().transpose(), pa, Fbc.matrix(), pc);
   }
 
   /// Transfers a point from cameras a,b to camera c.
   Point2 transferToC(const Point2& pa, const Point2& pb) {
-    return Transfer(Fca.matrix(), pa, Fbc.matrix().transpose(), pb);
+    return EpipolarTransfer(Fca.matrix(), pa, Fbc.matrix().transpose(), pb);
   }
 };
 
