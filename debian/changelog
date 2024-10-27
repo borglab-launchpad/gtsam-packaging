@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2367.gbp8554cf) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2368.gbpf7dd9f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f7dd9f0aa4392538188a3be98bc467234788fb73 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8554cfe21385fec8093ac9dffd8a1c160e3c3bbf **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Oct 2024 23:33:41 +0000
+  [ Frank Dellaert ]
+  * Address review Comments
+  * proto-factor with numerical derivative
+  * Slight modernization
+  * TransferFactor in sfm
+  * TripletError vs TransferFactor
+  * Clean up/format
+  * EdgeKey for view graphs etc...
+  * More cleanup
+  * True factor
+  * Use EdgeKey logic
+  * Got rid of inheritance
+  * Additional API
+  * Example with SimpleF
+  * Init from pose and Ks
+  * Switch to general F
+  * Use FundamentalMatrix now
+  * Use abc terminology
+  * Batched version
+  * Renamed method
+  * Address review comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Oct 2024 06:11:37 +0000
 
 gtsam (4.1.0-1ubuntu2~2366.gbp8dd7c2) noble; urgency=medium
 
