@@ -10,8 +10,8 @@
 namespace gtsam {
 
 //*************************************************************************
-Point2 Transfer(const Matrix3& Fca, const Point2& pa,  //
-                const Matrix3& Fcb, const Point2& pb) {
+Point2 EpipolarTransfer(const Matrix3& Fca, const Point2& pa,  //
+                        const Matrix3& Fcb, const Point2& pb) {
   // Create lines in camera a from projections of the other two cameras
   Vector3 line_a = Fca * Vector3(pa.x(), pa.y(), 1);
   Vector3 line_b = Fcb * Vector3(pb.x(), pb.y(), 1);
@@ -24,6 +24,7 @@ Point2 Transfer(const Matrix3& Fca, const Point2& pa,  //
 
   return intersectionPoint.head<2>();  // Return the 2D point
 }
+
 //*************************************************************************
 FundamentalMatrix::FundamentalMatrix(const Matrix3& F) {
   // Perform SVD
@@ -71,9 +72,7 @@ Matrix3 FundamentalMatrix::matrix() const {
 }
 
 void FundamentalMatrix::print(const std::string& s) const {
-  std::cout << s << "U:\n"
-            << U_.matrix() << "\ns: " << s_ << "\nV:\n"
-            << V_.matrix() << std::endl;
+  std::cout << s << matrix() << std::endl;
 }
 
 bool FundamentalMatrix::equals(const FundamentalMatrix& other,
@@ -98,20 +97,20 @@ FundamentalMatrix FundamentalMatrix::retract(const Vector& delta) const {
 }
 
 //*************************************************************************
-Matrix3 SimpleFundamentalMatrix::leftK() const {
+Matrix3 SimpleFundamentalMatrix::Ka() const {
   Matrix3 K;
   K << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;
   return K;
 }
 
-Matrix3 SimpleFundamentalMatrix::rightK() const {
+Matrix3 SimpleFundamentalMatrix::Kb() const {
   Matrix3 K;
   K << fb_, 0, cb_.x(), 0, fb_, cb_.y(), 0, 0, 1;
   return K;
 }
 
 Matrix3 SimpleFundamentalMatrix::matrix() const {
-  return leftK().transpose().inverse() * E_.matrix() * rightK().inverse();
+  return Ka().transpose().inverse() * E_.matrix() * Kb().inverse();
 }
 
 void SimpleFundamentalMatrix::print(const std::string& s) const {
