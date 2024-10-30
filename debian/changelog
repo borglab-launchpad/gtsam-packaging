@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~2371.gbp8aaf8d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2372.gbp959566) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9595662265b54ac375219b92fa7a1fb05d2be2cf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8aaf8db528062cc3ac3ddf1e5410e2ccb07cd1e1 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Oct 2024 06:15:35 +0000
+  [ Frank Dellaert ]
+  * Formatting and comments
+  * Added documentation
+  * Added README
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Switch measured/reference language.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Oct 2024 21:05:58 +0000
 
 gtsam (4.1.0-1ubuntu2~2370.gbp8c8716) noble; urgency=medium
 
