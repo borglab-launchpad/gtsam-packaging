@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2370.gbp9f9ab2) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2371.gbp0d0149) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0d01496b6825e878e7a1505ae99b05df186a8ca9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9f9ab22dc1bcf69cd0589fc05140b73546e0c2c7 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Oct 2024 21:11:06 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Fix warning: ‘beta’ may be used uninitialized in this function
+
+  [ Varun Agrawal ]
+  * remove linearizedFactorGraph and use linearized unary and binary factors
+  * method to get the nonlinear factors
+  * update all tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Oct 2024 21:42:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2369.gbp91db6b) noble; urgency=medium
 
