@@ -130,7 +130,7 @@ TEST(HybridSerialization, HybridGaussianConditional) {
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential());
+  HybridBayesNet hbn = *(s.linearizedFactorGraph().eliminateSequential());
 
   EXPECT(equalsObj<HybridBayesNet>(hbn));
   EXPECT(equalsXML<HybridBayesNet>(hbn));
@@ -141,7 +141,7 @@ TEST(HybridSerialization, HybridBayesNet) {
 // Test HybridBayesTree serialization.
 TEST(HybridSerialization, HybridBayesTree) {
   Switching s(2);
-  HybridBayesTree hbt = *(s.linearizedFactorGraph.eliminateMultifrontal());
+  HybridBayesTree hbt = *(s.linearizedFactorGraph().eliminateMultifrontal());
 
   EXPECT(equalsObj<HybridBayesTree>(hbt));
   EXPECT(equalsXML<HybridBayesTree>(hbt));

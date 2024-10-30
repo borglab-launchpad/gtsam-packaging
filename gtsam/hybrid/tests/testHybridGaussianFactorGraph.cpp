@@ -175,7 +175,7 @@ TEST(HybridBayesNet, Switching) {
   Switching s(2, betweenSigma, priorSigma);
 
   // Check size of linearized factor graph
-  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph();
   EXPECT_LONGS_EQUAL(4, graph.size());
 
   // Create some continuous and discrete values
@@ -184,7 +184,7 @@ TEST(HybridBayesNet, Switching) {
   const DiscreteValues modeZero{{M(0), 0}}, modeOne{{M(0), 1}};
 
   // Get the hybrid gaussian factor and check it is as expected
-  auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(graph.at(1));
+  auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(graph.at(2));
   CHECK(hgf);
 
   // Get factors and scalars for both modes
@@ -298,7 +298,7 @@ TEST(HybridBayesNet, Switching) {
   factors_x1.push_back(
       factor);  // Use the remaining factor from previous elimination
   factors_x1.push_back(
-      graph.at(2));  // Add the factor for x1 from the original graph
+      graph.at(1));  // Add the factor for x1 from the original graph
 
   // Test collectProductFactor for x1 clique
   auto productFactor_x1 = factors_x1.collectProductFactor();
@@ -356,7 +356,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
   Switching s(3);
 
   // Check size of linearized factor graph
-  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph();
   EXPECT_LONGS_EQUAL(7, graph.size());
 
   // Eliminate the graph
@@ -383,16 +383,16 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
 TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   Switching s(3);
 
-  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+  HybridGaussianFactorGraph graph = s.linearizedFactorGraph();
 
   DiscreteValues dv00{{M(0), 0}, {M(1), 0}};
   GaussianFactorGraph continuous_00 = graph(dv00);
   GaussianFactorGraph expected_00;
   expected_00.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
-  expected_00.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
-  expected_00.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
   expected_00.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
   expected_00.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+  expected_00.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
+  expected_00.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
 
   EXPECT(assert_equal(expected_00, continuous_00));
 
@@ -400,10 +400,10 @@ TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   GaussianFactorGraph continuous_01 = graph(dv01);
   GaussianFactorGraph expected_01;
   expected_01.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
-  expected_01.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
-  expected_01.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
   expected_01.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
   expected_01.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+  expected_01.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
+  expected_01.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
 
   EXPECT(assert_equal(expected_01, continuous_01));
 
@@ -411,10 +411,10 @@ TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   GaussianFactorGraph continuous_10 = graph(dv10);
   GaussianFactorGraph expected_10;
   expected_10.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
-  expected_10.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
-  expected_10.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
   expected_10.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
   expected_10.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+  expected_10.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
+  expected_10.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
 
   EXPECT(assert_equal(expected_10, continuous_10));
 
@@ -422,16 +422,16 @@ TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   GaussianFactorGraph continuous_11 = graph(dv11);
   GaussianFactorGraph expected_11;
   expected_11.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
-  expected_11.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
-  expected_11.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
   expected_11.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
   expected_11.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+  expected_11.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
+  expected_11.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
 
   EXPECT(assert_equal(expected_11, continuous_11));
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, optimize) {
+TEST(HybridGaussianFactorGraph, Optimize) {
   HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
@@ -451,16 +451,16 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
   Switching switching(4);
 
   HybridGaussianFactorGraph hfg;
-  hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X0)
+  hfg.push_back(switching.linearUnaryFactors.at(0));  // P(X0)
   Ordering ordering;
   ordering.push_back(X(0));
   HybridBayesNet::shared_ptr bayes_net = hfg.eliminateSequential(ordering);
 
   HybridGaussianFactorGraph hfg2;
-  hfg2.push_back(*bayes_net);                             // P(X0)
-  hfg2.push_back(switching.linearizedFactorGraph.at(1));  // P(X0, X1 | M0)
-  hfg2.push_back(switching.linearizedFactorGraph.at(2));  // P(X1, X2 | M1)
-  hfg2.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  hfg2.push_back(*bayes_net);                           // P(X0)
+  hfg2.push_back(switching.linearBinaryFactors.at(0));  // P(X0, X1 | M0)
+  hfg2.push_back(switching.linearBinaryFactors.at(1));  // P(X1, X2 | M1)
+  hfg2.push_back(switching.linearUnaryFactors.at(2));   // P(X2)
   ordering += X(1), X(2), M(0), M(1);
 
   // Created product of first two factors and check eliminate:
@@ -510,13 +510,13 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   Switching s(4);
 
   HybridGaussianFactorGraph graph;
-  graph.push_back(s.linearizedFactorGraph.at(0));  // f(X0)
-  graph.push_back(s.linearizedFactorGraph.at(1));  // f(X0, X1, M0)
-  graph.push_back(s.linearizedFactorGraph.at(2));  // f(X1, X2, M1)
-  graph.push_back(s.linearizedFactorGraph.at(4));  // f(X1)
-  graph.push_back(s.linearizedFactorGraph.at(5));  // f(X2)
-  graph.push_back(s.linearizedFactorGraph.at(7));  // f(M0)
-  graph.push_back(s.linearizedFactorGraph.at(8));  // f(M0, M1)
+  graph.push_back(s.linearUnaryFactors.at(0));   // f(X0)
+  graph.push_back(s.linearBinaryFactors.at(0));  // f(X0, X1, M0)
+  graph.push_back(s.linearBinaryFactors.at(1));  // f(X1, X2, M1)
+  graph.push_back(s.linearUnaryFactors.at(1));   // f(X1)
+  graph.push_back(s.linearUnaryFactors.at(2));   // f(X2)
+  graph.push_back(s.modeChain.at(0));            // f(M0)
+  graph.push_back(s.modeChain.at(1));            // f(M0, M1)
 
   HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
@@ -531,8 +531,8 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
 
   graph = HybridGaussianFactorGraph();
   graph.push_back(*hybridBayesNet);
-  graph.push_back(s.linearizedFactorGraph.at(3));  // f(X2, X3, M2)
-  graph.push_back(s.linearizedFactorGraph.at(6));  // f(X3)
+  graph.push_back(s.linearBinaryFactors.at(2));  // f(X2, X3, M2)
+  graph.push_back(s.linearUnaryFactors.at(3));   // f(X3)
 
   hybridBayesNet = graph.eliminateSequential();
   EXPECT_LONGS_EQUAL(7, hybridBayesNet->size());

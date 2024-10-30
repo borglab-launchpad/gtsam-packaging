@@ -21,6 +21,8 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
+#include <stdexcept>
+
 namespace gtsam {
 
 /// Fletcher-Reeves formula for computing β, the direction of steepest descent.
@@ -247,6 +249,9 @@ std::tuple<V, int> nonlinearConjugateGradient(
         case DirectionMethod::DaiYuan:
           beta = DaiYuan(currentGradient, prevGradient, direction);
           break;
+        default:
+          throw std::runtime_error(
+              "NonlinearConjugateGradientOptimizer: Invalid directionMethod");
       }
 
       direction = currentGradient + (beta * direction);

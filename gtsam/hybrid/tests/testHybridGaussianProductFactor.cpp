@@ -189,8 +189,10 @@ TEST(HybridGaussianProductFactor, AddPruned) {
   product += prunedFactorB;
   EXPECT_LONGS_EQUAL(6, product.nrLeaves());
 
+#ifdef GTSAM_DT_MERGING
   auto pruned = product.removeEmpty();
   EXPECT_LONGS_EQUAL(5, pruned.nrLeaves());
+#endif
 }
 
 /* ************************************************************************* */
