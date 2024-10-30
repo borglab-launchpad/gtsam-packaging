@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2366.gbpf7be79) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2367.gbp3c2f39) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3c2f39ae0207bf057c62737f195d8f47de3e1a52 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f7be79179c2e1b59416530455fa535c15655b4e1 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Oct 2024 06:16:03 +0000
+  [ Frank Dellaert ]
+  * Formatting and comments
+  * Added documentation
+  * Added README
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Switch measured/reference language.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Oct 2024 21:05:58 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2365.gbpaaeabe) noble; urgency=medium
 
