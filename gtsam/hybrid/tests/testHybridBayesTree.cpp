@@ -352,7 +352,7 @@ TEST(HybridBayesTree, OptimizeMultifrontal) {
   Switching s(4);
 
   HybridBayesTree::shared_ptr hybridBayesTree =
-      s.linearizedFactorGraph.eliminateMultifrontal();
+      s.linearizedFactorGraph().eliminateMultifrontal();
   HybridValues delta = hybridBayesTree->optimize();
 
   VectorValues expectedValues;
@@ -364,30 +364,40 @@ TEST(HybridBayesTree, OptimizeMultifrontal) {
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
 
+namespace optimize_fixture {
+HybridGaussianFactorGraph GetGaussianFactorGraph(size_t N) {
+  Switching s(N);
+  HybridGaussianFactorGraph graph;
+
+  for (size_t i = 0; i < N - 1; i++) {
+    graph.push_back(s.linearBinaryFactors.at(i));
+  }
+  for (size_t i = 0; i < N; i++) {
+    graph.push_back(s.linearUnaryFactors.at(i));
+  }
+  for (size_t i = 0; i < N - 1; i++) {
+    graph.push_back(s.modeChain.at(i));
+  }
+
+  return graph;
+}
+}  // namespace optimize_fixture
+
 /* ****************************************************************************/
 // Test for optimizing a HybridBayesTree with a given assignment.
 TEST(HybridBayesTree, OptimizeAssignment) {
-  Switching s(4);
+  using namespace optimize_fixture;
+
+  size_t N = 4;
 
   HybridGaussianISAM isam;
-  HybridGaussianFactorGraph graph1;
 
-  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
-  for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the Gaussian factors, 1 prior on X(1),
-  // 3 measurements on X(2), X(3), X(4)
-  graph1.push_back(s.linearizedFactorGraph.at(0));
-  for (size_t i = 4; i <= 7; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the discrete factors
-  for (size_t i = 7; i <= 9; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
+  // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
+  // Then add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(1), X(2), X(3)
+  // Finally add the discrete factors
+  // m0, m1-m0, m2-m1
+  HybridGaussianFactorGraph graph1 = GetGaussianFactorGraph(N);
 
   isam.update(graph1);
 
@@ -409,12 +419,13 @@ TEST(HybridBayesTree, OptimizeAssignment) {
 
   EXPECT(assert_equal(expected_delta, delta));
 
+  Switching s(N);
   // Create ordering.
   Ordering ordering;
   for (size_t k = 0; k < s.K; k++) ordering.push_back(X(k));
 
   const auto [hybridBayesNet, remainingFactorGraph] =
-      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+      s.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
   GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
   VectorValues expected = gbn.optimize();
@@ -425,38 +436,29 @@ TEST(HybridBayesTree, OptimizeAssignment) {
 /* ****************************************************************************/
 // Test for optimizing a HybridBayesTree.
 TEST(HybridBayesTree, Optimize) {
-  Switching s(4);
+  using namespace optimize_fixture;
+
+  size_t N = 4;
 
   HybridGaussianISAM isam;
-  HybridGaussianFactorGraph graph1;
-
-  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
-  for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the Gaussian factors, 1 prior on X(0),
-  // 3 measurements on X(2), X(3), X(4)
-  graph1.push_back(s.linearizedFactorGraph.at(0));
-  for (size_t i = 4; i <= 6; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the discrete factors
-  for (size_t i = 7; i <= 9; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
+  // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
+  // Then add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(1), X(2), X(3)
+  // Finally add the discrete factors
+  // m0, m1-m0, m2-m1
+  HybridGaussianFactorGraph graph1 = GetGaussianFactorGraph(N);
 
   isam.update(graph1);
 
   HybridValues delta = isam.optimize();
 
+  Switching s(N);
   // Create ordering.
   Ordering ordering;
   for (size_t k = 0; k < s.K; k++) ordering.push_back(X(k));
 
   const auto [hybridBayesNet, remainingFactorGraph] =
-      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+      s.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
   DiscreteFactorGraph dfg;
   for (auto&& f : *remainingFactorGraph) {
@@ -481,27 +483,18 @@ TEST(HybridBayesTree, Optimize) {
 /* ****************************************************************************/
 // Test for choosing a GaussianBayesTree from a HybridBayesTree.
 TEST(HybridBayesTree, Choose) {
-  Switching s(4);
+  using namespace optimize_fixture;
+
+  size_t N = 4;
 
   HybridGaussianISAM isam;
-  HybridGaussianFactorGraph graph1;
 
-  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
-  for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the Gaussian factors, 1 prior on X(0),
-  // 3 measurements on X(2), X(3), X(4)
-  graph1.push_back(s.linearizedFactorGraph.at(0));
-  for (size_t i = 4; i <= 6; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
-
-  // Add the discrete factors
-  for (size_t i = 7; i <= 9; i++) {
-    graph1.push_back(s.linearizedFactorGraph.at(i));
-  }
+  // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
+  // Then add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(1), X(2), X(3)
+  // Finally add the discrete factors
+  // m0, m1-m0, m2-m1
+  HybridGaussianFactorGraph graph1 = GetGaussianFactorGraph(N);
 
   isam.update(graph1);
 
@@ -513,8 +506,9 @@ TEST(HybridBayesTree, Choose) {
   GaussianBayesTree gbt = isam.choose(assignment);
 
   // Specify ordering so it matches that of HybridGaussianISAM.
+  Switching s(N);
   Ordering ordering(KeyVector{X(0), X(1), X(2), X(3), M(0), M(1), M(2)});
-  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
+  auto bayesTree = s.linearizedFactorGraph().eliminateMultifrontal(ordering);
 
   auto expected_gbt = bayesTree->choose(assignment);
 

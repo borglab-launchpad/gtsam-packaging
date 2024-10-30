@@ -42,15 +42,15 @@ using symbol_shorthand::Z;
 
 /* ****************************************************************************/
 namespace switching3 {
-// ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
+// ϕ(x0) ϕ(x1;z1) ϕ(x2;z2) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(m0) ϕ(m0,m1)
 const Switching switching(3);
-const HybridGaussianFactorGraph &lfg = switching.linearizedFactorGraph;
+const HybridGaussianFactorGraph &lfg = switching.linearizedFactorGraph();
 
 // First update graph: ϕ(x0) ϕ(x0,x1,m0) ϕ(m0)
-const HybridGaussianFactorGraph graph1{lfg.at(0), lfg.at(1), lfg.at(5)};
+const HybridGaussianFactorGraph graph1{lfg.at(0), lfg.at(3), lfg.at(5)};
 
 // Second update graph: ϕ(x1,x2,m1) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0,m1)
-const HybridGaussianFactorGraph graph2{lfg.at(2), lfg.at(3), lfg.at(4),
+const HybridGaussianFactorGraph graph2{lfg.at(4), lfg.at(1), lfg.at(2),
                                        lfg.at(6)};
 }  // namespace switching3
 
@@ -108,7 +108,7 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
   // Now we calculate the expected factors using full elimination
   const auto [expectedHybridBayesTree, expectedRemainingGraph] =
-      switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
+      switching.linearizedFactorGraph().eliminatePartialMultifrontal(ordering);
 
   // The densities on X(0) should be the same
   auto x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
@@ -162,15 +162,14 @@ TEST(HybridGaussianElimination, Approx_inference) {
   HybridGaussianFactorGraph graph1;
 
   // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
-  for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+  for (size_t i = 0; i < 3; i++) {
+    graph1.push_back(switching.linearBinaryFactors.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(0),
-  // 3 measurements on X(1), X(2), X(3)
-  graph1.push_back(switching.linearizedFactorGraph.at(0));
-  for (size_t i = 4; i <= 7; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+  // Add the Gaussian factors, 1 prior on x0,
+  // 3 measurements on x1, x2, x3
+  for (size_t i = 0; i <= 3; i++) {
+    graph1.push_back(switching.linearUnaryFactors.at(i));
   }
 
   // Create ordering.
@@ -181,7 +180,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
 
   // Now we calculate the actual factors using full elimination
   const auto [unPrunedHybridBayesTree, unPrunedRemainingGraph] =
-      switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
+      switching.linearizedFactorGraph().eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;
   incrementalHybrid.update(graph1);
@@ -266,15 +265,14 @@ TEST(HybridGaussianElimination, IncrementalApproximate) {
 
   /***** Run Round 1 *****/
   // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
-  for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+  for (size_t i = 0; i < 3; i++) {
+    graph1.push_back(switching.linearBinaryFactors.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(0),
-  // 3 measurements on X(1), X(2), X(3)
-  graph1.push_back(switching.linearizedFactorGraph.at(0));
-  for (size_t i = 5; i <= 7; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+  // Add the Gaussian factors, 1 prior on x0,
+  // 3 measurements on x1, x2, x3
+  for (size_t i = 0; i <= 3; i++) {
+    graph1.push_back(switching.linearUnaryFactors.at(i));
   }
 
   // Run update with pruning
@@ -296,8 +294,8 @@ TEST(HybridGaussianElimination, IncrementalApproximate) {
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
-  graph2.push_back(switching.linearizedFactorGraph.at(4));
-  graph2.push_back(switching.linearizedFactorGraph.at(8));
+  graph2.push_back(switching.linearBinaryFactors.at(3));  // x3-x4
+  graph2.push_back(switching.linearUnaryFactors.at(4));   // x4
 
   // Run update with pruning a second time.
   incrementalHybrid.update(graph2);

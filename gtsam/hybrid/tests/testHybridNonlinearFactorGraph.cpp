@@ -249,7 +249,7 @@ TEST(HybridNonlinearFactorGraph, Switching) {
   Switching self(3);
 
   EXPECT_LONGS_EQUAL(7, self.nonlinearFactorGraph().size());
-  EXPECT_LONGS_EQUAL(7, self.linearizedFactorGraph.size());
+  EXPECT_LONGS_EQUAL(7, self.linearizedFactorGraph().size());
 }
 
 /****************************************************************************
@@ -276,7 +276,7 @@ TEST(HybridNonlinearFactorGraph, EliminationTree) {
   for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
   // Create elimination tree.
-  HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
+  HybridEliminationTree etree(self.linearizedFactorGraph(), ordering);
   EXPECT_LONGS_EQUAL(1, etree.roots().size())
 }
 
@@ -286,12 +286,12 @@ TEST(HybridNonlinearFactorGraph, EliminationTree) {
 TEST(GaussianElimination, Eliminate_x0) {
   Switching self(3);
 
-  // Gather factors on x1, has a simple Gaussian and a hybrid factor.
+  // Gather factors on x0, has a simple Gaussian and a hybrid factor.
   HybridGaussianFactorGraph factors;
   // Add gaussian prior
-  factors.push_back(self.linearizedFactorGraph[0]);
+  factors.push_back(self.linearUnaryFactors[0]);
   // Add first hybrid factor
-  factors.push_back(self.linearizedFactorGraph[1]);
+  factors.push_back(self.linearBinaryFactors[0]);
 
   // Eliminate x0
   const Ordering ordering{X(0)};
@@ -313,8 +313,8 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
 
   // Gather factors on x1, will be two hybrid factors (with x0 and x2, resp.).
   HybridGaussianFactorGraph factors;
-  factors.push_back(self.linearizedFactorGraph[1]);  // involves m0
-  factors.push_back(self.linearizedFactorGraph[2]);  // involves m1
+  factors.push_back(self.linearBinaryFactors[0]);  // involves m0
+  factors.push_back(self.linearBinaryFactors[1]);  // involves m1
 
   // Eliminate x1
   const Ordering ordering{X(1)};
@@ -349,7 +349,7 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
 TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   Switching self(2, 1.0, 0.1);
 
-  auto factors = self.linearizedFactorGraph;
+  auto factors = self.linearizedFactorGraph();
 
   // Eliminate x0
   const Ordering ordering{X(0), X(1)};
@@ -380,15 +380,13 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
 TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
   Switching self(3);
 
-  auto linearizedFactorGraph = self.linearizedFactorGraph;
-
   // Create ordering of only continuous variables.
   Ordering ordering;
   for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
   // Eliminate partially i.e. only continuous part.
   const auto [hybridBayesNet, remainingFactorGraph] =
-      linearizedFactorGraph.eliminatePartialSequential(ordering);
+      self.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
@@ -444,11 +442,11 @@ TEST(HybridNonlinearFactorGraph, PrintErrors) {
   // Get nonlinear factor graph and add linear factors to be holistic.
   // TODO(Frank): ???
   HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph();
-  fg.add(self.linearizedFactorGraph);
+  fg.add(self.linearizedFactorGraph());
 
   // Optimize to get HybridValues
   HybridBayesNet::shared_ptr bn =
-      self.linearizedFactorGraph.eliminateSequential();
+      self.linearizedFactorGraph().eliminateSequential();
   HybridValues hv = bn->optimize();
 
   // Print and verify
@@ -465,8 +463,6 @@ TEST(HybridNonlinearFactorGraph, PrintErrors) {
 TEST(HybridNonlinearFactorGraph, Full_Elimination) {
   Switching self(3);
 
-  auto linearizedFactorGraph = self.linearizedFactorGraph;
-
   // We first do a partial elimination
   DiscreteBayesNet discreteBayesNet;
 
@@ -477,7 +473,7 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
 
     // Eliminate partially.
     const auto [hybridBayesNet_partial, remainingFactorGraph_partial] =
-        linearizedFactorGraph.eliminatePartialSequential(ordering);
+        self.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
@@ -500,7 +496,7 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet =
-      linearizedFactorGraph.eliminateSequential(ordering);
+      self.linearizedFactorGraph().eliminateSequential(ordering);
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
@@ -533,7 +529,7 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
 TEST(HybridNonlinearFactorGraph, Printing) {
   Switching self(3);
 
-  auto linearizedFactorGraph = self.linearizedFactorGraph;
+  auto linearizedFactorGraph = self.linearizedFactorGraph();
 
   // Create ordering.
   Ordering ordering;
@@ -556,6 +552,24 @@ GaussianFactor:
   No noise model
 
 Factor 1
+GaussianFactor:
+
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+
+Factor 2
+GaussianFactor:
+
+  A[x2] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+
+Factor 3
 HybridGaussianFactor:
 Hybrid [x0 x1; m0]{
  Choice(m0) 
@@ -583,7 +597,7 @@ scalar: 0.918939
 
 }
 
-Factor 2
+Factor 4
 HybridGaussianFactor:
 Hybrid [x1 x2; m1]{
  Choice(m1) 
@@ -610,24 +624,6 @@ scalar: 0.918939
 scalar: 0.918939
 
 }
-
-Factor 3
-GaussianFactor:
-
-  A[x1] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
-
-Factor 4
-GaussianFactor:
-
-  A[x2] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
 
 Factor 5
 DiscreteFactor:
@@ -651,16 +647,38 @@ DiscreteFactor:
 #else
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: 
+Factor 0
+GaussianFactor:
+
   A[x0] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 1: 
+
+Factor 1
+GaussianFactor:
+
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+
+Factor 2
+GaussianFactor:
+
+  A[x2] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+
+Factor 3
+HybridGaussianFactor:
 Hybrid [x0 x1; m0]{
  Choice(m0) 
- 0 Leaf:
+ 0 Leaf :
   A[x0] = [
 	-1
 ]
@@ -669,8 +687,9 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -1 ]
   No noise model
+scalar: 0.918939
 
- 1 Leaf:
+ 1 Leaf :
   A[x0] = [
 	-1
 ]
@@ -679,12 +698,15 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -0 ]
   No noise model
+scalar: 0.918939
 
 }
-factor 2: 
+
+Factor 4
+HybridGaussianFactor:
 Hybrid [x1 x2; m1]{
  Choice(m1) 
- 0 Leaf:
+ 0 Leaf :
   A[x1] = [
 	-1
 ]
@@ -693,8 +715,9 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -1 ]
   No noise model
+scalar: 0.918939
 
- 1 Leaf:
+ 1 Leaf :
   A[x1] = [
 	-1
 ]
@@ -703,26 +726,21 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -0 ]
   No noise model
+scalar: 0.918939
 
 }
-factor 3: 
-  A[x1] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
-factor 4: 
-  A[x2] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
-factor 5:  P( m0 ):
- Choice(m0) 
- 0 Leaf 0.5
- 1 Leaf 0.5
 
-factor 6:  P( m1 | m0 ):
+Factor 5
+DiscreteFactor:
+ P( m0 ):
+ Choice(m0) 
+ 0 Leaf  0.5
+ 1 Leaf  0.5
+
+
+Factor 6
+DiscreteFactor:
+ P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf 0.33333333
@@ -730,6 +748,7 @@ factor 6:  P( m1 | m0 ):
  1 Choice(m0) 
  1 0 Leaf 0.66666667
  1 1 Leaf  0.4
+
 
 )";
 #endif

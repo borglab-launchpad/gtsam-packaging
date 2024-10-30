@@ -82,7 +82,7 @@ TEST(HybridEstimation, Full) {
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
   Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph;
+  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph();
 
   Ordering hybridOrdering;
   for (size_t k = 0; k < K; k++) {
@@ -325,7 +325,7 @@ TEST(HybridEstimation, Probability) {
   // given measurements and equal mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
-  auto graph = switching.linearizedFactorGraph;
+  auto graph = switching.linearizedFactorGraph();
 
   // Continuous elimination
   Ordering continuous_ordering(graph.continuousKeySet());
@@ -365,7 +365,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   // mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
-  auto graph = switching.linearizedFactorGraph;
+  auto graph = switching.linearizedFactorGraph();
 
   // Get the tree of unnormalized probabilities for each mode sequence.
   AlgebraicDecisionTree<Key> expected_probPrimeTree = GetProbPrimeTree(graph);

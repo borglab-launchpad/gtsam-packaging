@@ -147,7 +147,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   // Now we calculate the actual factors using full elimination
   const auto [expectedHybridBayesTree, expectedRemainingGraph] =
-      switching.linearizedFactorGraph
+      switching.linearizedFactorGraph()
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   // The densities on X(1) should be the same
@@ -214,8 +214,6 @@ TEST(HybridNonlinearISAM, Approx_inference) {
     initial.insert<double>(X(i), i + 1);
   }
 
-  // TODO(Frank): no mode chain?
-
   // Create ordering.
   Ordering ordering;
   for (size_t j = 0; j < 4; j++) {
@@ -224,7 +222,7 @@ TEST(HybridNonlinearISAM, Approx_inference) {
 
   // Now we calculate the actual factors using full elimination
   const auto [unPrunedHybridBayesTree, unPrunedRemainingGraph] =
-      switching.linearizedFactorGraph
+      switching.linearizedFactorGraph()
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;
@@ -325,7 +323,6 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
 
   // TODO(Frank): no mode chain?
 
-
   // Run update with pruning
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, initial);
@@ -347,7 +344,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
   graph2.push_back(switching.binaryFactors.at(3));  // x3-x4
-  graph2.push_back(switching.unaryFactors.at(4));  // x4 measurement
+  graph2.push_back(switching.unaryFactors.at(4));   // x4 measurement
   initial = Values();
   initial.insert<double>(X(4), 5);
 

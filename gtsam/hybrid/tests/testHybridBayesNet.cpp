@@ -31,6 +31,7 @@
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
+
 #include <memory>
 
 using namespace std;
@@ -263,7 +264,7 @@ TEST(HybridBayesNet, Choose) {
   const Ordering ordering(s.linearizationPoint.keys());
 
   const auto [hybridBayesNet, remainingFactorGraph] =
-      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+      s.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
   assignment[M(0)] = 1;
@@ -292,7 +293,7 @@ TEST(HybridBayesNet, OptimizeAssignment) {
   const Ordering ordering(s.linearizationPoint.keys());
 
   const auto [hybridBayesNet, remainingFactorGraph] =
-      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+      s.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
   assignment[M(0)] = 1;
@@ -319,7 +320,7 @@ TEST(HybridBayesNet, Optimize) {
   Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential();
+      s.linearizedFactorGraph().eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -347,7 +348,7 @@ TEST(HybridBayesNet, Pruning) {
   Switching s(3);
 
   HybridBayesNet::shared_ptr posterior =
-      s.linearizedFactorGraph.eliminateSequential();
+      s.linearizedFactorGraph().eliminateSequential();
   EXPECT_LONGS_EQUAL(5, posterior->size());
 
   // Optimize
@@ -400,7 +401,7 @@ TEST(HybridBayesNet, Prune) {
   Switching s(4);
 
   HybridBayesNet::shared_ptr posterior =
-      s.linearizedFactorGraph.eliminateSequential();
+      s.linearizedFactorGraph().eliminateSequential();
   EXPECT_LONGS_EQUAL(7, posterior->size());
 
   HybridValues delta = posterior->optimize();
@@ -418,7 +419,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
 
   HybridBayesNet::shared_ptr posterior =
-      s.linearizedFactorGraph.eliminateSequential();
+      s.linearizedFactorGraph().eliminateSequential();
   EXPECT_LONGS_EQUAL(7, posterior->size());
 
   DiscreteConditional joint;

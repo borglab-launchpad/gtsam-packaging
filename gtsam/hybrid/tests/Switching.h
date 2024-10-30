@@ -120,20 +120,12 @@ using MotionModel = BetweenFactor<double>;
 // Test fixture with switching network.
 /// ϕ(X(0)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(0)) .. ϕ(M(K-3),M(K-2))
 struct Switching {
- private:
-  HybridNonlinearFactorGraph nonlinearFactorGraph_;
-
  public:
   size_t K;
   DiscreteKeys modes;
   HybridNonlinearFactorGraph unaryFactors, binaryFactors, modeChain;
-  HybridGaussianFactorGraph linearizedFactorGraph;
+  HybridGaussianFactorGraph linearUnaryFactors, linearBinaryFactors;
   Values linearizationPoint;
-
-  // Access the flat nonlinear factor graph.
-  const HybridNonlinearFactorGraph &nonlinearFactorGraph() const {
-    return nonlinearFactorGraph_;
-  }
 
   /**
    * @brief Create with given number of time steps.
@@ -164,36 +156,33 @@ struct Switching {
     // Create hybrid factor graph.
 
     // Add a prior ϕ(X(0)) on X(0).
-    nonlinearFactorGraph_.emplace_shared<PriorFactor<double>>(
+    unaryFactors.emplace_shared<PriorFactor<double>>(
         X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
-    unaryFactors.push_back(nonlinearFactorGraph_.back());
 
     // Add "motion models" ϕ(X(k),X(k+1),M(k)).
     for (size_t k = 0; k < K - 1; k++) {
       auto motion_models = motionModels(k, between_sigma);
-      nonlinearFactorGraph_.emplace_shared<HybridNonlinearFactor>(modes[k],
-                                                                 motion_models);
-      binaryFactors.push_back(nonlinearFactorGraph_.back());
+      binaryFactors.emplace_shared<HybridNonlinearFactor>(modes[k],
+                                                          motion_models);
     }
 
     // Add measurement factors ϕ(X(k);z_k).
     auto measurement_noise = Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 1; k < K; k++) {
-      nonlinearFactorGraph_.emplace_shared<PriorFactor<double>>(
-          X(k), measurements.at(k), measurement_noise);
-      unaryFactors.push_back(nonlinearFactorGraph_.back());
+      unaryFactors.emplace_shared<PriorFactor<double>>(X(k), measurements.at(k),
+                                                       measurement_noise);
     }
 
     // Add "mode chain" ϕ(M(0)) ϕ(M(0),M(1)) ... ϕ(M(K-3),M(K-2))
     modeChain = createModeChain(transitionProbabilityTable);
-    nonlinearFactorGraph_ += modeChain;
 
     // Create the linearization point.
     for (size_t k = 0; k < K; k++) {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
     }
 
-    linearizedFactorGraph = *nonlinearFactorGraph_.linearize(linearizationPoint);
+    linearUnaryFactors = *unaryFactors.linearize(linearizationPoint);
+    linearBinaryFactors = *binaryFactors.linearize(linearizationPoint);
   }
 
   // Create motion models for a given time step
@@ -223,6 +212,24 @@ struct Switching {
                                                 transitionProbabilityTable);
     }
     return chain;
+  }
+
+  /// Get the full linear factor graph.
+  HybridGaussianFactorGraph linearizedFactorGraph() const {
+    HybridGaussianFactorGraph graph;
+    graph.push_back(linearUnaryFactors);
+    graph.push_back(linearBinaryFactors);
+    graph.push_back(modeChain);
+    return graph;
+  }
+
+  /// Get all the nonlinear factors.
+  HybridNonlinearFactorGraph nonlinearFactorGraph() const {
+    HybridNonlinearFactorGraph graph;
+    graph.push_back(unaryFactors);
+    graph.push_back(binaryFactors);
+    graph.push_back(modeChain);
+    return graph;
   }
 };
 
