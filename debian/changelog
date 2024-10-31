@@ -1,10 +1,34 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2374.gbp472291) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2375.gbp5eceba) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5eceba65b1ab89014cad89085773f14c0924e5b8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4722911075c473c79c7b927f14ff7adf0905dc4a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Oct 2024 21:47:10 +0000
+  [ Frank Dellaert ]
+  * Fix createPoses
+  * Fix FromPose3
+  * Wrap FundamentalMatrix classes
+  * New constructor
+  * Small API change
+  * Python unit tests
+  * TestManyCamerasCircle
+  * Fix call w new API
+  * Fix issues with SVD constructor
+  * Fix wrapper
+  * Fix test on windows
+  * Fix small issues and store scaled s_
+  * Get rid of scale
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Better SVD handling
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Oct 2024 19:45:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2373.gbpa1d5d5) noble; urgency=medium
 
