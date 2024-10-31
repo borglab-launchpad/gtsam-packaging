@@ -56,7 +56,7 @@ std::vector<Point3> createPoints() {
 
 /**
  * Create a set of ground-truth poses
- *  Default values give a circular trajectory, radius 30 at pi/4 intervals,
+ * Default values give a circular trajectory, radius 30 at pi/4 intervals,
  * always facing the circle center
  */
 std::vector<Pose3> createPoses(

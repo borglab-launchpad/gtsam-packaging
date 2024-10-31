@@ -38,7 +38,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
   // Define the camera calibration parameters
-  Cal3_S2 K(50.0, 50.0, 0.0, 50.0, 50.0);
+  Cal3_S2 cal(50.0, 50.0, 0.0, 50.0, 50.0);
 
   // Create the set of 8 ground-truth landmarks
   vector<Point3> points = createPoints();
@@ -47,13 +47,13 @@ int main(int argc, char* argv[]) {
   vector<Pose3> poses = posesOnCircle(4, 30);
 
   // Calculate ground truth fundamental matrices, 1 and 2 poses apart
-  auto F1 = FundamentalMatrix(K, poses[0].between(poses[1]), K);
-  auto F2 = FundamentalMatrix(K, poses[0].between(poses[2]), K);
+  auto F1 = FundamentalMatrix(cal.K(), poses[0].between(poses[1]), cal.K());
+  auto F2 = FundamentalMatrix(cal.K(), poses[0].between(poses[2]), cal.K());
 
   // Simulate measurements from each camera pose
   std::array<std::array<Point2, 8>, 4> p;
   for (size_t i = 0; i < 4; ++i) {
-    PinholeCamera<Cal3_S2> camera(poses[i], K);
+    PinholeCamera<Cal3_S2> camera(poses[i], cal);
     for (size_t j = 0; j < 8; ++j) {
       p[i][j] = camera.project(points[j]);
     }

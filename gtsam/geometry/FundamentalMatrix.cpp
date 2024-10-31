@@ -2,10 +2,12 @@
  * @file FundamentalMatrix.cpp
  * @brief FundamentalMatrix classes
  * @author Frank Dellaert
- * @date Oct 23, 2024
+ * @date October 2024
  */
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
 
@@ -26,6 +28,11 @@ Point2 EpipolarTransfer(const Matrix3& Fca, const Point2& pa,  //
 }
 
 //*************************************************************************
+FundamentalMatrix::FundamentalMatrix(const Matrix3& U, double s,
+                                     const Matrix3& V) {
+  initialize(U, s, V);
+}
+
 FundamentalMatrix::FundamentalMatrix(const Matrix3& F) {
   // Perform SVD
   Eigen::JacobiSVD<Matrix3> svd(F, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -47,28 +54,24 @@ FundamentalMatrix::FundamentalMatrix(const Matrix3& F) {
         "The input matrix does not represent a valid fundamental matrix.");
   }
 
-  // Ensure the second singular value is recorded as s
-  s_ = singularValues(1);
+  initialize(U, singularValues(1), V);
+}
 
-  // Check if U is a reflection
-  if (U.determinant() < 0) {
-    U = -U;
-    s_ = -s_;  // Change sign of scalar if U is a reflection
-  }
+void FundamentalMatrix::initialize(Matrix3 U, double s, Matrix3 V) {
+  // Check if U is a reflection and flip third column if so
+  if (U.determinant() < 0) U.col(2) *= -1;
 
-  // Check if V is a reflection
-  if (V.determinant() < 0) {
-    V = -V;
-    s_ = -s_;  // Change sign of scalar if U is a reflection
-  }
+  // Same check for V
+  if (V.determinant() < 0) V.col(2) *= -1;
 
-  // Assign the rotations
   U_ = Rot3(U);
+  s_ = s;
   V_ = Rot3(V);
 }
 
 Matrix3 FundamentalMatrix::matrix() const {
-  return U_.matrix() * Vector3(1, s_, 0).asDiagonal() * V_.transpose().matrix();
+  return U_.matrix() * Vector3(1.0, s_, 0).asDiagonal() *
+         V_.transpose().matrix();
 }
 
 void FundamentalMatrix::print(const std::string& s) const {
@@ -90,9 +93,9 @@ Vector FundamentalMatrix::localCoordinates(const FundamentalMatrix& F) const {
 }
 
 FundamentalMatrix FundamentalMatrix::retract(const Vector& delta) const {
-  Rot3 newU = U_.retract(delta.head<3>());
-  double newS = s_ + delta(3);  // Update scalar
-  Rot3 newV = V_.retract(delta.tail<3>());
+  const Rot3 newU = U_.retract(delta.head<3>());
+  const double newS = s_ + delta(3);
+  const Rot3 newV = V_.retract(delta.tail<3>());
   return FundamentalMatrix(newU, newS, newV);
 }
 

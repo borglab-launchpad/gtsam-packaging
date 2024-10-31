@@ -2,7 +2,7 @@
  * @file FundamentalMatrix.h
  * @brief FundamentalMatrix classes
  * @author Frank Dellaert
- * @date Oct 23, 2024
+ * @date October 2024
  */
 
 #pragma once
@@ -15,11 +15,15 @@ namespace gtsam {
 
 /**
  * @class FundamentalMatrix
- * @brief Represents a general fundamental matrix.
+ * @brief Represents a fundamental matrix in computer vision, which encodes the
+ * epipolar geometry between two views.
  *
- * This class represents a general fundamental matrix, which is a 3x3 matrix
- * that describes the relationship between two images. It is parameterized by a
- * left rotation U, a scalar s, and a right rotation V.
+ * The FundamentalMatrix class encapsulates the fundamental matrix, which
+ * relates corresponding points in stereo images. It is parameterized by two
+ * rotation matrices (U and V) and a scalar parameter (s).
+ * Using these values, the fundamental matrix is represented as
+ *
+ *   F = U * diag(1, s, 0) * V^T
  */
 class GTSAM_EXPORT FundamentalMatrix {
  private:
@@ -34,15 +38,10 @@ class GTSAM_EXPORT FundamentalMatrix {
   /**
    * @brief Construct from U, V, and scalar s
    *
-   * Initializes the FundamentalMatrix with the given left rotation U,
-   * scalar s, and right rotation V.
-   *
-   * @param U Left rotation matrix
-   * @param s Scalar parameter for the fundamental matrix
-   * @param V Right rotation matrix
+   * Initializes the FundamentalMatrix From the SVD representation
+   * U*diag(1,s,0)*V^T. It will internally convert to using SO(3).
    */
-  FundamentalMatrix(const Rot3& U, double s, const Rot3& V)
-      : U_(U), s_(s), V_(V) {}
+  FundamentalMatrix(const Matrix3& U, double s, const Matrix3& V);
 
   /**
    * @brief Construct from a 3x3 matrix using SVD
@@ -55,21 +54,34 @@ class GTSAM_EXPORT FundamentalMatrix {
   FundamentalMatrix(const Matrix3& F);
 
   /**
+   * @brief Construct from essential matrix and calibration matrices
+   *
+   * Initializes the FundamentalMatrix from the given essential matrix E
+   * and calibration matrices Ka and Kb, using
+   *   F = Ka^(-T) * E * Kb^(-1)
+   * and then calls constructor that decomposes F via SVD.
+   *
+   * @param E Essential matrix
+   * @param Ka Calibration matrix for the left camera
+   * @param Kb Calibration matrix for the right camera
+   */
+  FundamentalMatrix(const Matrix3& Ka, const EssentialMatrix& E,
+                    const Matrix3& Kb)
+      : FundamentalMatrix(Ka.transpose().inverse() * E.matrix() *
+                          Kb.inverse()) {}
+
+  /**
    * @brief Construct from calibration matrices Ka, Kb, and pose aPb
    *
    * Initializes the FundamentalMatrix from the given calibration
    * matrices Ka and Kb, and the pose aPb.
    *
-   * @tparam CAL Calibration type, expected to have a matrix() method
    * @param Ka Calibration matrix for the left camera
    * @param aPb Pose from the left to the right camera
    * @param Kb Calibration matrix for the right camera
    */
-  template <typename CAL>
-  FundamentalMatrix(const CAL& Ka, const Pose3& aPb, const CAL& Kb)
-      : FundamentalMatrix(Ka.K().transpose().inverse() *
-                          EssentialMatrix::FromPose3(aPb).matrix() *
-                          Kb.K().inverse()) {}
+  FundamentalMatrix(const Matrix3& Ka, const Pose3& aPb, const Matrix3& Kb)
+      : FundamentalMatrix(Ka, EssentialMatrix::FromPose3(aPb), Kb) {}
 
   /// Return the fundamental matrix representation
   Matrix3 matrix() const;
@@ -96,6 +108,13 @@ class GTSAM_EXPORT FundamentalMatrix {
   /// Retract the given vector to get a new FundamentalMatrix
   FundamentalMatrix retract(const Vector& delta) const;
   /// @}
+ private:
+  /// Private constructor for internal use
+  FundamentalMatrix(const Rot3& U, double s, const Rot3& V)
+      : U_(U), s_(s), V_(V) {}
+
+  /// Initialize SO(3) matrices from general O(3) matrices
+  void initialize(Matrix3 U, double s, Matrix3 V);
 };
 
 /**
