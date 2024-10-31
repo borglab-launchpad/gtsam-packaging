@@ -11,6 +11,7 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/EssentialMatrix.h>
+#include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -537,6 +538,8 @@ class ISAM2 {
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Cal3Bundler, gtsam::EssentialMatrix,
+                     gtsam::Cal3Bundler, gtsam::FundamentalMatrix,
+                     gtsam::Cal3Bundler, gtsam::SimpleFundamentalMatrix,
                      gtsam::PinholeCamera<gtsam::Cal3_S2>,
                      gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,

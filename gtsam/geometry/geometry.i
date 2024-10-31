@@ -578,6 +578,8 @@ class Unit3 {
   // Standard Constructors
   Unit3();
   Unit3(const gtsam::Point3& pose);
+  Unit3(double x, double y, double z);
+  Unit3(const gtsam::Point2& p, double f);
 
   // Testable
   void print(string s = "") const;
@@ -620,10 +622,10 @@ class EssentialMatrix {
   EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
 
   // Constructors from Pose3
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_);
+  static gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_);
 
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_,
-                            Eigen::Ref<Eigen::MatrixXd> H);
+  static gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_,
+                                          Eigen::Ref<Eigen::MatrixXd> H);
 
   // Testable
   void print(string s = "") const;
@@ -902,6 +904,59 @@ class Cal3Bundler {
   // enabling serialization functionality
   void serialize() const;
 };
+
+#include <gtsam/geometry/FundamentalMatrix.h>
+
+// FundamentalMatrix class
+class FundamentalMatrix {
+  // Constructors
+  FundamentalMatrix();
+  FundamentalMatrix(const gtsam::Matrix3& U, double s, const gtsam::Matrix3& V);
+  FundamentalMatrix(const gtsam::Matrix3& F);
+
+  // Overloaded constructors for specific calibration types
+  FundamentalMatrix(const gtsam::Matrix3& Ka, const gtsam::EssentialMatrix& E,
+                    const gtsam::Matrix3& Kb);
+  FundamentalMatrix(const gtsam::Matrix3& Ka, const gtsam::Pose3& aPb,
+                    const gtsam::Matrix3& Kb);
+
+  // Methods
+  gtsam::Matrix3 matrix() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::FundamentalMatrix& other, double tol = 1e-9) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Vector localCoordinates(const gtsam::FundamentalMatrix& F) const;
+  gtsam::FundamentalMatrix retract(const gtsam::Vector& delta) const;
+};
+
+// SimpleFundamentalMatrix class
+class SimpleFundamentalMatrix {
+  // Constructors
+  SimpleFundamentalMatrix();
+  SimpleFundamentalMatrix(const gtsam::EssentialMatrix& E, double fa, double fb,
+                          const gtsam::Point2& ca, const gtsam::Point2& cb);
+
+  // Methods
+  gtsam::Matrix3 matrix() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::SimpleFundamentalMatrix& other, double tol = 1e-9) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Vector localCoordinates(const gtsam::SimpleFundamentalMatrix& F) const;
+  gtsam::SimpleFundamentalMatrix retract(const gtsam::Vector& delta) const;
+};
+
+gtsam::Point2 EpipolarTransfer(const gtsam::Matrix3& Fca, const gtsam::Point2& pa,
+                               const gtsam::Matrix3& Fcb, const gtsam::Point2& pb);
 
 #include <gtsam/geometry/CalibratedCamera.h>
 class CalibratedCamera {

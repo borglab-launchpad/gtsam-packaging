@@ -6,11 +6,14 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/Unit3.h>
+
+#include <cmath>
 
 using namespace std::placeholders;
 using namespace std;
@@ -24,19 +27,36 @@ GTSAM_CONCEPT_MANIFOLD_INST(FundamentalMatrix)
 Rot3 trueU = Rot3::Yaw(M_PI_2);
 Rot3 trueV = Rot3::Yaw(M_PI_4);
 double trueS = 0.5;
-FundamentalMatrix trueF(trueU, trueS, trueV);
+FundamentalMatrix trueF(trueU.matrix(), trueS, trueV.matrix());
 
 //*************************************************************************
-TEST(FundamentalMatrix, localCoordinates) {
+TEST(FundamentalMatrix, LocalCoordinates) {
   Vector expected = Z_7x1;  // Assuming 7 dimensions for U, V, and s
   Vector actual = trueF.localCoordinates(trueF);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
 
 //*************************************************************************
-TEST(FundamentalMatrix, retract) {
+TEST(FundamentalMatrix, Retract) {
   FundamentalMatrix actual = trueF.retract(Z_7x1);
   EXPECT(assert_equal(trueF, actual));
+}
+
+//*************************************************************************
+// Test conversion from F matrices, including non-rotations
+TEST(FundamentalMatrix, Conversion) {
+  Matrix3 U = trueU.matrix();
+  Matrix3 V = trueV.matrix();
+  std::vector<FundamentalMatrix> Fs = {
+      FundamentalMatrix(U, trueS, V), FundamentalMatrix(U, trueS, -V),
+      FundamentalMatrix(-U, trueS, V), FundamentalMatrix(-U, trueS, -V)};
+
+  for (const auto& trueF : Fs) {
+    const Matrix3 F = trueF.matrix();
+    FundamentalMatrix actual(F);
+    // We check the matrices as the underlying representation is not unique
+    CHECK(assert_equal(F, actual.matrix()));
+  }
 }
 
 //*************************************************************************
@@ -61,14 +81,14 @@ TEST(SimpleStereo, Conversion) {
 }
 
 //*************************************************************************
-TEST(SimpleStereo, localCoordinates) {
+TEST(SimpleStereo, LocalCoordinates) {
   Vector expected = Z_7x1;
   Vector actual = stereoF.localCoordinates(stereoF);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
 
 //*************************************************************************
-TEST(SimpleStereo, retract) {
+TEST(SimpleStereo, Retract) {
   SimpleFundamentalMatrix actual = stereoF.retract(Z_9x1);
   EXPECT(assert_equal(stereoF, actual));
 }

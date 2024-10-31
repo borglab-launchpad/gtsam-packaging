@@ -62,7 +62,7 @@ def main():
     points = SFMdata.createPoints()
 
     # Create the set of ground-truth poses
-    poses = SFMdata.createPoses(K)
+    poses = SFMdata.createPoses()
 
     # Create a factor graph
     graph = NonlinearFactorGraph()
