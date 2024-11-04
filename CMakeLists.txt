@@ -12,6 +12,12 @@ if (POLICY CMP0167)
 cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()
 
+# allow parent project to override options
+if (POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+endif(POLICY CMP0077)
+
+
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
