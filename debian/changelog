@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2382.gbpfb0ed2) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2383.gbpacae29) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @acae2943ba47e18a686195597ca4b968fa274ff7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fb0ed2ef7234022cd42d18c3f115802fac3fb991 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Nov 2024 12:50:48 +0000
+  [ Varun Agrawal ]
+  * Correct the second term in the pruner value so that the minNegLogConstant term is set correctly
+  * negLogConstant methods for HybridBayesNet
+  * get failing tests in testHybridBayesNet to pass
+  * add docstrings for elimination results
+  * use optional DiscreteValues
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Nov 2024 20:16:08 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2381.gbp381bd0) noble; urgency=medium
 
