@@ -322,8 +322,11 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
           const GaussianFactorValuePair &pair) -> GaussianFactorValuePair {
     if (max->evaluate(choices) == 0.0)
       return {nullptr, std::numeric_limits<double>::infinity()};
-    else
-      return pair;
+    else {
+      // Add negLogConstant_ back so that the minimum negLogConstant in the
+      // HybridGaussianConditional is set correctly.
+      return {pair.first, pair.second + negLogConstant_};
+    }
   };
 
   FactorValuePairs prunedConditionals = factors().apply(pruner);

@@ -59,10 +59,11 @@ using OrphanWrapper = BayesTreeOrphanWrapper<HybridBayesTree::Clique>;
 
 /// Result from elimination.
 struct Result {
+  // Gaussian conditional resulting from elimination.
   GaussianConditional::shared_ptr conditional;
-  double negLogK;
-  GaussianFactor::shared_ptr factor;
-  double scalar;
+  double negLogK;  // Negative log of the normalization constant K.
+  GaussianFactor::shared_ptr factor;  // Leftover factor 𝜏.
+  double scalar;                      // Scalar value associated with factor 𝜏.
 
   bool operator==(const Result &other) const {
     return conditional == other.conditional && negLogK == other.negLogK &&
