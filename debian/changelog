@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2383.gbpa17f9b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2384.gbpf254f1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f254f1fc6a0f89604624c8014cec8b45902d7773 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a17f9b38a947faf1144adffa8eada580aa6bc205 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 31 Oct 2024 19:49:22 +0000
+  [ Jade Turner ]
+  * Allow parent project to override options
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Nov 2024 12:45:05 +0000
 
 gtsam (4.1.0-1ubuntu2~2382.gbp3c2f7e) noble; urgency=medium
 
