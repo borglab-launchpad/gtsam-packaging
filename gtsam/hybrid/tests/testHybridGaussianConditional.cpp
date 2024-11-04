@@ -275,6 +275,11 @@ TEST(HybridGaussianConditional, Prune) {
 
     // Check that the pruned HybridGaussianConditional has 2 conditionals
     EXPECT_LONGS_EQUAL(2, pruned->nrComponents());
+
+    // Check that the minimum negLogConstant is set correctly
+    EXPECT_DOUBLES_EQUAL(
+        hgc.conditionals()({{M(1), 0}, {M(2), 1}})->negLogConstant(),
+        pruned->negLogConstant(), 1e-9);
   }
   {
     const std::vector<double> potentials{0.2, 0, 0.3, 0,  //
@@ -285,6 +290,9 @@ TEST(HybridGaussianConditional, Prune) {
 
     // Check that the pruned HybridGaussianConditional has 3 conditionals
     EXPECT_LONGS_EQUAL(3, pruned->nrComponents());
+
+    // Check that the minimum negLogConstant is correct
+    EXPECT_DOUBLES_EQUAL(hgc.negLogConstant(), pruned->negLogConstant(), 1e-9);
   }
 }
 
