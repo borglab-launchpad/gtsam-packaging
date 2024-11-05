@@ -475,13 +475,8 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
     const auto [hybridBayesNet_partial, remainingFactorGraph_partial] =
         self.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
-    DiscreteFactorGraph discrete_fg;
-    // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for (auto &factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<DiscreteFactor>(factor);
-      assert(df);
-      discrete_fg.push_back(df);
-    }
+    DiscreteFactorGraph discrete_fg =
+        remainingFactorGraph_partial->discreteFactors();
 
     ordering.clear();
     for (size_t k = 0; k < self.K - 1; k++) ordering.push_back(M(k));

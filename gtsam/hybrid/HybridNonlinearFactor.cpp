@@ -16,6 +16,7 @@
  * @date   Sep 12, 2024
  */
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -184,6 +185,11 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
       [continuousValues](
           const std::pair<sharedFactor, double>& f) -> GaussianFactorValuePair {
     auto [factor, val] = f;
+    // Check if valid factor. If not, return null and infinite error.
+    if (!factor) {
+      return {nullptr, std::numeric_limits<double>::infinity()};
+    }
+
     if (auto gaussian = std::dynamic_pointer_cast<noiseModel::Gaussian>(
             factor->noiseModel())) {
       return {factor->linearize(continuousValues),
@@ -200,6 +206,36 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
 
   return std::make_shared<HybridGaussianFactor>(discreteKeys_,
                                                 linearized_factors);
+}
+
+/* *******************************************************************************/
+HybridNonlinearFactor::shared_ptr HybridNonlinearFactor::prune(
+    const DecisionTreeFactor& discreteProbs) const {
+  // Find keys in discreteProbs.keys() but not in this->keys():
+  std::set<Key> mine(this->keys().begin(), this->keys().end());
+  std::set<Key> theirs(discreteProbs.keys().begin(),
+                       discreteProbs.keys().end());
+  std::vector<Key> diff;
+  std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),
+                      std::back_inserter(diff));
+
+  // Find maximum probability value for every combination of our keys.
+  Ordering keys(diff);
+  auto max = discreteProbs.max(keys);
+
+  // Check the max value for every combination of our keys.
+  // If the max value is 0.0, we can prune the corresponding conditional.
+  auto pruner =
+      [&](const Assignment<Key>& choices,
+          const NonlinearFactorValuePair& pair) -> NonlinearFactorValuePair {
+    if (max->evaluate(choices) == 0.0)
+      return {nullptr, std::numeric_limits<double>::infinity()};
+    else
+      return pair;
+  };
+
+  FactorValuePairs prunedFactors = factors().apply(pruner);
+  return std::make_shared<HybridNonlinearFactor>(discreteKeys(), prunedFactors);
 }
 
 }  // namespace gtsam

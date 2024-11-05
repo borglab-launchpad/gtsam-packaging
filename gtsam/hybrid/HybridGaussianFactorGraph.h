@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
@@ -254,6 +255,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   GaussianFactorGraph operator()(const DiscreteValues& assignment) const {
     return choose(assignment);
   }
+
+  /**
+   * @brief Helper method to get all the discrete factors
+   * as a DiscreteFactorGraph.
+   *
+   * @return DiscreteFactorGraph
+   */
+  DiscreteFactorGraph discreteFactors() const;
 };
 
 // traits

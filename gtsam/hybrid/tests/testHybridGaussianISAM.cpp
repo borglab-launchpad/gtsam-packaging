@@ -56,7 +56,7 @@ const HybridGaussianFactorGraph graph2{lfg.at(4), lfg.at(1), lfg.at(2),
 
 /* ****************************************************************************/
 // Test if we can perform elimination incrementally.
-TEST(HybridGaussianElimination, IncrementalElimination) {
+TEST(HybridGaussianISAM, IncrementalElimination) {
   using namespace switching3;
   HybridGaussianISAM isam;
 
@@ -88,7 +88,7 @@ TEST(HybridGaussianElimination, IncrementalElimination) {
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST(HybridGaussianElimination, IncrementalInference) {
+TEST(HybridGaussianISAM, IncrementalInference) {
   using namespace switching3;
   HybridGaussianISAM isam;
 
@@ -156,7 +156,7 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
 /* ****************************************************************************/
 // Test if we can approximately do the inference
-TEST(HybridGaussianElimination, Approx_inference) {
+TEST(HybridGaussianISAM, ApproxInference) {
   Switching switching(4);
   HybridGaussianISAM incrementalHybrid;
   HybridGaussianFactorGraph graph1;
@@ -258,27 +258,26 @@ TEST(HybridGaussianElimination, Approx_inference) {
 
 /* ****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridGaussianElimination, IncrementalApproximate) {
+TEST(HybridGaussianISAM, IncrementalApproximate) {
   Switching switching(5);
   HybridGaussianISAM incrementalHybrid;
-  HybridGaussianFactorGraph graph1;
+  HybridGaussianFactorGraph graph;
 
   /***** Run Round 1 *****/
   // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
   for (size_t i = 0; i < 3; i++) {
-    graph1.push_back(switching.linearBinaryFactors.at(i));
+    graph.push_back(switching.linearBinaryFactors.at(i));
   }
 
   // Add the Gaussian factors, 1 prior on x0,
   // 3 measurements on x1, x2, x3
   for (size_t i = 0; i <= 3; i++) {
-    graph1.push_back(switching.linearUnaryFactors.at(i));
+    graph.push_back(switching.linearUnaryFactors.at(i));
   }
 
   // Run update with pruning
   size_t maxComponents = 5;
-  incrementalHybrid.update(graph1);
-  incrementalHybrid.prune(maxComponents);
+  incrementalHybrid.update(graph, maxComponents);
 
   // Check if we have a bayes tree with 4 hybrid nodes,
   // each with 2, 4, 8, and 5 (pruned) leaves respectively.
@@ -293,13 +292,12 @@ TEST(HybridGaussianElimination, IncrementalApproximate) {
       5, incrementalHybrid[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
-  HybridGaussianFactorGraph graph2;
-  graph2.push_back(switching.linearBinaryFactors.at(3));  // x3-x4
-  graph2.push_back(switching.linearUnaryFactors.at(4));   // x4
+  graph = HybridGaussianFactorGraph();
+  graph.push_back(switching.linearBinaryFactors.at(3));  // hybrid x3-x4
+  graph.push_back(switching.linearUnaryFactors.at(4));   // x4
 
   // Run update with pruning a second time.
-  incrementalHybrid.update(graph2);
-  incrementalHybrid.prune(maxComponents);
+  incrementalHybrid.update(graph, maxComponents);
 
   // Check if we have a bayes tree with pruned hybrid nodes,
   // with 5 (pruned) leaves.
@@ -470,8 +468,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   fg = HybridNonlinearFactorGraph();
 
   // Keep pruning!
-  inc.update(gfg);
-  inc.prune(3);
+  inc.update(gfg, 3);
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.

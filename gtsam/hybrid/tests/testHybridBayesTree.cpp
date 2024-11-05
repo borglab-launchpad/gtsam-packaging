@@ -74,9 +74,7 @@ TEST(HybridGaussianFactorGraph,
   hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
-  // TODO(Varun) Adding extra discrete variable not connected to continuous
-  // variable throws segfault
-  //  hfg.add(DecisionTreeFactor({m1, m2, "1 2 3 4"));
+  hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
 
   HybridBayesTree::shared_ptr result = hfg.eliminateMultifrontal();
 
@@ -176,7 +174,7 @@ TEST(HybridGaussianFactorGraph, Switching) {
   //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
   //     X(5),
   //                        M(1), M(4), M(2), M(6), M(8), M(3), M(7), M(5)});
-  KeyVector ordering;
+  Ordering ordering;
 
   {
     std::vector<int> naturalX(N);
@@ -187,10 +185,6 @@ TEST(HybridGaussianFactorGraph, Switching) {
 
     auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
-    // TODO(dellaert): this has no effect!
-    for (auto& l : lvls) {
-      l = -l;
-    }
   }
   {
     std::vector<int> naturalC(N - 1);
@@ -199,14 +193,11 @@ TEST(HybridGaussianFactorGraph, Switching) {
     std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
                    [](int x) { return M(x); });
 
-    // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
     const auto [ndC, lvls] = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
   }
-  auto ordering_full = Ordering(ordering);
 
-  const auto [hbt, remaining] =
-      hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering);
 
   // 12 cliques in the bayes tree and 0 remaining variables to eliminate.
   EXPECT_LONGS_EQUAL(12, hbt->size());
@@ -230,7 +221,7 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
   //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
   //     X(5),
   //                        M(1), M(4), M(2), M(6), M(8), M(3), M(7), M(5)});
-  KeyVector ordering;
+  Ordering ordering;
 
   {
     std::vector<int> naturalX(N);
@@ -241,10 +232,6 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
 
     auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
-    // TODO(dellaert): this has no effect!
-    for (auto& l : lvls) {
-      l = -l;
-    }
   }
   {
     std::vector<int> naturalC(N - 1);
@@ -257,10 +244,8 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     const auto [ndC, lvls] = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
   }
-  auto ordering_full = Ordering(ordering);
 
-  const auto [hbt, remaining] =
-      hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering);
 
   auto new_fg = makeSwitchingChain(12);
   auto isam = HybridGaussianISAM(*hbt);
@@ -460,12 +445,7 @@ TEST(HybridBayesTree, Optimize) {
   const auto [hybridBayesNet, remainingFactorGraph] =
       s.linearizedFactorGraph().eliminatePartialSequential(ordering);
 
-  DiscreteFactorGraph dfg;
-  for (auto&& f : *remainingFactorGraph) {
-    auto discreteFactor = dynamic_pointer_cast<DiscreteFactor>(f);
-    assert(discreteFactor);
-    dfg.push_back(discreteFactor);
-  }
+  DiscreteFactorGraph dfg = remainingFactorGraph->discreteFactors();
 
   // Add the probabilities for each branch
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};

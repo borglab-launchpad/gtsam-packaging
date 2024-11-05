@@ -148,6 +148,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   /// Getter for GaussianFactor decision tree
   const FactorValuePairs &factors() const { return factors_; }
+
   /**
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
