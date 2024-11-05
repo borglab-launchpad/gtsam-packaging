@@ -46,7 +46,10 @@ class GTSAM_EXPORT EdgeKey {
   /// @{
 
   /// Cast to Key
-  operator Key() const { return ((std::uint64_t)i_ << 32) | j_; }
+  Key key() const { return ((std::uint64_t)i_ << 32) | j_; }
+
+  /// Cast to Key
+  operator Key() const { return key(); }
 
   /// Retrieve high 32 bits
   inline std::uint32_t i() const { return i_; }
