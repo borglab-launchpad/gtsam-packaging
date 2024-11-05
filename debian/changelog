@@ -1,10 +1,54 @@
-gtsam (4.1.0-1ubuntu2~2399.gbpb0db94) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2400.gbpfc0531) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fc053109711d357888ea91297a70751685c7f083 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b0db94a543430c5c968d0b2f4ee040fc1e73279a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 19:54:16 +0000
+  [ Frank Dellaert ]
+  * TransferEdges base class
+  * EssentialTransferFactor
+  * Copy example
+  * New example now uses EssentialTransferFactor
+  * Use fixture
+  * Naming convention
+  * Modernize/format
+  * Clarify stubgen need
+  * EdgeKey wrapper
+  * Copy dirty examples
+  * wrap new factor
+  * Python version of EssentialViewGraphExample
+  * Split off Cal3f from Cal3Bundler
+  * Python version of ViewGraphExample.cpp
+  * Small issues
+  * Comparison script
+  * Compare in F-manifold
+  * Order matters with inheritance
+  * Fix export
+  * Switch to using Cal3f
+  * Run many trials
+  * Perturb
+  * Add missing template
+  * Error checking
+  * Add prior templates
+  * Add prior, use calibrations
+  * Add SimpleF case
+  * Show iterations and add extra points
+  * Add CalibratedEssentialMatrix case
+  * Fix small issues and store scaled s_
+  * Abbreviate methods
+  * Get rid of scale
+  * Median/plotting/initF
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Differentiated EssentialTransferFactor and EssentialTransferFactorK
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 22:22:07 +0000
 
 gtsam (4.1.0-1ubuntu2~2398.gbpb6a40a) noble; urgency=medium
 
