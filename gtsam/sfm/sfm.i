@@ -75,6 +75,33 @@ bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
+#include <gtsam/sfm/TransferFactor.h>
+#include <gtsam/geometry/FundamentalMatrix.h>
+template <F = {gtsam::SimpleFundamentalMatrix, gtsam::FundamentalMatrix}>
+virtual class TransferFactor : gtsam::NoiseModelFactor {
+  TransferFactor(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                 const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                 const gtsam::noiseModel::Base* model = nullptr);
+};
+
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3f.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
+virtual class EssentialTransferFactor : gtsam::NoiseModelFactor {
+  EssentialTransferFactor(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                          const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                          const K* calibration,
+                          const gtsam::noiseModel::Base* model = nullptr);
+};
+
+template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
+virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
+  EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                          const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                          const gtsam::noiseModel::Base* model = nullptr);
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
