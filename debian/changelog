@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2386.gbp0fae50) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2387.gbp922d5b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @922d5b0af045c8285b53a531ebc495ba66f7c26c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0fae50e3a667af8f3a277b0be2b62c3d67c3dad4 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 04 Nov 2024 20:20:11 +0000
+  [ Varun Agrawal ]
+  * update macos images to minimum 13 and add ARM64 support
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix yaml file
+  * don't use large or xlarge runners since our payment plan doesn't support those
+  * update macos-12 to macos-13
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 15:35:42 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2385.gbpc47212) noble; urgency=medium
 
