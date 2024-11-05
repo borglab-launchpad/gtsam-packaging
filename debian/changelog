@@ -1,10 +1,39 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2390.gbp6043ef) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2391.gbp92f77c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @92f77c69d86a1bc7d6617d61fa90bfceeeaa731a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6043ef7e43a68373ba3919523d434524c416d893 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 15:41:36 +0000
+  [ Varun Agrawal ]
+  * improve HybridGaussianISAM test
+  * better test naming
+  * fix test
+  * use single graph in tests
+  * minor improvements
+  * add pruning support for HybridNonlinearFactor
+  * check if NonlinearFactor is valid before linearizing
+  * formatting
+  * prune nonlinear factors in HybridNonlinearISAM
+  * formatting
+  * remove print
+  * clean up tests and TODOs
+  * discreteFactors method
+  * formatting
+  * add missing header
+  * update test group
+  * move direct FG motion model test to testHybridMotionModel.cpp
+  * update test name
+  * combined update and pruning
+  * update test group name
+  * better check for discrete factors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 19:50:23 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2389.gbp9ef880) noble; urgency=medium
 
