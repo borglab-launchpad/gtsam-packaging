@@ -49,7 +49,7 @@ using symbol_shorthand::Z;
 TEST(HybridNonlinearISAM, IncrementalElimination) {
   Switching switching(3);
   HybridNonlinearISAM isam;
-  HybridNonlinearFactorGraph graph1;
+  HybridNonlinearFactorGraph graph;
   Values initial;
 
   // Create initial factor graph
@@ -57,17 +57,17 @@ TEST(HybridNonlinearISAM, IncrementalElimination) {
   //  |        |      |
   //  X0  -*-  X1 -*- X2
   //   \*-M0-*/
-  graph1.push_back(switching.unaryFactors.at(0));   // P(X0)
-  graph1.push_back(switching.binaryFactors.at(0));  // P(X0, X1 | M0)
-  graph1.push_back(switching.binaryFactors.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.modeChain.at(0));      // P(M0)
+  graph.push_back(switching.unaryFactors.at(0));   // P(X0)
+  graph.push_back(switching.binaryFactors.at(0));  // P(X0, X1 | M0)
+  graph.push_back(switching.binaryFactors.at(1));  // P(X1, X2 | M1)
+  graph.push_back(switching.modeChain.at(0));      // P(M0)
 
   initial.insert<double>(X(0), 1);
   initial.insert<double>(X(1), 2);
   initial.insert<double>(X(2), 3);
 
   // Run update step
-  isam.update(graph1, initial);
+  isam.update(graph, initial);
 
   // Check that after update we have 3 hybrid Bayes net nodes:
   // P(X0 | X1, M0) and P(X1, X2 | M0, M1), P(M0, M1)
@@ -80,14 +80,14 @@ TEST(HybridNonlinearISAM, IncrementalElimination) {
 
   /********************************************************/
   // New factor graph for incremental update.
-  HybridNonlinearFactorGraph graph2;
+  graph = HybridNonlinearFactorGraph();
   initial = Values();
 
-  graph1.push_back(switching.unaryFactors.at(1));  // P(X1)
-  graph2.push_back(switching.unaryFactors.at(2));  // P(X2)
-  graph2.push_back(switching.modeChain.at(1));     // P(M0, M1)
+  graph.push_back(switching.unaryFactors.at(1));  // P(X1)
+  graph.push_back(switching.unaryFactors.at(2));  // P(X2)
+  graph.push_back(switching.modeChain.at(1));     // P(M0, M1)
 
-  isam.update(graph2, initial);
+  isam.update(graph, initial);
 
   bayesTree = isam.bayesTree();
   // Check that after the second update we have
@@ -103,7 +103,7 @@ TEST(HybridNonlinearISAM, IncrementalElimination) {
 TEST(HybridNonlinearISAM, IncrementalInference) {
   Switching switching(3);
   HybridNonlinearISAM isam;
-  HybridNonlinearFactorGraph graph1;
+  HybridNonlinearFactorGraph graph;
   Values initial;
 
   // Create initial factor graph
@@ -112,16 +112,16 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   //    X0  -*-  X1  -*-  X2
   //         |        |
   //      *-M0 - * - M1
-  graph1.push_back(switching.unaryFactors.at(0));   // P(X0)
-  graph1.push_back(switching.binaryFactors.at(0));  // P(X0, X1 | M0)
-  graph1.push_back(switching.unaryFactors.at(1));   // P(X1)
-  graph1.push_back(switching.modeChain.at(0));      // P(M0)
+  graph.push_back(switching.unaryFactors.at(0));   // P(X0)
+  graph.push_back(switching.binaryFactors.at(0));  // P(X0, X1 | M0)
+  graph.push_back(switching.unaryFactors.at(1));   // P(X1)
+  graph.push_back(switching.modeChain.at(0));      // P(M0)
 
   initial.insert<double>(X(0), 1);
   initial.insert<double>(X(1), 2);
 
   // Run update step
-  isam.update(graph1, initial);
+  isam.update(graph, initial);
   HybridGaussianISAM bayesTree = isam.bayesTree();
 
   auto discreteConditional_m0 = bayesTree[M(0)]->conditional()->asDiscrete();
@@ -129,16 +129,16 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   /********************************************************/
   // New factor graph for incremental update.
-  HybridNonlinearFactorGraph graph2;
+  graph = HybridNonlinearFactorGraph();
   initial = Values();
 
   initial.insert<double>(X(2), 3);
 
-  graph2.push_back(switching.binaryFactors.at(1));  // P(X1, X2 | M1)
-  graph2.push_back(switching.unaryFactors.at(2));   // P(X2)
-  graph2.push_back(switching.modeChain.at(1));      // P(M0, M1)
+  graph.push_back(switching.binaryFactors.at(1));  // P(X1, X2 | M1)
+  graph.push_back(switching.unaryFactors.at(2));   // P(X2)
+  graph.push_back(switching.modeChain.at(1));      // P(M0, M1)
 
-  isam.update(graph2, initial);
+  isam.update(graph, initial);
   bayesTree = isam.bayesTree();
 
   /********************************************************/
@@ -195,22 +195,22 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 }
 
 /* ****************************************************************************/
-// Test if we can approximately do the inference
-TEST(HybridNonlinearISAM, Approx_inference) {
+// Test if we can approximately do the inference (using pruning)
+TEST(HybridNonlinearISAM, ApproxInference) {
   Switching switching(4);
   HybridNonlinearISAM incrementalHybrid;
-  HybridNonlinearFactorGraph graph1;
+  HybridNonlinearFactorGraph graph;
   Values initial;
 
   // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
   for (size_t i = 0; i < 3; i++) {
-    graph1.push_back(switching.binaryFactors.at(i));
+    graph.push_back(switching.binaryFactors.at(i));
   }
 
   // Add the Gaussian factors, 1 prior on X(0),
   // 3 measurements on X(1), X(2), X(3)
   for (size_t i = 0; i < 4; i++) {
-    graph1.push_back(switching.unaryFactors.at(i));
+    graph.push_back(switching.unaryFactors.at(i));
     initial.insert<double>(X(i), i + 1);
   }
 
@@ -226,7 +226,7 @@ TEST(HybridNonlinearISAM, Approx_inference) {
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;
-  incrementalHybrid.update(graph1, initial);
+  incrementalHybrid.update(graph, initial);
   HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
 
   bayesTree.prune(maxNrLeaves);
@@ -302,22 +302,22 @@ TEST(HybridNonlinearISAM, Approx_inference) {
 
 /* ****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridNonlinearISAM, Incremental_approximate) {
+TEST(HybridNonlinearISAM, IncrementalApproximate) {
   Switching switching(5);
   HybridNonlinearISAM incrementalHybrid;
-  HybridNonlinearFactorGraph graph1;
+  HybridNonlinearFactorGraph graph;
   Values initial;
 
   /***** Run Round 1 *****/
   // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
   for (size_t i = 0; i < 3; i++) {
-    graph1.push_back(switching.binaryFactors.at(i));
+    graph.push_back(switching.binaryFactors.at(i));
   }
 
   // Add the Gaussian factors, 1 prior on X(0),
   // 3 measurements on X(1), X(2), X(3)
   for (size_t i = 0; i < 4; i++) {
-    graph1.push_back(switching.unaryFactors.at(i));
+    graph.push_back(switching.unaryFactors.at(i));
     initial.insert<double>(X(i), i + 1);
   }
 
@@ -325,7 +325,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
 
   // Run update with pruning
   size_t maxComponents = 5;
-  incrementalHybrid.update(graph1, initial);
+  incrementalHybrid.update(graph, initial);
   incrementalHybrid.prune(maxComponents);
   HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
 
@@ -342,14 +342,14 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
       5, bayesTree[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
-  HybridGaussianFactorGraph graph2;
-  graph2.push_back(switching.binaryFactors.at(3));  // x3-x4
-  graph2.push_back(switching.unaryFactors.at(4));   // x4 measurement
+  graph = HybridGaussianFactorGraph();
+  graph.push_back(switching.binaryFactors.at(3));  // x3-x4
+  graph.push_back(switching.unaryFactors.at(4));   // x4 measurement
   initial = Values();
   initial.insert<double>(X(4), 5);
 
   // Run update with pruning a second time.
-  incrementalHybrid.update(graph2, initial);
+  incrementalHybrid.update(graph, initial);
   incrementalHybrid.prune(maxComponents);
   bayesTree = incrementalHybrid.bayesTree();
 

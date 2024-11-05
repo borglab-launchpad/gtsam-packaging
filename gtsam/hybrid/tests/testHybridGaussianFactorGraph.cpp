@@ -545,7 +545,7 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
 
 /* ****************************************************************************/
 // Check that collectProductFactor works correctly.
-TEST(HybridGaussianFactorGraph, collectProductFactor) {
+TEST(HybridGaussianFactorGraph, CollectProductFactor) {
   const int num_measurements = 1;
   VectorValues vv{{Z(0), Vector1(5.0)}};
   auto fg = tiny::createHybridGaussianFactorGraph(num_measurements, vv);

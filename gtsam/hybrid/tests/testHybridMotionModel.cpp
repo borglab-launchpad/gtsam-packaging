@@ -124,7 +124,7 @@ std::pair<double, double> approximateDiscreteMarginal(
  * the posterior probability of m1 should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(HybridGaussianFactor, TwoStateModel) {
+TEST(HybridGaussianFactorGraph, TwoStateModel) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 0.5;
   auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma, sigma);
@@ -178,7 +178,7 @@ TEST(HybridGaussianFactor, TwoStateModel) {
  * the P(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(HybridGaussianFactor, TwoStateModel2) {
+TEST(HybridGaussianFactorGraph, TwoStateModel2) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma0 = 0.5, sigma1 = 2.0;
   auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma0, sigma1);
@@ -198,7 +198,7 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
          {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
           VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
-      const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
+      const auto &expectedDiscretePosterior = hbn.discretePosterior(vv);
 
       // Equality of posteriors asserts that the factor graph is correct (same
       // ratios for all modes)
@@ -234,7 +234,7 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
          {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
           VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
-      const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
+      const auto &expectedDiscretePosterior = hbn.discretePosterior(vv);
 
       // Equality of posteriors asserts that the factor graph is correct (same
       // ratios for all modes)
@@ -281,7 +281,7 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
  * the p(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(HybridGaussianFactor, TwoStateModel3) {
+TEST(HybridGaussianFactorGraph, TwoStateModel3) {
   double mu = 1.0;
   double sigma0 = 0.5, sigma1 = 2.0;
   auto hybridMotionModel = CreateHybridMotionModel(mu, mu, sigma0, sigma1);
@@ -366,7 +366,7 @@ TEST(HybridGaussianFactor, TwoStateModel3) {
  * measurements and vastly different motion model: either stand still or move
  * far. This yields a very informative posterior.
  */
-TEST(HybridGaussianFactor, TwoStateModel4) {
+TEST(HybridGaussianFactorGraph, TwoStateModel4) {
   double mu0 = 0.0, mu1 = 10.0;
   double sigma0 = 0.2, sigma1 = 5.0;
   auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma0, sigma1);
@@ -383,6 +383,164 @@ TEST(HybridGaussianFactor, TwoStateModel4) {
   // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
   DiscreteConditional expected(m1, "8.91527/91.0847");
   EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+}
+
+/* ************************************************************************* */
+namespace test_direct_factor_graph {
+/**
+ * @brief Create a Factor Graph by directly specifying all
+ * the factors instead of creating conditionals first.
+ * This way we can directly provide the likelihoods and
+ * then perform linearization.
+ *
+ * @param values Initial values to linearize around.
+ * @param means The means of the HybridGaussianFactor components.
+ * @param sigmas The covariances of the HybridGaussianFactor components.
+ * @param m1 The discrete key.
+ * @return HybridGaussianFactorGraph
+ */
+static HybridGaussianFactorGraph CreateFactorGraph(
+    const gtsam::Values &values, const std::vector<double> &means,
+    const std::vector<double> &sigmas, DiscreteKey &m1,
+    double measurement_noise = 1e-3) {
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, measurement_noise);
+
+  auto f0 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0)
+          ->linearize(values);
+  auto f1 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1)
+          ->linearize(values);
+
+  // Create HybridGaussianFactor
+  // We take negative since we want
+  // the underlying scalar to be log(\sqrt(|2πΣ|))
+  std::vector<GaussianFactorValuePair> factors{{f0, model0->negLogConstant()},
+                                               {f1, model1->negLogConstant()}};
+  HybridGaussianFactor motionFactor(m1, factors);
+
+  HybridGaussianFactorGraph hfg;
+  hfg.push_back(motionFactor);
+
+  hfg.push_back(PriorFactor<double>(X(0), values.at<double>(X(0)), prior_noise)
+                    .linearize(values));
+
+  return hfg;
+}
+}  // namespace test_direct_factor_graph
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing means but the same covariances.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST(HybridGaussianFactorGraph, DifferentMeans) {
+  using namespace test_direct_factor_graph;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x1 = 0.0, x2 = 1.75;
+  values.insert(X(0), x1);
+  values.insert(X(1), x2);
+
+  std::vector<double> means = {0.0, 2.0}, sigmas = {1e-0, 1e-0};
+
+  HybridGaussianFactorGraph hfg = CreateFactorGraph(values, means, sigmas, m1);
+
+  {
+    auto bn = hfg.eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(-1.75)}},
+        DiscreteValues{{M(1), 0}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    DiscreteValues dv0{{M(1), 0}};
+    VectorValues cont0 = bn->optimize(dv0);
+    double error0 = bn->error(HybridValues(cont0, dv0));
+    // regression
+    EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
+
+    DiscreteValues dv1{{M(1), 1}};
+    VectorValues cont1 = bn->optimize(dv1);
+    double error1 = bn->error(HybridValues(cont1, dv1));
+    EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
+  }
+
+  {
+    auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+    hfg.push_back(
+        PriorFactor<double>(X(1), means[1], prior_noise).linearize(values));
+
+    auto bn = hfg.eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
+        DiscreteValues{{M(1), 1}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    {
+      DiscreteValues dv{{M(1), 0}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(2.12692448787, error, 1e-9);
+    }
+    {
+      DiscreteValues dv{{M(1), 1}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(0.126928487854, error, 1e-9);
+    }
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing covariances but the same means.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST(HybridGaussianFactorGraph, DifferentCovariances) {
+  using namespace test_direct_factor_graph;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x1 = 1.0, x2 = 1.0;
+  values.insert(X(0), x1);
+  values.insert(X(1), x2);
+
+  std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
+
+  // Create FG with HybridGaussianFactor and prior on X1
+  HybridGaussianFactorGraph fg = CreateFactorGraph(values, means, sigmas, m1);
+  auto hbn = fg.eliminateSequential();
+
+  VectorValues cv;
+  cv.insert(X(0), Vector1(0.0));
+  cv.insert(X(1), Vector1(0.0));
+
+  DiscreteValues dv0{{M(1), 0}};
+  DiscreteValues dv1{{M(1), 1}};
+
+  DiscreteConditional expected_m1(m1, "0.5/0.5");
+  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+
+  EXPECT(assert_equal(expected_m1, actual_m1));
 }
 
 /* ************************************************************************* */

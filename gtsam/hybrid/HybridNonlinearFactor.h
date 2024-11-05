@@ -166,6 +166,9 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
 
   /// @}
 
+  /// Getter for NonlinearFactor decision tree
+  const FactorValuePairs& factors() const { return factors_; }
+
   /// Linearize specific nonlinear factors based on the assignment in
   /// discreteValues.
   GaussianFactor::shared_ptr linearize(
@@ -175,6 +178,10 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /// Linearize all the continuous factors to get a HybridGaussianFactor.
   std::shared_ptr<HybridGaussianFactor> linearize(
       const Values& continuousValues) const;
+
+  /// Prune this factor based on the discrete probabilities.
+  HybridNonlinearFactor::shared_ptr prune(
+      const DecisionTreeFactor& discreteProbs) const;
 
  private:
   /// Helper struct to assist private constructor below.
