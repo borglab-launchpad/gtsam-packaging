@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2403.gbp47a554) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2404.gbpcc54ef) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cc54ef24f277e006457e452821f45b41dd0019a1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @47a554eca756ab6b2d18e3c76b34da8195b6005b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 05 Nov 2024 22:26:14 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Add missing #if for clang
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 06 Nov 2024 16:36:18 +0000
 
 gtsam (4.1.0-1ubuntu2~2402.gbp027ae1) noble; urgency=medium
 
