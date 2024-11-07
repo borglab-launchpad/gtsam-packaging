@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~2407.gbp904c09) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2408.gbpc46ae0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c46ae08bb73af4d15a4fff3a6e8b4c787d6f693e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @904c0990d225cb34e1022f0248cef71a3727692d **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 06 Nov 2024 16:41:23 +0000
+  [ Varun Agrawal ]
+  * use visitWith to not create a new tree
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * use a fixed size min-heap to find the pruning threshold
+  * implement a min-heap to record the top N probabilities for pruning
+  * make MinHeap more efficient by calling push_heap instead of make_heap
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Nov 2024 13:53:54 +0000
 
 gtsam (4.1.0-1ubuntu2~2406.gbp1ea73b) noble; urgency=medium
 
