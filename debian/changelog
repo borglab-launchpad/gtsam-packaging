@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2411.gbpa6a9b6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2412.gbpdb9087) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @db90877989bcfc4d442ffe1974685e2db006ade9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a6a9b6ceba2d37f8b2cbfef5ccb6b249df48e6f9 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 07 Nov 2024 13:59:24 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Bump min required cmake version to 3.9
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 09 Nov 2024 00:02:19 +0000
 
 gtsam (4.1.0-1ubuntu2~2410.gbp03b75d) noble; urgency=medium
 
