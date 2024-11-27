@@ -236,6 +236,8 @@ class EssentialTransferFactorK
   /**
    * @brief Constructor that accepts a vector of point triplets.
    *
+   * @note Calibrations are assumed all different, keys are derived from edges.
+   *
    * @param edge1 First EdgeKey specifying E1: (a, c) or (c, a)
    * @param edge2 Second EdgeKey specifying E2: (b, c) or (c, b)
    * @param triplets A vector of triplets containing (pa, pb, pc)
@@ -248,6 +250,24 @@ class EssentialTransferFactorK
              Symbol('k', ViewA(edge1, edge2)),   // calibration key for view a
              Symbol('k', ViewB(edge1, edge2)),   // calibration key for view b
              Symbol('k', ViewC(edge1, edge2))),  // calibration key for target c
+        TransferEdges<EM>(edge1, edge2),
+        triplets_(triplets) {}
+
+  /**
+   * @brief Constructor that accepts a vector of point triplets.
+   *
+   * @note Calibrations are assumed all same, using given key `keyK`.
+   *
+   * @param edge1 First EdgeKey specifying E1: (a, c) or (c, a)
+   * @param edge2 Second EdgeKey specifying E2: (b, c) or (c, b)
+   * @param keyK Calibration key for all views.
+   * @param triplets A vector of triplets containing (pa, pb, pc)
+   * @param model An optional SharedNoiseModel
+   */
+  EssentialTransferFactorK(EdgeKey edge1, EdgeKey edge2, Key keyK,
+                           const std::vector<Triplet>& triplets,
+                           const SharedNoiseModel& model = nullptr)
+      : Base(model, edge1, edge2, keyK, keyK, keyK),
         TransferEdges<EM>(edge1, edge2),
         triplets_(triplets) {}
 

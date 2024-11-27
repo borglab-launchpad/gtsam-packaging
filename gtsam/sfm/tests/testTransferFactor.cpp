@@ -154,7 +154,7 @@ TEST(TransferFactor, MultipleTuples) {
 }
 
 //*************************************************************************
-// Test for EssentialTransferFactor
+// Test for EssentialTransferFactorK
 TEST(EssentialTransferFactor, Jacobians) {
   using namespace fixture;
 

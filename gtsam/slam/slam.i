@@ -107,7 +107,7 @@ typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Unified>,
                                 gtsam::Point3>
     GeneralSFMFactorPoseCal3Unified;
 
-template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
                          gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured,
@@ -221,13 +221,53 @@ typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
 
 #include <gtsam/slam/EssentialMatrixFactor.h>
 virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
-  EssentialMatrixFactor(size_t key, const gtsam::Point2& pA,
-                        const gtsam::Point2& pB,
-                        const gtsam::noiseModel::Base* noiseModel);
+  EssentialMatrixFactor(size_t key, 
+                        const gtsam::Point2& pA, const gtsam::Point2& pB,
+                        const gtsam::noiseModel::Base* model);
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::EssentialMatrixFactor& other, double tol) const;
   gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E) const;
+};
+
+virtual class EssentialMatrixFactor2 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor2(size_t key1, size_t key2, 
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E, double d) const;
+};
+
+virtual class EssentialMatrixFactor3 : gtsam::EssentialMatrixFactor2 {
+  EssentialMatrixFactor3(size_t key1, size_t key2, 
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::Rot3& cRb, const gtsam::noiseModel::Base* model);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E, double d) const;
+};
+
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
+                         gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
+virtual class EssentialMatrixFactor4 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor4(size_t keyE, size_t keyK,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model = nullptr);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E, const CALIBRATION& K) const;
+};
+
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
+                         gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
+virtual class EssentialMatrixFactor5 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor5(size_t keyE, size_t keyKa, size_t keyKb,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model = nullptr);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E, 
+                              const CALIBRATION& Ka, const CALIBRATION& Kb) const;
 };
 
 #include <gtsam/slam/EssentialMatrixConstraint.h>
