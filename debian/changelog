@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~2419.gbpb02239) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2420.gbp1c9a59) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1c9a593f7c5d6988e06461e64207496da3dd2312 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b02239f6f4b853fbf37b6a25a6e4630925dae0e7 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 14 Nov 2024 20:06:26 +0000
+  [ Frank Dellaert ]
+  * epipolarLine
+  * EssentialMatrixFactor5
+  * Allow for global calibration
+  * Wrap EMFs
+  * Compare 3 more cases
+  * Trying to optimize well
+  * Rename factor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * address comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 27 Nov 2024 22:26:49 +0000
 
 gtsam (4.1.0-1ubuntu2~2418.gbp148266) noble; urgency=medium
 
