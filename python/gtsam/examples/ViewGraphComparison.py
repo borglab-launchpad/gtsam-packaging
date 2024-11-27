@@ -32,7 +32,7 @@ from gtsam import (
 K = gtsam.symbol_shorthand.K
 
 # Methods to compare
-methods = ["SimpleF", "Fundamental", "Essential+Ks", "Calibrated"]
+methods = ["SimpleF", "Fundamental", "Essential+Ks", "Essential+K", "Calibrated", "Binary+Ks", "Binary+K"]
 
 
 # Formatter function for printing keys
@@ -76,8 +76,8 @@ def simulate_data(points, poses, cal, rng, noise_std):
     return measurements
 
 
-# Function to compute ground truth matrices
 def compute_ground_truth(method, poses, cal):
+    """Function to compute ground truth edge variables."""
     E1 = EssentialMatrix.FromPose3(poses[0].between(poses[1]))
     E2 = EssentialMatrix.FromPose3(poses[0].between(poses[2]))
     F1 = FundamentalMatrix(cal.K(), E1, cal.K())
@@ -90,58 +90,80 @@ def compute_ground_truth(method, poses, cal):
         SF1 = SimpleFundamentalMatrix(E1, f, f, c, c)
         SF2 = SimpleFundamentalMatrix(E2, f, f, c, c)
         return SF1, SF2
-    elif method == "Essential+Ks" or method == "Calibrated":
-        return E1, E2
     else:
-        raise ValueError(f"Unknown method {method}")
+        return E1, E2
 
 
 def build_factor_graph(method, num_cameras, measurements, cal):
     """build the factor graph"""
     graph = NonlinearFactorGraph()
 
+    # Determine the FactorClass based on the method
     if method == "Fundamental":
         FactorClass = gtsam.TransferFactorFundamentalMatrix
     elif method == "SimpleF":
         FactorClass = gtsam.TransferFactorSimpleFundamentalMatrix
-    elif method == "Essential+Ks":
+    elif method in ["Essential+Ks", "Essential+K"]:
         FactorClass = gtsam.EssentialTransferFactorKCal3f
-        # add priors on all calibrations:
-        for i in range(num_cameras):
-            model = gtsam.noiseModel.Isotropic.Sigma(1, 10.0)
-            graph.addPriorCal3f(K(i), cal, model)
+    elif method == "Binary+K":
+        FactorClass = gtsam.EssentialMatrixFactor4Cal3f
+    elif method == "Binary+Ks":
+        FactorClass = gtsam.EssentialMatrixFactor5Cal3f
     elif method == "Calibrated":
         FactorClass = gtsam.EssentialTransferFactorCal3f
-        # No priors on calibration needed
     else:
         raise ValueError(f"Unknown method {method}")
+
+    # Add priors on calibrations if necessary
+    if method in ["Essential+Ks", "Binary+Ks"]:
+        for i in range(num_cameras):
+            model = gtsam.noiseModel.Isotropic.Sigma(1, 1000.0)
+            graph.addPriorCal3f(K(i), cal, model)
+    elif method in ["Essential+K", "Binary+K"]:
+        model = gtsam.noiseModel.Isotropic.Sigma(1, 1000.0)
+        graph.addPriorCal3f(K(0), cal, model)
 
     z = measurements  # shorthand
 
     for a in range(num_cameras):
         b = (a + 1) % num_cameras  # Next camera
         c = (a + 2) % num_cameras  # Camera after next
-
-        # Vectors to collect tuples for each factor
-        tuples1 = []
-        tuples2 = []
-        tuples3 = []
-
-        # Collect data for the three factors
-        for j in range(len(measurements[0])):
-            tuples1.append((z[a][j], z[b][j], z[c][j]))
-            tuples2.append((z[a][j], z[c][j], z[b][j]))
-            tuples3.append((z[c][j], z[b][j], z[a][j]))
-
-        # Add transfer factors between views a, b, and c.
-        if method in ["Calibrated"]:
-            graph.add(FactorClass(EdgeKey(a, c), EdgeKey(b, c), tuples1, cal))
-            graph.add(FactorClass(EdgeKey(a, b), EdgeKey(b, c), tuples2, cal))
-            graph.add(FactorClass(EdgeKey(a, c), EdgeKey(a, b), tuples3, cal))
+        if method in ["Binary+Ks", "Binary+K"]:
+            # Add binary Essential Matrix factors
+            ab, ac = EdgeKey(a, b).key(), EdgeKey(a, c).key()
+            for j in range(len(measurements[0])):
+                if method == "Binary+Ks":
+                    graph.add(FactorClass(ab, K(a), K(b), z[a][j], z[b][j]))
+                    graph.add(FactorClass(ac, K(a), K(c), z[a][j], z[c][j]))
+                else:  # Binary+K
+                    graph.add(FactorClass(ab, K(0), z[a][j], z[b][j]))
+                    graph.add(FactorClass(ac, K(0), z[a][j], z[c][j]))
         else:
-            graph.add(FactorClass(EdgeKey(a, c), EdgeKey(b, c), tuples1))
-            graph.add(FactorClass(EdgeKey(a, b), EdgeKey(b, c), tuples2))
-            graph.add(FactorClass(EdgeKey(a, c), EdgeKey(a, b), tuples3))
+            # Add transfer factors between views a, b, and c
+
+            # Vectors to collect tuples for each factor
+            tuples1 = []
+            tuples2 = []
+            tuples3 = []
+
+            for j in range(len(measurements[0])):
+                tuples1.append((z[a][j], z[b][j], z[c][j]))
+                tuples2.append((z[a][j], z[c][j], z[b][j]))
+                tuples3.append((z[c][j], z[b][j], z[a][j]))
+
+            # Add transfer factors between views a, b, and c.
+            if method in ["Calibrated"]:
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(b, c), tuples1, cal))
+                graph.add(FactorClass(EdgeKey(a, b), EdgeKey(b, c), tuples2, cal))
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(a, b), tuples3, cal))
+            elif method == "Essential+K":
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(b, c), K(0), tuples1))
+                graph.add(FactorClass(EdgeKey(a, b), EdgeKey(b, c), K(0), tuples2))
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(a, b), K(0), tuples3))
+            else:
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(b, c), tuples1))
+                graph.add(FactorClass(EdgeKey(a, b), EdgeKey(b, c), tuples2))
+                graph.add(FactorClass(EdgeKey(a, c), EdgeKey(a, b), tuples3))
 
     return graph
 
@@ -159,22 +181,25 @@ def get_initial_estimate(method, num_cameras, ground_truth, cal):
             initialEstimate.insert(EdgeKey(a, b).key(), F1)
             initialEstimate.insert(EdgeKey(a, c).key(), F2)
             total_dimension += F1.dim() + F2.dim()
-    elif method in ["Essential+Ks", "Calibrated"]:
+    elif method in ["Essential+Ks", "Essential+K", "Binary+Ks", "Binary+K", "Calibrated"]:
         E1, E2 = ground_truth
         for a in range(num_cameras):
-            b = (a + 1) % num_cameras  # Next camera
-            c = (a + 2) % num_cameras  # Camera after next
+            b = (a + 1) % num_cameras
+            c = (a + 2) % num_cameras
+            # initialEstimate.insert(EdgeKey(a, b).key(), E1.retract(0.1 * np.ones((5, 1))))
+            # initialEstimate.insert(EdgeKey(a, c).key(), E2.retract(0.1 * np.ones((5, 1))))
             initialEstimate.insert(EdgeKey(a, b).key(), E1)
             initialEstimate.insert(EdgeKey(a, c).key(), E2)
             total_dimension += E1.dim() + E2.dim()
-    else:
-        raise ValueError(f"Unknown method {method}")
 
-    if method == "Essential+Ks":
-        # Insert initial calibrations
+    # Insert initial calibrations
+    if method in ["Essential+Ks", "Binary+Ks"]:
         for i in range(num_cameras):
             initialEstimate.insert(K(i), cal)
             total_dimension += cal.dim()
+    elif method in ["Essential+K", "Binary+K"]:
+        initialEstimate.insert(K(0), cal)
+        total_dimension += cal.dim()
 
     print(f"Total dimension of the problem: {total_dimension}")
     return initialEstimate
@@ -183,8 +208,9 @@ def get_initial_estimate(method, num_cameras, ground_truth, cal):
 def optimize(graph, initialEstimate, method):
     """optimize the graph"""
     params = LevenbergMarquardtParams()
-    params.setlambdaInitial(1e10)  # Initialize lambda to a high value
-    params.setlambdaUpperBound(1e10)
+    if method not in ["Calibrated", "Binary+K", "Binary+Ks"]:
+        params.setlambdaInitial(1e10)  # Initialize lambda to a high value
+        params.setlambdaUpperBound(1e10)
     # params.setAbsoluteErrorTol(0.1)
     params.setVerbosityLM("SUMMARY")
     optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate, params)
@@ -205,7 +231,7 @@ def compute_distances(method, result, ground_truth, num_cameras, cal):
         key_ab = EdgeKey(a, b).key()
         key_ac = EdgeKey(a, c).key()
 
-        if method in ["Essential+Ks", "Calibrated"]:
+        if method in ["Essential+Ks", "Essential+K", "Binary+Ks", "Binary+K", "Calibrated"]:
             E_est_ab = result.atEssentialMatrix(key_ab)
             E_est_ac = result.atEssentialMatrix(key_ac)
 
@@ -218,15 +244,18 @@ def compute_distances(method, result, ground_truth, num_cameras, cal):
             SF_est_ac = result.atSimpleFundamentalMatrix(key_ac).matrix()
             F_est_ab = FundamentalMatrix(SF_est_ab)
             F_est_ac = FundamentalMatrix(SF_est_ac)
-        elif method == "Essential+Ks":
-            # Retrieve calibrations from result:
+        elif method in ["Essential+Ks", "Binary+Ks"]:
+            # Retrieve calibrations from result for each camera
             cal_a = result.atCal3f(K(a))
             cal_b = result.atCal3f(K(b))
             cal_c = result.atCal3f(K(c))
-
-            # Convert estimated EssentialMatrices to FundamentalMatrices
             F_est_ab = FundamentalMatrix(cal_a.K(), E_est_ab, cal_b.K())
             F_est_ac = FundamentalMatrix(cal_a.K(), E_est_ac, cal_c.K())
+        elif method in ["Essential+K", "Binary+K"]:
+            # Use single shared calibration
+            cal_shared = result.atCal3f(K(0))
+            F_est_ab = FundamentalMatrix(cal_shared.K(), E_est_ab, cal_shared.K())
+            F_est_ac = FundamentalMatrix(cal_shared.K(), E_est_ac, cal_shared.K())
         elif method == "Calibrated":
             # Use ground truth calibration
             F_est_ab = FundamentalMatrix(cal.K(), E_est_ab, cal.K())
@@ -347,6 +376,8 @@ def main():
 
             # Compute final error
             final_error = graph.error(result)
+            if method in ["Binary+K", "Binary+Ks"]:
+                final_error *= cal.f() * cal.f()
 
             # Store results
             results[method]["distances"].extend(distances)

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
@@ -86,6 +87,9 @@ class GTSAM_EXPORT FundamentalMatrix {
   /// Return the fundamental matrix representation
   Matrix3 matrix() const;
 
+  /// Computes the epipolar line in a (left) for a given point in b (right)
+  Vector3 epipolarLine(const Point2& p, OptionalJacobian<3, 7> H = {});
+
   /// @name Testable
   /// @{
   /// Print the FundamentalMatrix
@@ -160,6 +164,9 @@ class GTSAM_EXPORT SimpleFundamentalMatrix {
   /// Return the fundamental matrix representation
   /// F = Ka^(-T) * E * Kb^(-1)
   Matrix3 matrix() const;
+
+  /// Computes the epipolar line in a (left) for a given point in b (right)
+  Vector3 epipolarLine(const Point2& p, OptionalJacobian<3, 7> H = {});
 
   /// @name Testable
   /// @{

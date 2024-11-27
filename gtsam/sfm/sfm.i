@@ -98,8 +98,11 @@ virtual class EssentialTransferFactor : gtsam::NoiseModelFactor {
 template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
 virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
   EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
-                          const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
-                          const gtsam::noiseModel::Base* model = nullptr);
+                           const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                           const gtsam::noiseModel::Base* model = nullptr);
+  EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2, size_t keyK,
+                           const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                           const gtsam::noiseModel::Base* model = nullptr);
 };
 
 #include <gtsam/sfm/ShonanFactor.h>
