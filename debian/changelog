@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2422.gbpf4f03a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2423.gbpfc5c54) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fc5c547a8d5646ed9f8cbe66a954caa3b48c2aba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f4f03aa193e232ad5fdf8fd76e7e803a6ec36984 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 16:34:04 +0000
+  [ Fan Jiang ]
+  * Remove the asserts as they have already been checked in Eigen
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 18:35:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2421.gbpb710af) noble; urgency=medium
 
