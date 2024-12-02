@@ -225,6 +225,17 @@ namespace gtsam {
     std::vector<double> probabilities() const;
 
     /**
+     * @brief Compute the probability value which is the threshold above which
+     * only `N` leaves are present.
+     *
+     * This is used for pruning out the smaller probabilities.
+     *
+     * @param N The number of leaves to keep post pruning.
+     * @return double
+     */
+    double computeThreshold(const size_t N) const;
+
+    /**
      * @brief Prune the decision tree of discrete variables.
      *
      * Pruning will set the leaves to be "pruned" to 0 indicating a 0

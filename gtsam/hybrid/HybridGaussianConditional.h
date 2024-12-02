@@ -68,6 +68,9 @@ class GTSAM_EXPORT HybridGaussianConditional
   ///< Take advantage of the neg-log space so everything is a minimization
   double negLogConstant_;
 
+  /// Flag to indicate if the conditional has been pruned.
+  bool pruned_ = false;
+
  public:
   /// @name Constructors
   /// @{
@@ -150,9 +153,10 @@ class GTSAM_EXPORT HybridGaussianConditional
    *
    * @param discreteParents the discrete parents. Will be placed last.
    * @param conditionalPairs Decision tree of GaussianFactor/scalar pairs.
+   * @param pruned Flag indicating if conditional has been pruned.
    */
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
-                            const FactorValuePairs &pairs);
+                            const FactorValuePairs &pairs, bool pruned = false);
 
   /// @}
   /// @name Testable
@@ -233,6 +237,9 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional::shared_ptr prune(
       const DecisionTreeFactor &discreteProbs) const;
 
+  /// Return true if the conditional has already been pruned.
+  bool pruned() const { return pruned_; }
+
   /// @}
 
  private:
@@ -241,7 +248,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
-                            Helper &&helper);
+                            Helper &&helper, bool pruned = false);
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
