@@ -120,7 +120,7 @@ struct HybridGaussianConditional::Helper {
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys &discreteParents, Helper &&helper)
+    const DiscreteKeys &discreteParents, Helper &&helper, bool pruned)
     : BaseFactor(discreteParents,
                  FactorValuePairs(
                      [&](const GaussianFactorValuePair
@@ -130,7 +130,8 @@ HybridGaussianConditional::HybridGaussianConditional(
                      },
                      std::move(helper.pairs))),
       BaseConditional(*helper.nrFrontals),
-      negLogConstant_(helper.minNegLogConstant) {}
+      negLogConstant_(helper.minNegLogConstant),
+      pruned_(pruned) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &discreteParent,
@@ -166,8 +167,9 @@ HybridGaussianConditional::HybridGaussianConditional(
     : HybridGaussianConditional(discreteParents, Helper(conditionals)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys &discreteParents, const FactorValuePairs &pairs)
-    : HybridGaussianConditional(discreteParents, Helper(pairs)) {}
+    const DiscreteKeys &discreteParents, const FactorValuePairs &pairs,
+    bool pruned)
+    : HybridGaussianConditional(discreteParents, Helper(pairs), pruned) {}
 
 /* *******************************************************************************/
 const HybridGaussianConditional::Conditionals
@@ -331,7 +333,7 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
 
   FactorValuePairs prunedConditionals = factors().apply(pruner);
   return std::make_shared<HybridGaussianConditional>(discreteKeys(),
-                                                     prunedConditionals);
+                                                     prunedConditionals, true);
 }
 
 /* *******************************************************************************/

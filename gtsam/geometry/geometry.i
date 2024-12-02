@@ -360,6 +360,7 @@ class Rot3 {
   // Standard Interface
   static gtsam::Rot3 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Rot3& p);
+  gtsam::Rot3 expmap(const gtsam::Vector& v);
   gtsam::Vector logmap(const gtsam::Rot3& p);
   gtsam::Matrix matrix() const;
   gtsam::Matrix transpose() const;

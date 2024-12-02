@@ -147,6 +147,10 @@ if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
 endif()
 
+if (GPERFTOOLS_FOUND)
+  target_link_libraries(gtsam PRIVATE ${GPERFTOOLS_TCMALLOC} ${GPERFTOOLS_PROFILER})
+endif()
+
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
