@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~2431.gbpc81b68) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2432.gbpc8f44a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c8f44a82f36dbaad48cef3148451493ca98f16a5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c81b6810ea1892f72c24e233b3f399bb2d1bb76b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 18:39:20 +0000
+  [ Varun Agrawal ]
+  * update CMake for finding gperftools
+  * rename TCMALLOC_LIBRARY to GPERFTOOLS_TCMALLOC
+  * link gperftools libraries
+  * computeThreshold as an individual function
+  * test for computeThreshold
+  * link gperftools in the top CMakeLists.txt
+  * rename GOOGLE_PERFTOOLS to GPERFTOOLS
+  * expose Rot3::expmap in wrapper
+  * add pruned flag to avoid extra pruning
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 19:03:40 +0000
 
 gtsam (4.1.0-1ubuntu2~2430.gbp6efc8a) noble; urgency=medium
 
