@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2418.gbp5e6e0b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2419.gbp512a82) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @512a82fc39a7ee2fa7fc87d3f407c0e0b12c43af **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5e6e0b89dbc269dfebf4372b9dd520c16a253cf2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 27 Nov 2024 22:31:00 +0000
+  [ Joel Truher ]
+  * wrap BatchFixedLagSmoother.getFactors()
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 16:26:30 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2417.gbp80cbb3) noble; urgency=medium
 
