@@ -36,3 +36,5 @@ MARK_AS_ADVANCED(
   GPERFTOOLS_TCMALLOC
   GPERFTOOLS_PROFILER
 )
+
+option(GTSAM_ENABLE_GPERFTOOLS                   "Enable/Disable Gperftools" OFF)
