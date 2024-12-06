@@ -87,9 +87,11 @@ class GTSAM_EXPORT VariableIndex {
   const FactorIndices& operator[](Key variable) const {
     KeyMap::const_iterator item = index_.find(variable);
     if(item == index_.end())
-      throw std::invalid_argument("Requested non-existent variable from VariableIndex");
+      throw std::invalid_argument("Requested non-existent variable '" +
+                                  DefaultKeyFormatter(variable) +
+                                  "' from VariableIndex");
     else
-    return item->second;
+      return item->second;
   }
 
   /// Return true if no factors associated with a variable

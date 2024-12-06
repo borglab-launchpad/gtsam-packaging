@@ -50,6 +50,41 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
+void PrintSymbolicTreeHelper(
+    const ISAM2Clique::shared_ptr& clique, const std::string indent = "") {
+
+  // Print the current clique
+  std::cout << indent << "P( ";
+  for(Key key: clique->conditional()->frontals()) {
+    std::cout << DefaultKeyFormatter(key) << " ";
+  }
+  if (clique->conditional()->nrParents() > 0)
+    std::cout << "| ";
+  for(Key key: clique->conditional()->parents()) {
+    std::cout << DefaultKeyFormatter(key) << " ";
+  }
+  std::cout << ")" << std::endl;
+
+  // Recursively print all of the children
+  for(const ISAM2Clique::shared_ptr& child: clique->children) {
+    PrintSymbolicTreeHelper(child, indent + " ");
+  }
+}
+
+/* ************************************************************************* */
+void PrintSymbolicTree(const ISAM2& isam,
+    const std::string& label) {
+  std::cout << label << std::endl;
+  if (!isam.roots().empty()) {
+    for(const ISAM2::sharedClique& root: isam.roots()) {
+      PrintSymbolicTreeHelper(root);
+    }
+  } else
+    std::cout << "{Empty Tree}" << std::endl;
+}
+
+
+/* ************************************************************************* */
 TEST( IncrementalFixedLagSmoother, Example )
 {
   // Test the IncrementalFixedLagSmoother in a pure linear environment. Thus, full optimization and
@@ -64,7 +99,7 @@ TEST( IncrementalFixedLagSmoother, Example )
 
   // Create a Fixed-Lag Smoother
   typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
-  IncrementalFixedLagSmoother smoother(7.0, ISAM2Params());
+  IncrementalFixedLagSmoother smoother(12.0, ISAM2Params());
 
   // Create containers to keep the full graph
   Values fullinit;
@@ -158,6 +193,9 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
+    // Add the odometry factor twice to ensure the removeFactor test below works,
+    // where we need to keep the connectivity of the graph.
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
@@ -188,6 +226,7 @@ TEST( IncrementalFixedLagSmoother, Example )
 	  newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
 	  newValues.insert(key2, Point2(double(i)+0.1, -0.1));
 	  newTimestamps[key2] = double(i);
+	  ++i;
 
 	  fullgraph.push_back(newFactors);
 	  fullinit.insert(newValues);
@@ -210,6 +249,10 @@ TEST( IncrementalFixedLagSmoother, Example )
 
 	  const NonlinearFactorGraph smootherFactorsBeforeRemove = smoother.getFactors();
 
+    std::cout << "fullgraph.size() = " << fullgraph.size() << std::endl;
+    std::cout << "smootherFactorsBeforeRemove.size() = "
+              << smootherFactorsBeforeRemove.size() << std::endl;
+
 	  // remove factor
 	  smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps,factorToRemove);
 
@@ -230,6 +273,67 @@ TEST( IncrementalFixedLagSmoother, Example )
 	      EXPECT(!actual[i]);
 	    }
 	  }
+  }
+
+  {
+    SETDEBUG("BayesTreeMarginalizationHelper", true);
+    PrintSymbolicTree(smoother.getISAM2(), "Bayes Tree Before marginalization test:");
+
+    // Do pressure test on marginalization. Enlarge max_i to enhance the test.
+    const int max_i = 500;
+    while(i <= max_i) {
+      Key key_0 = MakeKey(i);
+      Key key_1 = MakeKey(i-1);
+      Key key_2 = MakeKey(i-2);
+      Key key_3 = MakeKey(i-3);
+      Key key_4 = MakeKey(i-4);
+      Key key_5 = MakeKey(i-5);
+      Key key_6 = MakeKey(i-6);
+      Key key_7 = MakeKey(i-7);
+      Key key_8 = MakeKey(i-8);
+      Key key_9 = MakeKey(i-9);
+      Key key_10 = MakeKey(i-10);
+
+      NonlinearFactorGraph newFactors;
+      Values newValues;
+      Timestamps newTimestamps;
+
+      // To make a complex graph
+      newFactors.push_back(BetweenFactor<Point2>(key_1, key_0, Point2(1.0, 0.0), odometerNoise));
+      if (i % 2 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_2, key_1, Point2(1.0, 0.0), odometerNoise));
+      if (i % 3 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_3, key_2, Point2(1.0, 0.0), odometerNoise));
+      if (i % 4 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_4, key_3, Point2(1.0, 0.0), odometerNoise));
+      if (i % 5 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_5, key_4, Point2(1.0, 0.0), odometerNoise));
+      if (i % 6 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_6, key_5, Point2(1.0, 0.0), odometerNoise));
+      if (i % 7 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_7, key_6, Point2(1.0, 0.0), odometerNoise));
+      if (i % 8 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_8, key_7, Point2(1.0, 0.0), odometerNoise));
+      if (i % 9 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_9, key_8, Point2(1.0, 0.0), odometerNoise));
+      if (i % 10 == 0)
+        newFactors.push_back(BetweenFactor<Point2>(key_10, key_9, Point2(1.0, 0.0), odometerNoise));
+
+      newValues.insert(key_0, Point2(double(i)+0.1, -0.1));
+      newTimestamps[key_0] = double(i);
+
+      fullgraph.push_back(newFactors);
+      fullinit.insert(newValues);
+
+      // Update the smoother
+      smoother.update(newFactors, newValues, newTimestamps);
+
+      // Check
+      CHECK(check_smoother(fullgraph, fullinit, smoother, key_0));
+      PrintSymbolicTree(smoother.getISAM2(), "Bayes Tree marginalization test: i = " + std::to_string(i));
+
+      ++i;
+    }
   }
 }
 
