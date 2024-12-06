@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2435.gbpf0fb3a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2436.gbp4008cf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4008cf45947aa4dcf53e722b79af9b4e08ea55e8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f0fb3ab2fc2cf952d722cf6fe7c2e4859773065a **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 02 Dec 2024 19:09:53 +0000
+  [ Varun Agrawal ]
+  * add CMake switch for GPerfTools
+  * use the switch
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Dec 2024 21:51:22 +0000
 
 gtsam (4.1.0-1ubuntu2~2434.gbpadeee1) noble; urgency=medium
 
