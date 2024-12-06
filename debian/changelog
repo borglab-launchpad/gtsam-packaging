@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2439.gbp6d89a3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2440.gbpf89918) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f899182606dae3bf444487f12912e292068cce76 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6d89a33a60a0916c19398a806fc85c67db9b0898 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Dec 2024 21:55:25 +0000
+  [ Jeffrey ]
+  * update testIncrementalFixedLagSmoother.cpp to reproduce the bug in marginalization
+  * Fix marginalization in IncrementalFixedLagSmoother.
+  * update doc string in BayesTreeMarginalizationHelper.h
+  * Update BayesTreeMarginalizationHelper:
+  * Remove old marginalization code in IncrementalFixedLagSmoother.cpp
+  * Further optimize the implementation of BayesTreeMarginalizationHelper: Now we won't re-emilinate any unnecessary nodes (we re-emilinated whole subtrees in the previous commits, which is not optimal)
+  * Remove unused variable
+  * Some refinement in BayesTreeMarginalizationHelper:
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Dec 2024 23:07:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2438.gbp6bfaaf) noble; urgency=medium
 
