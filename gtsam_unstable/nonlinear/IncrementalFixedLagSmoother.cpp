@@ -20,31 +20,10 @@
  */
 
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam_unstable/nonlinear/BayesTreeMarginalizationHelper.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
-
-/* ************************************************************************* */
-void recursiveMarkAffectedKeys(const Key& key,
-    const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
-
-  // Check if the separator keys of the current clique contain the specified key
-  if (std::find(clique->conditional()->beginParents(),
-      clique->conditional()->endParents(), key)
-      != clique->conditional()->endParents()) {
-
-    // Mark the frontal keys of the current clique
-    for(Key i: clique->conditional()->frontals()) {
-      additionalKeys.insert(i);
-    }
-
-    // Recursively mark all of the children
-    for(const ISAM2Clique::shared_ptr& child: clique->children) {
-      recursiveMarkAffectedKeys(key, child, additionalKeys);
-    }
-  }
-  // If the key was not found in the separator/parents, then none of its children can have it either
-}
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::print(const std::string& s,
@@ -114,14 +93,9 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << std::endl;
   }
 
-  // Mark additional keys between the marginalized keys and the leaves
-  std::set<Key> additionalKeys;
-  for(Key key: marginalizableKeys) {
-    ISAM2Clique::shared_ptr clique = isam_[key];
-    for(const ISAM2Clique::shared_ptr& child: clique->children) {
-      recursiveMarkAffectedKeys(key, child, additionalKeys);
-    }
-  }
+  std::unordered_set<Key> additionalKeys =
+      BayesTreeMarginalizationHelper<ISAM2>::gatherAdditionalKeysToReEliminate(
+          isam_, marginalizableKeys);
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
