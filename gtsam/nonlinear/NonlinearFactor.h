@@ -22,6 +22,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
