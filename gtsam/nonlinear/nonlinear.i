@@ -127,6 +127,7 @@ virtual class NonlinearFactor : gtsam::Factor {
   // NonlinearFactor
   bool equals(const gtsam::NonlinearFactor& other, double tol) const;
   double error(const gtsam::Values& c) const;
+  double error(const gtsam::HybridValues& c) const;
   size_t dim() const;
   bool active(const gtsam::Values& c) const;
   gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
