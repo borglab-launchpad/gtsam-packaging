@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2438.gbp931577) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2439.gbp5071cc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5071cc84626743f46ae55481382f98603923bd19 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @931577c8d1f86891c29ef0d2a1ca6dd37fb97681 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Dec 2024 23:12:05 +0000
+  [ Joel Truher ]
+  * add error(HybridValues) to NonlinearFactor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Dec 2024 06:45:29 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2437.gbp333ad2) noble; urgency=medium
 
