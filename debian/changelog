@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2447.gbp215bfa) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2448.gbp2015a9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2015a9df8ed9fe4a2b651815b5671c586c1fcfd8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @215bfab4b04b3f34703fe362686b1a639ed07c58 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Dec 2024 06:49:33 +0000
+  [ Joel Truher ]
+  * fix CHECK_EQUAL
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Dec 2024 16:50:55 +0000
 
 gtsam (4.1.0-1ubuntu2~2446.gbp9a4e8c) noble; urgency=medium
 
