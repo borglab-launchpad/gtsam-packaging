@@ -19,6 +19,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -104,7 +105,7 @@ DiscreteConditional DiscreteConditional::operator*(
   // Finally, add parents to keys, in order
   for (auto&& dk : parents) discreteKeys.push_back(dk);
 
-  ADT product = ADT::apply(other, ADT::Ring::mul);
+  ADT product = ADT::apply(other, Ring::mul);
   return DiscreteConditional(newFrontals.size(), discreteKeys, product);
 }
 

@@ -23,6 +23,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -123,14 +124,6 @@ struct traits<DT> : public Testable<DT> {};
 }  // namespace gtsam
 
 GTSAM_CONCEPT_TESTABLE_INST(DT)
-
-struct Ring {
-  static inline int zero() { return 0; }
-  static inline int one() { return 1; }
-  static inline int id(const int& a) { return a; }
-  static inline int add(const int& a, const int& b) { return a + b; }
-  static inline int mul(const int& a, const int& b) { return a * b; }
-};
 
 /* ************************************************************************** */
 // Check that creating decision trees respects key order.
