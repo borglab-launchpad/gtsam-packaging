@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2451.gbpd093af) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2452.gbp402884) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @40288467236b75660f779083fd2c7baa48ec07d5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d093afcae1243f3d48805fffd3e977be74f25390 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Dec 2024 16:54:55 +0000
+  [ Varun Agrawal ]
+  * put Ring struct in a separate file
+  * update DecisionTreeFactor.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 09 Dec 2024 16:25:26 +0000
 
 gtsam (4.1.0-1ubuntu2~2450.gbp5acea2) noble; urgency=medium
 
