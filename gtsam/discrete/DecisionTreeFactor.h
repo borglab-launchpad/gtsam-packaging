@@ -21,11 +21,12 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/Ring.h>
 #include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
-#include <memory>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -145,7 +146,7 @@ namespace gtsam {
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
-      return apply(f, ADT::Ring::mul);
+      return apply(f, Ring::mul);
     }
 
     static double safe_div(const double& a, const double& b);
@@ -160,22 +161,22 @@ namespace gtsam {
 
     /// Create new factor by summing all values with the same separator values
     shared_ptr sum(size_t nrFrontals) const {
-      return combine(nrFrontals, ADT::Ring::add);
+      return combine(nrFrontals, Ring::add);
     }
 
     /// Create new factor by summing all values with the same separator values
     shared_ptr sum(const Ordering& keys) const {
-      return combine(keys, ADT::Ring::add);
+      return combine(keys, Ring::add);
     }
 
     /// Create new factor by maximizing over all values with the same separator.
     shared_ptr max(size_t nrFrontals) const {
-      return combine(nrFrontals, ADT::Ring::max);
+      return combine(nrFrontals, Ring::max);
     }
 
     /// Create new factor by maximizing over all values with the same separator.
     shared_ptr max(const Ordering& keys) const {
-      return combine(keys, ADT::Ring::max);
+      return combine(keys, Ring::max);
     }
 
     /// @}

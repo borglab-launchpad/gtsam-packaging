@@ -20,12 +20,12 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Ring.h>
 
-#include <algorithm>
+#include <iomanip>
 #include <limits>
 #include <map>
 #include <string>
-#include <iomanip>
 #include <vector>
 
 namespace gtsam {
@@ -54,26 +54,6 @@ namespace gtsam {
 
    public:
     using Base = DecisionTree<L, double>;
-
-    /** The Real ring with addition and multiplication */
-    struct Ring {
-      static inline double zero() { return 0.0; }
-      static inline double one() { return 1.0; }
-      static inline double add(const double& a, const double& b) {
-        return a + b;
-      }
-      static inline double max(const double& a, const double& b) {
-        return std::max(a, b);
-      }
-      static inline double mul(const double& a, const double& b) {
-        return a * b;
-      }
-      static inline double div(const double& a, const double& b) {
-        return a / b;
-      }
-      static inline double id(const double& x) { return x; }
-      static inline double negate(const double& x) { return -x; }
-    };
 
     AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
 
