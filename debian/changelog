@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2454.gbpf3b29b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2455.gbp73ef26) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @73ef2608169b1fd486ba5a4c76e01536e541504e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f3b29b13c080e83966a7a229ccb950737f6a1930 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 09 Dec 2024 21:31:58 +0000
+  [ Varun Agrawal ]
+  * make evaluate a common base method
+  * make the Unary and Binary ops common
+  * fix wrapper
+  * Revert "fix wrapper"
+  * make evaluate the overriden method
+  * formatting
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Dec 2024 15:19:46 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2453.gbpa5665a) noble; urgency=medium
 
