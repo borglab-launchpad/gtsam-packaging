@@ -14,6 +14,7 @@
  * @date Feb 14, 2011
  * @author Duy-Nguyen Ta
  * @author Frank Dellaert
+ * @author Varun Agrawal
  */
 
 #pragma once
@@ -48,7 +49,7 @@ class DiscreteJunctionTree;
  * @ingroup discrete
  */
 GTSAM_EXPORT
-std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>
 EliminateDiscrete(const DiscreteFactorGraph& factors,
                   const Ordering& frontalKeys);
 
@@ -61,7 +62,7 @@ EliminateDiscrete(const DiscreteFactorGraph& factors,
  * @ingroup discrete
  */
 GTSAM_EXPORT
-std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>
 EliminateForMPE(const DiscreteFactorGraph& factors,
                 const Ordering& frontalKeys);
 
