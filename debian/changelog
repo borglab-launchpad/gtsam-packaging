@@ -1,10 +1,25 @@
-gtsam (4.1.0-1ubuntu2~2463.gbp380898) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2464.gbp28ec7f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @28ec7fdb7a2e0c6ee698d8871f9289b73ee87ad1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @380898a9dbd238f94e92c27559fa90c8416d7451 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Dec 2024 15:25:55 +0000
+  [ Varun Agrawal ]
+  * use product method since it has a nullptr check
+  * generalize discreteKeys method
+  * common function for product and normalization
+  * return tau factor as DiscreteFactor for discrete elimination
+  * use BaseFactor methods to reduce code in DiscreteConditional
+  * formatting
+  * add return
+  * fix test
+  * add another pointer check
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Dec 2024 23:32:09 +0000
 
 gtsam (4.1.0-1ubuntu2~2462.gbpee05da) noble; urgency=medium
 
