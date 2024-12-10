@@ -169,12 +169,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   /// Evaluate, just look up in AlgebraicDecisionTree
-  double evaluate(const DiscreteValues& values) const {
+  virtual double evaluate(const Assignment<Key>& values) const override {
     return ADT::operator()(values);
   }
 
   using DecisionTreeFactor::error;       ///< DiscreteValues version
-  using DecisionTreeFactor::operator();  ///< DiscreteValues version
+  using DiscreteFactor::operator();      ///< DiscreteValues version
 
   /**
    * @brief restrict to given *parent* values.

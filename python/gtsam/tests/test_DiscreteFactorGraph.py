@@ -14,8 +14,11 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering, Symbol
 from gtsam.utils.test_case import GtsamTestCase
+
+from gtsam import (DecisionTreeFactor, DiscreteConditional,
+                   DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering,
+                   Symbol)
 
 OrderingType = Ordering.OrderingType
 

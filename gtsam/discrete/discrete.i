@@ -61,14 +61,14 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys, string table);
 
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
-  
+
   void print(string s = "DecisionTreeFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
 
   size_t cardinality(gtsam::Key j) const;
-  
+
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DecisionTreeFactor operator*(const gtsam::DecisionTreeFactor& f) const;
   size_t cardinality(gtsam::Key j) const;
