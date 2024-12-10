@@ -19,8 +19,8 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteBayesNet, DiscreteBayesTreeClique,
-                   DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteValues, Ordering)
+                   DiscreteConditional, DiscreteFactorGraph, DiscreteValues,
+                   Ordering)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):

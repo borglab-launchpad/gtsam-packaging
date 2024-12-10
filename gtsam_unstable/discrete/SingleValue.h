@@ -55,7 +55,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override;
+  double evaluate(const Assignment<Key>& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
