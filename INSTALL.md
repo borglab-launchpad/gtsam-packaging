@@ -27,7 +27,7 @@ $ make install
        downloaded from https://www.threadingbuildingblocks.org/
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
-       achieved with MKL disabled. We therefore advise you to benchmark your problem 
+       achieved with MKL disabled. We therefore advise you to benchmark your problem
        before using MKL.
 
     Tested compilers:
@@ -128,12 +128,12 @@ We support several build configurations for GTSAM (case insensitive)
 
 #### CMAKE_INSTALL_PREFIX
 
-The install folder. The default is typically `/usr/local/`. 
+The install folder. The default is typically `/usr/local/`.
 To configure to install to your home directory, you could execute:
 
 ```cmake -DCMAKE_INSTALL_PREFIX:PATH=$HOME ..```
 
-#### GTSAM_TOOLBOX_INSTALL_PATH 
+#### GTSAM_TOOLBOX_INSTALL_PATH
 
 The Matlab toolbox will be installed in a subdirectory
 of this folder, called 'gtsam'.
@@ -142,7 +142,7 @@ of this folder, called 'gtsam'.
 
 #### GTSAM_BUILD_CONVENIENCE_LIBRARIES
 
-This is a build option to allow for tests in subfolders to be linked against convenience libraries rather than the full libgtsam. 
+This is a build option to allow for tests in subfolders to be linked against convenience libraries rather than the full libgtsam.
 Set with the command line as follows:
 
 ```cmake -DGTSAM_BUILD_CONVENIENCE_LIBRARIES:OPTION=ON ..```
@@ -158,6 +158,16 @@ Set with the command line as follows:
 
   ON:             When enabled, libgtsam_unstable will be built and installed with the same options as libgtsam.  In addition, if tests are enabled, the unit tests will be built as well.  The Matlab toolbox will also be generated if the matlab toolbox is enabled, installing into a folder called `gtsam_unstable`.
   OFF (Default)  If disabled, no `gtsam_unstable` code will be included in build or install.
+
+## Convenience Options:
+
+#### GTSAM_BUILD_EXAMPLES_ALWAYS
+
+Whether or not to force building examples, can be true or false.
+
+#### GTSAM_BUILD_TESTS
+
+Whether or not to build tests, can be true or false.
 
 ## Check
 
@@ -179,7 +189,7 @@ Here are some tips to get the best possible performance out of GTSAM.
 
 1. Build in `Release` mode. GTSAM will run up to 10x faster compared to `Debug` mode.
 2. Enable TBB. On modern processors with multiple cores, this can easily speed up
-    optimization by 30-50%. Please note that this may not be true for very small 
+    optimization by 30-50%. Please note that this may not be true for very small
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
 3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
