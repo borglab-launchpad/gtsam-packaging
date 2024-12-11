@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "gtsam/geometry/Point3.h"
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
@@ -317,7 +317,11 @@ typename CAMERA::MeasurementVector undistortMeasurements(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements) {
   const size_t nrMeasurements = measurements.size();
-  assert(nrMeasurements == cameras.size());
+#ifndef NDEBUG
+  if (nrMeasurements != cameras.size()) {
+    throw;
+  }
+#endif
   typename CAMERA::MeasurementVector undistortedMeasurements(nrMeasurements);
   for (size_t ii = 0; ii < nrMeasurements; ++ii) {
     // Calibrate with cal and uncalibrate with pinhole version of cal so that

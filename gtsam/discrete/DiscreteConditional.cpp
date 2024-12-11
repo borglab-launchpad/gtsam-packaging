@@ -30,6 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cassert>
 
 using namespace std;
 using std::pair;

@@ -159,7 +159,11 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
     inline static Rot3 RzRyRx(const Vector& xyz,
                               OptionalJacobian<3, 3> H = {}) {
-      assert(xyz.size() == 3);
+#ifndef NDEBUG
+      if (xyz.size() != 3) {
+        throw;
+      }
+#endif
       Rot3 out;
       if (H) {
         Vector3 Hx, Hy, Hz;
