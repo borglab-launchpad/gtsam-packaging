@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2466.gbp97960c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2467.gbp7a823e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7a823e4c8a2a6da813362f863bc9df90dacf0174 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @97960c0971ea526e4fdd4e77bd2eee59bea065cd **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Dec 2024 17:49:47 +0000
+  [ Fan Jiang ]
+  * Cleanup some includes and fix cassert
+  * Update some header includes
+  * Fix essential matrix factor
+  * Fix ExpressionFactor wrong GTSAM_EXPORT
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Dec 2024 19:08:52 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2465.gbpf9066d) noble; urgency=medium
 
