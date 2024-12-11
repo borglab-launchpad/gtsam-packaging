@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~2467.gbpa9da3a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2468.gbpfb2eef) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fb2eef2f4368a5623ef650952025638545897f51 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a9da3a100cdf2ff8a272533d6d4f72a5b1157f3e **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Dec 2024 23:36:09 +0000
+  [ Jade Turner ]
+  * [build] Allow disabling tests and examples
+  * Revert "[build] Allow disabling tests and examples"
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Jade Turner ]
+  * document flags
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Dec 2024 17:43:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2466.gbpee38c1) noble; urgency=medium
 
