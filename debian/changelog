@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~2479.gbp934ee5) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2480.gbpda3908) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @da39084cd87e6deb7b17819eb757bededfabc2ae **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @934ee51d2ebae1fc0db5c7f663074a4a0f76f6e3 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Dec 2024 20:31:50 +0000
+  [ Varun Agrawal ]
+  * check if input size matches the total cardinality of the keys
+  * helper constructor that doesn't take separate keys
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix equality to check for matching keys
+  * fix assertion
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Dec 2024 04:37:20 +0000
 
 gtsam (4.1.0-1ubuntu2~2478.gbpe8be2d) noble; urgency=medium
 
