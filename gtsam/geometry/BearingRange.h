@@ -55,9 +55,9 @@ private:
   R range_;
 
 public:
-  enum { dimB = traits<B>::dimension };
-  enum { dimR = traits<R>::dimension };
-  enum { dimension = dimB + dimR };
+  constexpr static const size_t dimB = traits<B>::dimension;
+  constexpr static const size_t dimR = traits<R>::dimension;
+  constexpr static const size_t dimension = dimB + dimR;
 
   /// @name Standard Constructors
   /// @{
@@ -162,9 +162,7 @@ private:
   /// @}
 
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  enum {
-    NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0
-  };
+  inline constexpr static auto NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0;
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
