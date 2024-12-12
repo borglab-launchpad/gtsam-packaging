@@ -134,14 +134,17 @@ TEST(TableFactor, constructors) {
   EXPECT(assert_equal(expected, f4));
 
   // Test for 9=3x3 values.
-  DiscreteKey V(0, 3), W(1, 3);
+  DiscreteKey V(0, 3), W(1, 3), O(100, 3);
   DiscreteConditional conditional5(V | W = "1/2/3 5/6/7 9/10/11");
   TableFactor f5(conditional5);
-  // GTSAM_PRINT(f5);
-  TableFactor expected_f5(
-      X & Y,
-      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667");
+
+  std::string expected_values =
+      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667";
+  TableFactor expected_f5(V & W, expected_values);
   EXPECT(assert_equal(expected_f5, f5, 1e-6));
+
+  TableFactor f5_with_wrong_keys(V & O, expected_values);
+  EXPECT(assert_inequal(f5_with_wrong_keys, f5, 1e-9));
 }
 
 /* ************************************************************************* */

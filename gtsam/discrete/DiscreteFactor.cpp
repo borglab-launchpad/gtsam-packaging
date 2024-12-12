@@ -28,6 +28,11 @@ using namespace std;
 
 namespace gtsam {
 
+/* ************************************************************************* */
+bool DiscreteFactor::equals(const DiscreteFactor& lf, double tol) const {
+  return Base::equals(lf, tol) && cardinalities_ == lf.cardinalities_;
+}
+
 /* ************************************************************************ */
 DiscreteKeys DiscreteFactor::discreteKeys() const {
   DiscreteKeys result;

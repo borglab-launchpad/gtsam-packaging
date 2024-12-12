@@ -77,7 +77,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   /// @{
 
   /// equals
-  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const = 0;
+  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const;
 
   /// print
   void print(

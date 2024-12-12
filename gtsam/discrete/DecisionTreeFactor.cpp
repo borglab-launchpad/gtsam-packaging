@@ -48,7 +48,7 @@ namespace gtsam {
       return false;
     } else {
       const auto& f(static_cast<const DecisionTreeFactor&>(other));
-      return ADT::equals(f, tol);
+      return Base::equals(other, tol) && ADT::equals(f, tol);
     }
   }
 
