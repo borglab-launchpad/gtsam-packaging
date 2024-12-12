@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2474.gbpa2d71b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2475.gbp961a65) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @961a658ed6e44471b2f39a14225afa38fcf19d7c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a2d71b18695d6e4ba8eb2d6bd56bf78a58d912cb **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 11 Dec 2024 20:31:44 +0000
+  [ Varun Agrawal ]
+  * check if input size matches the total cardinality of the keys
+  * helper constructor that doesn't take separate keys
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix equality to check for matching keys
+  * fix assertion
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Dec 2024 04:37:18 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2473.gbp64538e) noble; urgency=medium
 
