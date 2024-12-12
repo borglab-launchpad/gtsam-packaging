@@ -93,12 +93,27 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
     : TableFactor(dkeys, ComputeLeafOrdering(dkeys, dtf)) {}
 
 /* ************************************************************************ */
+TableFactor::TableFactor(const DecisionTreeFactor& dtf)
+    : TableFactor(dtf.discreteKeys(),
+                  ComputeLeafOrdering(dtf.discreteKeys(), dtf)) {}
+
+/* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteConditional& c)
     : TableFactor(c.discreteKeys(), c) {}
 
 /* ************************************************************************ */
 Eigen::SparseVector<double> TableFactor::Convert(
-    const std::vector<double>& table) {
+    const DiscreteKeys& keys, const std::vector<double>& table) {
+  size_t max_size = 1;
+  for (auto&& [_, cardinality] : keys.cardinalities()) {
+    max_size *= cardinality;
+  }
+  if (table.size() != max_size) {
+    throw std::runtime_error(
+        "The cardinalities of the keys don't match the number of values in the "
+        "input.");
+  }
+
   Eigen::SparseVector<double> sparse_table(table.size());
   // Count number of nonzero elements in table and reserve the space.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
@@ -113,13 +128,14 @@ Eigen::SparseVector<double> TableFactor::Convert(
 }
 
 /* ************************************************************************ */
-Eigen::SparseVector<double> TableFactor::Convert(const std::string& table) {
+Eigen::SparseVector<double> TableFactor::Convert(const DiscreteKeys& keys,
+                                                 const std::string& table) {
   // Convert string to doubles.
   std::vector<double> ys;
   std::istringstream iss(table);
   std::copy(std::istream_iterator<double>(iss), std::istream_iterator<double>(),
             std::back_inserter(ys));
-  return Convert(ys);
+  return Convert(keys, ys);
 }
 
 /* ************************************************************************ */
@@ -128,7 +144,8 @@ bool TableFactor::equals(const DiscreteFactor& other, double tol) const {
     return false;
   } else {
     const auto& f(static_cast<const TableFactor&>(other));
-    return sparse_table_.isApprox(f.sparse_table_, tol);
+    return Base::equals(other, tol) &&
+           sparse_table_.isApprox(f.sparse_table_, tol);
   }
 }
 
@@ -250,7 +267,8 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
     for (auto&& kv : assignment) {
       cout << "(" << formatter(kv.first) << ", " << kv.second << ")";
     }
-    cout << " | " << it.value() << " | " << it.index() << endl;
+    cout << " | " << std::setw(10) << std::left << it.value() << " | "
+         << it.index() << endl;
   }
   cout << "number of nnzs: " << sparse_table_.nonZeros() << endl;
 }
