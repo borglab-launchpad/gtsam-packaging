@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2483.gbp4cd530) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2484.gbp13dda9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @13dda97e7d7065702bf0b3f09966b4db497461ef **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4cd5303262a51388732e46c6d4be1f343c521e3f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Dec 2024 04:41:33 +0000
+  [ Fan Jiang ]
+  * Change the deprecated C++ enum math to constexprs
+  * Change all occurances of unnamed enum (deprecated in C++20) to `constexpr`
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Dec 2024 15:29:14 +0000
 
 gtsam (4.1.0-1ubuntu2~2482.gbp70e33b) noble; urgency=medium
 
