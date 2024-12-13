@@ -148,6 +148,34 @@ TEST(TableFactor, constructors) {
 }
 
 /* ************************************************************************* */
+// Check conversion from DecisionTreeFactor.
+TEST(TableFactor, Conversion) {
+  /* This is the DecisionTree we are using
+  Choice(m2)
+  0 Choice(m1)
+  0 0 Leaf    0
+  0 1 Choice(m0)
+  0 1 0 Leaf    0
+  0 1 1 Leaf 0.14649446  // 3
+  1 Choice(m1)
+  1 0 Choice(m0)
+  1 0 0 Leaf    0
+  1 0 1 Leaf 0.14648756  // 5
+  1 1 Choice(m0)
+  1 1 0 Leaf 0.14649446  // 6
+  1 1 1 Leaf 0.23918345  // 7
+  */
+  DiscreteKeys dkeys = {{0, 2}, {1, 2}, {2, 2}};
+  DecisionTreeFactor dtf(
+      dkeys, std::vector<double>{0, 0, 0, 0.14649446, 0, 0.14648756, 0.14649446,
+                                 0.23918345});
+
+  TableFactor tf(dtf.discreteKeys(), dtf);
+
+  EXPECT(assert_equal(dtf, tf.toDecisionTreeFactor()));
+}
+
+/* ************************************************************************* */
 // Check multiplication between two TableFactors.
 TEST(TableFactor, multiplication) {
   DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
