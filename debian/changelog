@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2482.gbpd2bfc5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2483.gbpa5e83e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a5e83edcae01d3952cbf56203710e1808e2dac41 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d2bfc5933b4e4a9572c46645fd075a67200396dd **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Dec 2024 15:35:59 +0000
+  [ Varun Agrawal ]
+  * test exposing incorrect conversion
+  * update ComputeLeafOrdering to give a correct vector of values
+  * clean up test
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Dec 2024 20:42:03 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2481.gbp17c8fa) noble; urgency=medium
 
