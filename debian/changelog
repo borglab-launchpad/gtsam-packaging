@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~2491.gbpc386c9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2492.gbp621ed1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @621ed143fcb5c34cac4e542bbab217496d16b648 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c386c9dcdea1d17fa495d411c1203a9d7d7e8f18 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Dec 2024 20:46:07 +0000
+  [ Frank Dellaert ]
+  * Endow NavState with group operations
+  * ExpmapTranslation
+  * Use ExpmapTranslation
+  * Remove TODO
+  * Remove extra include
+  * Fix nearZero of SE(3) and SE_2(3)
+  * Address comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 15 Dec 2024 18:25:59 +0000
 
 gtsam (4.1.0-1ubuntu2~2490.gbp8a6c72) noble; urgency=medium
 
