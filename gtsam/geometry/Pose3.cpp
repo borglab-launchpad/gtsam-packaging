@@ -21,12 +21,9 @@
 
 #include <cmath>
 #include <iostream>
-#include <limits>
 #include <string>
 
 namespace gtsam {
-
-using std::vector;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3)
@@ -167,21 +164,23 @@ Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
 Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
-  if (Hxi) *Hxi = ExpmapDerivative(xi);
+  // Get angular velocity omega and translational velocity v from twist xi
+  const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
-  // get angular velocity omega and translational velocity v from twist xi
-  Vector3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
+  // Compute rotation using Expmap
+  Rot3 R = Rot3::Expmap(w);
 
-  Rot3 R = Rot3::Expmap(omega);
-  double theta2 = omega.dot(omega);
-  if (theta2 > std::numeric_limits<double>::epsilon()) {
-    Vector3 t_parallel = omega * omega.dot(v);  // translation parallel to axis
-    Vector3 omega_cross_v = omega.cross(v);     // points towards axis
-    Vector3 t = (omega_cross_v - R * omega_cross_v + t_parallel) / theta2;
-    return Pose3(R, t);
-  } else {
-    return Pose3(R, v);
+  // Compute translation and optionally its Jacobian in w
+  Matrix3 Q;
+  const Vector3 t = ExpmapTranslation(w, v, Hxi ? &Q : nullptr, R);
+
+  if (Hxi) {
+    const Matrix3 Jw = Rot3::ExpmapDerivative(w);
+    *Hxi << Jw, Z_3x3,
+             Q, Jw;
   }
+
+  return Pose3(R, t);
 }
 
 /* ************************************************************************* */
@@ -240,55 +239,68 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi, double nearZeroThreshold) {
+Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi,
+                                           double nearZeroThreshold) {
+  Matrix3 Q;
   const auto w = xi.head<3>();
   const auto v = xi.tail<3>();
-  const Matrix3 V = skewSymmetric(v);
-  const Matrix3 W = skewSymmetric(w);
-
-  Matrix3 Q;
-
-#ifdef NUMERICAL_EXPMAP_DERIV
-  Matrix3 Qj = Z_3x3;
-  double invFac = 1.0;
-  Q = Z_3x3;
-  Matrix3 Wj = I_3x3;
-  for (size_t j=1; j<10; ++j) {
-    Qj = Qj*W + Wj*V;
-    invFac = -invFac/(j+1);
-    Q = Q + invFac*Qj;
-    Wj = Wj*W;
-  }
-#else
-  // The closed-form formula in Barfoot14tro eq. (102)
-  double phi = w.norm();
-  const Matrix3 WVW = W * V * W;
-  if (std::abs(phi) > nearZeroThreshold) {
-    const double s = sin(phi), c = cos(phi);
-    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi,
-                 phi5 = phi4 * phi;
-    // Invert the sign of odd-order terms to have the right Jacobian
-    Q = -0.5 * V + (phi - s) / phi3 * (W * V + V * W - WVW) +
-        (1 - phi2 / 2 - c) / phi4 * (W * W * V + V * W * W - 3 * WVW) -
-        0.5 * ((1 - phi2 / 2 - c) / phi4 - 3 * (phi - s - phi3 / 6.) / phi5) *
-            (WVW * W + W * WVW);
-  } else {
-    Q = -0.5 * V + 1. / 6. * (W * V + V * W - WVW) -
-        1. / 24. * (W * W * V + V * W * W - 3 * WVW) +
-        1. / 120. * (WVW * W + W * WVW);
-  }
-#endif
-
+  ExpmapTranslation(w, v, Q, {}, nearZeroThreshold);
   return Q;
 }
 
 /* ************************************************************************* */
+Vector3 Pose3::ExpmapTranslation(const Vector3& w, const Vector3& v,
+                                 OptionalJacobian<3, 3> Q,
+                                 const std::optional<Rot3>& R,
+                                 double nearZeroThreshold) {
+  const double theta2 = w.dot(w);
+  bool nearZero = (theta2 <= nearZeroThreshold);
+
+  if (Q) {
+    const Matrix3 V = skewSymmetric(v);
+    const Matrix3 W = skewSymmetric(w);
+    const Matrix3 WVW = W * V * W;
+    const double theta = w.norm();
+
+    if (nearZero) {
+      static constexpr double one_sixth = 1. / 6.;
+      static constexpr double one_twenty_fourth = 1. / 24.;
+      static constexpr double one_one_hundred_twentieth = 1. / 120.;
+
+      *Q = -0.5 * V + one_sixth * (W * V + V * W - WVW) -
+           one_twenty_fourth * (W * W * V + V * W * W - 3 * WVW) +
+           one_one_hundred_twentieth * (WVW * W + W * WVW);
+    } else {
+      const double s = sin(theta), c = cos(theta);
+      const double theta3 = theta2 * theta, theta4 = theta3 * theta,
+                   theta5 = theta4 * theta;
+
+      // Invert the sign of odd-order terms to have the right Jacobian
+      *Q = -0.5 * V + (theta - s) / theta3 * (W * V + V * W - WVW) +
+           (1 - theta2 / 2 - c) / theta4 * (W * W * V + V * W * W - 3 * WVW) -
+           0.5 *
+               ((1 - theta2 / 2 - c) / theta4 -
+                3 * (theta - s - theta3 / 6.) / theta5) *
+               (WVW * W + W * WVW);
+    }
+  }
+
+  // TODO(Frank): this threshold is *different*. Why?
+  if (nearZero) {
+    return v + 0.5 * w.cross(v);
+  } else {
+    Vector3 t_parallel = w * w.dot(v);  // translation parallel to axis
+    Vector3 w_cross_v = w.cross(v);     // translation orthogonal to axis
+    Rot3 rotation = R.value_or(Rot3::Expmap(w));
+    Vector3 t = (w_cross_v - rotation * w_cross_v + t_parallel) / theta2;
+    return t;
+  }
+}
+
+/* ************************************************************************* */
 Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
-  const Vector3 w = xi.head<3>();
-  const Matrix3 Jw = Rot3::ExpmapDerivative(w);
-  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
   Matrix6 J;
-  J << Jw, Z_3x3, Q, Jw;
+  Expmap(xi, J);
   return J;
 }
 
