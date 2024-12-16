@@ -55,10 +55,15 @@ GTSAM_EXPORT double norm3(const Point3& p, OptionalJacobian<1, 3> H = {});
 /// normalize, with optional Jacobian
 GTSAM_EXPORT Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = {});
 
-/// cross product @return this x q
+/// cross product @return p x q
 GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
                           OptionalJacobian<3, 3> H_p = {},
                           OptionalJacobian<3, 3> H_q = {});
+
+/// double cross product @return p x (p x q)
+GTSAM_EXPORT Point3 doubleCross(const Point3& p, const Point3& q,
+                                OptionalJacobian<3, 3> H1 = {},
+                                OptionalJacobian<3, 3> H2 = {});
 
 /// dot product
 GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
