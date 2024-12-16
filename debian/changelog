@@ -1,10 +1,34 @@
-gtsam (4.1.0-1ubuntu2~2495.gbp7315fd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2496.gbp5b3b68) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5b3b689d69ad1a070f5fc509a18c66fabd482682 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7315fd71bc0abb00a6e80ccef6a5071cc90a88da **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 15 Dec 2024 18:30:08 +0000
+  [ Frank Dellaert ]
+  * Simplify functor according to Eade
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Use functor as in SO3
+  * Simplified Jacobians with ABC
+  * doubleCross, tested
+  * Simplified applyDexp
+  * applyLeftJacobian
+  * Cleanup
+  * Add export
+  * New constants for cross and doubleCross
+  * Incredible simplification using E and F
+  * Export
+  * Fix test cases
+  * Remove all nearZero paths
+  * Final touches
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 16 Dec 2024 07:40:33 +0000
 
 gtsam (4.1.0-1ubuntu2~2494.gbp7fb0aa) noble; urgency=medium
 
