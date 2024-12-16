@@ -168,14 +168,14 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
   // Compute rotation using Expmap
-  Rot3 R = Rot3::Expmap(w);
+  Matrix3 Jw;
+  Rot3 R = Rot3::Expmap(w, Hxi ? &Jw : nullptr);
 
   // Compute translation and optionally its Jacobian in w
   Matrix3 Q;
   const Vector3 t = ExpmapTranslation(w, v, Hxi ? &Q : nullptr, R);
 
   if (Hxi) {
-    const Matrix3 Jw = Rot3::ExpmapDerivative(w);
     *Hxi << Jw, Z_3x3,
              Q, Jw;
   }
@@ -239,13 +239,36 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 }
 
 /* ************************************************************************* */
+namespace pose3 {
+struct GTSAM_EXPORT ExpmapFunctor : public so3::DexpFunctor {
+  // Constant used in computeQ
+  double F;  // (B - 0.5) / theta2 or -1/24 for theta->0
+
+  ExpmapFunctor(const Vector3& omega, bool nearZeroApprox = false)
+      : so3::DexpFunctor(omega, nearZeroApprox) {
+    F = nearZero ? _one_twenty_fourth : (B - 0.5) / theta2;
+  }
+
+  // Compute the bottom-left 3x3 block of the SE(3) Expmap derivative
+  // TODO(Frank): t = applyLeftJacobian(v), it would be nice to understand
+  // how to compute mess below from applyLeftJacobian derivatives in w and v.
+  Matrix3 computeQ(const Vector3& v) const {
+    const Matrix3 V = skewSymmetric(v);
+    const Matrix3 WVW = W * V * W;
+    return -0.5 * V + C * (W * V + V * W - WVW) +
+           F * (WW * V + V * WW - 3 * WVW) - 0.5 * E * (WVW * W + W * WVW);
+  }
+
+  static constexpr double _one_twenty_fourth = - 1.0 / 24.0;
+};
+}  // namespace pose3
+
+/* ************************************************************************* */
 Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi,
                                            double nearZeroThreshold) {
-  Matrix3 Q;
   const auto w = xi.head<3>();
   const auto v = xi.tail<3>();
-  ExpmapTranslation(w, v, Q, {}, nearZeroThreshold);
-  return Q;
+  return pose3::ExpmapFunctor(w).computeQ(v);
 }
 
 /* ************************************************************************* */
@@ -256,39 +279,13 @@ Vector3 Pose3::ExpmapTranslation(const Vector3& w, const Vector3& v,
   const double theta2 = w.dot(w);
   bool nearZero = (theta2 <= nearZeroThreshold);
 
-  if (Q) {
-    const Matrix3 V = skewSymmetric(v);
-    const Matrix3 W = skewSymmetric(w);
-    const Matrix3 WVW = W * V * W;
-    const double theta = w.norm();
+  if (Q) *Q = pose3::ExpmapFunctor(w, nearZero).computeQ(v);
 
-    if (nearZero) {
-      static constexpr double one_sixth = 1. / 6.;
-      static constexpr double one_twenty_fourth = 1. / 24.;
-      static constexpr double one_one_hundred_twentieth = 1. / 120.;
-
-      *Q = -0.5 * V + one_sixth * (W * V + V * W - WVW) -
-           one_twenty_fourth * (W * W * V + V * W * W - 3 * WVW) +
-           one_one_hundred_twentieth * (WVW * W + W * WVW);
-    } else {
-      const double s = sin(theta), c = cos(theta);
-      const double theta3 = theta2 * theta, theta4 = theta3 * theta,
-                   theta5 = theta4 * theta;
-
-      // Invert the sign of odd-order terms to have the right Jacobian
-      *Q = -0.5 * V + (theta - s) / theta3 * (W * V + V * W - WVW) +
-           (1 - theta2 / 2 - c) / theta4 * (W * W * V + V * W * W - 3 * WVW) -
-           0.5 *
-               ((1 - theta2 / 2 - c) / theta4 -
-                3 * (theta - s - theta3 / 6.) / theta5) *
-               (WVW * W + W * WVW);
-    }
-  }
-
-  // TODO(Frank): this threshold is *different*. Why?
   if (nearZero) {
     return v + 0.5 * w.cross(v);
   } else {
+    // NOTE(Frank): t can also be computed by calling applyLeftJacobian(v), but
+    // formulas below convey geometric insight and creating functor is not free.
     Vector3 t_parallel = w * w.dot(v);  // translation parallel to axis
     Vector3 w_cross_v = w.cross(v);     // translation orthogonal to axis
     Rot3 rotation = R.value_or(Rot3::Expmap(w));

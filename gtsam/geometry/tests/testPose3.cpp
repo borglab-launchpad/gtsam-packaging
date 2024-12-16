@@ -845,7 +845,28 @@ TEST( Pose3, ExpmapDerivative1) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3, ExpmapDerivative2) {
+TEST( Pose3, ExpmapDerivative2) {
+  Matrix6 actualH;
+  Vector6 w; w << 1.0, -2.0, 3.0, -10.0, -20.0, 30.0;
+  Pose3::Expmap(w,actualH);
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, {});
+  EXPECT(assert_equal(expectedH, actualH));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, ExpmapDerivative3) {
+  Matrix6 actualH;
+  Vector6 w; w << 0.0, 0.0, 0.0, -10.0, -20.0, 30.0;
+  Pose3::Expmap(w,actualH);
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, {});
+  // Small angle approximation is not as precise as numerical derivative?
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose3, ExpmapDerivative4) {
   // Iserles05an (Lie-group Methods) says:
   // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
   // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
