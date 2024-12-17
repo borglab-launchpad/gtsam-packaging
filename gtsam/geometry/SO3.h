@@ -132,14 +132,16 @@ GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 // functor also implements dedicated methods to apply dexp and/or inv(dexp).
 
 /// Functor implementing Exponential map
+/// Math is based on Ethan Eade's elegant Lie group document, at
+/// https://www.ethaneade.org/lie.pdf.
 struct GTSAM_EXPORT ExpmapFunctor {
   const double theta2, theta;
   const Matrix3 W, WW;
   bool nearZero;
 
   // Ethan Eade's constants:
-  double A;  // A = sin(theta) / theta or 1 for theta->0
-  double B;  // B = (1 - cos(theta)) / theta^2 or 0.5 for theta->0
+  double A;  // A = sin(theta) / theta
+  double B;  // B = (1 - cos(theta))
 
   /// Constructor with element of Lie algebra so(3)
   explicit ExpmapFunctor(const Vector3& omega, bool nearZeroApprox = false);
@@ -155,12 +157,20 @@ struct GTSAM_EXPORT ExpmapFunctor {
 };
 
 /// Functor that implements Exponential map *and* its derivatives
+/// Math extends Ethan theme of elegant I + aW + bWW expressions.
+/// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
-  double C;  // Ethan's C constant: (1 - A) / theta^2 or 1/6 for theta->0
+
+  // Ethan's C constant used in Jacobians
+  double C;  // (1 - A) / theta^2
+
+  // Constant used in inverse Jacobians
+  double D;  // (1 - A/2B) / theta2
+
   // Constants used in cross and doubleCross
-  double D;  // (A - 2.0 * B) / theta2 or -1/12 for theta->0
-  double E;  // (B - 3.0 * C) / theta2 or -1/60 for theta->0
+  double E;  // (2B - A) / theta2
+  double F;  // (3C - B) / theta2
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
@@ -178,6 +188,15 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
 
   /// Differential of expmap == right Jacobian
   inline Matrix3 dexp() const { return rightJacobian(); }
+
+  /// Inverse of right Jacobian
+  Matrix3 rightJacobianInverse() const { return I_3x3 + 0.5 * W + D * WW; }
+
+  // Inverse of left Jacobian
+  Matrix3 leftJacobianInverse() const { return I_3x3 - 0.5 * W + D * WW; }
+
+  /// Synonym for rightJacobianInverse
+  inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 
   /// Computes B * (omega x v).
   Vector3 crossB(const Vector3& v, OptionalJacobian<3, 3> H = {}) const;
@@ -197,9 +216,10 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                             OptionalJacobian<3, 3> H2 = {}) const;
 
-  static constexpr double one_sixth = 1.0 / 6.0;
-  static constexpr double _one_twelfth = -1.0 / 12.0;
-  static constexpr double _one_sixtieth = -1.0 / 60.0;
+  /// Multiplies with leftJacobianInverse(), with optional derivatives
+  Vector3 applyLeftJacobianInverse(const Vector3& v,
+                                   OptionalJacobian<3, 3> H1 = {},
+                                   OptionalJacobian<3, 3> H2 = {}) const;
 };
 }  //  namespace so3
 
