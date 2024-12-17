@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2494.gbp533137) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2495.gbp39f86c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @39f86c5e204b41f792c86f62bfb9353699d0d87e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @53313787c0f9938d66ff2a458ba371932c5b93a4 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 16 Dec 2024 07:44:27 +0000
+  [ Frank Dellaert ]
+  * inverse Jacobians
+  * Use X to map left to right
+  * applyLeftJacobianInverse
+  * No more functor for Q
+  * Modernize ExmapTranslation
+  * Taylor expansion
+  * Address review comments
+  * Address Quaternion on Ubuntu accuracy
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Dec 2024 13:52:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2493.gbpcceb51) noble; urgency=medium
 
