@@ -11,7 +11,7 @@
 
 /**
  *@file  Pose3.h
- *@brief 3D Pose
+ * @brief 3D Pose manifold SO(3) x R^3 and group SE(3)
  */
 
 // \callgraph
@@ -223,17 +223,19 @@ public:
       const Vector6& xi, double nearZeroThreshold = 1e-5);
 
   /**
-   * Compute the translation part of the exponential map, with derivative.
+   * Compute the translation part of the exponential map, with Jacobians.
    * @param w 3D angular velocity
    * @param v 3D velocity
    * @param Q Optionally, compute 3x3 Jacobian wrpt w
-   * @param R Optionally, precomputed as Rot3::Expmap(w)
+   * @param J Optionally, compute 3x3 Jacobian wrpt v = right Jacobian of SO(3)
    * @param nearZeroThreshold threshold for small values
-   * Note Q is 3x3 bottom-left block of SE3 Expmap right derivative matrix
+   * @note This function returns Jacobians Q and J corresponding to the bottom
+   * blocks of the SE(3) exponential, and translated from left to right from the
+   * applyLeftJacobian Jacobians.
    */
   static Vector3 ExpmapTranslation(const Vector3& w, const Vector3& v,
                                    OptionalJacobian<3, 3> Q = {},
-                                   const std::optional<Rot3>& R = {},
+                                   OptionalJacobian<3, 3> J = {},
                                    double nearZeroThreshold = 1e-5);
 
   using LieGroup<Pose3, 6>::inverse; // version with derivative

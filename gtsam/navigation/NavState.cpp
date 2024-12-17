@@ -114,24 +114,23 @@ NavState NavState::inverse() const {
 
 //------------------------------------------------------------------------------
 NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
-  // Get angular velocity w, translational velocity v, and acceleration a
-  Vector3 w = xi.head<3>();
-  Vector3 rho = xi.segment<3>(3);
-  Vector3 nu = xi.tail<3>();
+  // Get angular velocity w and components rho (for t) and nu (for v) from xi
+  Vector3 w = xi.head<3>(), rho = xi.segment<3>(3), nu = xi.tail<3>();
 
   // Compute rotation using Expmap
-  Rot3 R = Rot3::Expmap(w);
+  Matrix3 Jr;
+  Rot3 R = Rot3::Expmap(w, Hxi ? &Jr : nullptr);
 
-  // Compute translations and optionally their Jacobians
+  // Compute translations and optionally their Jacobians Q in w
+  // The Jacobians with respect to rho and nu are equal to Jr
   Matrix3 Qt, Qv;
-  Vector3 t = Pose3::ExpmapTranslation(w, rho, Hxi ? &Qt : nullptr, R);
-  Vector3 v = Pose3::ExpmapTranslation(w,  nu, Hxi ? &Qv : nullptr, R);
+  Vector3 t = Pose3::ExpmapTranslation(w, rho, Hxi ? &Qt : nullptr);
+  Vector3 v = Pose3::ExpmapTranslation(w, nu, Hxi ? &Qv : nullptr);
 
   if (Hxi) {
-    const Matrix3 Jw = Rot3::ExpmapDerivative(w);
-    *Hxi << Jw, Z_3x3, Z_3x3,
-            Qt,    Jw, Z_3x3,
-            Qv, Z_3x3,    Jw;
+    *Hxi << Jr, Z_3x3, Z_3x3,  //
+        Qt, Jr, Z_3x3,         //
+        Qv, Z_3x3, Jr;
   }
 
   return NavState(R, t, v);
@@ -235,8 +234,8 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
   
   Matrix3 Qt, Qv;
   const Rot3 R = Rot3::Expmap(w);
-  Pose3::ExpmapTranslation(w, rho, Qt, R);
-  Pose3::ExpmapTranslation(w,  nu, Qv, R);
+  Pose3::ExpmapTranslation(w, rho, Qt);
+  Pose3::ExpmapTranslation(w,  nu, Qv);
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
   const Matrix3 Qt2 = -Jw * Qt * Jw;
   const Matrix3 Qv2 = -Jw * Qv * Jw;

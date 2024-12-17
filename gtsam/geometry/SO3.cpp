@@ -33,6 +33,15 @@ namespace gtsam {
 //******************************************************************************
 namespace so3 {
 
+static constexpr double one_6th = 1.0 / 6.0;
+static constexpr double one_12th = 1.0 / 12.0;
+static constexpr double one_24th = 1.0 / 24.0;
+static constexpr double one_60th = 1.0 / 60.0;
+static constexpr double one_120th = 1.0 / 120.0;
+static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_720th = 1.0 / 720.0;
+static constexpr double one_1260th = 1.0 / 1260.0;
+
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& Q) {
   Matrix99 H;
   auto R = Q.matrix();
@@ -60,9 +69,9 @@ void ExpmapFunctor::init(bool nearZeroApprox) {
         2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
     B = one_minus_cos / theta2;
   } else {
-    // Limits as theta -> 0:
-    A = 1.0;
-    B = 0.5;
+    // Taylor expansion at 0
+    A = 1.0 - theta2 * one_6th;
+    B = 0.5 - theta2 * one_24th;
   }
 }
 
@@ -87,19 +96,29 @@ SO3 ExpmapFunctor::expmap() const { return SO3(I_3x3 + A * W + B * WW); }
 
 DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
     : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
-  C = nearZero ? one_sixth : (1 - A) / theta2;
-  D = nearZero ? _one_twelfth : (A - 2.0 * B) / theta2;
-  E = nearZero ? _one_sixtieth : (B - 3.0 * C) / theta2;
+  if (!nearZero) {
+    C = (1 - A) / theta2;
+    D = (1.0 - A / (2.0 * B)) / theta2;
+    E = (2.0 * B - A) / theta2;
+    F = (3.0 * C - B) / theta2;
+  } else {
+    // Taylor expansion at 0
+    // TODO(Frank): flipping signs here does not trigger any tests: harden!
+    C = one_6th - theta2 * one_120th;
+    D = one_12th + theta2 * one_720th;
+    E = one_12th - theta2 * one_180th;
+    F = one_60th - theta2 * one_1260th;
+  }
 }
 
 Vector3 DexpFunctor::crossB(const Vector3& v, OptionalJacobian<3, 3> H) const {
   // Wv = omega x v
   const Vector3 Wv = gtsam::cross(omega, v);
   if (H) {
-    // Apply product rule:
-    // D * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    // - skewSymmetric(v) is 3x3 Jacobian of B gtsam::cross(omega, v)
-    *H = Wv * D * omega.transpose() - B * skewSymmetric(v);
+    // Apply product rule to (B Wv)
+    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
+    // - skewSymmetric(v) is 3x3 Jacobian of Wv = gtsam::cross(omega, v)
+    *H = - Wv * E * omega.transpose() - B * skewSymmetric(v);
   }
   return B * Wv;
 }
@@ -111,10 +130,10 @@ Vector3 DexpFunctor::doubleCrossC(const Vector3& v,
   const Vector3 WWv =
       gtsam::doubleCross(omega, v, H ? &doubleCrossJacobian : nullptr);
   if (H) {
-    // Apply product rule:
-    // E * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    // doubleCrossJacobian is 3x3 Jacobian of C gtsam::doubleCross(omega, v)
-    *H = WWv * E * omega.transpose() + C * doubleCrossJacobian;
+    // Apply product rule to (C WWv)
+    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
+    // doubleCrossJacobian is 3x3 Jacobian of WWv = gtsam::doubleCross(omega, v)
+    *H = - WWv * F * omega.transpose() + C * doubleCrossJacobian;
   }
   return C * WWv;
 }
@@ -132,14 +151,14 @@ Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 
 Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
                                   OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invDexp = rightJacobian().inverse();
-  const Vector3 c = invDexp * v;
+  const Matrix3 invJr = rightJacobianInverse();
+  const Vector3 c = invJr * v;
   if (H1) {
-    Matrix3 D_dexpv_w;
-    applyDexp(c, D_dexpv_w);  // get derivative H of forward mapping
-    *H1 = -invDexp * D_dexpv_w;
+    Matrix3 H;
+    applyDexp(c, H);  // get derivative H of forward mapping
+    *H1 = -invJr * H;
   }
-  if (H2) *H2 = invDexp;
+  if (H2) *H2 = invJr;
   return c;
 }
 
@@ -152,6 +171,20 @@ Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
   if (H1) *H1 = D_BWv_w + D_CWWv_w;
   if (H2) *H2 = leftJacobian();
   return v + BWv + CWWv;
+}
+
+Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
+                                              OptionalJacobian<3, 3> H1,
+                                              OptionalJacobian<3, 3> H2) const {
+  const Matrix3 invJl = leftJacobianInverse();
+  const Vector3 c = invJl * v;
+  if (H1) {
+    Matrix3 H;
+    applyLeftJacobian(c, H);  // get derivative H of forward mapping
+    *H1 = -invJl * H;
+  }
+  if (H2) *H2 = invJl;
+  return c;
 }
 
 }  // namespace so3
