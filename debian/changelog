@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2503.gbp9b94da) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2504.gbpe1cf6b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e1cf6b00f7bb63dab2ab49774e2a5994291dfb89 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9b94da8de91457f8223452b558f619dd2dad8b6b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Dec 2024 13:57:45 +0000
+  [ Varun Agrawal ]
+  * add serialize() to various preintegration classes
+  * python tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * move default AHRSFactor constructor to public for wrapper
+  * serialize navigation factors
+  * improve testing for deep copy
+  * fix serialization of ImuFactor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Dec 2024 19:18:54 +0000
 
 gtsam (4.1.0-1ubuntu2~2502.gbpef4c72) noble; urgency=medium
 
