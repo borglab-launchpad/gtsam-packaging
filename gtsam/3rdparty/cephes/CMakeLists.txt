@@ -89,7 +89,7 @@ set(CEPHES_SOURCES
     cephes/zetac.c)
 
 # Add library source files
-add_library(cephes-gtsam SHARED ${CEPHES_SOURCES})
+add_library(cephes-gtsam ${GTSAM_LIBRARY_TYPE} ${CEPHES_SOURCES})
 
 # Add include directory (aka headers)
 target_include_directories(
