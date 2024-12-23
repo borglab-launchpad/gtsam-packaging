@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2506.gbpb6cb8e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2507.gbpb0bb03) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b0bb03d7101b7e4e8e100f9d3fa68cae1d79c8e6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b6cb8eb91e56e7498898f49297f619a77347479a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Dec 2024 04:48:11 +0000
+  [ Varun Agrawal ]
+  * add getter for sparse_table_
+  * update toDecisionTreeFactor to use reverse key format so it's faster
+  * fix toDecisionTreeFactor so the keys are ordered correctly
+  * use c++11 method for string to int
+  * debug conversion
+  * print more to debug
+  * strict less than check
+  * remove print statements
+  * add comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Dec 2024 20:52:13 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2505.gbpe9b743) noble; urgency=medium
 
