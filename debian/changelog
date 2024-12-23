@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~2511.gbpa76699) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2512.gbpa101da) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a101dab683f74f3b1f3471846bc35a3c901f9237 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a76699814b9c68c44c1cdbba15a9bc0ea2b7dca4 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Dec 2024 04:48:07 +0000
+  [ Varun Agrawal ]
+  * add getter for sparse_table_
+  * update toDecisionTreeFactor to use reverse key format so it's faster
+  * fix toDecisionTreeFactor so the keys are ordered correctly
+  * use c++11 method for string to int
+  * debug conversion
+  * print more to debug
+  * strict less than check
+  * remove print statements
+  * add comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Dec 2024 20:52:22 +0000
 
 gtsam (4.1.0-1ubuntu2~2510.gbpbf0243) noble; urgency=medium
 
