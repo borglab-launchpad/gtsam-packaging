@@ -99,7 +99,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
   typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
 
- public:
   /// @name Standard Constructors
   /// @{
 
@@ -155,6 +154,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   // /// @}
   // /// @name Standard Interface
   // /// @{
+
+  /// Getter for the underlying sparse vector
+  Eigen::SparseVector<double> sparseTable() const { return sparse_table_; }
 
   /// Evaluate probability distribution, is just look up in TableFactor.
   double evaluate(const Assignment<Key>& values) const override;
