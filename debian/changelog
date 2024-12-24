@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2515.gbpfeaa89) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2516.gbp21e4cf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @21e4cfa8812e5722f7ccb17a2ff2da7ea601fe50 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @feaa8955b0b2d6be7aa5886ff0fd7a0bf2c85d36 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Dec 2024 20:56:35 +0000
+  [ dependabot[bot] ]
+  * Bump jinja2 from 3.1.4 to 3.1.5 in /wrap/pybind11/docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Dec 2024 14:50:45 +0000
 
 gtsam (4.1.0-1ubuntu2~2514.gbpa0739d) noble; urgency=medium
 
