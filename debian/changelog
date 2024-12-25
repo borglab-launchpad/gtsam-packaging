@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2514.gbpdda536) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2515.gbp5f531c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5f531cff43a2413e443b8815276b3d828716e26d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dda536846cc4842769c309d3d985469b612a7254 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Dec 2024 14:54:44 +0000
+  [ Joel Truher ]
+  * projection and SFM for 2d poses
+  * projection and SFM for 2d poses
+  * consolidate factors in one file
+  * maybe fix clang?
+  * fix typo, fix python CI?
+  * address some comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Joel Truher ]
+  * remove "cam coord" idea
+  * fix windows test
+  * fix test names
+  * add newlines
+  * fix windows test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Dec 2024 15:50:40 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2513.gbp46848b) noble; urgency=medium
 
