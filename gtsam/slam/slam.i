@@ -24,6 +24,38 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/PlanarProjectionFactor.h>
+virtual class PlanarProjectionFactor1 : gtsam::NoiseModelFactor {
+  PlanarProjectionFactor1(
+    size_t poseKey,
+    const gtsam::Point3& landmark,
+    const gtsam::Point2& measured,
+    const gtsam::Pose3& bTc,
+    const gtsam::Cal3DS2& calib,
+    const gtsam::noiseModel::Base* model);
+  void serialize() const;
+};
+virtual class PlanarProjectionFactor2 : gtsam::NoiseModelFactor {
+  PlanarProjectionFactor2(
+    size_t poseKey,
+    size_t landmarkKey,
+    const gtsam::Point2& measured,
+    const gtsam::Pose3& bTc,
+    const gtsam::Cal3DS2& calib,
+    const gtsam::noiseModel::Base* model);
+  void serialize() const;
+};
+virtual class PlanarProjectionFactor3 : gtsam::NoiseModelFactor {
+  PlanarProjectionFactor3(
+    size_t poseKey,
+    size_t offsetKey,
+    size_t calibKey,
+    const gtsam::Point3& landmark,
+    const gtsam::Point2& measured,
+    const gtsam::noiseModel::Base* model);
+  void serialize() const;
+};
+
 #include <gtsam/slam/ProjectionFactor.h>
 template <POSE, LANDMARK, CALIBRATION>
 virtual class GenericProjectionFactor : gtsam::NoiseModelFactor {
