@@ -21,7 +21,7 @@
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/assume_abstract.hpp>
 #endif
@@ -121,7 +121,7 @@ namespace gtsam {
      *       The last two links explain why these export lines have to be in the same source module that includes
      *       any of the archive class headers.
      * */
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & /*ar*/, const unsigned int /*version*/) {
@@ -132,6 +132,6 @@ namespace gtsam {
 
 } /* namespace gtsam */
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::Value)
 #endif

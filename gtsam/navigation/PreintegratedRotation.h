@@ -85,7 +85,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   std::optional<Pose3>   getBodyPSensor()   const { return body_P_sensor; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -227,7 +227,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

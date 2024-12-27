@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/map.hpp>
 #endif
@@ -69,7 +69,7 @@ public:
   bool exists(const KEY& e) const { return this->find(e) != this->end(); }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

@@ -11,7 +11,7 @@
 #pragma once
 
 // Defined only if boost serialization is enabled
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <optional>
 #include <boost/config.hpp>
 

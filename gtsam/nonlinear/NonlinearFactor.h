@@ -29,7 +29,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/utilities.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
 #endif
 #include <cstddef>
@@ -303,7 +303,7 @@ public:
   shared_ptr cloneWithNewNoiseModel(const SharedNoiseModel newNoise) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -715,7 +715,7 @@ protected:
     }
   }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

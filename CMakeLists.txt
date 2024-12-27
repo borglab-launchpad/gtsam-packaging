@@ -71,14 +71,7 @@ include(GtsamPrinting)
 ############### Decide on BOOST ######################################
 # Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
 option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
-if(GTSAM_ENABLE_BOOST_SERIALIZATION)
-  add_definitions(-DGTSAM_ENABLE_BOOST_SERIALIZATION)
-endif()
-
 option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ON)
-if(GTSAM_USE_BOOST_FEATURES)
-  add_definitions(-DGTSAM_USE_BOOST_FEATURES)
-endif()
 
 if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
 include(cmake/HandleBoost.cmake)

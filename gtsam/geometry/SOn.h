@@ -24,7 +24,7 @@
 #include <gtsam/dllexport.h>
 #include <Eigen/Core>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -326,7 +326,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Serialization
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   template <class Archive>
   friend void save(Archive&, SO&, const unsigned int);
   template <class Archive>
@@ -380,7 +380,7 @@ template <>
 GTSAM_EXPORT
 typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 /** Serialization function */
 template<class Archive>
 void serialize(
