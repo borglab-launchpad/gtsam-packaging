@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~2523.gbp7515fd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2524.gbpa023ca) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a023cae8276aa0d6cc0bb0a86b9b186fb442862b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7515fd009cc60435b5bd91526a2b3082d3e87063 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Dec 2024 15:54:40 +0000
+  [ Varun Agrawal ]
+  * remove add_definitions since it is deprecated and suboptimal
+  * Optimize build time by adding Boost definitions in config.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * replace #ifdef with #if for GTSAM_ENABLE_BOOST_SERIALIZATION
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Dec 2024 15:43:18 +0000
 
 gtsam (4.1.0-1ubuntu2~2522.gbp453029) noble; urgency=medium
 
