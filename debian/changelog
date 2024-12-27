@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2518.gbp8e37e0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2519.gbp783b2d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @783b2d967dd4a70d301ddca72cb695c7d8049438 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8e37e04cf8327e3486286a2ecb892a2574c51ba3 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Dec 2024 15:54:40 +0000
+  [ Varun Agrawal ]
+  * remove add_definitions since it is deprecated and suboptimal
+  * Optimize build time by adding Boost definitions in config.h
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * replace #ifdef with #if for GTSAM_ENABLE_BOOST_SERIALIZATION
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Dec 2024 15:43:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2517.gbp2b744b) noble; urgency=medium
 
