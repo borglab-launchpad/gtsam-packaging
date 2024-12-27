@@ -1,4 +1,4 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2519.gbp783b2d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2519.gbp783b2d) focal; urgency=medium
 
   ** SNAPSHOT build @783b2d967dd4a70d301ddca72cb695c7d8049438 **
 
