@@ -132,7 +132,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>

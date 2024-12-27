@@ -84,7 +84,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

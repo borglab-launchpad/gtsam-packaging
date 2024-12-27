@@ -24,7 +24,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/LossFunctions.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/singleton.hpp>
@@ -141,7 +141,7 @@ namespace gtsam {
       virtual double weight(const Vector& v) const { return 1.0; }
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -280,7 +280,7 @@ namespace gtsam {
       double negLogConstant() const;
 
      private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -375,7 +375,7 @@ namespace gtsam {
       }
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -520,7 +520,7 @@ namespace gtsam {
       shared_ptr unit() const;
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -593,7 +593,7 @@ namespace gtsam {
       inline double sigma() const { return sigma_; }
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -648,7 +648,7 @@ namespace gtsam {
       void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -739,7 +739,7 @@ namespace gtsam {
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
     private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>

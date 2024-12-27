@@ -499,7 +499,7 @@ TEST(Unit3, CopyAssign) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 TEST(actualH, Serialization) {
   Unit3 p(0, 1, 0);
   EXPECT(serializationTestHelpers::equalsObj(p));

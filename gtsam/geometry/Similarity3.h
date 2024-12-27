@@ -203,7 +203,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
 
  private:
 
-  #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  #if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>

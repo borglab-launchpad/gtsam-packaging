@@ -21,7 +21,7 @@
  **/
 
 #include <gtsam/navigation/CombinedImuFactor.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
 #endif
 

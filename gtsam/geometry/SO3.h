@@ -98,7 +98,7 @@ template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
 /** Serialization function */
 void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
