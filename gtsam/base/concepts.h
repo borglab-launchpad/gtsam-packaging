@@ -8,7 +8,7 @@
 
 #pragma once
 
-#ifdef GTSAM_USE_BOOST_FEATURES
+#if GTSAM_USE_BOOST_FEATURES
 #include <boost/concept_check.hpp>
 #include <boost/concept/assert.hpp>
 #include <boost/concept/requires.hpp>
