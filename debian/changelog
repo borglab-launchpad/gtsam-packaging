@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2527.gbpcf4be8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2528.gbpaf4ffa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @af4ffadc5e81dd1de7359feff2714d34addfd31a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cf4be84f59fbdc23857373ce69a9274a8292b711 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 27 Dec 2024 15:47:33 +0000
+  [ Matt ]
+  * Fix lingering boost flags
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Dec 2024 20:34:58 +0000
 
 gtsam (4.1.0-1ubuntu2~2526.gbp6745b4) noble; urgency=medium
 
