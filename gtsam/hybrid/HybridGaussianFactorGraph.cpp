@@ -282,7 +282,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       auto dc = hc->asDiscrete();
       if (!dc) throwRuntimeError("discreteElimination", dc);
-      dfg.push_back(hc->asDiscrete());
+      dfg.push_back(dc);
     } else {
       throwRuntimeError("discreteElimination", f);
     }
