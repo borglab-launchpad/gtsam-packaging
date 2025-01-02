@@ -55,9 +55,10 @@ public:
   Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
 
   /** Copy constructor */
-  Pose3(const Pose3& pose) :
-      R_(pose.R_), t_(pose.t_) {
-  }
+  Pose3(const Pose3& pose) = default;
+  //  :
+  //     R_(pose.R_), t_(pose.t_) {
+  // }
 
   /** Construct from R,t */
   Pose3(const Rot3& R, const Point3& t) :

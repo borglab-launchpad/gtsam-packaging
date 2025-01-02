@@ -119,6 +119,8 @@ namespace gtsam {
     /// Constructor from Vector, with Scatter
     VectorValues(const Vector& c, const Scatter& scatter);
 
+    VectorValues& operator=(const VectorValues& other) = default;
+
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);
 

@@ -149,7 +149,7 @@ protected:
       noiseModel_->WhitenSystem(Ab.matrix(), b);
     }
 
-    return std::move(factor);
+    return factor;
   }
 
   /// @return a deep copy of this factor

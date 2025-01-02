@@ -38,6 +38,9 @@ namespace gtsam {
    */
   class GTSAM_EXPORT Value {
   public:
+    // todo - not sure if valid
+    Value() = default;
+    Value(const Value& other) = default;
 
     /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */
     virtual Value* clone_() const = 0;

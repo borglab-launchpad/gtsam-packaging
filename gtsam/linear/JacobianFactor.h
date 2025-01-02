@@ -117,6 +117,8 @@ namespace gtsam {
     /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
     explicit JacobianFactor(const HessianFactor& hf);
 
+    JacobianFactor& operator=(const JacobianFactor& jf) = default;
+
     /** default constructor for I/O */
     JacobianFactor();
 
