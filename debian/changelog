@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2531.gbp7e25c1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2532.gbp022984) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @022984152aafe16e85240454f006274e006a013a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7e25c106af9fed425fb14dd692353a1955e7e107 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 29 Dec 2024 20:39:20 +0000
+  [ Gold856 ]
+  * Add BUILD_SHARED_LIBS as a configurable option
+  * Fix building with a shared metis
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 15:19:41 +0000
 
 gtsam (4.1.0-1ubuntu2~2530.gbp35baa4) noble; urgency=medium
 
