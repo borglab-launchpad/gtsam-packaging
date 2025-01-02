@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2535.gbp9e55bb) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2536.gbp9d56bd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9d56bd65be7e846c6ce0bbd91583c9799b19b790 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9e55bbdadf15e07e2dbcbbaa8f99dd88edbfcc1f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 15:23:44 +0000
+  [ Varun Agrawal ]
+  * rename normalization to normalizer
+  * avoid extra conversion step
+  * undo change to TableFactor::toDecisionTreeFactor since it is incorrect for certain larger scale cases
+  * fix naming
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 15:50:43 +0000
 
 gtsam (4.1.0-1ubuntu2~2534.gbpc4e9fc) noble; urgency=medium
 
