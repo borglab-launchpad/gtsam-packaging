@@ -87,7 +87,15 @@ static Eigen::SparseVector<double> ComputeSparseTable(
   });
   sparseTable.reserve(nrValues);
 
-  std::set<Key> allKeys(dt.keys().begin(), dt.keys().end());
+  KeySet allKeys(dt.keys().begin(), dt.keys().end());
+
+  // Compute denominators to be used in computing sparse table indices
+  std::map<Key, size_t> denominators;
+  double denom = sparseTable.size();
+  for (const DiscreteKey& dkey : dkeys) {
+    denom /= dkey.second;
+    denominators.insert(std::pair<Key, double>(dkey.first, denom));
+  }
 
   /**
    * @brief Functor which is called by the DecisionTree for each leaf.
@@ -102,13 +110,13 @@ static Eigen::SparseVector<double> ComputeSparseTable(
   auto op = [&](const Assignment<Key>& assignment, double p) {
     if (p > 0) {
       // Get all the keys involved in this assignment
-      std::set<Key> assignmentKeys;
+      KeySet assignmentKeys;
       for (auto&& [k, _] : assignment) {
         assignmentKeys.insert(k);
       }
 
       // Find the keys missing in the assignment
-      std::vector<Key> diff;
+      KeyVector diff;
       std::set_difference(allKeys.begin(), allKeys.end(),
                           assignmentKeys.begin(), assignmentKeys.end(),
                           std::back_inserter(diff));
@@ -127,12 +135,10 @@ static Eigen::SparseVector<double> ComputeSparseTable(
 
         // Generate index and add to the sparse vector.
         Eigen::Index idx = 0;
-        size_t previousCardinality = 1;
         // We go in reverse since a DecisionTree has the highest label first
         for (auto&& it = updatedAssignment.rbegin();
              it != updatedAssignment.rend(); it++) {
-          idx += previousCardinality * it->second;
-          previousCardinality *= dt.cardinality(it->first);
+          idx += it->second * denominators.at(it->first);
         }
         sparseTable.coeffRef(idx) = p;
       }
@@ -252,9 +258,19 @@ DecisionTreeFactor TableFactor::operator*(const DecisionTreeFactor& f) const {
 DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   DiscreteKeys dkeys = discreteKeys();
 
-  std::vector<double> table;
-  for (auto i = 0; i < sparse_table_.size(); i++) {
-    table.push_back(sparse_table_.coeff(i));
+  // If no keys, then return empty DecisionTreeFactor
+  if (dkeys.size() == 0) {
+    AlgebraicDecisionTree<Key> tree;
+    // We can have an empty sparse_table_ or one with a single value.
+    if (sparse_table_.size() != 0) {
+      tree = AlgebraicDecisionTree<Key>(sparse_table_.coeff(0));
+    }
+    return DecisionTreeFactor(dkeys, tree);
+  }
+
+  std::vector<double> table(sparse_table_.size(), 0.0);
+  for (SparseIt it(sparse_table_); it; ++it) {
+    table[it.index()] = it.value();
   }
 
   AlgebraicDecisionTree<Key> tree(dkeys, table);
