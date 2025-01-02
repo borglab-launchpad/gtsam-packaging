@@ -69,6 +69,8 @@ struct GTSAM_EXPORT ConjugateGradientParameters
         epsilon_abs(p.epsilon_abs),
         blas_kernel(GTSAM) {}
 
+  ConjugateGradientParameters& operator=(const ConjugateGradientParameters& other) = default;
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   inline size_t getMinIterations() const { return minIterations; }
   inline size_t getMaxIterations() const { return maxIterations; }

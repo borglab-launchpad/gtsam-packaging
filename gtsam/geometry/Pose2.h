@@ -60,7 +60,10 @@ public:
   }
 
   /** copy constructor */
-  Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}
+  Pose2(const Pose2& pose) = default;
+  //  : r_(pose.r_), t_(pose.t_) {}
+
+  Pose2& operator=(const Pose2& other) = default;
 
   /**
    * construct from (x,y,theta)

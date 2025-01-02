@@ -54,6 +54,8 @@ public:
   /** Copy constructor from another FastMap */
   FastMap(const FastMap<KEY,VALUE>& x) : Base(x) {}
 
+  FastMap& operator=(const FastMap<KEY,VALUE>& x) = default;
+
   /** Copy constructor from the base map class */
   FastMap(const Base& x) : Base(x) {}
 

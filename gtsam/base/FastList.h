@@ -62,6 +62,8 @@ public:
   /// Construct from c++11 initializer list:
   FastList(std::initializer_list<VALUE> l) : Base(l) {}
 
+  FastList& operator=(const FastList& other) = default;
+
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastList(const std::list<VALUE>& x) {

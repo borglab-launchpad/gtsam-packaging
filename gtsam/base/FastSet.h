@@ -80,6 +80,8 @@ public:
   Base(x) {
   }
 
+  FastSet& operator=(const FastSet& other) = default;
+
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastSet(const std::set<VALUE>& x) {

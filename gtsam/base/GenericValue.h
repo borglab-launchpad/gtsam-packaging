@@ -56,9 +56,10 @@ public:
   GenericValue(){}
 
   /// Construct from value
-  GenericValue(const T& value) :
-      value_(value) {
-  }
+  GenericValue(const T& value) : Value(),
+      value_(value) {}
+
+  GenericValue(const GenericValue& other) = default;
 
   /// Return a constant value
   const T& value() const {
@@ -112,7 +113,7 @@ public:
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
     std::shared_ptr<Value> clone() const override {
-		return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
+      return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract

@@ -85,6 +85,8 @@ public:
   /** Copy constructor from the base map class */
   ConcurrentMap(const Base& x) : Base(x) {}
 
+  ConcurrentMap& operator=(const ConcurrentMap& other) = default;
+
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->count(e); }
 
