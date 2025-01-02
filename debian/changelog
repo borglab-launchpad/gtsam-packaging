@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2538.gbp3156f4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2539.gbp44659b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @44659b12df342904f63ccedcaee3782b393e22fc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3156f45c0a36287ee3fcf3f117020715aba84152 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 17:36:49 +0000
+  [ Varun Agrawal ]
+  * use faster key storage
+  * add test exposing issue with reverse ordered keys
+  * use denominators to compute the correct index in ComputeSparseTable
+  * unit test to expose another bug
+  * add fix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 21:45:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2537.gbp9a07dc) noble; urgency=medium
 
