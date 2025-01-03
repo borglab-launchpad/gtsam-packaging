@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2547.gbp736d71) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2548.gbp1684e5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1684e59a21f9a5d2f1d055ed75ee4f721e990813 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @736d71e79d5468f2def84d5836d2c9378c31e789 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 02 Jan 2025 21:49:48 +0000
+  [ Varun Agrawal ]
+  * serialize functions for Eigen::SparseVector
+  * add serialization code to TableFactor
+  * test for TableFactor serialization
+  * use string based constructor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Jan 2025 19:44:56 +0000
 
 gtsam (4.1.0-1ubuntu2~2546.gbp93e4a3) noble; urgency=medium
 
