@@ -255,6 +255,32 @@ DecisionTreeFactor TableFactor::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::multiply(
+    const DiscreteFactor::shared_ptr& f) const {
+  DiscreteFactor::shared_ptr result;
+  if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
+    // If `f` is a TableFactor, we can simply call `operator*`.
+    result = std::make_shared<TableFactor>(this->operator*(*tf));
+
+  } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+    // If `f` is a DecisionTreeFactor, we convert to a TableFactor which is
+    // cheaper than converting `this` to a DecisionTreeFactor.
+    result = std::make_shared<TableFactor>(this->operator*(TableFactor(*dtf)));
+
+  } else {
+    // Simulate double dispatch in C++
+    // Useful for other classes which inherit from DiscreteFactor and have
+    // only `operator*(DecisionTreeFactor)` defined. Thus, other classes don't
+    // need to be updated to know about TableFactor.
+    // Those classes can be specialized to use TableFactor
+    // if efficiency is a problem.
+    result = std::make_shared<DecisionTreeFactor>(
+        f->operator*(this->toDecisionTreeFactor()));
+  }
+  return result;
+}
+
+/* ************************************************************************ */
 DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   DiscreteKeys dkeys = discreteKeys();
 

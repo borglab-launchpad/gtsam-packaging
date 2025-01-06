@@ -78,6 +78,14 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
 
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;
+
+  /// Multiply factors, DiscreteFactor::shared_ptr edition
+  DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& df) const override {
+    return std::make_shared<DecisionTreeFactor>(
+        this->operator*(df->toDecisionTreeFactor()));
+  }
+
   /// @}
   /// @name Wrapper support
   /// @{
