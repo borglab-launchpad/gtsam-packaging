@@ -1,10 +1,34 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2550.gbp54ba5e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2551.gbp8b10c5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8b10c53111236b648331c7a56b961bfeb9d9caaf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @54ba5efac9f31f1daeb9104880b6f59f6c0b351f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Jan 2025 15:33:08 +0000
+  [ Varun Agrawal ]
+  * multiply method for DiscreteFactor
+  * remove override from definition
+  * remove override from TableFactor definition
+  * use new multiply method
+  * simplify to remove DiscreteProduct static function
+  * naive implementation of multiply for unstable
+  * Revert "simplify to remove DiscreteProduct static function"
+  * convert everything to DecisionTreeFactor so we can use override operator* method
+  * revert previous commit
+  * use double dispatch for else case
+  * more robust product
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * move multiply to Constraint.h
+  * move include to .cpp
+  * address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Jan 2025 20:23:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2549.gbp35a931) noble; urgency=medium
 
