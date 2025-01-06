@@ -30,6 +30,12 @@
 using namespace std;
 using namespace gtsam;
 
+/** Convert Signature into CPT */
+DecisionTreeFactor create(const Signature& signature) {
+  DecisionTreeFactor p(signature.discreteKeys(), signature.cpt());
+  return p;
+}
+
 /* ************************************************************************* */
 TEST(DecisionTreeFactor, ConstructorsMatch) {
   // Declare two keys
@@ -103,6 +109,27 @@ TEST(DecisionTreeFactor, multiplication) {
   DecisionTreeFactor actual = f1 * f2;
   DecisionTreeFactor expected2(v0 & v1 & v2, "5 6 14 16 15 18 28 32");
   CHECK(assert_equal(expected2, actual));
+}
+
+/* ************************************************************************* */
+TEST(DecisionTreeFactor, Divide) {
+  DiscreteKey A(0, 2), S(1, 2);
+  DecisionTreeFactor pA = create(A % "99/1"), pS = create(S % "50/50");
+  DecisionTreeFactor joint = pA * pS;
+
+  DecisionTreeFactor s = joint / pA;
+
+  // Factors are not equal due to difference in keys
+  EXPECT(assert_inequal(pS, s));
+
+  // The underlying data should be the same
+  using ADT = AlgebraicDecisionTree<Key>;
+  EXPECT(assert_equal(ADT(pS), ADT(s)));
+
+  KeySet keys(joint.keys());
+  keys.insert(pA.keys().begin(), pA.keys().end());
+  EXPECT(assert_inequal(KeySet(pS.keys()), keys));
+  
 }
 
 /* ************************************************************************* */
@@ -215,12 +242,6 @@ void maybeSaveDotFile(const DecisionTreeFactor& f, const string& filename) {
   auto formatter = [&](Key key) { return names[key]; };
   f.dot(filename, formatter, true);
 #endif
-}
-
-/** Convert Signature into CPT */
-DecisionTreeFactor create(const Signature& signature) {
-  DecisionTreeFactor p(signature.discreteKeys(), signature.cpt());
-  return p;
 }
 
 /* ************************************************************************* */
