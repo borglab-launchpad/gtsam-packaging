@@ -147,6 +147,23 @@ namespace gtsam {
     /// Calculate error for DiscreteValues `x`, is -log(probability).
     double error(const DiscreteValues& values) const override;
 
+    /**
+     * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
+     *
+     * This method accepts `DiscreteFactor::shared_ptr` and uses dynamic
+     * dispatch and specializations to perform the most efficient
+     * multiplication.
+     *
+     * While converting a DecisionTreeFactor to a TableFactor is efficient, the
+     * reverse is not. Hence we specialize the code to return a TableFactor if
+     * `f` is a TableFactor, and DecisionTreeFactor otherwise.
+     *
+     * @param f The factor to multiply with.
+     * @return DiscreteFactor::shared_ptr
+     */
+    virtual DiscreteFactor::shared_ptr multiply(
+        const DiscreteFactor::shared_ptr& f) const override;
+
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       return apply(f, Ring::mul);

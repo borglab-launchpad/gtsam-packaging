@@ -178,6 +178,23 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /**
+   * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
+   *
+   * This method accepts `DiscreteFactor::shared_ptr` and uses dynamic
+   * dispatch and specializations to perform the most efficient
+   * multiplication.
+   *
+   * While converting a DecisionTreeFactor to a TableFactor is efficient, the
+   * reverse is not.
+   * Hence we specialize the code to return a TableFactor always.
+   *
+   * @param f The factor to multiply with.
+   * @return DiscreteFactor::shared_ptr
+   */
+  virtual DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& f) const override;
+
   static double safe_div(const double& a, const double& b);
 
   /// divide by factor f (safely)

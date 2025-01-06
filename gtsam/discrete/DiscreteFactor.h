@@ -129,6 +129,16 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   /// DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
+  /**
+   * @brief Multiply in a DiscreteFactor and return the result as
+   * DiscreteFactor, both via shared pointers.
+   *
+   * @param df DiscreteFactor shared_ptr
+   * @return DiscreteFactor::shared_ptr
+   */
+  virtual DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& df) const = 0;
+
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
 
   /// @}

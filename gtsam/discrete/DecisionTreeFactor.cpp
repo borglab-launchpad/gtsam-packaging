@@ -18,9 +18,10 @@
  */
 
 #include <gtsam/base/FastSet.h>
-#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/TableFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 #include <utility>
 
@@ -60,6 +61,30 @@ namespace gtsam {
   /* ************************************************************************ */
   double DecisionTreeFactor::error(const HybridValues& values) const {
     return error(values.discrete());
+  }
+
+  /* ************************************************************************ */
+  DiscreteFactor::shared_ptr DecisionTreeFactor::multiply(
+      const DiscreteFactor::shared_ptr& f) const {
+    DiscreteFactor::shared_ptr result;
+    if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
+      // If f is a TableFactor, we convert `this` to a TableFactor since this
+      // conversion is cheaper than converting `f` to a DecisionTreeFactor. We
+      // then return a TableFactor.
+      result = std::make_shared<TableFactor>((*tf) * TableFactor(*this));
+
+    } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+      // If `f` is a DecisionTreeFactor, simply call operator*.
+      result = std::make_shared<DecisionTreeFactor>(this->operator*(*dtf));
+
+    } else {
+      // Simulate double dispatch in C++
+      // Useful for other classes which inherit from DiscreteFactor and have
+      // only `operator*(DecisionTreeFactor)` defined. Thus, other classes don't
+      // need to be updated.
+      result = std::make_shared<DecisionTreeFactor>(f->operator*(*this));
+    }
+    return result;
   }
 
   /* ************************************************************************ */
