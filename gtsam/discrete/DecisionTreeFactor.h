@@ -154,7 +154,15 @@ namespace gtsam {
 
     static double safe_div(const double& a, const double& b);
 
-    /// divide by factor f (safely)
+    /**
+     * @brief Divide by factor f (safely).
+     * Division of a factor \f$f(x, y)\f$ by another factor \f$g(y, z)\f$
+     * results in a function which involves all keys
+     * \f$(\frac{f}{g})(x, y, z) = f(x, y) / g(y, z)\f$
+     * 
+     * @param f The DecisinTreeFactor to divide by.
+     * @return DecisionTreeFactor 
+     */
     DecisionTreeFactor operator/(const DecisionTreeFactor& f) const {
       return apply(f, safe_div);
     }
