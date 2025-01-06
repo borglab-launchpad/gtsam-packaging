@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~2551.gbpd13ee0) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2552.gbp2d39d5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2d39d558f633e0e3fdc5a7e59b10578a4f2e5e6b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d13ee088a3cbffcf844f032b13dd47504a28cff5 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Jan 2025 19:49:00 +0000
+  [ Varun Agrawal ]
+  * additional Signature based constructor for DecisionTreeFactor
+  * update tests
+  * unit test exposing division bug
+  * compute correct subset of keys for division
+  * Revert "update tests"
+  * Revert "additional Signature based constructor for DecisionTreeFactor"
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix factor construction
+  * move create to the top
+  * improve operator/ documentation and also showcase understanding in test
+  * remove accidental type change
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Jan 2025 15:27:53 +0000
 
 gtsam (4.1.0-1ubuntu2~2550.gbp8c49be) noble; urgency=medium
 
