@@ -1,10 +1,78 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2554.gbp892bc9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2555.gbpf1d933) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f1d933aa4b33f507b390469a0be742aa7f06b7af **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @892bc9418af3c958cce3e2c3bd5b778e1d5f5f12 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 06 Jan 2025 20:27:20 +0000
+  [ Varun Agrawal ]
+  * add nrValues method
+  * operator* version which accepts DiscreteFactor
+  * return DiscreteFactor shared_ptr as leftover from elimination
+  * generalize DiscreteFactorGraph::product to DiscreteFactor
+  * make normalization code common
+  * make sum and max DiscreteFactor methods
+  * add timing info
+  * add note about toDecisionTreeFactor
+  * kill toDecisionTreeFactor to force rethink
+  * DiscreteDistribution from TableFactor
+  * make evaluate use the Assignment<Key> base class
+  * use Assignment<Key> for evaluate since it is the base class
+  * remove TableFactor constructor in DiscreteDistribution
+  * use Assignment<Key> since it is a base class
+  * fix DiscreteConditional constructor
+  * use DiscreteFactor everywhere in DiscreteFactorGraph.cpp
+  * update DiscreteConditional
+  * Revert "kill toDecisionTreeFactor to force rethink"
+  * make DiscreteConditional::likelihood match the declaration
+  * get different classes to play nicely
+  * compiles
+  * timing
+  * move evaluate and operator() next to each other
+  * implement evaluate in DiscreteFactor
+  * change from DiscreteValues to Assignment<Key>
+  * use BaseFactor instead of DecisionTreeFactor
+  * common definitions of Unary, UnaryAssignment and Binary
+  * some cleanup based on previous commit
+  * remove previously added code
+  * revert changes to make code generic
+  * revert DiscreteFactorGraph::product
+  * revert some DiscreteFactorGraph changes
+  * add methods in gtsam_unstable
+  * add division with DiscreteFactor::shared_ptr for convenience
+  * fix tests
+  * undo uncomment
+  * add evaluate to DiscreteConditional
+  * keep using DecisionTreeFactor for DiscreteConditional
+  * more fixes
+  * TableFactor cleanup
+  * add division by DiscreteFactor in TableFactor
+  * cleanup
+  * fix error
+  * don't print timing info by default
+  * small improvements
+  * multiply method for DiscreteFactor
+  * remove override from definition
+  * use DecisionTreeFactor version of sum and max where not available
+  * divide operator for DiscreteFactor::shared_ptr
+  * fix constructor
+  * update DiscreteFactorGraph to use DiscreteFactor::shared_ptr for elimination
+  * update tests
+  * undo print change in DiscreteLookupTable
+  * move operator/ to Constraint.h
+  * move sum, max and nrValues to Constraint class as well
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * check pointer casts
+  * use DiscreteFactor for DiscreteConditional constructor
+  * add comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Jan 2025 01:35:34 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2553.gbpa01de4) noble; urgency=medium
 
