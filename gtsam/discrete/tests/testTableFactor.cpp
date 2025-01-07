@@ -194,15 +194,17 @@ TEST(TableFactor, Conversion) {
 TEST(TableFactor, Empty) {
   DiscreteKey X(1, 2);
 
-  TableFactor single = *TableFactor({X}, "1 1").sum(1);
+  auto single = TableFactor({X}, "1 1").sum(1);
   // Should not throw a segfault
-  EXPECT(assert_equal(*DecisionTreeFactor(X, "1 1").sum(1),
-                      single.toDecisionTreeFactor()));
+  auto expected_single = DecisionTreeFactor(X, "1 1").sum(1);
+  EXPECT(assert_equal(expected_single->toDecisionTreeFactor(),
+                      single->toDecisionTreeFactor()));
 
-  TableFactor empty = *TableFactor({X}, "0 0").sum(1);
+  auto empty = TableFactor({X}, "0 0").sum(1);
   // Should not throw a segfault
-  EXPECT(assert_equal(*DecisionTreeFactor(X, "0 0").sum(1),
-                      empty.toDecisionTreeFactor()));
+  auto expected_empty = DecisionTreeFactor(X, "0 0").sum(1);
+  EXPECT(assert_equal(expected_empty->toDecisionTreeFactor(),
+                      empty->toDecisionTreeFactor()));
 }
 
 /* ************************************************************************* */
@@ -303,15 +305,18 @@ TEST(TableFactor, sum_max) {
   TableFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   TableFactor expected(v1, "9 12");
-  TableFactor::shared_ptr actual = f1.sum(1);
+  auto actual = std::dynamic_pointer_cast<TableFactor>(f1.sum(1));
+  CHECK(actual);
   CHECK(assert_equal(expected, *actual, 1e-5));
 
   TableFactor expected2(v1, "5 6");
-  TableFactor::shared_ptr actual2 = f1.max(1);
+  auto actual2 = std::dynamic_pointer_cast<TableFactor>(f1.max(1));
+  CHECK(actual2);
   CHECK(assert_equal(expected2, *actual2));
 
   TableFactor f2(v1 & v0, "1 2  3 4  5 6");
-  TableFactor::shared_ptr actual22 = f2.sum(1);
+  auto actual22 = std::dynamic_pointer_cast<TableFactor>(f2.sum(1));
+  CHECK(actual22);
 }
 
 /* ************************************************************************* */

@@ -281,6 +281,20 @@ DiscreteFactor::shared_ptr TableFactor::multiply(
 }
 
 /* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::operator/(
+    const DiscreteFactor::shared_ptr& f) const {
+  if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
+    return std::make_shared<TableFactor>(this->operator/(*tf));
+  } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+    return std::make_shared<TableFactor>(
+        this->operator/(TableFactor(f->discreteKeys(), *dtf)));
+  } else {
+    TableFactor divisor(f->toDecisionTreeFactor());
+    return std::make_shared<TableFactor>(this->operator/(divisor));
+  }
+}
+
+/* ************************************************************************ */
 DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   DiscreteKeys dkeys = discreteKeys();
 

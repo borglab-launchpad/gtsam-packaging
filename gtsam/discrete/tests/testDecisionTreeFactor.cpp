@@ -138,15 +138,18 @@ TEST(DecisionTreeFactor, sum_max) {
   DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   DecisionTreeFactor expected(v1, "9 12");
-  DecisionTreeFactor::shared_ptr actual = f1.sum(1);
+  auto actual = std::dynamic_pointer_cast<DecisionTreeFactor>(f1.sum(1));
+  CHECK(actual);
   CHECK(assert_equal(expected, *actual, 1e-5));
 
   DecisionTreeFactor expected2(v1, "5 6");
-  DecisionTreeFactor::shared_ptr actual2 = f1.max(1);
+  auto actual2 = std::dynamic_pointer_cast<DecisionTreeFactor>(f1.max(1));
+  CHECK(actual2);
   CHECK(assert_equal(expected2, *actual2));
 
   DecisionTreeFactor f2(v1 & v0, "1 2  3 4  5 6");
-  DecisionTreeFactor::shared_ptr actual22 = f2.sum(1);
+  auto actual22 = std::dynamic_pointer_cast<DecisionTreeFactor>(f2.sum(1));
+  CHECK(actual22);
 }
 
 /* ************************************************************************* */

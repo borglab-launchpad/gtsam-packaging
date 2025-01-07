@@ -49,7 +49,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   /// Erase a value, non const :-(
   void erase(size_t value) { values_.erase(value); }
 
-  size_t nrValues() const { return values_.size(); }
+  uint64_t nrValues() const override { return values_.size(); }
 
   bool isSingleton() const { return nrValues() == 1; }
 

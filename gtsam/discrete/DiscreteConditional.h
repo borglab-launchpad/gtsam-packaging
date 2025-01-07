@@ -54,7 +54,7 @@ class GTSAM_EXPORT DiscreteConditional
   DiscreteConditional() {}
 
   /// Construct from factor, taking the first `nFrontals` keys as frontals.
-  DiscreteConditional(size_t nFrontals, const DecisionTreeFactor& f);
+  DiscreteConditional(size_t nFrontals, const DiscreteFactor& f);
 
   /**
    * Construct from DiscreteKeys and AlgebraicDecisionTree, taking the first
