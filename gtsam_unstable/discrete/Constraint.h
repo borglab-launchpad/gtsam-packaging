@@ -68,7 +68,8 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
   /*
    * Ensure Arc-consistency by checking every possible value of domain j.
    * @param j domain to be checked
-   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
+   * @param (in/out) domains all domains, but only domains->at(j) will be
+   * checked.
    * @return true if domains->at(j) was changed, false otherwise.
    */
   virtual bool ensureArcConsistency(Key j, Domains* domains) const = 0;
@@ -84,6 +85,31 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
       const DiscreteFactor::shared_ptr& df) const override {
     return std::make_shared<DecisionTreeFactor>(
         this->operator*(df->toDecisionTreeFactor()));
+  }
+
+  /// divide by DiscreteFactor::shared_ptr f (safely)
+  DiscreteFactor::shared_ptr operator/(
+      const DiscreteFactor::shared_ptr& df) const override {
+    return this->toDecisionTreeFactor() / df;
+  }
+
+  /// Get the number of non-zero values contained in this factor.
+  uint64_t nrValues() const override { return 1; };
+
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
+    return toDecisionTreeFactor().sum(nrFrontals);
+  }
+
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
+    return toDecisionTreeFactor().sum(keys);
+  }
+
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
+    return toDecisionTreeFactor().max(nrFrontals);
+  }
+
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
+    return toDecisionTreeFactor().max(keys);
   }
 
   /// @}

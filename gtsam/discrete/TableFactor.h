@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/Ring.h>
@@ -202,6 +203,10 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return apply(f, safe_div);
   }
 
+  /// divide by DiscreteFactor::shared_ptr f (safely)
+  DiscreteFactor::shared_ptr operator/(
+      const DiscreteFactor::shared_ptr& f) const override;
+
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
@@ -210,22 +215,22 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
                      DiscreteKeys parent_keys) const;
 
   /// Create new factor by summing all values with the same separator values
-  shared_ptr sum(size_t nrFrontals) const {
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
     return combine(nrFrontals, Ring::add);
   }
 
   /// Create new factor by summing all values with the same separator values
-  shared_ptr sum(const Ordering& keys) const {
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
     return combine(keys, Ring::add);
   }
 
   /// Create new factor by maximizing over all values with the same separator.
-  shared_ptr max(size_t nrFrontals) const {
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
     return combine(nrFrontals, Ring::max);
   }
 
   /// Create new factor by maximizing over all values with the same separator.
-  shared_ptr max(const Ordering& keys) const {
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
     return combine(keys, Ring::max);
   }
 
@@ -329,6 +334,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @return TableFactor
    */
   TableFactor prune(size_t maxNrAssignments) const;
+
+  /**
+   * Get the number of non-zero values contained in this factor.
+   * It could be much smaller than `prod_{key}(cardinality(key))`.
+   */
+  uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
 
   /// @}
   /// @name Wrapper support

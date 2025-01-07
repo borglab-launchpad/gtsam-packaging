@@ -184,26 +184,30 @@ namespace gtsam {
       return apply(f, safe_div);
     }
 
+    /// divide by DiscreteFactor::shared_ptr f (safely)
+    DiscreteFactor::shared_ptr operator/(
+        const DiscreteFactor::shared_ptr& f) const override;
+
     /// Convert into a decision tree
     DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
 
     /// Create new factor by summing all values with the same separator values
-    shared_ptr sum(size_t nrFrontals) const {
+    DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
       return combine(nrFrontals, Ring::add);
     }
 
     /// Create new factor by summing all values with the same separator values
-    shared_ptr sum(const Ordering& keys) const {
+    DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
       return combine(keys, Ring::add);
     }
 
     /// Create new factor by maximizing over all values with the same separator.
-    shared_ptr max(size_t nrFrontals) const {
+    DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
       return combine(nrFrontals, Ring::max);
     }
 
     /// Create new factor by maximizing over all values with the same separator.
-    shared_ptr max(const Ordering& keys) const {
+    DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
       return combine(keys, Ring::max);
     }
 
@@ -283,6 +287,12 @@ namespace gtsam {
      * @return DecisionTreeFactor
      */
     DecisionTreeFactor prune(size_t maxNrAssignments) const;
+
+    /**
+     * Get the number of non-zero values contained in this factor.
+     * It could be much smaller than `prod_{key}(cardinality(key))`.
+     */
+    uint64_t nrValues() const override { return nrLeaves(); }
 
     /// @}
     /// @name Wrapper support
