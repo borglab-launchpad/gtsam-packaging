@@ -1,10 +1,138 @@
-gtsam (4.1.0-1ubuntu2~2571.gbp9c4ce8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2572.gbp095ef3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @095ef311a4c66fd255a5996bff0c6716a37f98bb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9c4ce8764c454a59e471c22fa48609333e703620 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 14:07:20 +0000
+  [ Varun Agrawal ]
+  * expose GTSAM_ENABLE_TIMING
+  * code to print timing as CSV
+  * remove extra space after comma
+  * conditional switch for hybrid timing
+  * update config.h.in
+  * make a cmake flag
+  * use TableFactor instead of DecisionTreeFactor in discrete elimination
+  * initial DiscreteTableConditional
+  * DiscreteConditional evaluate method for conditionals
+  * setData method
+  * use a TableFactor as the underlying data representation for DiscreteTableConditional since it provides a clean abstraction
+  * fix return type
+  * add evaluate and getter
+  * add override methods to DiscreteTableConditional
+  * use DiscreteTableConditional in EliminateDiscrete
+  * small cleanup
+  * use DiscreteConditional shared_ptr for dynamic dispatch
+  * use TableFactor for discrete elimination
+  * small cleanup
+  * fix hybrid tests
+  * fix equals
+  * undo changes to DiscreteFactorGraph
+  * remove unused methods
+  * Use TableFactor everywhere in hybrid elimination
+  * fix tests
+  * customize discrete elimination in Hybrid
+  * remove GTSAM_HYBRID_TIMING guards
+  * fix types
+  * return DiscreteTableConditional from hybrid elimination
+  * update testGaussianMixture
+  * remove evaluate method
+  * fix constructor and equals
+  * fix bug in TableFactor when trying to convert to DecisionTreeFactor
+  * fix creation of DiscreteConditional
+  * full discrete elimination
+  * normalize
+  * new helper constructor for DiscreteConditional
+  * simplify discrete conditional computation
+  * small fix
+  * fix empty keys case
+  * rename
+  * move common typedef to top
+  * evaluate needed for correct test results
+  * custom discreteMaxProduct
+  * custom ProductAndNormalize for TableFactor
+  * fixed maxProduct
+  * remove TableFactor check for another day
+  * custom path for empty separator
+  * clarify TableProduct function
+  * remove DiscreteConditional constructor since we no longer use it
+  * fix TableProduct name
+  * fix testGaussianMixture
+  * undo HybridBayesNet changes
+  * fix testHybridGaussianFactorGraph
+  * fix to use DiscreteTableConditional
+  * custom max-product for HybridBayesTree
+  * fix discreteMaxProduct declaration
+  * make asDiscrete a template
+  * add checks
+  * fix testHybridEstimation
+  * fix testGaussianMixture
+  * fix testHybridMotionModel
+  * formatting
+  * fix pruning test in testHybridBayesNet
+  * fix testHybridGaussianFactorGraph
+  * more helper methods in DiscreteTableConditional
+  * cleaner API
+  * fix testHybridNonlinearFactorGraph
+  * small fix
+  * separate function to collect discrete factors
+  * simplify empty separator check
+  * fix testHybridGaussianISAM
+  * fix testHybridNonlinearISAM
+  * serialize table inside TableDistribution
+  * serialize functions for Eigen::SparseVector
+  * add serialization code to TableFactor
+  * test for TableFactor serialization
+  * use string based constructor
+  * rename from DiscreteTableConditional to TableDistribution
+  * rename source files
+  * export TableDistribution for serialization
+  * improved docstring
+  * kill operator* method
+  * formatting
+  * remove constructors that need parents
+  * add helpful constructors
+  * fix tests
+  * use template
+  * fix TableDistribution constructor call
+  * pass DiscreteConditional& for pruning instead of shared_ptr
+  * normalize values in sparse_table so it forms a proper distribution
+  * fix TableDistribution constructors in tests
+  * get rid of setData and make prune() imperative for non-factors
+  * update pruning in BayesNet and BayesTree
+  * update test
+  * add argmax method to TableDistribution
+  * use TableDistribution::argmax in discreteMaxProduct
+  * max returns DiscreteFactor
+  * wrap TableDistribution
+  * wrap TableFactor
+  * typo fix
+  * fix python test
+  * return DiscreteValues directly
+  * code cleanup
+  * emplace then prune
+  * remove deleted constructors
+  * updates to get things working
+  * remove hybrid timing flag from DiscreteFactorGraph
+  * new scaledProduct method instead of DiscreteProduct
+  * kill TableProduct in favor of DiscreteFactorGraph::scaledProduct
+  * override sum and max in TableDistribution
+  * override operator/ in TableDistribution
+  * update scaledProduct docs
+  * fix headers
+  * make ADT with nullptr in TableDistribution
+  * override sample in TableDistribution
+  * add hack to multiply DiscreteConditional with TableDistribution
+  * simplify multiplication
+  * fix relinearization in HybridNonlinearISAM
+  * fix tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 17:47:21 +0000
 
 gtsam (4.1.0-1ubuntu2~2570.gbpdbe872) noble; urgency=medium
 
