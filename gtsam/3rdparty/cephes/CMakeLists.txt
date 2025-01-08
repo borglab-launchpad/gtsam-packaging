@@ -103,11 +103,7 @@ set_target_properties(
              C_STANDARD 99)
 
 if(WIN32)
-  set_target_properties(
-    cephes-gtsam
-    PROPERTIES PREFIX ""
-               COMPILE_FLAGS /w
-               RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/../../../bin")
+  set_target_properties(cephes-gtsam PROPERTIES COMPILE_FLAGS /w)
 endif()
 
 if(APPLE)
