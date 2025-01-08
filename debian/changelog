@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2567.gbpd9f05c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2568.gbpabd6ed) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @abd6ed8047d5557020fad34b921c4c7c54255753 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d9f05c855d2f52fdf11985fb8b6a3258aedf3057 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 11:45:43 +0000
+  [ MagnusAagaard ]
+  * Use std::abs to avoid implicit conversion of double input to int
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 14:00:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2566.gbpeb23ac) noble; urgency=medium
 
