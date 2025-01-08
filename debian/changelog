@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2558.gbp43c12e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2559.gbp854bdb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @854bdb64b9514b7fb215ea215193cfaf426965ef **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @43c12e923756e3dca0cece97d4cdf80b27565391 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 07 Jan 2025 01:39:51 +0000
+  [ Gold856 ]
+  * Use newer binary output directory variables and don't specify output directory on each target
+  * Use CMAKE_POSITION_INDEPENDENT_CODE instead of -fPIC
+  * Use new CMake policies up to 3.29 This silences most warnings about overriding /W3 with /w
+  * Clean up version finding in HandleEigen
+  * Remove redundant MSVC optimization flag in GKLib
+  * Remove PREFIX ""
+  * Clean up MSVC flags to allow use of MSVC variables instead Generator expressions were used to prevent the addition of /MD and /Zi if the CMake version is new enough to have specific MSVC variables for controlling those flags
+  * Clean up the enabling of C++17 MSVC flag is not needed and the minimum CMake version is higher now
+  * Remove /FORCE:MULTIPLE from CMAKE_STATIC_LINKER_FLAGS It's not a valid flag for static linking
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 11:41:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2557.gbp2fd278) noble; urgency=medium
 
