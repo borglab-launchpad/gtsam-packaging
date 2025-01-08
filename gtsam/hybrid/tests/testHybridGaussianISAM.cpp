@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
@@ -141,7 +142,7 @@ TEST(HybridGaussianISAM, IncrementalInference) {
       expectedRemainingGraph->eliminateMultifrontal(discreteOrdering);
 
   // Test the probability values with regression tests.
-  auto discrete = isam[M(1)]->conditional()->asDiscrete();
+  auto discrete = isam[M(1)]->conditional()->asDiscrete<TableDistribution>();
   EXPECT(assert_equal(0.095292, (*discrete)({{M(0), 0}, {M(1), 0}}), 1e-5));
   EXPECT(assert_equal(0.282758, (*discrete)({{M(0), 1}, {M(1), 0}}), 1e-5));
   EXPECT(assert_equal(0.314175, (*discrete)({{M(0), 0}, {M(1), 1}}), 1e-5));
@@ -221,16 +222,12 @@ TEST(HybridGaussianISAM, ApproxInference) {
     1 1 1 Leaf  0.5
   */
 
-  auto discreteConditional_m0 = *dynamic_pointer_cast<DiscreteConditional>(
+  auto discreteConditional_m0 = *dynamic_pointer_cast<TableDistribution>(
       incrementalHybrid[M(0)]->conditional()->inner());
   EXPECT(discreteConditional_m0.keys() == KeyVector({M(0), M(1), M(2)}));
 
-  // Get the number of elements which are greater than 0.
-  auto count = [](const double &value, int count) {
-    return value > 0 ? count + 1 : count;
-  };
   // Check that the number of leaves after pruning is 5.
-  EXPECT_LONGS_EQUAL(5, discreteConditional_m0.fold(count, 0));
+  EXPECT_LONGS_EQUAL(5, discreteConditional_m0.nrValues());
 
   // Check that the hybrid nodes of the bayes net match those of the pre-pruning
   // bayes net, at the same positions.
@@ -477,7 +474,9 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).
   DiscreteFactorGraph discreteGraph;
-  discreteGraph.push_back(discreteTree);
+  // discreteTree is a TableDistribution, so we convert to
+  // DecisionTreeFactor for the DiscreteFactorGraph
+  discreteGraph.push_back(discreteTree->toDecisionTreeFactor());
   DiscreteValues optimal_assignment = discreteGraph.optimize();
 
   DiscreteValues expected_assignment;

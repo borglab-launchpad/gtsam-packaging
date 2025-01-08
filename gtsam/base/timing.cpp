@@ -31,7 +31,9 @@
 
 namespace gtsam {
 namespace internal {
-  
+
+using ChildOrder = FastMap<size_t, std::shared_ptr<TimingOutline>>;
+
 // a static shared_ptr to TimingOutline with nullptr as the pointer
 const static std::shared_ptr<TimingOutline> nullTimingOutline;
 
@@ -91,7 +93,6 @@ void TimingOutline::print(const std::string& outline) const {
       << n_ << " times, " << wall() << " wall, " << secs() << " children, min: "
       << min() << " max: " << max() << ")\n";
   // Order children
-  typedef FastMap<size_t, std::shared_ptr<TimingOutline> > ChildOrder;
   ChildOrder childOrder;
   for(const ChildMap::value_type& child: children_) {
     childOrder[child.second->myOrder_] = child.second;
@@ -101,6 +102,54 @@ void TimingOutline::print(const std::string& outline) const {
     std::string childOutline(outline);
     childOutline += "|   ";
     order_child.second->print(childOutline);
+  }
+  std::cout.flush();
+#endif
+}
+
+/* ************************************************************************* */
+void TimingOutline::printCsvHeader(bool addLineBreak) const {
+#ifdef GTSAM_USE_BOOST_FEATURES
+  // Order is (CPU time, number of times, wall time, time + children in seconds,
+  // min time, max time)
+  std::cout << label_ + " cpu time (s)" << "," << label_ + " #calls" << ","
+            << label_ + " wall time(s)" << "," << label_ + " subtree time (s)"
+            << "," << label_ + " min time (s)" << "," << label_ + "max time(s)"
+            << ",";
+  // Order children
+  ChildOrder childOrder;
+  for (const ChildMap::value_type& child : children_) {
+    childOrder[child.second->myOrder_] = child.second;
+  }
+  // Print children
+  for (const ChildOrder::value_type& order_child : childOrder) {
+    order_child.second->printCsvHeader();
+  }
+  if (addLineBreak) {
+    std::cout << std::endl;
+  }
+  std::cout.flush();
+#endif
+}
+
+/* ************************************************************************* */
+void TimingOutline::printCsv(bool addLineBreak) const {
+#ifdef GTSAM_USE_BOOST_FEATURES
+  // Order is (CPU time, number of times, wall time, time + children in seconds,
+  // min time, max time)
+  std::cout << self() << "," << n_ << "," << wall() << "," << secs() << ","
+            << min() << "," << max() << ",";
+  // Order children
+  ChildOrder childOrder;
+  for (const ChildMap::value_type& child : children_) {
+    childOrder[child.second->myOrder_] = child.second;
+  }
+  // Print children
+  for (const ChildOrder::value_type& order_child : childOrder) {
+    order_child.second->printCsv(false);
+  }
+  if (addLineBreak) {
+    std::cout << std::endl;
   }
   std::cout.flush();
 #endif

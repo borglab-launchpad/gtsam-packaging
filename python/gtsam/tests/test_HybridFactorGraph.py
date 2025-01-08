@@ -13,14 +13,14 @@ Author: Fan Jiang, Varun Agrawal, Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam.symbol_shorthand import C, M, X, Z
-from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import (DiscreteConditional, GaussianConditional,
-                   HybridBayesNet, HybridGaussianConditional,
-                   HybridGaussianFactor, HybridGaussianFactorGraph,
-                   HybridValues, JacobianFactor, noiseModel)
+from gtsam import (DiscreteConditional, GaussianConditional, HybridBayesNet,
+                   HybridGaussianConditional, HybridGaussianFactor,
+                   HybridGaussianFactorGraph, HybridValues, JacobianFactor,
+                   TableDistribution, noiseModel)
+from gtsam.symbol_shorthand import C, M, X, Z
+from gtsam.utils.test_case import GtsamTestCase
 
 DEBUG_MARGINALS = False
 
@@ -51,7 +51,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(len(hybridCond.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
-        self.assertIsInstance(discrete_conditional, DiscreteConditional)
+        self.assertIsInstance(discrete_conditional, TableDistribution)
 
     def test_optimize(self):
         """Test construction of hybrid factor graph."""

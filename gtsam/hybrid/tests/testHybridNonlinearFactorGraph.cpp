@@ -20,6 +20,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -368,10 +369,9 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   EXPECT_LONGS_EQUAL(1, hybridGaussianConditional->nrParents());
 
   // This is now a discreteFactor
-  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
+  auto discreteFactor = dynamic_pointer_cast<TableFactor>(factorOnModes);
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
-  EXPECT(discreteFactor->root_->isLeaf() == false);
 }
 
 /****************************************************************************
@@ -513,9 +513,10 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
   // P(m1)
   EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(1)});
   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
-  EXPECT(
-      dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
-          ->equals(*discreteBayesNet.at(1)));
+  TableDistribution dtc =
+      *hybridBayesNet->at(4)->asDiscrete<TableDistribution>();
+  EXPECT(DiscreteConditional(dtc.nrFrontals(), dtc.toDecisionTreeFactor())
+             .equals(*discreteBayesNet.at(1)));
 }
 
 /****************************************************************************
@@ -1062,8 +1063,8 @@ TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
   DiscreteValues dv0{{M(1), 0}};
   DiscreteValues dv1{{M(1), 1}};
 
-  DiscreteConditional expected_m1(m1, "0.5/0.5");
-  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+  TableDistribution expected_m1(m1, "0.5 0.5");
+  TableDistribution actual_m1 = *(hbn->at(2)->asDiscrete<TableDistribution>());
 
   EXPECT(assert_equal(expected_m1, actual_m1));
 }

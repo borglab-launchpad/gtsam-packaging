@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -454,7 +455,8 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   }
 
   size_t maxNrLeaves = 3;
-  auto prunedDecisionTree = joint.prune(maxNrLeaves);
+  DiscreteConditional prunedDecisionTree(joint);
+  prunedDecisionTree.prune(maxNrLeaves);
 
 #ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,

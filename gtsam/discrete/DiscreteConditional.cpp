@@ -77,6 +77,13 @@ DiscreteConditional::DiscreteConditional(const Signature& signature)
 /* ************************************************************************** */
 DiscreteConditional DiscreteConditional::operator*(
     const DiscreteConditional& other) const {
+  // If the root is a nullptr, we have a TableDistribution
+  // TODO(Varun) Revisit this hack after RSS2025 submission
+  if (!other.root_) {
+    DiscreteConditional dc(other.nrFrontals(), other.toDecisionTreeFactor());
+    return dc * (*this);
+  }
+
   // Take union of frontal keys
   std::set<Key> newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
@@ -477,6 +484,19 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
 /* ************************************************************************* */
 double DiscreteConditional::evaluate(const HybridValues& x) const {
   return this->operator()(x.discrete());
+}
+
+/* ************************************************************************* */
+DiscreteFactor::shared_ptr DiscreteConditional::max(
+    const Ordering& keys) const {
+  return BaseFactor::max(keys);
+}
+
+/* ************************************************************************* */
+void DiscreteConditional::prune(size_t maxNrAssignments) {
+  // Get as DiscreteConditional so the probabilities are normalized
+  DiscreteConditional pruned(nrFrontals(), BaseFactor::prune(maxNrAssignments));
+  this->root_ = pruned.root_;
 }
 
 /* ************************************************************************* */

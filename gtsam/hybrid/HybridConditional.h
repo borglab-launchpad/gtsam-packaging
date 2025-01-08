@@ -166,12 +166,13 @@ class GTSAM_EXPORT HybridConditional
   }
 
   /**
-   * @brief Return conditional as a DiscreteConditional
+   * @brief Return conditional as a DiscreteConditional or specified type T.
    * @return nullptr if not a DiscreteConditional
    * @return DiscreteConditional::shared_ptr
    */
-  DiscreteConditional::shared_ptr asDiscrete() const {
-    return std::dynamic_pointer_cast<DiscreteConditional>(inner_);
+  template <typename T = DiscreteConditional>
+  typename T::shared_ptr asDiscrete() const {
+    return std::dynamic_pointer_cast<T>(inner_);
   }
 
   /// Get the type-erased pointer to the inner type

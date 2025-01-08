@@ -18,6 +18,7 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -44,6 +45,7 @@ BOOST_CLASS_EXPORT_GUID(HybridFactor, "gtsam_HybridFactor");
 BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor");
 BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional");
 BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional");
+BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution");
 
 BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
 using ADT = AlgebraicDecisionTree<Key>;

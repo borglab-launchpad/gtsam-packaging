@@ -104,7 +104,13 @@ void HybridGaussianISAM::updateInternal(
       elimination_ordering, function, std::cref(index));
 
   if (maxNrLeaves) {
+#if GTSAM_HYBRID_TIMING
+    gttic_(HybridBayesTreePrune);
+#endif
     bayesTree->prune(*maxNrLeaves);
+#if GTSAM_HYBRID_TIMING
+    gttoc_(HybridBayesTreePrune);
+#endif
   }
 
   // Re-add into Bayes tree data structures

@@ -23,6 +23,7 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -235,7 +236,7 @@ class GTSAM_EXPORT HybridGaussianConditional
    * @return Shared pointer to possibly a pruned HybridGaussianConditional
    */
   HybridGaussianConditional::shared_ptr prune(
-      const DecisionTreeFactor &discreteProbs) const;
+      const DiscreteConditional &discreteProbs) const;
 
   /// Return true if the conditional has already been pruned.
   bool pruned() const { return pruned_; }

@@ -261,7 +261,8 @@ TEST(HybridGaussianConditional, Prune) {
       potentials[i] = 1;
       const DecisionTreeFactor decisionTreeFactor(keys, potentials);
       // Prune the HybridGaussianConditional
-      const auto pruned = hgc.prune(decisionTreeFactor);
+      const auto pruned =
+          hgc.prune(DiscreteConditional(keys.size(), decisionTreeFactor));
       // Check that the pruned HybridGaussianConditional has 1 conditional
       EXPECT_LONGS_EQUAL(1, pruned->nrComponents());
     }
@@ -271,7 +272,8 @@ TEST(HybridGaussianConditional, Prune) {
                                          0, 0, 0.5, 0};
     const DecisionTreeFactor decisionTreeFactor(keys, potentials);
 
-    const auto pruned = hgc.prune(decisionTreeFactor);
+    const auto pruned =
+        hgc.prune(DiscreteConditional(keys.size(), decisionTreeFactor));
 
     // Check that the pruned HybridGaussianConditional has 2 conditionals
     EXPECT_LONGS_EQUAL(2, pruned->nrComponents());
@@ -286,7 +288,8 @@ TEST(HybridGaussianConditional, Prune) {
                                          0,   0, 0.5, 0};
     const DecisionTreeFactor decisionTreeFactor(keys, potentials);
 
-    const auto pruned = hgc.prune(decisionTreeFactor);
+    const auto pruned =
+        hgc.prune(DiscreteConditional(keys.size(), decisionTreeFactor));
 
     // Check that the pruned HybridGaussianConditional has 3 conditionals
     EXPECT_LONGS_EQUAL(3, pruned->nrComponents());
