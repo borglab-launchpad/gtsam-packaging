@@ -183,10 +183,7 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 			PREFIX "lib")
 		target_compile_definitions(gtsam PRIVATE GTSAM_IMPORT_STATIC)
 	else()
-		set_target_properties(gtsam PROPERTIES
-			PREFIX ""
-			DEFINE_SYMBOL GTSAM_EXPORTS
-			RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
+		set_target_properties(gtsam PROPERTIES DEFINE_SYMBOL GTSAM_EXPORTS)
 	endif()
 endif()
 

@@ -108,13 +108,15 @@ endif()
 
 # Other (non-preprocessor macros) compiler flags:
 if(MSVC)
+  set(CMAKE_3_15 $<VERSION_LESS:${CMAKE_VERSION},3.15>)
+  set(CMAKE_3_25 $<VERSION_LESS:${CMAKE_VERSION},3.25>)
   # Common to all configurations, next for each configuration:
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           /MDd /Zi /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  /MD /O2 /D /Zi /d2Zi+  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         /MD /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       /MD /O2  /Zi  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          /MD /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 else()
   # Common to all configurations, next for each configuration:
 
@@ -130,7 +132,6 @@ else()
 
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
     -Wall                                          # Enable common warnings
-    -fPIC                                          # ensure proper code generation for shared libraries
     $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr -Werror=return-local-addr>            # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-template-vtables>  # TODO(dellaert): don't know how to resolve
@@ -155,20 +156,9 @@ mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING)
 
 # Enable C++17:
-if (NOT CMAKE_VERSION VERSION_LESS 3.8)
-    set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile features property for all gtsam targets.")
-    # See: https://cmake.org/cmake/help/latest/prop_tgt/CXX_EXTENSIONS.html
-    set(CMAKE_CXX_EXTENSIONS OFF)
-    if (MSVC)
-      # NOTE(jlblanco): seems to be required in addition to the cxx_std_17 above?
-      list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC /std:c++17)
-    endif()
-else()
-  # Old cmake versions:
-  if (NOT MSVC)
-    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
-  endif()
-endif()
+set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile features property for all gtsam targets.")
+# See: https://cmake.org/cmake/help/latest/prop_tgt/CXX_EXTENSIONS.html
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Merge all user-defined flags into the variables that are to be actually used by CMake:
 foreach(build_type "common" ${GTSAM_CMAKE_CONFIGURATION_TYPES})
@@ -250,9 +240,9 @@ endif()
 
 # Make common binary output directory when on Windows
 if(WIN32)
-  set(RUNTIME_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
-  set(EXECUTABLE_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
-  set(LIBRARY_OUTPUT_PATH "${GTSAM_BINARY_DIR}/lib")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/lib")
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/lib")
 endif()
 
 # Set up build type list for cmake-gui
