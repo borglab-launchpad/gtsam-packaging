@@ -134,7 +134,7 @@ class BilinearAngleTranslationFactor
                        OptionalMatrixType H1, OptionalMatrixType H2,
                        OptionalMatrixType H3) const override {
     // Ideally we should use a positive real valued scalar datatype for scale.
-    const double abs_scale = abs(scale[0]);
+    const double abs_scale = std::abs(scale[0]);
     const Point3 predicted = (Tb - Ta) * abs_scale;
     if (H1) {
       *H1 = -Matrix3::Identity() * abs_scale;
