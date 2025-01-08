@@ -57,6 +57,9 @@ namespace gtsam {
 
     AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
 
+    /// Constructor which accepts root pointer
+    AlgebraicDecisionTree(const typename Base::NodePtr root) : Base(root) {}
+
     // Explicitly non-explicit constructor
     AlgebraicDecisionTree(const Base& add) : Base(add) {}
 

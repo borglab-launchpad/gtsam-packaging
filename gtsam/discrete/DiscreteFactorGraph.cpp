@@ -118,17 +118,11 @@ namespace gtsam {
 //      }
 //  }
 
-  /**
-   * @brief Multiply all the `factors`.
-   *
-   * @param factors The factors to multiply as a DiscreteFactorGraph.
-   * @return DiscreteFactor::shared_ptr
-   */
-  static DiscreteFactor::shared_ptr DiscreteProduct(
-      const DiscreteFactorGraph& factors) {
+  /* ************************************************************************ */
+  DiscreteFactor::shared_ptr DiscreteFactorGraph::scaledProduct() const {
     // PRODUCT: multiply all factors
     gttic(product);
-    DiscreteFactor::shared_ptr product = factors.product();
+    DiscreteFactor::shared_ptr product = this->product();
     gttoc(product);
 
     // Max over all the potentials by pretending all keys are frontal:
@@ -145,7 +139,7 @@ namespace gtsam {
   std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>  //
   EliminateForMPE(const DiscreteFactorGraph& factors,
                   const Ordering& frontalKeys) {
-    DiscreteFactor::shared_ptr product = DiscreteProduct(factors);
+    DiscreteFactor::shared_ptr product = factors.scaledProduct();
 
     // max out frontals, this is the factor on the separator
     gttic(max);
@@ -223,7 +217,7 @@ namespace gtsam {
   std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>  //
   EliminateDiscrete(const DiscreteFactorGraph& factors,
                     const Ordering& frontalKeys) {
-    DiscreteFactor::shared_ptr product = DiscreteProduct(factors);
+    DiscreteFactor::shared_ptr product = factors.scaledProduct();
 
     // sum out frontals, this is the factor on the separator
     gttic(sum);

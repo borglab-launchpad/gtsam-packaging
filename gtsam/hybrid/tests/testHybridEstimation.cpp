@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
@@ -464,14 +465,14 @@ TEST(HybridEstimation, EliminateSequentialRegression) {
 
   // Create expected discrete conditional on m0.
   DiscreteKey m(M(0), 2);
-  DiscreteConditional expected(m % "0.51341712/1");  // regression
+  TableDistribution expected(m, "0.51341712 1");  // regression
 
   // Eliminate into BN using one ordering
   const Ordering ordering1{X(0), X(1), M(0)};
   HybridBayesNet::shared_ptr bn1 = fg->eliminateSequential(ordering1);
 
   // Check that the discrete conditional matches the expected.
-  auto dc1 = bn1->back()->asDiscrete();
+  auto dc1 = bn1->back()->asDiscrete<TableDistribution>();
   EXPECT(assert_equal(expected, *dc1, 1e-9));
 
   // Eliminate into BN using a different ordering
@@ -479,7 +480,7 @@ TEST(HybridEstimation, EliminateSequentialRegression) {
   HybridBayesNet::shared_ptr bn2 = fg->eliminateSequential(ordering2);
 
   // Check that the discrete conditional matches the expected.
-  auto dc2 = bn2->back()->asDiscrete();
+  auto dc2 = bn2->back()->asDiscrete<TableDistribution>();
   EXPECT(assert_equal(expected, *dc2, 1e-9));
 }
 

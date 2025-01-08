@@ -20,12 +20,13 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
-#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
+#include <gtsam/discrete/TableDistribution.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -241,29 +242,29 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 /**
  * @brief Take negative log-values, shift them so that the minimum value is 0,
- * and then exponentiate to create a DecisionTreeFactor (not normalized yet!).
+ * and then exponentiate to create a TableFactor (not normalized yet!).
  *
  * @param errors DecisionTree of (unnormalized) errors.
- * @return DecisionTreeFactor::shared_ptr
+ * @return TableFactor::shared_ptr
  */
-static DecisionTreeFactor::shared_ptr DiscreteFactorFromErrors(
+static TableFactor::shared_ptr DiscreteFactorFromErrors(
     const DiscreteKeys &discreteKeys,
     const AlgebraicDecisionTree<Key> &errors) {
   double min_log = errors.min();
   AlgebraicDecisionTree<Key> potentials(
       errors, [&min_log](const double x) { return exp(-(x - min_log)); });
-  return std::make_shared<DecisionTreeFactor>(discreteKeys, potentials);
+  return std::make_shared<TableFactor>(discreteKeys, potentials);
 }
 
 /* ************************************************************************ */
-static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
-discreteElimination(const HybridGaussianFactorGraph &factors,
-                    const Ordering &frontalKeys) {
+static DiscreteFactorGraph CollectDiscreteFactors(
+    const HybridGaussianFactorGraph &factors) {
   DiscreteFactorGraph dfg;
 
   for (auto &f : factors) {
     if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
       dfg.push_back(df);
+
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute a discrete factor from the remaining error.
@@ -282,16 +283,73 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       auto dc = hc->asDiscrete();
       if (!dc) throwRuntimeError("discreteElimination", dc);
-      dfg.push_back(dc);
+#if GTSAM_HYBRID_TIMING
+      gttic_(ConvertConditionalToTableFactor);
+#endif
+      if (auto dtc = std::dynamic_pointer_cast<TableDistribution>(dc)) {
+        /// Get the underlying TableFactor
+        dfg.push_back(dtc->table());
+      } else {
+        // Convert DiscreteConditional to TableFactor
+        auto tdc = std::make_shared<TableFactor>(*dc);
+        dfg.push_back(tdc);
+      }
+#if GTSAM_HYBRID_TIMING
+      gttoc_(ConvertConditionalToTableFactor);
+#endif
     } else {
       throwRuntimeError("discreteElimination", f);
     }
   }
 
-  // NOTE: This does sum-product. For max-product, use EliminateForMPE.
-  auto result = EliminateDiscrete(dfg, frontalKeys);
+  return dfg;
+}
 
-  return {std::make_shared<HybridConditional>(result.first), result.second};
+/* ************************************************************************ */
+static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+discreteElimination(const HybridGaussianFactorGraph &factors,
+                    const Ordering &frontalKeys) {
+  DiscreteFactorGraph dfg = CollectDiscreteFactors(factors);
+
+#if GTSAM_HYBRID_TIMING
+  gttic_(EliminateDiscrete);
+#endif
+  // Check if separator is empty.
+  // This is the same as checking if the number of frontal variables
+  // is the same as the number of variables in the DiscreteFactorGraph.
+  // If the separator is empty, we have a clique of all the discrete variables
+  // so we can use the TableFactor for efficiency.
+  if (frontalKeys.size() == dfg.keys().size()) {
+    // Get product factor
+    DiscreteFactor::shared_ptr product = dfg.scaledProduct();
+
+#if GTSAM_HYBRID_TIMING
+    gttic_(EliminateDiscreteFormDiscreteConditional);
+#endif
+    // Check type of product, and get as TableFactor for efficiency.
+    TableFactor p;
+    if (auto tf = std::dynamic_pointer_cast<TableFactor>(product)) {
+      p = *tf;
+    } else {
+      p = TableFactor(product->toDecisionTreeFactor());
+    }
+    auto conditional = std::make_shared<TableDistribution>(p);
+#if GTSAM_HYBRID_TIMING
+    gttoc_(EliminateDiscreteFormDiscreteConditional);
+#endif
+
+    DiscreteFactor::shared_ptr sum = product->sum(frontalKeys);
+
+    return {std::make_shared<HybridConditional>(conditional), sum};
+
+  } else {
+    // Perform sum-product.
+    auto result = EliminateDiscrete(dfg, frontalKeys);
+    return {std::make_shared<HybridConditional>(result.first), result.second};
+  }
+#if GTSAM_HYBRID_TIMING
+  gttoc_(EliminateDiscrete);
+#endif
 }
 
 /* ************************************************************************ */
@@ -319,8 +377,19 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     }
   };
 
+#if GTSAM_HYBRID_TIMING
+  gttic_(DiscreteBoundaryErrors);
+#endif
   AlgebraicDecisionTree<Key> errors(eliminationResults, calculateError);
-  return DiscreteFactorFromErrors(discreteSeparator, errors);
+#if GTSAM_HYBRID_TIMING
+  gttoc_(DiscreteBoundaryErrors);
+  gttic_(DiscreteBoundaryResult);
+#endif
+  auto result = DiscreteFactorFromErrors(discreteSeparator, errors);
+#if GTSAM_HYBRID_TIMING
+  gttoc_(DiscreteBoundaryResult);
+#endif
+  return result;
 }
 
 /* *******************************************************************************/
@@ -360,12 +429,18 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // the discrete separator will be *all* the discrete keys.
   DiscreteKeys discreteSeparator = GetDiscreteKeys(*this);
 
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridCollectProductFactor);
+#endif
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved. Just like any hybrid
   // factor, every assignment also has a scalar error, in this case the sum of
   // all errors in the graph. This error is assignment-specific and accounts for
   // any difference in noise models used.
   HybridGaussianProductFactor productFactor = collectProductFactor();
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridCollectProductFactor);
+#endif
 
   // Check if a factor is null
   auto isNull = [](const GaussianFactor::shared_ptr &ptr) { return !ptr; };
@@ -393,8 +468,14 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
     return {conditional, conditional->negLogConstant(), factor, scalar};
   };
 
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridEliminate);
+#endif
   // Perform elimination!
   const ResultTree eliminationResults(productFactor, eliminate);
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridEliminate);
+#endif
 
   // If there are no more continuous parents we create a DiscreteFactor with the
   // error for each discrete choice. Otherwise, create a HybridGaussianFactor

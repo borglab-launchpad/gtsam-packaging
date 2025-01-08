@@ -199,7 +199,7 @@ class GTSAM_EXPORT DiscreteConditional
    * @param parentsValues Known values of the parents
    * @return sample from conditional
    */
-  size_t sample(const DiscreteValues& parentsValues) const;
+  virtual size_t sample(const DiscreteValues& parentsValues) const;
 
   /// Single parent version.
   size_t sample(size_t parent_value) const;
@@ -213,6 +213,15 @@ class GTSAM_EXPORT DiscreteConditional
    * @return maximizing assignment for the frontal variable.
    */
   size_t argmax(const DiscreteValues& parentsValues = DiscreteValues()) const;
+
+  /**
+   * @brief Create new factor by maximizing over all
+   * values with the same separator.
+   *
+   * @param keys The keys to sum over.
+   * @return DiscreteFactor::shared_ptr
+   */
+  virtual DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
 
   /// @}
   /// @name Advanced Interface
@@ -266,6 +275,9 @@ class GTSAM_EXPORT DiscreteConditional
    * Thus -log(K) for the normalization constant k is 0.
    */
   double negLogConstant() const override;
+
+  /// Prune the conditional
+  virtual void prune(size_t maxNrAssignments);
 
   /// @}
 

@@ -199,6 +199,29 @@ namespace gtsam {
 #endif
       GTSAM_EXPORT void print(const std::string& outline = "") const;
       GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
+
+      /**
+       * @brief Print the CSV header.
+       * Order is
+       * (CPU time, number of times, wall time, time + children in seconds, min
+       * time, max time)
+       *
+       * @param addLineBreak Flag indicating if a line break should be added at
+       * the end. Only used at the top-leve.
+       */
+      GTSAM_EXPORT void printCsvHeader(bool addLineBreak = false) const;
+
+      /**
+       * @brief Print the times recursively from parent to child in CSV format.
+       * For each timing node, the output is
+       * (CPU time, number of times, wall time, time + children in seconds, min
+       * time, max time)
+       *
+       * @param addLineBreak Flag indicating if a line break should be added at
+       * the end. Only used at the top-leve.
+       */
+      GTSAM_EXPORT void printCsv(bool addLineBreak = false) const;
+
       GTSAM_EXPORT const std::shared_ptr<TimingOutline>&
         child(size_t child, const std::string& label, const std::weak_ptr<TimingOutline>& thisPtr);
       GTSAM_EXPORT void tic();
@@ -267,6 +290,14 @@ inline void tictoc_finishedIteration_() {
 // print
 inline void tictoc_print_() {
   ::gtsam::internal::gTimingRoot->print(); }
+
+// print timing in CSV format
+inline void tictoc_printCsv_(bool displayHeader = false) {
+  if (displayHeader) {
+    ::gtsam::internal::gTimingRoot->printCsvHeader(true);
+  }
+  ::gtsam::internal::gTimingRoot->printCsv(true);
+}
 
 // print mean and standard deviation
 inline void tictoc_print2_() {

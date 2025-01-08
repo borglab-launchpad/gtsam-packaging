@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -55,12 +56,15 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
     joint = joint * (*conditional);
   }
 
-  // Prune the joint. NOTE: again, possibly quite expensive.
-  const DecisionTreeFactor pruned = joint.prune(maxNrLeaves);
-
-  // Create a the result starting with the pruned joint.
+  // Create the result starting with the pruned joint.
   HybridBayesNet result;
-  result.emplace_shared<DiscreteConditional>(pruned.size(), pruned);
+  result.emplace_shared<DiscreteConditional>(joint);
+  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
+  result.back()->asDiscrete()->prune(maxNrLeaves);
+
+  // Get pruned discrete probabilities so
+  // we can prune HybridGaussianConditionals.
+  DiscreteConditional pruned = *result.back()->asDiscrete();
 
   /* To prune, we visitWith every leaf in the HybridGaussianConditional.
    * For each leaf, using the assignment we can check the discrete decision tree
@@ -126,7 +130,14 @@ HybridValues HybridBayesNet::optimize() const {
 
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
-      discrete_fg.push_back(conditional->asDiscrete());
+      if (auto dtc = conditional->asDiscrete<TableDistribution>()) {
+        // The number of keys should be small so should not
+        // be expensive to convert to DiscreteConditional.
+        discrete_fg.push_back(DiscreteConditional(dtc->nrFrontals(),
+                                                  dtc->toDecisionTreeFactor()));
+      } else {
+        discrete_fg.push_back(conditional->asDiscrete());
+      }
     }
   }
 

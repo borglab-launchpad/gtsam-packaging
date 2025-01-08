@@ -168,6 +168,12 @@ foreach(build_type "common" ${GTSAM_CMAKE_CONFIGURATION_TYPES})
   append_config_if_not_empty(GTSAM_COMPILE_DEFINITIONS_PUBLIC   ${build_type})
 endforeach()
 
+# Check if timing is enabled and add appropriate definition flag
+if(GTSAM_ENABLE_TIMING AND(NOT ${CMAKE_BUILD_TYPE} EQUAL "Timing"))
+  message(STATUS "Enabling timing for non-timing build")
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE "ENABLE_TIMING")
+endif()
+
 # Linker flags:
 set(GTSAM_CMAKE_SHARED_LINKER_FLAGS_TIMING  "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds.")
 set(GTSAM_CMAKE_MODULE_LINKER_FLAGS_TIMING  "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds.")
