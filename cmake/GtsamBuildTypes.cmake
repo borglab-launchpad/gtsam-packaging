@@ -111,7 +111,7 @@ if(MSVC)
   set(CMAKE_3_15 $<VERSION_LESS:${CMAKE_VERSION},3.15>)
   set(CMAKE_3_25 $<VERSION_LESS:${CMAKE_VERSION},3.25>)
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /WX /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
@@ -131,12 +131,15 @@ else()
   endif()
 
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
+    -Werror                                        # Enable warnings as errors
     -Wall                                          # Enable common warnings
-    $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr -Werror=return-local-addr>            # Error: return local address
-    $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-template-vtables>  # TODO(dellaert): don't know how to resolve
+    -Wpedantic                                     # Enable pedantic warnings
+    $<$<COMPILE_LANGUAGE:CXX>:-Wextra -Wno-unused-parameter> # Enable extra warnings, but ignore no-unused-parameter (as we ifdef out chunks of code)
+    $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr>            # Error: return local address
+    $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address>       # Error: return local address
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-template-vtables>   # TODO(dellaert): don't know how to resolve
     $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-vtables>  # TODO(dellaert): don't know how to resolve
-    -Wreturn-type  -Werror=return-type             # Error on missing return()
+    -Wreturn-type                                  # Error on missing return()
     -Wformat -Werror=format-security               # Error on wrong printf() arguments
     $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword
     #

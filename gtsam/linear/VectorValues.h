@@ -106,7 +106,7 @@ namespace gtsam {
     template<class CONTAINER>
     explicit VectorValues(const CONTAINER& c) : values_(c.begin(), c.end()) {}
 
-    /** Implicit copy constructor to specialize the explicit constructor from any container. */
+    /** Copy constructor to specialize the explicit constructor from any container. */
     VectorValues(const VectorValues& c) : values_(c.values_) {}
 
     /** Create from a pair of iterators over pair<Key,Vector>. */
@@ -119,6 +119,7 @@ namespace gtsam {
     /// Constructor from Vector, with Scatter
     VectorValues(const Vector& c, const Scatter& scatter);
 
+    // We override the copy constructor; expicitly declare operator=
     VectorValues& operator=(const VectorValues& other) = default;
 
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */

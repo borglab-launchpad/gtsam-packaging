@@ -45,7 +45,6 @@ static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
 static double calculateScale(const Point3Pairs &d_abPointPairs,
                              const Rot3 &aRb) {
   double x = 0, y = 0;
-  Point3 da, db;
   for (const auto& [da, db] : d_abPointPairs) {
     const Vector3 da_prime = aRb * db;
     y += da.transpose() * da_prime;
