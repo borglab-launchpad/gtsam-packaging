@@ -56,9 +56,8 @@ public:
 
   /** Copy constructor */
   Pose3(const Pose3& pose) = default;
-  //  :
-  //     R_(pose.R_), t_(pose.t_) {
-  // }
+
+  Pose3& operator=(const Pose3& other) = default;
 
   /** Construct from R,t */
   Pose3(const Rot3& R, const Point3& t) :

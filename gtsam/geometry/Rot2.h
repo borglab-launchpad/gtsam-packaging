@@ -53,7 +53,8 @@ namespace gtsam {
     
     /** copy constructor */
     Rot2(const Rot2& r) = default;
-    //  : Rot2(r.c_, r.s_) {}
+
+    Rot2& operator=(const Rot2& other) = default;
 
     /// Constructor from angle in radians == exponential map at identity
     Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}

@@ -33,7 +33,7 @@ static Y add(const Y& y1, const Y& y2) {
   GaussianFactorGraph result = y1.first;
   result.push_back(y2.first);
   return {result, y1.second + y2.second};
-};
+}
 
 /* *******************************************************************************/
 HybridGaussianProductFactor operator+(const HybridGaussianProductFactor& a,

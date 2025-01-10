@@ -107,7 +107,6 @@ SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
   }
 
   // Build expX = exp(xi^)
-  Matrix4 expX;
   using std::cos;
   using std::sin;
   const auto X2 = X * X;
