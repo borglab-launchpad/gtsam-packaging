@@ -1,10 +1,39 @@
-gtsam (4.1.0-1ubuntu2~2579.gbp869c52) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2580.gbpf6e0f7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f6e0f7da3468c785164c29e70369e018eb282c6f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @869c52f7b27e920467f73d2a592722d9eb4d6c22 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 01:47:17 +0000
+  [ Varun Agrawal ]
+  * suppress newer GCC warnings in Eigen
+  * fix warning
+  * fix class name in comments
+  * more comprehensive initialization of ImuFactors
+  * wrap ImuFactor2
+  * Helper macro for cout printing
+  * platform specific #ifs
+  * other tests
+  * support Windows
+  * add numeric header for std::accumulate
+  * update tests that failed and add shonan averaging test
+  * fix some regressions
+  * fix test with better precision
+  * separate Windows regression for Shonan Averaging
+  * small cleanup
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * Revert "suppress newer GCC warnings in Eigen"
+  * Revert "Helper macro for cout printing"
+  * common Apple and Windows assertions
+  * change from ifdef to if
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 17:52:22 +0000
 
 gtsam (4.1.0-1ubuntu2~2578.gbpc4aa1e) noble; urgency=medium
 
