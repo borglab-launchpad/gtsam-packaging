@@ -156,6 +156,22 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
   void serialize() const;
 };
 
+virtual class ImuFactor2: gtsam::NonlinearFactor {
+  ImuFactor2();
+  ImuFactor2(size_t state_i, size_t state_j,
+      size_t bias,
+      const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
+
+  // Standard Interface
+  gtsam::PreintegratedImuMeasurements preintegratedMeasurements() const;
+  gtsam::Vector evaluateError(const gtsam::NavState& state_i,
+                              gtsam::NavState& state_j,
+                              const gtsam::imuBias::ConstantBias& bias_i);
+
+  // enable serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/navigation/CombinedImuFactor.h>
 virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
   PreintegrationCombinedParams(gtsam::Vector n_gravity);

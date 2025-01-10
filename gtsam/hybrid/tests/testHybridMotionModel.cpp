@@ -101,7 +101,7 @@ std::pair<double, double> approximateDiscreteMarginal(
   // Do importance sampling
   double w0 = 0.0, w1 = 0.0;
   std::mt19937_64 rng(42);
-  for (int i = 0; i < N; i++) {
+  for (size_t i = 0; i < N; i++) {
     HybridValues sample = q.sample(&rng);
     sample.insert(given);
     double weight = hbn.evaluate(sample) / q.evaluate(sample);
