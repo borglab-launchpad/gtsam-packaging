@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2570.gbpcc625f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2571.gbpcbc6fd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cbc6fd0eb99d020d13f9ab11ab9094c744450ead **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cc625fd1031bf45af9815cdf6f71d3fd0d9f7a74 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 08 Jan 2025 17:53:36 +0000
+  [ Matt Morley ]
+  * Enable extra warnings
+  * Bump CI GCC 11->12
+  * Add misc explicit operators
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 01:43:18 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2569.gbp92076d) noble; urgency=medium
 
