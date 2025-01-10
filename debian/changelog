@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2578.gbpcaed0f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2579.gbpbdcba9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bdcba926cef34c99f55bad2fe00981ca62050416 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @caed0fa29b612761d8519ce82ce65db94a7b4f28 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 17:57:24 +0000
+  [ Martin Valgur ]
+  * Upgrade Spectra to v1.1.0
+  * Update ShonanAveraging.cpp to use Spectra v1.1.0
+  * Fix wrapping of computed angles in test_constructorBetweenFactorPose2s
+  * ShonanAveraging.cpp: pass explicit template args for GCC 7
+  * Fix wrapping of computed angles in test_backwards_compatibility.py
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 22:44:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2577.gbpd1ba5b) noble; urgency=medium
 
