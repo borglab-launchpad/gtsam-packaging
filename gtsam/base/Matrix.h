@@ -132,12 +132,6 @@ GTSAM_EXPORT bool linear_independent(const Matrix& A, const Matrix& B, double to
  */
 GTSAM_EXPORT bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
-/**
- * overload ^ for trans(A)*v
- * We transpose the vectors for speed.
- */
-GTSAM_EXPORT Vector operator^(const Matrix& A, const Vector & v);
-
 /** products using old-style format to improve compatibility */
 template<class MATRIX>
 inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
