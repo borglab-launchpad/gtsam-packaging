@@ -567,7 +567,7 @@ TEST(Matrix, matrix_vector_multiplication )
   Vector AtAv = Vector3(142., 188., 234.);
 
   EQUALITY(A*v,Av);
-  EQUALITY(A^Av,AtAv);
+  EQUALITY(A.transpose() * Av,AtAv);
 }
 
 /* ************************************************************************* */
