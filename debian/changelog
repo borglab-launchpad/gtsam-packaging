@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~2591.gbpccc06d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2592.gbp8b8d34) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8b8d345a06d0a824d65278e8b96e216b4019a06f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ccc06d75ee67687a008154772b5715e6efa7202a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Jan 2025 06:38:06 +0000
+  [ Tyler Veness ]
+  * Remove operator^ from Matrix and SubgraphPreconditioner
+  * Reverted interface changes that are unnecessary to make the code compile
+  * Fix invalid use of operator^ in matrix test
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Jan 2025 19:52:44 +0000
 
 gtsam (4.1.0-1ubuntu2~2590.gbp8dd0e2) noble; urgency=medium
 
