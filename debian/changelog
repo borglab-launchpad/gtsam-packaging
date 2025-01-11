@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2587.gbpf0703c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2588.gbpba3327) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ba33270f23c6c4ede8c3648261f4de7f8260f963 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f0703c00ada855ac1fe3891be3775e6b8b6d2457 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Jan 2025 22:48:53 +0000
+  [ Matt Morley ]
+  * Add cassert include to Chebyshev2.cpp
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Jan 2025 06:33:49 +0000
 
 gtsam (4.1.0-1ubuntu2~2586.gbp2c2430) noble; urgency=medium
 
