@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2595.gbp7cc644) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2596.gbp109f0d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @109f0d5b80caac14e0bcacd36b4722e9399644c4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7cc6447e78ba200c86b510fdbde88609a9207a24 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 11 Jan 2025 19:57:02 +0000
+  [ Tyler Veness ]
+  * Add missing test include for assert_inequal()
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Jan 2025 08:04:03 +0000
 
 gtsam (4.1.0-1ubuntu2~2594.gbp0ae91c) noble; urgency=medium
 
