@@ -281,6 +281,8 @@ public:
    */
   double weight(const Values& c) const;
 
+  using NonlinearFactor::error;
+
   /**
    * Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
