@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~2599.gbp610c24) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2600.gbpe0723b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e0723bb099dd1cc6fac3f38efd1b7d14d94b6e10 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @610c2455a05d5b990e718de39b9214c104a50ebd **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Jan 2025 08:08:19 +0000
+  [ yetongumich ]
+  * add definition of constraints
+  * add serialization
+  * remove accidentally added file
+  * clean up and refactor NonlinearEquality and BoundingConstraint
+  * add GTSAM_EXPORT and refactor
+  * adding constrained optimization problem
+  * rm constrainedOptProblem
+  * add FactorGraph include
+  * add FactorGraph-inst
+  * add using NonlinearFactor::error
+  * fix export issues
+  * addressing comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Jan 2025 18:00:02 +0000
 
 gtsam (4.1.0-1ubuntu2~2598.gbp66bbf3) noble; urgency=medium
 
