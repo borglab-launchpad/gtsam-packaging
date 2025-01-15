@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2594.gbp6a04b8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2595.gbpe3f644) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e3f6449d9c6181bbfa2363d335250ebedf5a5f87 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6a04b837139359dc7e11467beb74b05a42dcb858 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 12 Jan 2025 08:08:22 +0000
+  [ yetongumich ]
+  * add definition of constraints
+  * add serialization
+  * remove accidentally added file
+  * clean up and refactor NonlinearEquality and BoundingConstraint
+  * add GTSAM_EXPORT and refactor
+  * adding constrained optimization problem
+  * rm constrainedOptProblem
+  * add FactorGraph include
+  * add FactorGraph-inst
+  * add using NonlinearFactor::error
+  * fix export issues
+  * addressing comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Jan 2025 18:00:01 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2593.gbpb6ce81) noble; urgency=medium
 
