@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2603.gbp1ca6b3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2604.gbpd3bf6d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d3bf6da9cbfe78877d09319f239003413a93dfb6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1ca6b352a61c92e718a1042bd7eaa08d956ab66b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Jan 2025 18:05:26 +0000
+  [ Frank Dellaert ]
+  * inlined ExpmapTranslation
+  * Fixed typo in quaternion path
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * expmap now returns Matrix3
+  * X = R^T, according to Barfoot Eq 8.83
+  * Fix comments about R^T
+  * Last comment I hope
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Jan 2025 19:55:20 +0000
 
 gtsam (4.1.0-1ubuntu2~2602.gbpc7b2b0) noble; urgency=medium
 
