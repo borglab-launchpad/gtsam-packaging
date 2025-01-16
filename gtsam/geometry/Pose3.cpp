@@ -183,18 +183,37 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   // Get angular velocity omega and translational velocity v from twist xi
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
-  // Compute rotation using Expmap
-  Matrix3 Jr;
-  Rot3 R = Rot3::Expmap(w, Hxi ? &Jr : nullptr);
+  // Instantiate functor for Dexp-related operations:
+  const bool nearZero = (w.dot(w) <= 1e-5);
+  const so3::DexpFunctor local(w, nearZero);
 
-  // Compute translation and optionally its Jacobian Q in w
-  // The Jacobian in v is the right Jacobian Jr of SO(3), which we already have.
-  Matrix3 Q;
-  const Vector3 t = ExpmapTranslation(w, v, Hxi ? &Q : nullptr);
+  // Compute rotation using Expmap
+#ifdef GTSAM_USE_QUATERNIONS
+  const Rot3 R = traits<gtsam::Quaternion>::Expmap(w);
+#else
+  const Rot3 R(local.expmap());
+#endif
+
+  // The translation t = local.leftJacobian() * v.
+  // Here we call applyLeftJacobian, which is faster if you don't need
+  // Jacobians, and returns Jacobian of t with respect to w if asked.
+  // NOTE(Frank): t = applyLeftJacobian(v) does the same as the intuitive formulas
+  //   t_parallel = w * w.dot(v);  // translation parallel to axis
+  //   w_cross_v = w.cross(v);     // translation orthogonal to axis
+  //   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
+  // but functor does not need R, deals automatically with the case where theta2
+  // is near zero, and also gives us the machinery for the Jacobians.
+  Matrix3 H;
+  const Vector3 t = local.applyLeftJacobian(v, Hxi ? &H : nullptr);
 
   if (Hxi) {
-    *Hxi << Jr, Z_3x3,  //
-        Q, Jr;
+    // The Jacobian of expmap is given by the right Jacobian of SO(3):
+    const Matrix3 Jr = local.rightJacobian();
+    // We are creating a Pose3, so we still need to chain H with R^T, the
+    // Jacobian of Pose3::Create with respect to t.
+    const Matrix3 Q = R.matrix().transpose() * H;
+    *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
+        Q, Jr;  // Here Jr = R^T * J_l, with J_l the Jacobian of t in v.
   }
 
   return Pose3(R, t);
@@ -260,45 +279,18 @@ Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi,
                                            double nearZeroThreshold) {
   const auto w = xi.head<3>();
   const auto v = xi.tail<3>();
-  Matrix3 Q;
-  ExpmapTranslation(w, v, Q, {}, nearZeroThreshold);
-  return Q;
-}
-
-/* ************************************************************************* */
-// NOTE(Frank): t = applyLeftJacobian(v) does the same as the intuitive formulas
-//   t_parallel = w * w.dot(v);  // translation parallel to axis
-//   w_cross_v = w.cross(v);     // translation orthogonal to axis
-//   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
-// but functor does not need R, deals automatically with the case where theta2
-// is near zero, and also gives us the machinery for the Jacobians.
-Vector3 Pose3::ExpmapTranslation(const Vector3& w, const Vector3& v,
-                                 OptionalJacobian<3, 3> Q,
-                                 OptionalJacobian<3, 3> J,
-                                 double nearZeroThreshold) {
-  const double theta2 = w.dot(w);
-  bool nearZero = (theta2 <= nearZeroThreshold);
 
   // Instantiate functor for Dexp-related operations:
+  bool nearZero = (w.dot(w) <= nearZeroThreshold);
   so3::DexpFunctor local(w, nearZero);
 
-  // Call applyLeftJacobian which is faster than local.leftJacobian() * v if you
-  // don't need Jacobians, and returns Jacobian of t with respect to w if asked.
+  // Call applyLeftJacobian to get its Jacobian
   Matrix3 H;
-  Vector t = local.applyLeftJacobian(v, Q ? &H : nullptr);
+  local.applyLeftJacobian(v, H);
 
-  // We return Jacobians for use in Expmap, so we multiply with X, that
-  // translates from left to right for our right expmap convention:
-  if (Q) {
-    Matrix3 X = local.rightJacobian() * local.leftJacobianInverse();
-    *Q = X * H;
-  }
-
-  if (J) {
-    *J = local.rightJacobian();  // = X * local.leftJacobian();
-  }
-
-  return t;
+  // Multiply with R^T to account for the Pose3::Create Jacobian.
+  const Matrix3 R = local.expmap();
+  return R.transpose() * H;
 }
 
 /* ************************************************************************* */

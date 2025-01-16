@@ -117,20 +117,32 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
   // Get angular velocity w and components rho (for t) and nu (for v) from xi
   Vector3 w = xi.head<3>(), rho = xi.segment<3>(3), nu = xi.tail<3>();
 
-  // Compute rotation using Expmap
-  Matrix3 Jr;
-  Rot3 R = Rot3::Expmap(w, Hxi ? &Jr : nullptr);
+  // Instantiate functor for Dexp-related operations:
+  const bool nearZero = (w.dot(w) <= 1e-5);
+  const so3::DexpFunctor local(w, nearZero);
 
-  // Compute translations and optionally their Jacobians Q in w
-  // The Jacobians with respect to rho and nu are equal to Jr
-  Matrix3 Qt, Qv;
-  Vector3 t = Pose3::ExpmapTranslation(w, rho, Hxi ? &Qt : nullptr);
-  Vector3 v = Pose3::ExpmapTranslation(w, nu, Hxi ? &Qv : nullptr);
+  // Compute rotation using Expmap
+#ifdef GTSAM_USE_QUATERNIONS
+  const Rot3 R = traits<gtsam::Quaternion>::Expmap(w);
+#else
+  const Rot3 R(local.expmap());
+#endif
+
+  // Compute translation and velocity. See Pose3::Expmap
+  Matrix3 H_t_w, H_v_w;
+  const Vector3 t = local.applyLeftJacobian(rho, Hxi ? &H_t_w : nullptr);
+  const Vector3 v = local.applyLeftJacobian(nu, Hxi ? &H_v_w : nullptr);
 
   if (Hxi) {
-    *Hxi << Jr, Z_3x3, Z_3x3,  //
-        Qt, Jr, Z_3x3,         //
-        Qv, Z_3x3, Jr;
+    const Matrix3 Jr = local.rightJacobian();
+    // We are creating a NavState, so we still need to chain H_t_w and H_v_w
+    // with R^T, the Jacobian of Navstate::Create with respect to both t and v.
+    const Matrix3 M = R.matrix();
+    *Hxi << Jr, Z_3x3, Z_3x3,   // Jr here *is* the Jacobian of expmap
+        M.transpose() * H_t_w, Jr, Z_3x3,  //
+        M.transpose() * H_v_w, Z_3x3, Jr;
+        // In the last two rows, Jr = R^T * J_l, see Barfoot eq. (8.83).
+        // J_l is the Jacobian of applyLeftJacobian in the second argument.
   }
 
   return NavState(R, t, v);
@@ -231,11 +243,22 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
   const Vector3 w = xi.head<3>();
   Vector3 rho = xi.segment<3>(3);
   Vector3 nu = xi.tail<3>();
-  
-  Matrix3 Qt, Qv;
-  const Rot3 R = Rot3::Expmap(w);
-  Pose3::ExpmapTranslation(w, rho, Qt);
-  Pose3::ExpmapTranslation(w,  nu, Qv);
+
+  // Instantiate functor for Dexp-related operations:
+  const bool nearZero = (w.dot(w) <= 1e-5);
+  const so3::DexpFunctor local(w, nearZero);
+
+  // Call applyLeftJacobian to get its Jacobians
+  Matrix3 H_t_w, H_v_w;
+  local.applyLeftJacobian(rho, H_t_w);
+  local.applyLeftJacobian(nu, H_v_w);
+
+  // Multiply with R^T to account for NavState::Create Jacobian.
+  const Matrix3 R = local.expmap();
+  const Matrix3 Qt = R.transpose() * H_t_w;
+  const Matrix3 Qv = R.transpose() * H_v_w;
+
+  // Now compute the blocks of the LogmapDerivative Jacobian
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
   const Matrix3 Qt2 = -Jw * Qt * Jw;
   const Matrix3 Qv2 = -Jw * Qv * Jw;
@@ -246,7 +269,6 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
        Qv2, Z_3x3,    Jw;
   return J;
 }
-
 
 //------------------------------------------------------------------------------
 NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,

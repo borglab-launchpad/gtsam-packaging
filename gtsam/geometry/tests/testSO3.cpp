@@ -163,22 +163,22 @@ TEST(SO3, ExpmapFunctor) {
 
   // axis angle version
   so3::ExpmapFunctor f1(axis, angle);
-  SO3 actual1 = f1.expmap();
+  SO3 actual1(f1.expmap());
   CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
 
   // axis angle version, negative angle
   so3::ExpmapFunctor f2(axis, angle - 2*M_PI);
-  SO3 actual2 = f2.expmap();
+  SO3 actual2(f2.expmap());
   CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
 
   // omega version
   so3::ExpmapFunctor f3(axis * angle);
-  SO3 actual3 = f3.expmap();
+  SO3 actual3(f3.expmap());
   CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
 
   // omega version, negative angle
   so3::ExpmapFunctor f4(axis * (angle - 2*M_PI));
-  SO3 actual4 = f4.expmap();
+  SO3 actual4(f4.expmap());
   CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
 }
 
