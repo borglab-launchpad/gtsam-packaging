@@ -220,26 +220,9 @@ public:
   *  (see Chirikjian11book2, pg 44, eq 10.95.
   *  The closed-form formula is identical to formula 102 in Barfoot14tro where
   *  Q_l of the SE3 Expmap left derivative matrix is given.
-  *  This is the Jacobian of ExpmapTranslation and computed there.
   */
   static Matrix3 ComputeQforExpmapDerivative(
       const Vector6& xi, double nearZeroThreshold = 1e-5);
-
-  /**
-   * Compute the translation part of the exponential map, with Jacobians.
-   * @param w 3D angular velocity
-   * @param v 3D velocity
-   * @param Q Optionally, compute 3x3 Jacobian wrpt w
-   * @param J Optionally, compute 3x3 Jacobian wrpt v = right Jacobian of SO(3)
-   * @param nearZeroThreshold threshold for small values
-   * @note This function returns Jacobians Q and J corresponding to the bottom
-   * blocks of the SE(3) exponential, and translated from left to right from the
-   * applyLeftJacobian Jacobians.
-   */
-  static Vector3 ExpmapTranslation(const Vector3& w, const Vector3& v,
-                                   OptionalJacobian<3, 3> Q = {},
-                                   OptionalJacobian<3, 3> J = {},
-                                   double nearZeroThreshold = 1e-5);
 
   using LieGroup<Pose3, 6>::inverse; // version with derivative
 

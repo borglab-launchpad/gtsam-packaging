@@ -92,7 +92,7 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle,
   init(nearZeroApprox);
 }
 
-SO3 ExpmapFunctor::expmap() const { return SO3(I_3x3 + A * W + B * WW); }
+Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
 
 DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
     : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
@@ -193,7 +193,7 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
 template <>
 GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  return so3::ExpmapFunctor(axis, theta).expmap();
+  return SO3(so3::ExpmapFunctor(axis, theta).expmap());
 }
 
 //******************************************************************************
@@ -251,11 +251,11 @@ template <>
 GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   if (H) {
-    so3::DexpFunctor impl(omega);
-    *H = impl.dexp();
-    return impl.expmap();
+    so3::DexpFunctor local(omega);
+    *H = local.dexp();
+    return SO3(local.expmap());
   } else {
-    return so3::ExpmapFunctor(omega).expmap();
+    return SO3(so3::ExpmapFunctor(omega).expmap());
   }
 }
 
