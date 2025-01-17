@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~2607.gbpc22b56) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2608.gbpc59fb9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c59fb9b85bcabae34b0dbfd208097ac13558b928 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c22b5673febc744d0150905d17c067454cd318fa **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 16 Jan 2025 20:00:04 +0000
+  [ morten ]
+  * adding lever arm optional argument to gps factors
+  * fix GPSFactor serialization
+  * update GPSFactor interface
+  * reverting changes to existing factors
+  * creating GPSFactorArm and GPSFactor2Arm w/ lever arm arguments
+  * remove EstimateState from GPSFactorArm
+  * improving comments
+  * improved documentation, params and getters
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ morten ]
+  * typo in print for GPSFactor2Arm
+  * adding GPSFactors with lever arm as state
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 17 Jan 2025 13:16:06 +0000
 
 gtsam (4.1.0-1ubuntu2~2606.gbp8c6af6) noble; urgency=medium
 
