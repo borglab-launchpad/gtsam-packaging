@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2606.gbp5c1227) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2607.gbp93cd70) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @93cd7049c0ac8a56d7dfb32a788ec42e63cc8da0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5c12276c9383533748310e404995f905d71e454f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 17 Jan 2025 13:21:42 +0000
+  [ Matt Morley ]
+  * Boost ifdef -> if macro
+  * Move shared pointers in dtors
+  * Make destructors protected
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 14:35:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2605.gbpd4f145) noble; urgency=medium
 
