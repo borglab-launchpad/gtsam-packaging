@@ -61,7 +61,7 @@ class GTSAM_EXPORT NonlinearInequalityConstraint : public NonlinearConstraint {
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -129,7 +129,7 @@ class GTSAM_EXPORT ScalarExpressionInequalityConstraint : public NonlinearInequa
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -169,7 +169,7 @@ class GTSAM_EXPORT NonlinearInequalityConstraints
                                           const double mu = 1.0) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

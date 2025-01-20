@@ -21,7 +21,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
 #endif
 
@@ -77,7 +77,7 @@ class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
