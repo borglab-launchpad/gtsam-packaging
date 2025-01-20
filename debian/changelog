@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2611.gbp0d5762) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2612.gbp406f36) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @406f36a6e064e703ef2cdf2568e2c019c99ae77c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0d57623cd49962886b7c099c6c2e458547455da2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 17 Jan 2025 13:22:17 +0000
+  [ Matt Morley ]
+  * Boost ifdef -> if macro
+  * Move shared pointers in dtors
+  * Make destructors protected
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 14:35:24 +0000
 
 gtsam (4.1.0-1ubuntu2~2610.gbpf31d4a) noble; urgency=medium
 
