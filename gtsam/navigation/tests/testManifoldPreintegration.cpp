@@ -43,21 +43,21 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
   std::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
-      [=](const Vector3& a, const Vector3& w) {
+      [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaRij();
       };
 
   std::function<Point3(const Vector3&, const Vector3&)> deltaPij =
-      [=](const Vector3& a, const Vector3& w) {
+      [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaPij();
       };
 
   std::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
-      [=](const Vector3& a, const Vector3& w) {
+      [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaVij();

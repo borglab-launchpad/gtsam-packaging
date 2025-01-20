@@ -144,7 +144,7 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   auto p = testing::Params();
   testing::SomeMeasurements measurements;
 
-  auto preintegrated = [=](const Vector3& a, const Vector3& w) {
+  auto preintegrated = [&](const Vector3& a, const Vector3& w) {
     PreintegratedImuMeasurements pim(p, Bias(a, w));
     testing::integrateMeasurements(measurements, &pim);
     return pim.preintegrated();

@@ -78,7 +78,7 @@ TEST(ImuFactor, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
   std::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
-      [=](const Vector3& a, const Vector3& w) {
+      [&](const Vector3& a, const Vector3& w) {
         TangentPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.preintegrated();
@@ -149,7 +149,7 @@ TEST(TangentPreintegration, Compose) {
 TEST(TangentPreintegration, MergedBiasDerivatives) {
   testing::SomeMeasurements measurements;
 
-  auto f = [=](const Vector3& a, const Vector3& w) {
+  auto f = [&](const Vector3& a, const Vector3& w) {
     TangentPreintegration pim02(testing::Params(), Bias(a, w));
     testing::integrateMeasurements(measurements, &pim02);
     testing::integrateMeasurements(measurements, &pim02);

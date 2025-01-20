@@ -2,8 +2,8 @@ name: Special Cases CI
 
 on: [pull_request]
 
-# Every time you make a push to your PR, it cancel immediately the previous checks, 
-# and start a new one. The other runner will be available more quickly to your PR. 
+# Every time you make a push to your PR, it cancel immediately the previous checks,
+# and start a new one. The other runner will be available more quickly to your PR.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -115,18 +115,23 @@ jobs:
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
 
-      - name: Install Boost
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get -y install libboost-all-dev
-
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake ninja boost
+          brew install cmake ninja
           sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
+
+      - name: Install Boost
+        run: |
+          if [ ${{matrix.flag}} != 'no_boost' ]; then
+            if [ ${{runner.os}} == 'Linux' ]; then
+              sudo apt-get -y install libboost-all-dev
+            elif [ ${{runner.os}} == 'macOS' ]; then
+              brew install boost
+            fi
+          fi
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
@@ -180,7 +185,6 @@ jobs:
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 12
-
 
       - name: Build & Test
         run: |
