@@ -39,7 +39,7 @@ class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
   virtual ~NonlinearEqualityConstraint() {}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -85,7 +85,7 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -131,7 +131,7 @@ class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -166,7 +166,7 @@ class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEq
   NonlinearFactorGraph penaltyGraph(const double mu = 1.0) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

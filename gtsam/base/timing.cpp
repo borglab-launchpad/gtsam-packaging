@@ -109,7 +109,7 @@ void TimingOutline::print(const std::string& outline) const {
 
 /* ************************************************************************* */
 void TimingOutline::printCsvHeader(bool addLineBreak) const {
-#ifdef GTSAM_USE_BOOST_FEATURES
+#if GTSAM_USE_BOOST_FEATURES
   // Order is (CPU time, number of times, wall time, time + children in seconds,
   // min time, max time)
   std::cout << label_ + " cpu time (s)" << "," << label_ + " #calls" << ","
@@ -134,7 +134,7 @@ void TimingOutline::printCsvHeader(bool addLineBreak) const {
 
 /* ************************************************************************* */
 void TimingOutline::printCsv(bool addLineBreak) const {
-#ifdef GTSAM_USE_BOOST_FEATURES
+#if GTSAM_USE_BOOST_FEATURES
   // Order is (CPU time, number of times, wall time, time + children in seconds,
   // min time, max time)
   std::cout << self() << "," << n_ << "," << wall() << "," << secs() << ","
