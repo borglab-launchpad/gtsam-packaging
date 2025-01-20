@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~2615.gbp35cb45) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2616.gbp141f8f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @141f8fe3a707c9f92156951e1e0a16a0534ff4ff **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @35cb45bd270a260b7a6d1339def73a3aab6f0445 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 14:40:42 +0000
+  [ Varun Agrawal ]
+  * replace #ifdef with #if
+  * fully declare struct U
+  * add Ubuntu 24.04 to the CI
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * pass in this to lambda expression explicitly
+  * use reference capture instead of copy capture
+  * add comment and remove unnecessary copy-constructor
+  * bracket clang and GCC
+  * don't install boost if no_boost flag is set
+  * update unix.sh to set Boost flags from env variable correctly
+  * check for boost all in one step
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 18:22:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2614.gbp0b6b9f) noble; urgency=medium
 
