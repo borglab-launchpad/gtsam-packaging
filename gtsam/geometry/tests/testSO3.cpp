@@ -333,7 +333,7 @@ TEST(SO3, CrossB) {
   Matrix aH1;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).crossB(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
@@ -351,7 +351,7 @@ TEST(SO3, DoubleCrossC) {
   Matrix aH1;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).doubleCrossC(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
@@ -369,7 +369,7 @@ TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).applyDexp(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
@@ -390,7 +390,7 @@ TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).applyInvDexp(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
@@ -412,7 +412,7 @@ TEST(SO3, ApplyLeftJacobian) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).applyLeftJacobian(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
@@ -433,7 +433,7 @@ TEST(SO3, ApplyLeftJacobianInverse) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-        [=](const Vector3& omega, const Vector3& v) {
+        [nearZero](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZero).applyLeftJacobianInverse(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {

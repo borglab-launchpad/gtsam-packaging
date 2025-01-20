@@ -20,12 +20,15 @@
 
 namespace gtsam {
 
-/* ********************************************************************************************* */
-InequalityPenaltyFunction::UnaryScalarFunc InequalityPenaltyFunction::function() const {
-  return [=](const double& x, OptionalJacobian<1, 1> H = {}) -> double { return (*this)(x, H); };
+/* ************************************************************************* */
+InequalityPenaltyFunction::UnaryScalarFunc InequalityPenaltyFunction::function()
+    const {
+  return [this](const double& x, OptionalJacobian<1, 1> H = {}) {
+    return this->operator()(x, H);
+  };
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 double RampFunction::Ramp(const double x, OptionalJacobian<1, 1> H) {
   if (x < 0) {
     if (H) {
@@ -40,8 +43,9 @@ double RampFunction::Ramp(const double x, OptionalJacobian<1, 1> H) {
   }
 }
 
-/* ********************************************************************************************* */
-double SmoothRampPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+/* ************************************************************************* */
+double SmoothRampPoly2::operator()(const double& x,
+                                   OptionalJacobian<1, 1> H) const {
   if (x <= 0) {
     if (H) {
       H->setZero();
@@ -60,8 +64,9 @@ double SmoothRampPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) co
   }
 }
 
-/* ********************************************************************************************* */
-double SmoothRampPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+/* ************************************************************************* */
+double SmoothRampPoly3::operator()(const double& x,
+                                   OptionalJacobian<1, 1> H) const {
   if (x <= 0) {
     if (H) {
       H->setZero();
@@ -80,8 +85,9 @@ double SmoothRampPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) co
   }
 }
 
-/* ********************************************************************************************* */
-double SoftPlusFunction::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+/* ************************************************************************* */
+double SoftPlusFunction::operator()(const double& x,
+                                    OptionalJacobian<1, 1> H) const {
   if (H) {
     H->setConstant(1 / (1 + std::exp(-k_ * x)));
   }

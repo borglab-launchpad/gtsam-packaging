@@ -399,7 +399,7 @@ TEST(ImuFactor, PartialDerivative_wrt_Bias) {
   Vector3 measuredOmega(0.1, 0, 0);
   double deltaT = 0.5;
 
-  auto evaluateRotation = [=](const Vector3 biasOmega) {
+  auto evaluateRotation = [&measuredOmega, &deltaT](const Vector3 biasOmega) {
     return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
   };
 
@@ -424,7 +424,7 @@ TEST(ImuFactor, PartialDerivativeLogmap) {
   // Measurements
   Vector3 deltaTheta(0, 0, 0);
 
-  auto evaluateLogRotation = [=](const Vector3 delta) {
+  auto evaluateLogRotation = [&thetaHat](const Vector3 delta) {
     return Rot3::Logmap(
         Rot3::Expmap(thetaHat).compose(Rot3::Expmap(delta)));
   };
