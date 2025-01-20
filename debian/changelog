@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2610.gbp54f283) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2611.gbpe8d40f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e8d40f3f6b206b8edf47b969f0f3ecbf3dafa9b5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @54f283ff39591cd95860f55d17c82329dfb2bee0 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 14:40:25 +0000
+  [ Varun Agrawal ]
+  * replace #ifdef with #if
+  * fully declare struct U
+  * add Ubuntu 24.04 to the CI
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * pass in this to lambda expression explicitly
+  * use reference capture instead of copy capture
+  * add comment and remove unnecessary copy-constructor
+  * bracket clang and GCC
+  * don't install boost if no_boost flag is set
+  * update unix.sh to set Boost flags from env variable correctly
+  * check for boost all in one step
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 18:22:13 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2609.gbpc78986) noble; urgency=medium
 
