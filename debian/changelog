@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2614.gbp74e16c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2615.gbpcce39f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cce39f0a6cf513afd3437e407d8260729d60b587 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @74e16cd4392e8f07729bcb20a41b6ff5e3501fcb **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 20 Jan 2025 18:27:03 +0000
+  [ Frank Dellaert ]
+  * Check issue 1452
+
+  [ JokerJohn ]
+  * add IncrementalFixedLagExample to showcase how setting  addresses the issue #1452
+  * add IncrementalFixedLagExample to show the issue #1452
+  * Move the example to the appropriate folder, and modify the code for reading files and adding factors.
+  * add a new line at the end of file
+  * add a new line at the end of file
+  * remove example
+  * add IncrementalFixedLagSmootherExample
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ JokerJohn ]
+  * remove unitest of issue1452
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 21 Jan 2025 00:16:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2613.gbp7baaec) noble; urgency=medium
 
