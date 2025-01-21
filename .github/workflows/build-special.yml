@@ -34,6 +34,7 @@ jobs:
             ubuntu-clang-system-libs,
             ubuntu-no-boost,
             ubuntu-no-unstable,
+            ubuntu-build-examples,
           ]
 
         build_type: [Debug, Release]
@@ -80,6 +81,12 @@ jobs:
             compiler: clang
             version: "14"
             flag: no_unstable
+
+          - name: ubuntu-build-examples
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: build_examples
 
     steps:
       - name: Checkout
@@ -157,6 +164,11 @@ jobs:
           echo "GTSAM_POSE3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM Uses Cayley map for Rot3"
+
+      - name: Build Examples
+        if: matrix.flag == 'build_examples'
+        run: |
+          echo "GTSAM_BUILD_EXAMPLES_ALWAYS=ON" >> $GITHUB_ENV
 
       - name: Use system versions of 3rd party libraries
         if: matrix.flag == 'system'

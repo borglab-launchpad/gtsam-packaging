@@ -45,7 +45,7 @@ function configure()
       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
-      -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
+      -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-OFF} \
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=${GTSAM_ALLOW_DEPRECATED_SINCE_V43:-OFF} \
       -DGTSAM_USE_QUATERNIONS=${GTSAM_USE_QUATERNIONS:-OFF} \
       -DGTSAM_ROT3_EXPMAP=${GTSAM_ROT3_EXPMAP:-ON} \
@@ -71,7 +71,6 @@ function finish ()
 # compile the code with the intent of populating the cache
 function build ()
 {
-  export GTSAM_BUILD_EXAMPLES_ALWAYS=ON
   export GTSAM_BUILD_TESTS=OFF
 
   configure
@@ -92,7 +91,6 @@ function build ()
 # run the tests
 function test ()
 {
-  export GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
   export GTSAM_BUILD_TESTS=ON
 
   configure
