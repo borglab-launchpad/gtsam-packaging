@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2618.gbp56db7c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2619.gbp96e3a8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @96e3a8574c1079e4e1162a58b6f479eb21957491 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @56db7c875b8d3b149b207c2d5e80aca860f5ea2a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 21 Jan 2025 00:20:32 +0000
+  [ Varun Agrawal ]
+  * fix examples using discrete factor graph product
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * special CI build for examples
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 21 Jan 2025 05:29:18 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2617.gbpca5c89) noble; urgency=medium
 
