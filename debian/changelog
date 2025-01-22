@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2622.gbp4e9fb0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2623.gbp9e47b4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9e47b4f79acb0f4ccd714f5ed8b6824f6cdb8205 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4e9fb0bc5cb37ff4b3e589cf4da8ad1c35dc4c5e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 21 Jan 2025 05:33:18 +0000
+  [ JokerJohn ]
+  * move the IncrementalFixedLagExample example to unstable module to fix the link error
+  * move the IncrementalFixedLagExample example to gtsam_unstable folder to fix the link error
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 22 Jan 2025 14:28:53 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2621.gbp7b866c) noble; urgency=medium
 
