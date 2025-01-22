@@ -47,15 +47,21 @@ bool DiscreteValues::equals(const DiscreteValues& x, double tol) const {
 }
 
 /* ************************************************************************ */
+DiscreteValues& DiscreteValues::insert(
+    const std::pair<Key, size_t>& assignment) {
+  if (count(assignment.first)) {
+    throw std::out_of_range(
+        "Requested to insert a DiscreteValues into another DiscreteValues "
+        "that already contains one or more of its keys.");
+  } else {
+    this->emplace(assignment);
+  }
+  return *this;
+}
+/* ************************************************************************ */
 DiscreteValues& DiscreteValues::insert(const DiscreteValues& values) {
   for (const auto& kv : values) {
-    if (count(kv.first)) {
-      throw std::out_of_range(
-          "Requested to insert a DiscreteValues into another DiscreteValues "
-          "that already contains one or more of its keys.");
-    } else {
-      this->emplace(kv);
-    }
+    this->insert(kv);
   }
   return *this;
 }

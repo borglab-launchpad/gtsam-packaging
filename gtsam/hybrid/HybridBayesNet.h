@@ -147,6 +147,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
+   * @brief Compute the Most Probable Explanation (MPE)
+   * of the discrete variables.
+   *
+   * @return DiscreteValues
+   */
+  DiscreteValues mpe() const;
+
+  /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the
    * discrete variables and then optimizing the continuous variables based on
    * the MPE assignment.

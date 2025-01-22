@@ -106,6 +106,14 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   VectorValues optimize(const DiscreteValues& assignment) const;
 
   /**
+   * @brief Compute the Most Probable Explanation (MPE)
+   * of the discrete variables.
+   *
+   * @return DiscreteValues
+   */
+  DiscreteValues mpe() const;
+
+  /**
    * @brief Prune the underlying Bayes tree.
    *
    * @param maxNumberLeaves The max number of leaf nodes to keep.
