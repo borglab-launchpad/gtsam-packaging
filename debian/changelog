@@ -1,10 +1,31 @@
-gtsam (4.1.0-1ubuntu2~2635.gbp54375f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2636.gbp5682b2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5682b2c2f021fe05296ecd618b407b4dc991f1f4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @54375f32ffd839370f67554858f3984cba60b33d **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 22 Jan 2025 16:41:15 +0000
+  [ Varun Agrawal ]
+  * break big error unit test in HBN to two smaller ones
+  * move unit test for pruning
+  * HybridSmoother tests
+  * return DiscreteFactor from DiscreteFactorFromErrors
+  * fix assertion
+  * new removeModes method
+  * remove dead modes in HybridBayesNet
+  * make removeDiscreteModes only apply to discrete conditionals
+  * update docstring
+  * use emplace for deadModesValues
+  * update comments
+  * move removeDiscreteModes to DiscreteConditional
+  * replace for loop with std::for_each
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 22 Jan 2025 18:27:45 +0000
 
 gtsam (4.1.0-1ubuntu2~2634.gbpf4c783) noble; urgency=medium
 
