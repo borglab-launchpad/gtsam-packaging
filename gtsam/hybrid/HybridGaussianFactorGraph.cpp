@@ -247,7 +247,7 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
  * @param errors DecisionTree of (unnormalized) errors.
  * @return TableFactor::shared_ptr
  */
-static TableFactor::shared_ptr DiscreteFactorFromErrors(
+static DiscreteFactor::shared_ptr DiscreteFactorFromErrors(
     const DiscreteKeys &discreteKeys,
     const AlgebraicDecisionTree<Key> &errors) {
   double min_log = errors.min();

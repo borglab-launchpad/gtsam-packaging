@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -46,7 +47,8 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 // TODO(Frank): This can be quite expensive *unless* the factors have already
 // been pruned before. Another, possibly faster approach is branch and bound
 // search to find the K-best leaves and then create a single pruned conditional.
-HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
+HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves,
+                                     bool removeDeadModes) const {
   // Collect all the discrete conditionals. Could be small if already pruned.
   const DiscreteBayesNet marginal = discreteMarginal();
 
@@ -66,6 +68,30 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
   // we can prune HybridGaussianConditionals.
   DiscreteConditional pruned = *result.back()->asDiscrete();
 
+  DiscreteValues deadModesValues;
+  if (removeDeadModes) {
+    DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
+    for (auto dkey : pruned.discreteKeys()) {
+      Vector probabilities = marginals.marginalProbabilities(dkey);
+
+      int index = -1;
+      auto threshold = (probabilities.array() > 0.99);
+      // If atleast 1 value is non-zero, then we can find the index
+      // Else if all are zero, index would be set to 0 which is incorrect
+      if (!threshold.isZero()) {
+        threshold.maxCoeff(&index);
+      }
+
+      if (index >= 0) {
+        deadModesValues.emplace(dkey.first, index);
+      }
+    }
+
+    // Remove the modes (imperative)
+    result.back()->asDiscrete()->removeDiscreteModes(deadModesValues);
+    pruned = *result.back()->asDiscrete();
+  }
+
   /* To prune, we visitWith every leaf in the HybridGaussianConditional.
    * For each leaf, using the assignment we can check the discrete decision tree
    * for 0.0 probability, then just set the leaf to a nullptr.
@@ -80,8 +106,28 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
       // Prune the hybrid Gaussian conditional!
       auto prunedHybridGaussianConditional = hgc->prune(pruned);
 
-      // Type-erase and add to the pruned Bayes Net fragment.
-      result.push_back(prunedHybridGaussianConditional);
+      if (removeDeadModes) {
+        KeyVector deadKeys, conditionalDiscreteKeys;
+        for (const auto &kv : deadModesValues) {
+          deadKeys.push_back(kv.first);
+        }
+        for (auto dkey : prunedHybridGaussianConditional->discreteKeys()) {
+          conditionalDiscreteKeys.push_back(dkey.first);
+        }
+        // The discrete keys in the conditional are the same as the keys in the
+        // dead modes, then we just get the corresponding Gaussian conditional.
+        if (deadKeys == conditionalDiscreteKeys) {
+          result.push_back(
+              prunedHybridGaussianConditional->choose(deadModesValues));
+        } else {
+          // Add as-is
+          result.push_back(prunedHybridGaussianConditional);
+        }
+      } else {
+        // Type-erase and add to the pruned Bayes Net fragment.
+        result.push_back(prunedHybridGaussianConditional);
+      }
+
     } else if (auto gc = conditional->asGaussian()) {
       // Add the non-HybridGaussianConditional conditional
       result.push_back(gc);
