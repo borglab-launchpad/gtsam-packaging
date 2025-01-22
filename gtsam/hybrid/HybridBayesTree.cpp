@@ -59,7 +59,7 @@ DiscreteValues HybridBayesTree::discreteMaxProduct(
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesTree::optimize() const {
+DiscreteValues HybridBayesTree::mpe() const {
   DiscreteFactorGraph discrete_fg;
   DiscreteValues mpe;
 
@@ -73,10 +73,15 @@ HybridValues HybridBayesTree::optimize() const {
     discrete_fg.push_back(discrete);
     mpe = discreteMaxProduct(discrete_fg);
   } else {
-    throw std::runtime_error(
-        "HybridBayesTree root is not discrete-only. Please check elimination "
-        "ordering or use continuous factor graph.");
+    mpe = DiscreteValues();
   }
+
+  return mpe;
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesTree::optimize() const {
+  DiscreteValues mpe = this->mpe();
 
   VectorValues values = optimize(mpe);
   return HybridValues(values, mpe);
