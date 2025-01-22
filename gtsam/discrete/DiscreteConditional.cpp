@@ -499,6 +499,40 @@ void DiscreteConditional::prune(size_t maxNrAssignments) {
   this->root_ = pruned.root_;
 }
 
+/* ************************************************************************ */
+void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
+  AlgebraicDecisionTree<Key> tree(*this);
+  for (auto [key, value] : given) {
+    tree = tree.choose(key, value);
+  }
+
+  // Get the leftover DiscreteKey frontals
+  DiscreteKeys frontals;
+  std::for_each(this->frontals().begin(), this->frontals().end(), [&](Key key) {
+    // Check if frontal key exists in given, if not add to new frontals
+    if (given.count(key) == 0) {
+      frontals.emplace_back(key, this->cardinalities_.at(key));
+    }
+  });
+  // Get the leftover DiscreteKey parents
+  DiscreteKeys parents;
+  std::for_each(this->parents().begin(), this->parents().end(), [&](Key key) {
+    // Check if parent key exists in given, if not add to new parents
+    if (given.count(key) == 0) {
+      parents.emplace_back(key, this->cardinalities_.at(key));
+    }
+  });
+
+  DiscreteKeys allDkeys(frontals);
+  allDkeys.insert(allDkeys.end(), parents.begin(), parents.end());
+
+  // Update the conditional
+  this->keys_ = allDkeys.indices();
+  this->cardinalities_ = allDkeys.cardinalities();
+  this->root_ = tree.root_;
+  this->nrFrontals_ = frontals.size();
+}
+
 /* ************************************************************************* */
 double DiscreteConditional::negLogConstant() const { return 0.0; }
 
