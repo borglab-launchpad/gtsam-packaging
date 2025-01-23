@@ -138,8 +138,10 @@ public:
   TangentVector localCoordinates(const BearingRange& other) const {
     typename traits<B>::TangentVector v1 = traits<B>::Local(bearing_, other.bearing_);
     typename traits<R>::TangentVector v2 = traits<R>::Local(range_, other.range_);
+    // Set the first dimB elements to v1, and the next dimR elements to v2
     TangentVector v;
-    v << v1, v2;
+    v.template head<dimB>() = v1;
+    v.template tail<dimR>() = v2;
     return v;
   }
 

@@ -9,6 +9,10 @@
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Point2.h>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 namespace gtsam {
 
 //*************************************************************************
