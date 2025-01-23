@@ -22,6 +22,10 @@
 #include <gtsam/basis/Fourier.h>
 #include <gtsam/nonlinear/factorTesting.h>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic warning "-Wstringop-overread"
+#pragma GCC diagnostic warning "-Warray-bounds"
+#endif
 using namespace std;
 using namespace gtsam;
 
