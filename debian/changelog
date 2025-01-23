@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2639.gbpc8122c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2640.gbp012a9b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @012a9b6cec3bb4f8174deb3cc247867b9ad31122 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c8122c05953f5a5fa26d4f4ad03577e306dcc6db **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 22 Jan 2025 18:33:06 +0000
+  [ Gold856 ]
+  * Fix GCC 13 build issues
+
+  [ Frank Dellaert ]
+  * Fix c++20 issue
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Jan 2025 13:54:45 +0000
 
 gtsam (4.1.0-1ubuntu2~2638.gbpa6f1c2) noble; urgency=medium
 
