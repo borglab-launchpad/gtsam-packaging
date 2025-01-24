@@ -156,5 +156,36 @@ class TestDiscreteBayesNet(GtsamTestCase):
         values[X(3)] = 2
         self.assertAlmostEqual(lookup_a2_x3(values), 1.0)  # not 10...
 
+    def test_direct_from_cliques(self):
+        """Test creating a Bayes tree directly from cliques."""
+        # Create a BayesNet
+        bayesNet = DiscreteBayesNet()
+        A, B, C = (0, 2), (1, 2), (2, 2)
+        bayesNet.add(A, "1/3")
+        bayesNet.add(B, [A], "1/3 3/1")
+        bayesNet.add(C, [B], "3/1 3/1")
+
+        # Create cliques directly
+        clique2 = DiscreteBayesTreeClique(DiscreteConditional(C, [B], "3/1 3/1"))
+        clique1 = DiscreteBayesTreeClique(DiscreteConditional(B, [A], "1/3 3/1"))
+        clique0 = DiscreteBayesTreeClique(DiscreteConditional(A, "1/3"))
+
+        # Create a BayesTree
+        bayesTree = gtsam.DiscreteBayesTree()
+        bayesTree.insertRoot(clique2)
+        bayesTree.addClique(clique1, clique2)
+        bayesTree.addClique(clique0, clique1)
+
+        # Check that the BayesTree is correct
+        values = DiscreteValues()
+        values[0] = 1
+        values[1] = 1
+        values[2] = 1
+
+        # regression
+        expected = .046875
+        self.assertAlmostEqual(expected, bayesNet.evaluate(values))
+
+
 if __name__ == "__main__":
     unittest.main()

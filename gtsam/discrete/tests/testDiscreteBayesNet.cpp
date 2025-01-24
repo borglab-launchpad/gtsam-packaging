@@ -36,6 +36,25 @@ static const DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2),
 
 using ADT = AlgebraicDecisionTree<Key>;
 
+// Function to construct the Asia example
+DiscreteBayesNet constructAsiaExample() {
+  DiscreteBayesNet asia;
+
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
+
+  asia.add(Tuberculosis | Asia = "99/1 95/5");
+  asia.add(LungCancer | Smoking = "99/1 90/10");
+  asia.add(Bronchitis | Smoking = "70/30 40/60");
+
+  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
+
+  asia.add(XRay | Either = "95/5 2/98");
+  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
+
+  return asia;
+}
+
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
@@ -67,19 +86,7 @@ TEST(DiscreteBayesNet, bayesNet) {
 
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Asia) {
-  DiscreteBayesNet asia;
-
-  asia.add(Asia, "99/1");
-  asia.add(Smoking % "50/50");  // Signature version
-
-  asia.add(Tuberculosis | Asia = "99/1 95/5");
-  asia.add(LungCancer | Smoking = "99/1 90/10");
-  asia.add(Bronchitis | Smoking = "70/30 40/60");
-
-  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
-
-  asia.add(XRay | Either = "95/5 2/98");
-  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
+  DiscreteBayesNet asia = constructAsiaExample();
 
   // Convert to factor graph
   DiscreteFactorGraph fg(asia);

@@ -268,6 +268,10 @@ class DiscreteBayesTreeClique {
 
 class DiscreteBayesTree {
   DiscreteBayesTree();
+  void insertRoot(const gtsam::DiscreteBayesTreeClique* subtree);
+  void addClique(const gtsam::DiscreteBayesTreeClique* clique);
+  void addClique(const gtsam::DiscreteBayesTreeClique* clique, const gtsam::DiscreteBayesTreeClique* parent_clique);
+
   void print(string s = "DiscreteBayesTree\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -276,6 +280,12 @@ class DiscreteBayesTree {
   size_t size() const;
   bool empty() const;
   const DiscreteBayesTreeClique* operator[](size_t j) const;
+  const DiscreteBayesTreeClique* clique(size_t j) const;
+  size_t numCachedSeparatorMarginals() const;
+
+  gtsam::DiscreteConditional marginalFactor(size_t key) const;
+  gtsam::DiscreteFactorGraph* joint(size_t j1, size_t j2) const;
+  gtsam::DiscreteBayesNet* jointBayesNet(size_t j1, size_t j2) const;
 
   double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
@@ -285,7 +295,6 @@ class DiscreteBayesTree {
   void saveGraph(string s,
                 const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  double operator()(const gtsam::DiscreteValues& values) const;
 
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
