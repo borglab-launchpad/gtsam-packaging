@@ -207,7 +207,8 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   endif()
 endif()
 
-if (NOT MSVC)
+if ((NOT MSVC) AND (NOT QNX))
+  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" ON)
   if(GTSAM_BUILD_WITH_MARCH_NATIVE)
     # Check if Apple OS and compiler is [Apple]Clang
     if(APPLE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "^(Apple)?Clang$"))
