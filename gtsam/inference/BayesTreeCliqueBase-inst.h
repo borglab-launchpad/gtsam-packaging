@@ -107,7 +107,7 @@ namespace gtsam {
   // The shortcut density is a conditional P(S|B) of the separator of this
   // clique on the root or common ancestor B. We can compute it recursively from
   // the parent shortcut P(Sp|B) as \int P(Fp|Sp) P(Sp|B), where Fp are the
-  // frontal nodes in p
+  // frontal nodes in the parent p, and Sp the separator of the parent.
   /* *************************************************************************
    */
   template <class DERIVED, class FACTORGRAPH>
@@ -141,7 +141,8 @@ namespace gtsam {
   /* *********************************************************************** */
   // Separator marginal, uses separator marginal of parent recursively
   // Calculates P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp)
-  // if P(Sp) is not cached, it will call separatorMarginal on the parent
+  // if P(Sp) is not cached, it will call separatorMarginal on the parent.
+  // Here again, Fp and Sp are the frontal nodes and separator in the parent p.
   /* *********************************************************************** */
   template <class DERIVED, class FACTORGRAPH>
   typename BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::FactorGraphType
