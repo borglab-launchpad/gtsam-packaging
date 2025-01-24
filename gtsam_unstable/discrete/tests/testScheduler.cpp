@@ -140,7 +140,11 @@ TEST(schedulingExample, test) {
 
 /* ************************************************************************* */
 TEST(schedulingExample, smallFromFile) {
+  #if !defined(__QNX__)
   string path(TOPSRCDIR "/gtsam_unstable/discrete/examples/");
+  #else
+  string path(""); //Same Directory
+  #endif
   Scheduler s(2, path + "small.csv");
 
   // add areas

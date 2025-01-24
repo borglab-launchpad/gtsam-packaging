@@ -20,7 +20,7 @@ set(CEPHES_HEADER_FILES
     dllexport.h)
 
 # Add header files
-install(FILES ${CEPHES_HEADER_FILES} DESTINATION include/gtsam/3rdparty/cephes)
+install(FILES ${CEPHES_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes)
 
 set(CEPHES_SOURCES
     cephes/airy.c

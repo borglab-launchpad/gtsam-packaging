@@ -22,7 +22,7 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_enabled_config(${GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX} "Build MATLAB Toolbox for unstable")
 endif()
 
-if(NOT MSVC AND NOT XCODE_VERSION)
+if(NOT MSVC AND NOT XCODE_VERSION AND NOT QNX)
     print_enabled_config(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
     print_config("Build type" "${CMAKE_BUILD_TYPE}")
     print_config("C compilation flags" "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
