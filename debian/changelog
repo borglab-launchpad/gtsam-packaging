@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2638.gbp9781fa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2639.gbp51660e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @51660e46d805de6a6d7e0fea9ab37770b61ebc1a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9781fa5714c9d0b0d0748dde322074bdfbc41099 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 23 Jan 2025 14:00:33 +0000
+  [ Frank Dellaert ]
+  * New DiscreteBayesTree tests
+  * Fix some docs and visiblity
+  * Refactor joint marginal
+  * Add missing BayesTree methods in wrapper
+  * Remove extra ;
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Isolate Asia network
+  * Fix tests
+  * Fix test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 24 Jan 2025 19:30:07 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2637.gbpac6a13) noble; urgency=medium
 
