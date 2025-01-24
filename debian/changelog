@@ -1,10 +1,41 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2646.gbpfb04fa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2647.gbpaaae2c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @aaae2c4eb75f264a90e2cd411489e033b2f0e2dc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fb04fa341d5bb9d813c112962e5571ae142535ca **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 24 Jan 2025 20:48:15 +0000
+  [ Jai Moraes ]
+  * GitLab version (branch QNX_7.1_v4.1.1)
+  * ADDED: Build tested with target `install` or `all` if cross compiling for QNX
+  * ADDED: Test Installation when building with QNX (Review this for upstreaming)
+  * Updated: Build tests, fixed some unit tests. Floating points still off.
+  * Tests Fix
+
+  [ JaiXJM-BB ]
+  * QNX for develop branch
+
+  [ Jai Moraes ]
+  * erroneous change
+  * fixing spacing
+  * Fixed broken merge
+  * Removed erroneous text
+
+  [ JaiXJM-BB ]
+  * Updated QNX-relevant paths, removed environment variables. (#2)
+
+  [ Jai Moraes ]
+  * Fixed remaining DESTINATION include/*
+  * removed extra whitespace
+  * Fixing whitespace
+  * Added justification for CMake changes, with reference to this PR.
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 24 Jan 2025 22:34:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2645.gbp93ae42) noble; urgency=medium
 
