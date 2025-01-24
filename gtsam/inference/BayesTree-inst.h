@@ -338,6 +338,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // Find the lowest common ancestor of two cliques
+  // TODO(Varun): consider implementing this as a Range Minimum Query
   template <class CLIQUE>
   static std::shared_ptr<CLIQUE> findLowestCommonAncestor(
       const std::shared_ptr<CLIQUE>& C1, const std::shared_ptr<CLIQUE>& C2) {
@@ -360,7 +361,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // Given the clique P(F:S) and the ancestor clique B
-  // Return the Bayes tree P(S\B | S \cap B)
+  // Return the Bayes tree P(S\B | S \cap B), where \cap is intersection
   template <class CLIQUE>
   static auto factorInto(
       const std::shared_ptr<CLIQUE>& p_F_S, const std::shared_ptr<CLIQUE>& B,
