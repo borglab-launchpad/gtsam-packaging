@@ -434,7 +434,7 @@ TEST(HybridBayesNet, RemoveDeadNodes) {
   HybridValues delta = posterior->optimize();
 
   // Prune the Bayes net
-  const bool pruneDeadVariables = true;
+  const double pruneDeadVariables = 0.99;
   auto prunedBayesNet = posterior->prune(2, pruneDeadVariables);
 
   // Check that discrete joint only has M0 and not (M0, M1)
@@ -445,11 +445,12 @@ TEST(HybridBayesNet, RemoveDeadNodes) {
   // Check that hybrid conditionals that only depend on M1
   // are now Gaussian and not Hybrid
   EXPECT(prunedBayesNet.at(0)->isDiscrete());
-  EXPECT(prunedBayesNet.at(1)->isHybrid());
+  EXPECT(prunedBayesNet.at(1)->isDiscrete());
+  EXPECT(prunedBayesNet.at(2)->isHybrid());
   // Only P(X2 | X1, M1) depends on M1,
   // so it gets convert to a Gaussian P(X2 | X1)
-  EXPECT(prunedBayesNet.at(2)->isContinuous());
-  EXPECT(prunedBayesNet.at(3)->isHybrid());
+  EXPECT(prunedBayesNet.at(3)->isContinuous());
+  EXPECT(prunedBayesNet.at(4)->isHybrid());
 }
 
 /* ****************************************************************************/

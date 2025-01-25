@@ -90,7 +90,7 @@ class Assignment : public std::map<L, size_t> {
       const std::vector<std::pair<L, size_t>>& keys) {
     std::vector<AssignmentType> allPossValues;
     AssignmentType assignment;
-    for (const auto [idx, _] : keys) assignment[idx] = 0;  // Initialize from 0
+    for (const auto& [idx, _] : keys) assignment[idx] = 0;  // Initialize from 0
 
     const size_t nrKeys = keys.size();
     while (true) {
