@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2655.gbp5484a3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2656.gbpab20bd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ab20bde143e495f5386007ffc878c2df4c0dc1ec **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5484a3366d88571ca27b46b5c1dcf31f2fdc4deb **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 24 Jan 2025 22:38:50 +0000
+  [ Arkadiusz Niemiec ]
+  * fix: add missing config include
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 01:19:39 +0000
 
 gtsam (4.1.0-1ubuntu2~2654.gbp0ec365) noble; urgency=medium
 
