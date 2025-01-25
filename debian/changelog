@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2659.gbp357902) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2660.gbpcbf4ee) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cbf4eef8187775c4af21dc4ec35d6991465a5b62 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @357902c0a4450c001897ac167f344765cdfce6d1 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 01:23:40 +0000
+  [ p-zach ]
+  * Update installation and build documentation for Windows, Python on Windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 14:58:50 +0000
 
 gtsam (4.1.0-1ubuntu2~2658.gbp3cff83) noble; urgency=medium
 
