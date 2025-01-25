@@ -34,6 +34,10 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 - You can also directly run `make python-install` without running `make`, and it will compile all the dependencies accordingly.
 
+## Windows Installation
+
+See Windows Installation in INSTALL.md in the root directory.
+
 ## Unit Tests
 
 The Python toolbox also has a small set of unit tests located in the
