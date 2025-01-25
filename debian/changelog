@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2663.gbp3211c9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2664.gbp8d83f1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8d83f109918751704483ba3e1b3de00378bf91df **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3211c93ec46e36120879ca931710cbe1392624e8 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 15:02:53 +0000
+  [ Varun Agrawal ]
+  * update addConditionals to only use factor graph keys and remove an extra loop
+  * fix up getOrdering and update to be more efficient
+  * update HybridSmoother tests
+  * dead mode removal flag and new constructor
+  * update factorKeys with parents
+  * use flag for dead mode removal
+  * remove extra docstring
+  * improve dead mode removal by checking for empty discrete joints and adding the marginals for future factors
+  * new test for dead mode removal in smoother
+  * add deadModeThreshold argument to HybridBayesNet::prune
+  * use deadModeThreshold
+  * remove surplus prints
+  * fix which conditional is getting pruned
+  * use std::optional for specifying dead mode threshold
+  * update HybridSmoother to use std::optional deadModeThreshold
+  * default arg for HybridSmoother constructor and clean up tests
+  * default argument and update tests
+
+  [ jmackay2 ]
+  * Fix for loop copy warning
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 16:21:20 +0000
 
 gtsam (4.1.0-1ubuntu2~2662.gbpcbd3da) noble; urgency=medium
 
