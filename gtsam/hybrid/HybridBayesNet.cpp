@@ -47,8 +47,8 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 // TODO(Frank): This can be quite expensive *unless* the factors have already
 // been pruned before. Another, possibly faster approach is branch and bound
 // search to find the K-best leaves and then create a single pruned conditional.
-HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves,
-                                     bool removeDeadModes) const {
+HybridBayesNet HybridBayesNet::prune(
+    size_t maxNrLeaves, const std::optional<double> &deadModeThreshold) const {
   // Collect all the discrete conditionals. Could be small if already pruned.
   const DiscreteBayesNet marginal = discreteMarginal();
 
@@ -58,24 +58,21 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves,
     joint = joint * (*conditional);
   }
 
-  // Create the result starting with the pruned joint.
+  // Initialize the resulting HybridBayesNet.
   HybridBayesNet result;
-  result.emplace_shared<DiscreteConditional>(joint);
-  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
-  result.back()->asDiscrete()->prune(maxNrLeaves);
 
-  // Get pruned discrete probabilities so
-  // we can prune HybridGaussianConditionals.
-  DiscreteConditional pruned = *result.back()->asDiscrete();
+  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
+  DiscreteConditional pruned = joint;
+  pruned.prune(maxNrLeaves);
 
   DiscreteValues deadModesValues;
-  if (removeDeadModes) {
+  if (deadModeThreshold.has_value()) {
     DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
     for (auto dkey : pruned.discreteKeys()) {
       Vector probabilities = marginals.marginalProbabilities(dkey);
 
       int index = -1;
-      auto threshold = (probabilities.array() > 0.99);
+      auto threshold = (probabilities.array() > *deadModeThreshold);
       // If atleast 1 value is non-zero, then we can find the index
       // Else if all are zero, index would be set to 0 which is incorrect
       if (!threshold.isZero()) {
@@ -88,8 +85,26 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves,
     }
 
     // Remove the modes (imperative)
-    result.back()->asDiscrete()->removeDiscreteModes(deadModesValues);
-    pruned = *result.back()->asDiscrete();
+    pruned.removeDiscreteModes(deadModesValues);
+
+    /*
+      If the pruned discrete conditional has any keys left,
+      we add it to the HybridBayesNet.
+      If not, it means it is an orphan so we don't add this pruned joint,
+      and instead add only the marginals below.
+    */
+    if (pruned.keys().size() > 0) {
+      result.emplace_shared<DiscreteConditional>(pruned);
+    }
+
+    // Add the marginals for future factors
+    for (auto &&[key, _] : deadModesValues) {
+      result.push_back(
+          std::dynamic_pointer_cast<DiscreteConditional>(marginals(key)));
+    }
+
+  } else {
+    result.emplace_shared<DiscreteConditional>(pruned);
   }
 
   /* To prune, we visitWith every leaf in the HybridGaussianConditional.
@@ -100,13 +115,13 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves,
    */
 
   // Go through all the Gaussian conditionals in the Bayes Net and prune them as
-  // per pruned Discrete joint.
+  // per pruned discrete joint.
   for (auto &&conditional : *this) {
     if (auto hgc = conditional->asHybrid()) {
       // Prune the hybrid Gaussian conditional!
       auto prunedHybridGaussianConditional = hgc->prune(pruned);
 
-      if (removeDeadModes) {
+      if (deadModeThreshold.has_value()) {
         KeyVector deadKeys, conditionalDiscreteKeys;
         for (const auto &kv : deadModesValues) {
           deadKeys.push_back(kv.first);
@@ -186,6 +201,7 @@ DiscreteValues HybridBayesNet::mpe() const {
       }
     }
   }
+
   return discrete_fg.optimize();
 }
 
