@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2671.gbp452a62) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2672.gbpc9e7d0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c9e7d078f0a57b1e8d5908b75c6c9e03b43bd656 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @452a62e60f49367712e2b150cda1db200e5e4da5 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 26 Jan 2025 17:20:50 +0000
+  [ Varun Agrawal ]
+  * check for valid factor in HybridNonlinearFactor::errorTree
+  * allow for only continuous variables in HybridBayesTree
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 26 Jan 2025 20:53:11 +0000
 
 gtsam (4.1.0-1ubuntu2~2670.gbpcada48) noble; urgency=medium
 
