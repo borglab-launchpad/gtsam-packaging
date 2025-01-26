@@ -202,6 +202,11 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 
 /* ************************************************************************* */
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
+  if (!this->roots_.at(0)->conditional()->asDiscrete()) {
+    // Root of the BayesTree is not a discrete clique, so we do nothing.
+    return;
+  }
+
   auto prunedDiscreteProbs =
       this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
 
