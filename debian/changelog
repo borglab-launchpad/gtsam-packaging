@@ -1,10 +1,37 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2662.gbp6faac7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2663.gbp226aa0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @226aa0dc8acf148b55f2dd8fd2a3a19bb10e5c2f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6faac7e32c0959db691e72c75955f5e67b0b2288 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 25 Jan 2025 16:25:20 +0000
+  [ Varun Agrawal ]
+  * simple ISAM2 based example for City10000 dataset
+  * matlab script to plot results for City10000
+  * update script and add dedicated ISAM2 script so we can view results in the continuous-only case
+  * working example
+  * some improvements
+  * small cleanups
+  * use HybridSmoother for City10000
+  * use 2000 timesteps as our benchmark and report total time in seconds
+  * report in seconds
+  * function to run smoother update
+  * small improvements to HybridGaussianFactorGraph
+  * prune and then add to BayesNet
+  * improved plotting script
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * replace set<Key> with KeySet
+  * check for keys leftover after pruning so marginalization works correctly
+  * undo small change
+  * add dead mode threshold and better timing printing
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 26 Jan 2025 17:16:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2661.gbp62bcc1) noble; urgency=medium
 
