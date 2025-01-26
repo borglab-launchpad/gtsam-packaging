@@ -99,7 +99,8 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactor::errorTree(
   auto errorFunc =
       [continuousValues](const std::pair<sharedFactor, double>& f) {
         auto [factor, val] = f;
-        return factor->error(continuousValues) + val;
+        return factor ? factor->error(continuousValues) + val
+                      : std::numeric_limits<double>::infinity();
       };
   return {factors_, errorFunc};
 }
