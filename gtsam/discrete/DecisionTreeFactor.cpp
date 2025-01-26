@@ -247,7 +247,7 @@ namespace gtsam {
   /* ************************************************************************ */
   std::vector<double> DecisionTreeFactor::probabilities() const {
     // Set of all keys
-    std::set<Key> allKeys(keys().begin(), keys().end());
+    KeySet allKeys(keys().begin(), keys().end());
 
     std::vector<double> probs;
 
@@ -260,7 +260,7 @@ namespace gtsam {
      */
     auto op = [&](const Assignment<Key>& a, double p) {
       // Get all the keys in the current assignment
-      std::set<Key> assignment_keys;
+      KeySet assignment_keys;
       for (auto&& [k, _] : a) {
         assignment_keys.insert(k);
       }
@@ -458,13 +458,13 @@ namespace gtsam {
 
     auto op = [&](const Assignment<Key>& a, double p) {
       // Get all the keys in the current assignment
-      std::set<Key> assignment_keys;
+      KeySet assignment_keys;
       for (auto&& [k, _] : a) {
         assignment_keys.insert(k);
       }
 
       // Find the keys missing in the assignment
-      std::vector<Key> diff;
+      KeyVector diff;
       std::set_difference(allKeys.begin(), allKeys.end(),
                           assignment_keys.begin(), assignment_keys.end(),
                           std::back_inserter(diff));

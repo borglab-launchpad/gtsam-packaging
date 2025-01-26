@@ -327,6 +327,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     gttic_(EliminateDiscreteFormDiscreteConditional);
 #endif
     // Check type of product, and get as TableFactor for efficiency.
+    // Use object instead of pointer since we need it
+    // for the TableDistribution constructor.
     TableFactor p;
     if (auto tf = std::dynamic_pointer_cast<TableFactor>(product)) {
       p = *tf;
@@ -334,11 +336,12 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       p = TableFactor(product->toDecisionTreeFactor());
     }
     auto conditional = std::make_shared<TableDistribution>(p);
+
 #if GTSAM_HYBRID_TIMING
     gttoc_(EliminateDiscreteFormDiscreteConditional);
 #endif
 
-    DiscreteFactor::shared_ptr sum = product->sum(frontalKeys);
+    DiscreteFactor::shared_ptr sum = p.sum(frontalKeys);
 
     return {std::make_shared<HybridConditional>(conditional), sum};
 

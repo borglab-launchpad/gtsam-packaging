@@ -66,7 +66,9 @@ HybridBayesNet HybridBayesNet::prune(
   pruned.prune(maxNrLeaves);
 
   DiscreteValues deadModesValues;
-  if (deadModeThreshold.has_value()) {
+  // If we have a dead mode threshold and discrete variables left after pruning,
+  // then we run dead mode removal.
+  if (deadModeThreshold.has_value() && pruned.keys().size() > 0) {
     DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
     for (auto dkey : pruned.discreteKeys()) {
       Vector probabilities = marginals.marginalProbabilities(dkey);
