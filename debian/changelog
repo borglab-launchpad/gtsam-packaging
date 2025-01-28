@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2679.gbp202ef3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2680.gbp94ddc4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @94ddc461336244abcce39c26492c6c42f5137f7c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @202ef3c1bc5cef54ed1789969973e692c1c236d9 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Jan 2025 16:18:59 +0000
+  [ Frank Dellaert ]
+  * stream operator
+  * Best-K search, v0
+  * Methods in Solutions
+  * Separate class
+  * Asia example
+  * DiscreteSearch
+  * BayesTree WIP
+  * Works for Bayes trees now as well
+  * Move to cpp file
+  * Clean up, MPE tests
+  * Made run const, take K
+  * Moved data structures to cpp
+  * Made queue a class
+  * Check MPE
+  * Fix assert issue
+  * Don't use c99 feature :-/
+  * Pre-compute asia things
+  * Get rid of extra ;
+  * Remove spurious typedef
+  * Export
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Jan 2025 19:10:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2678.gbp593671) noble; urgency=medium
 
