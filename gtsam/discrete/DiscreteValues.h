@@ -64,6 +64,9 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   /// @name Standard Interface
   /// @{
 
+  /// ostream operator:
+  friend std::ostream& operator<<(std::ostream& os, const DiscreteValues& x);
+
   // insert in base class;
   std::pair<iterator, bool> insert( const value_type& value ){
     return Base::insert(value);
