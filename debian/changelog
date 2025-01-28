@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2678.gbp3e2aae) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2679.gbp4187e4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4187e4f26b1dd8bac7205db7c7b202a29669feb8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3e2aaeb7e11a975c46b559218809456a46865215 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Jan 2025 19:15:06 +0000
+  [ Frank Dellaert ]
+  * Print factors
+  * Refactor to slots
+  * Build etree and jtree
+  * Fix heuristic
+  * Working etree and jtree versions
+  * Loop over all variants
+  * Fix some CI issues
+  * Fix compilation issue
+  * Use brace init
+  * Reversed slots so we start from zero
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Review comments
+  * Better and more consistent documentation.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Jan 2025 22:07:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2677.gbp344043) noble; urgency=medium
 
