@@ -27,11 +27,23 @@ using std::stringstream;
 namespace gtsam {
 
 /* ************************************************************************ */
+static void stream(std::ostream& os, const DiscreteValues& x,
+                   const KeyFormatter& keyFormatter) {
+  for (const auto& kv : x)
+    os << "(" << keyFormatter(kv.first) << ", " << kv.second << ")";
+}
+
+/* ************************************************************************ */
+std::ostream& operator<<(std::ostream& os, const DiscreteValues& x) {
+  stream(os, x, DefaultKeyFormatter);
+  return os;
+}
+
+/* ************************************************************************ */
 void DiscreteValues::print(const string& s,
                            const KeyFormatter& keyFormatter) const {
   cout << s << ": ";
-  for (auto&& kv : *this)
-    cout << "(" << keyFormatter(kv.first) << ", " << kv.second << ")";
+  stream(cout, *this, keyFormatter);
   cout << endl;
 }
 
