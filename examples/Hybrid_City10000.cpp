@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 
   SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
 
-  size_t key_s, key_t;
+  size_t key_s, key_t{0};
 
   clock_t start_time = clock();
   std::string str;
