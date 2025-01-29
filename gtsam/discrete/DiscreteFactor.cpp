@@ -71,49 +71,12 @@ AlgebraicDecisionTree<Key> DiscreteFactor::errorTree() const {
   return AlgebraicDecisionTree<Key>(dkeys, errors);
 }
 
-/* ************************************************************************* */
-std::vector<double> expNormalize(const std::vector<double>& logProbs) {
-  double maxLogProb = -std::numeric_limits<double>::infinity();
-  for (size_t i = 0; i < logProbs.size(); i++) {
-    double logProb = logProbs[i];
-    if ((logProb != std::numeric_limits<double>::infinity()) &&
-        logProb > maxLogProb) {
-      maxLogProb = logProb;
-    }
-  }
-
-  // After computing the max = "Z" of the log probabilities L_i, we compute
-  // the log of the normalizing constant, log S, where S = sum_j exp(L_j - Z).
-  double total = 0.0;
-  for (size_t i = 0; i < logProbs.size(); i++) {
-    double probPrime = exp(logProbs[i] - maxLogProb);
-    total += probPrime;
-  }
-  double logTotal = log(total);
-
-  // Now we compute the (normalized) probability (for each i):
-  // p_i = exp(L_i - Z - log S)
-  double checkNormalization = 0.0;
-  std::vector<double> probs;
-  for (size_t i = 0; i < logProbs.size(); i++) {
-    double prob = exp(logProbs[i] - maxLogProb - logTotal);
-    probs.push_back(prob);
-    checkNormalization += prob;
-  }
-
-  // Numerical tolerance for floating point comparisons
-  double tol = 1e-9;
-
-  if (!gtsam::fpEqual(checkNormalization, 1.0, tol)) {
-    std::string errMsg =
-        std::string("expNormalize failed to normalize probabilities. ") +
-        std::string("Expected normalization constant = 1.0. Got value: ") +
-        std::to_string(checkNormalization) +
-        std::string(
-            "\n This could have resulted from numerical overflow/underflow.");
-    throw std::logic_error(errMsg);
-  }
-  return probs;
+/* ************************************************************************ */
+DiscreteFactor::shared_ptr DiscreteFactor::scale() const {
+  // Max over all the potentials by pretending all keys are frontal:
+  shared_ptr denominator = this->max(this->size());
+  // Normalize the product factor to prevent underflow.
+  return this->operator/(denominator);
 }
 
 }  // namespace gtsam

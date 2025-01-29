@@ -161,4 +161,6 @@ class GTSAM_EXPORT DiscreteSearch {
   double lowerBound_;  ///< Lower bound on the cost-to-go for the entire search.
   std::vector<Slot> slots_;  ///< The slots to fill in the search.
 };
+
+using DiscreteSearchSolution = DiscreteSearch::Solution;  // for wrapping
 }  // namespace gtsam
