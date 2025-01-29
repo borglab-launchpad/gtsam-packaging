@@ -464,4 +464,29 @@ class DiscreteJunctionTree {
   const gtsam::DiscreteCluster& operator[](size_t i) const;
 };
 
+#include <gtsam/discrete/DiscreteSearch.h>
+class DiscreteSearchSolution {
+  double error;
+  gtsam::DiscreteValues assignment;
+  DiscreteSearchSolution(double error, const gtsam::DiscreteValues& assignment);
+};
+
+class DiscreteSearch {
+  static DiscreteSearch FromFactorGraph(const gtsam::DiscreteFactorGraph& factorGraph,
+                                        const gtsam::Ordering& ordering,
+                                        bool buildJunctionTree = false);
+
+  DiscreteSearch(const gtsam::DiscreteEliminationTree& etree);
+  DiscreteSearch(const gtsam::DiscreteJunctionTree& junctionTree);
+  DiscreteSearch(const gtsam::DiscreteBayesNet& bayesNet);
+  DiscreteSearch(const gtsam::DiscreteBayesTree& bayesTree);
+
+  void print(string name = "DiscreteSearch: ",
+             const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+
+  double lowerBound() const;
+
+  std::vector<gtsam::DiscreteSearchSolution> run(size_t K = 1) const;
+};
+
 }  // namespace gtsam
