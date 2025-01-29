@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2682.gbp6447a8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2683.gbpee4a28) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ee4a28a743b91378298209c485b9ddccef04fcf9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6447a899d53170052f37329d7d35c967440f2106 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 28 Jan 2025 22:11:57 +0000
+  [ Frank Dellaert ]
+  * Wrapper
+  * Avoid some copy/paste
+  * Test search with long chain
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * kill expNormalize since it isn't used anywhere
+  * add scale() method in DiscreteFactor
+
+  [ Frank Dellaert ]
+  * scale product and sum so we don't get all 0s
+  * Fix bug
+
+  [ Varun Agrawal ]
+  * add explanatory comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 29 Jan 2025 03:48:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2681.gbpefeb5e) noble; urgency=medium
 
