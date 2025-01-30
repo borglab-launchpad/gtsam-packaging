@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2690.gbpf98c77) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2691.gbp2f7b1c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2f7b1c1f6ff697ebf9fbd1425198472540e87b13 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f98c7792ec719d62552632743415ce9f2b6653ee **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Jan 2025 05:41:40 +0000
+  [ Frank Dellaert ]
+  * Fix pruning
+  * prototype choose
+  * filter and missingKeys
+  * Use two new methods
+  * restrict method
+  * Use restrict inside prune
+  * Fix unit tests
+  * Add contains
+  * remove old remnant
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * DiscreteNet::prune
+  * Change threshold name
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Jan 2025 15:56:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2689.gbp3d194c) noble; urgency=medium
 
