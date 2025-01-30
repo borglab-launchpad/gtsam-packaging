@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2686.gbpf9a278) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2687.gbp8b4b9b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8b4b9b34da828d29f88de6ddfb3c648e1a8b0177 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f9a2781ae9911a4f6329b2137975b3b9ec8bb268 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 29 Jan 2025 03:52:44 +0000
+  [ Frank Dellaert ]
+  * rvalue constructor
+  * Add prior and sanitize printing
+  * make check const method
+  * Define and use move constructor
+  * Move constructors
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * 5% speedup by using faster setAllZero
+  * Pre-compute slots outside of loop.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Jan 2025 05:37:34 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2685.gbp773a96) noble; urgency=medium
 
