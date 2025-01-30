@@ -215,6 +215,14 @@ class GTSAM_EXPORT HybridConditional
     return true;
   }
 
+  /**
+   * Return a HybridConditional by choosing branches based on the given discrete
+   * values. If all discrete parents are specified, return a HybridConditional
+   * which is just a GaussianConditional. If this conditional is *not* a hybrid
+   * conditional, just return that.
+   */
+  shared_ptr restrict(const DiscreteValues& discreteValues) const;
+
   /// @}
 
  private:

@@ -81,7 +81,7 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &graph,
   if (maxNrLeaves) {
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
-    bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves, deadModeThreshold_);
+    bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves, marginalThreshold_);
   }
 
   // Add the partial bayes net to the posterior bayes net.

@@ -19,7 +19,6 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -43,114 +42,59 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 }
 
 /* ************************************************************************* */
-// The implementation is: build the entire joint into one factor and then prune.
-// TODO(Frank): This can be quite expensive *unless* the factors have already
-// been pruned before. Another, possibly faster approach is branch and bound
-// search to find the K-best leaves and then create a single pruned conditional.
 HybridBayesNet HybridBayesNet::prune(
-    size_t maxNrLeaves, const std::optional<double> &deadModeThreshold) const {
+    size_t maxNrLeaves, const std::optional<double> &marginalThreshold,
+    DiscreteValues *fixedValues) const {
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridPruning);
+#endif
   // Collect all the discrete conditionals. Could be small if already pruned.
   const DiscreteBayesNet marginal = discreteMarginal();
 
+  // Prune discrete Bayes net
+  DiscreteValues fixed;
+  auto prunedBN = marginal.prune(maxNrLeaves, marginalThreshold, &fixed);
+
   // Multiply into one big conditional. NOTE: possibly quite expensive.
-  DiscreteConditional joint;
-  for (auto &&conditional : marginal) {
-    joint = joint * (*conditional);
+  DiscreteConditional pruned;
+  for (auto &&conditional : prunedBN) pruned = pruned * (*conditional);
+
+  // Set the fixed values if requested.
+  if (marginalThreshold && fixedValues) {
+    *fixedValues = fixed;
   }
 
-  // Initialize the resulting HybridBayesNet.
   HybridBayesNet result;
 
-  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
-  DiscreteConditional pruned = joint;
-  pruned.prune(maxNrLeaves);
+  // Go through all the Gaussian conditionals, restrict them according to
+  // fixed values, and then prune further.
+  for (std::shared_ptr<gtsam::HybridConditional> conditional : *this) {
+    if (conditional->isDiscrete()) continue;
 
-  DiscreteValues deadModesValues;
-  // If we have a dead mode threshold and discrete variables left after pruning,
-  // then we run dead mode removal.
-  if (deadModeThreshold.has_value() && pruned.keys().size() > 0) {
-    DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
-    for (auto dkey : pruned.discreteKeys()) {
-      Vector probabilities = marginals.marginalProbabilities(dkey);
+    // No-op if not a HybridGaussianConditional.
+    if (marginalThreshold) conditional = conditional->restrict(fixed);
 
-      int index = -1;
-      auto threshold = (probabilities.array() > *deadModeThreshold);
-      // If atleast 1 value is non-zero, then we can find the index
-      // Else if all are zero, index would be set to 0 which is incorrect
-      if (!threshold.isZero()) {
-        threshold.maxCoeff(&index);
-      }
-
-      if (index >= 0) {
-        deadModesValues.emplace(dkey.first, index);
-      }
-    }
-
-    // Remove the modes (imperative)
-    pruned.removeDiscreteModes(deadModesValues);
-
-    /*
-      If the pruned discrete conditional has any keys left,
-      we add it to the HybridBayesNet.
-      If not, it means it is an orphan so we don't add this pruned joint,
-      and instead add only the marginals below.
-    */
-    if (pruned.keys().size() > 0) {
-      result.emplace_shared<DiscreteConditional>(pruned);
-    }
-
-    // Add the marginals for future factors
-    for (auto &&[key, _] : deadModesValues) {
-      result.push_back(
-          std::dynamic_pointer_cast<DiscreteConditional>(marginals(key)));
-    }
-
-  } else {
-    result.emplace_shared<DiscreteConditional>(pruned);
-  }
-
-  /* To prune, we visitWith every leaf in the HybridGaussianConditional.
-   * For each leaf, using the assignment we can check the discrete decision tree
-   * for 0.0 probability, then just set the leaf to a nullptr.
-   *
-   * We can later check the HybridGaussianConditional for just nullptrs.
-   */
-
-  // Go through all the Gaussian conditionals in the Bayes Net and prune them as
-  // per pruned discrete joint.
-  for (auto &&conditional : *this) {
+    // Now decide on type what to do:
     if (auto hgc = conditional->asHybrid()) {
       // Prune the hybrid Gaussian conditional!
       auto prunedHybridGaussianConditional = hgc->prune(pruned);
-
-      if (deadModeThreshold.has_value()) {
-        KeyVector deadKeys, conditionalDiscreteKeys;
-        for (const auto &kv : deadModesValues) {
-          deadKeys.push_back(kv.first);
-        }
-        for (auto dkey : prunedHybridGaussianConditional->discreteKeys()) {
-          conditionalDiscreteKeys.push_back(dkey.first);
-        }
-        // The discrete keys in the conditional are the same as the keys in the
-        // dead modes, then we just get the corresponding Gaussian conditional.
-        if (deadKeys == conditionalDiscreteKeys) {
-          result.push_back(
-              prunedHybridGaussianConditional->choose(deadModesValues));
-        } else {
-          // Add as-is
-          result.push_back(prunedHybridGaussianConditional);
-        }
-      } else {
-        // Type-erase and add to the pruned Bayes Net fragment.
-        result.push_back(prunedHybridGaussianConditional);
+      if (!prunedHybridGaussianConditional) {
+        throw std::runtime_error(
+            "A HybridGaussianConditional had all its conditionals pruned");
       }
-
+      // Type-erase and add to the pruned Bayes Net fragment.
+      result.push_back(prunedHybridGaussianConditional);
     } else if (auto gc = conditional->asGaussian()) {
       // Add the non-HybridGaussianConditional conditional
       result.push_back(gc);
-    }
-    // We ignore DiscreteConditional as they are already pruned and added.
+    } else
+      throw std::runtime_error(
+          "HybrdiBayesNet::prune: Unknown HybridConditional type.");
   }
+
+  // Add the pruned discrete conditionals to the result.
+  for (const DiscreteConditional::shared_ptr &discrete : prunedBN)
+    result.push_back(discrete);
 
   return result;
 }
