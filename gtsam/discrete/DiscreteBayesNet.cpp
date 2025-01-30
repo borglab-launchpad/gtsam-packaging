@@ -18,6 +18,7 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
 namespace gtsam {
@@ -65,6 +66,59 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
       conditional->sampleInPlace(&result);
     }
   }
+  return result;
+}
+
+/* ************************************************************************* */
+// The implementation is: build the entire joint into one factor and then prune.
+// TODO(Frank): This can be quite expensive *unless* the factors have already
+// been pruned before. Another, possibly faster approach is branch and bound
+// search to find the K-best leaves and then create a single pruned conditional.
+DiscreteBayesNet DiscreteBayesNet::prune(
+    size_t maxNrLeaves, const std::optional<double>& marginalThreshold,
+    DiscreteValues* fixedValues) const {
+  // Multiply into one big conditional. NOTE: possibly quite expensive.
+  DiscreteConditional joint;
+  for (const DiscreteConditional::shared_ptr& conditional : *this)
+    joint = joint * (*conditional);
+
+  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
+  DiscreteConditional pruned = joint;
+  pruned.prune(maxNrLeaves);
+
+  DiscreteValues deadModesValues;
+  // If we have a dead mode threshold and discrete variables left after pruning,
+  // then we run dead mode removal.
+  if (marginalThreshold.has_value() && pruned.keys().size() > 0) {
+    DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
+    for (auto dkey : pruned.discreteKeys()) {
+      const Vector probabilities = marginals.marginalProbabilities(dkey);
+
+      int index = -1;
+      auto threshold = (probabilities.array() > *marginalThreshold);
+      // If atleast 1 value is non-zero, then we can find the index
+      // Else if all are zero, index would be set to 0 which is incorrect
+      if (!threshold.isZero()) {
+        threshold.maxCoeff(&index);
+      }
+
+      if (index >= 0) {
+        deadModesValues.emplace(dkey.first, index);
+      }
+    }
+
+    // Remove the modes (imperative)
+    pruned.removeDiscreteModes(deadModesValues);
+
+    // Set the fixed values if requested.
+    if (fixedValues) {
+      *fixedValues = deadModesValues;
+    }
+  }
+
+  // Return the resulting DiscreteBayesNet.
+  DiscreteBayesNet result;
+  if (pruned.keys().size() > 0) result.push_back(pruned);
   return result;
 }
 

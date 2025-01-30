@@ -217,16 +217,18 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @brief Prune the Bayes Net such that we have at most maxNrLeaves leaves.
    *
    * @param maxNrLeaves Continuous values at which to compute the error.
-   * @param deadModeThreshold The threshold to check the mode marginals against.
-   * If greater than this threshold, the mode gets assigned that value and is
-   * considered "dead" for hybrid elimination.
-   * The mode can then be removed since it only has a single possible
-   * assignment.
+   * @param marginalThreshold The threshold to check the mode marginals against.
+   * @param fixedValues The fixed values resulting from dead mode removal.
+   *
+   * @note If marginal greater than this threshold, the mode gets assigned that
+   * value and is considered "dead" for hybrid elimination. The mode can then be
+   * removed since it only has a single possible assignment.
+   
    * @return A pruned HybridBayesNet
    */
-  HybridBayesNet prune(
-      size_t maxNrLeaves,
-      const std::optional<double> &deadModeThreshold = {}) const;
+  HybridBayesNet prune(size_t maxNrLeaves,
+                       const std::optional<double> &marginalThreshold = {},
+                       DiscreteValues *fixedValues = nullptr) const;
 
   /**
    * @brief Error method using HybridValues which returns specific error for

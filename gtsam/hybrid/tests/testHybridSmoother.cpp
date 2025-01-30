@@ -103,7 +103,7 @@ TEST(HybridSmoother, IncrementalSmoother) {
   }
 
   EXPECT_LONGS_EQUAL(11,
-                     smoother.hybridBayesNet().at(3)->asDiscrete()->nrValues());
+                     smoother.hybridBayesNet().at(5)->asDiscrete()->nrValues());
 
   // Get the continuous delta update as well as
   // the optimal discrete assignment.
@@ -157,7 +157,7 @@ TEST(HybridSmoother, ValidPruningError) {
   }
 
   EXPECT_LONGS_EQUAL(14,
-                     smoother.hybridBayesNet().at(6)->asDiscrete()->nrValues());
+                     smoother.hybridBayesNet().at(8)->asDiscrete()->nrValues());
 
   // Get the continuous delta update as well as
   // the optimal discrete assignment.
