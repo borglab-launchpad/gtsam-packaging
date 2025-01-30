@@ -75,14 +75,35 @@ namespace gtsam {
       size_t nrFrontals, const Vector& d,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
-    /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
-     *  instead of in block terms.  Note that only the active view of the provided augmented matrix
-     *  is used, and that the matrix data is copied into a newly-allocated matrix in the constructed
-     *  factor. */
-    template<typename KEYS>
-    GaussianConditional(
-      const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix,
-      const SharedDiagonal& sigmas = SharedDiagonal());
+    /**
+     * @brief Constructor with an arbitrary number of keys, where the augmented matrix
+     * is given all together instead of in block terms.
+     *
+     * @tparam KEYS Type of the keys container.
+     * @param keys Container of keys.
+     * @param nrFrontals Number of frontal variables.
+     * @param augmentedMatrix The augmented matrix containing the coefficients.
+     * @param sigmas Optional noise model (default is an empty SharedDiagonal).
+     */
+    template <typename KEYS>
+    GaussianConditional(const KEYS& keys, size_t nrFrontals,
+                        const VerticalBlockMatrix& augmentedMatrix,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
+
+    /**
+     * @brief Constructor with an arbitrary number of keys, where the augmented matrix
+     * is given all together instead of in block terms, using move semantics for efficiency.
+     *
+     * @tparam KEYS Type of the keys container.
+     * @param keys Container of keys.
+     * @param nrFrontals Number of frontal variables.
+     * @param augmentedMatrix The augmented matrix containing the coefficients (moved).
+     * @param sigmas Optional noise model (default is an empty SharedDiagonal).
+     */
+    template <typename KEYS>
+    GaussianConditional(const KEYS& keys, size_t nrFrontals,
+                        VerticalBlockMatrix&& augmentedMatrix,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
 
     /// Construct from mean `mu` and standard deviation `sigma`.
     static GaussianConditional FromMeanAndStddev(Key key, const Vector& mu,
