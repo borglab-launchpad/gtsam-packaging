@@ -256,9 +256,14 @@ namespace gtsam {
       full().triangularView<Eigen::Upper>() = xpr.template triangularView<Eigen::Upper>();
     }
 
-    /// Set the entire active matrix zero.
+    /// Set the entire *active* matrix zero.
     void setZero() {
       full().triangularView<Eigen::Upper>().setZero();
+    }
+
+    /// Set entire matrix zero.
+    void setAllZero() {
+      matrix_.setZero();
     }
 
     /// Negate the entire active matrix.
