@@ -65,6 +65,7 @@ HybridBayesNet HybridBayesNet::prune(
   }
 
   HybridBayesNet result;
+  result.reserve(size());
 
   // Go through all the Gaussian conditionals, restrict them according to
   // fixed values, and then prune further.
@@ -84,9 +85,9 @@ HybridBayesNet HybridBayesNet::prune(
       }
       // Type-erase and add to the pruned Bayes Net fragment.
       result.push_back(prunedHybridGaussianConditional);
-    } else if (auto gc = conditional->asGaussian()) {
-      // Add the non-HybridGaussianConditional conditional
-      result.push_back(gc);
+    } else if (conditional->isContinuous()) {
+      // Add the non-Hybrid GaussianConditional conditional
+      result.push_back(conditional);
     } else
       throw std::runtime_error(
           "HybrdiBayesNet::prune: Unknown HybridConditional type.");
