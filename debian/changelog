@@ -1,10 +1,58 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2694.gbpb46bff) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2695.gbpcff706) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cff7066103d3797e7882fd95a9997622354621d5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b46bffa9e059c37c10ef1b6e95f3fdcf966e3e31 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 30 Jan 2025 16:03:01 +0000
+  [ Varun Agrawal ]
+  * function for hybrid odometry factor
+  * check for nullptr
+  * update to add loop closures
+  * major script improvements
+  * simplify and add smoother_update_times
+  * human-friendly time printing
+  * switch between TableFactor and DecisionTreeFactor
+  * specify dead mode removal threshold
+
+  [ Frank Dellaert ]
+  * Make class
+  * Run method and style
+  * Catch pruned away
+  * Undo scaling
+  * Fix loop noise model
+
+  [ Varun Agrawal ]
+  * two pass to for addConditionals
+
+  [ Frank Dellaert ]
+  * Don't optimize every time
+  * Add smoother printing
+  * Nice new HC tests
+  * Catch exception and print out things
+  * Add negLogConstants
+  * Return fixed values
+  * DiscreteNet::prune
+  * Guard all printing
+  * throw in optimize
+  * Small fixes, 10 hypotheses
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * New scalar operators
+  * Refactor scaledProduct
+  * Play with different elimination schemes
+  * Fix constraints
+  * Revert "Fix constraints"
+
+  [ Varun Agrawal ]
+  * implement DiscreteFactor methods in Constraint
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 31 Jan 2025 05:02:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2693.gbpbd26e4) noble; urgency=medium
 
