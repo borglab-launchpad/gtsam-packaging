@@ -106,6 +106,9 @@ class GTSAM_EXPORT HybridSmoother {
 
   /// Return the Bayes Net posterior.
   const HybridBayesNet& hybridBayesNet() const;
+
+  /// Optimize the hybrid Bayes Net, taking into accound fixed values.
+  HybridValues optimize() const;
 };
 
 }  // namespace gtsam

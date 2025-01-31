@@ -89,7 +89,7 @@ DiscreteBayesNet DiscreteBayesNet::prune(
   DiscreteValues deadModesValues;
   // If we have a dead mode threshold and discrete variables left after pruning,
   // then we run dead mode removal.
-  if (marginalThreshold.has_value() && pruned.keys().size() > 0) {
+  if (marginalThreshold && pruned.keys().size() > 0) {
     DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
     for (auto dkey : pruned.discreteKeys()) {
       const Vector probabilities = marginals.marginalProbabilities(dkey);

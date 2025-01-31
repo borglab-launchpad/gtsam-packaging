@@ -164,6 +164,12 @@ namespace gtsam {
     virtual DiscreteFactor::shared_ptr multiply(
         const DiscreteFactor::shared_ptr& f) const override;
 
+    /// multiply with a scalar
+    DiscreteFactor::shared_ptr operator*(double s) const override {
+      return std::make_shared<DecisionTreeFactor>(
+          apply([s](const double& a) { return Ring::mul(a, s); }));
+    }
+
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       return apply(f, Ring::mul);
@@ -200,6 +206,9 @@ namespace gtsam {
     DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
       return combine(keys, Ring::add);
     }
+
+    /// Find the maximum value in the factor.
+    double max() const override { return ADT::max(); };
 
     /// Create new factor by maximizing over all values with the same separator.
     DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {

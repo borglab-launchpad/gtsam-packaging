@@ -111,6 +111,11 @@ DiscreteFactor::shared_ptr TableDistribution::max(const Ordering& keys) const {
 }
 
 /* ****************************************************************************/
+DiscreteFactor::shared_ptr TableDistribution::operator*(double s) const {
+  return table_ * s;
+}
+
+/* ****************************************************************************/
 DiscreteFactor::shared_ptr TableDistribution::operator/(
     const DiscreteFactor::shared_ptr& f) const {
   return table_ / f;

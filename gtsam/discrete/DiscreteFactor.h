@@ -126,6 +126,9 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   /// Compute error for each assignment and return as a tree
   virtual AlgebraicDecisionTree<Key> errorTree() const;
 
+  /// Multiply with a scalar
+  virtual DiscreteFactor::shared_ptr operator*(double s) const = 0;
+
   /// Multiply in a DecisionTreeFactor and return the result as
   /// DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
@@ -151,6 +154,9 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
 
   /// Create new factor by summing all values with the same separator values
   virtual DiscreteFactor::shared_ptr sum(const Ordering& keys) const = 0;
+
+  /// Find the maximum value in the factor.
+  virtual double max() const = 0;
 
   /// Create new factor by maximizing over all values with the same separator.
   virtual DiscreteFactor::shared_ptr max(size_t nrFrontals) const = 0;

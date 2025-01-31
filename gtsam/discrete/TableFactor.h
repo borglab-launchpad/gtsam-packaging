@@ -171,6 +171,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Calculate error for DiscreteValues `x`, is -log(probability).
   double error(const DiscreteValues& values) const override;
 
+  /// multiply with a scalar
+  DiscreteFactor::shared_ptr operator*(double s) const override {
+    return std::make_shared<TableFactor>(
+        apply([s](const double& a) { return Ring::mul(a, s); }));
+  }
+
   /// multiply two TableFactors
   TableFactor operator*(const TableFactor& f) const {
     return apply(f, Ring::mul);
@@ -215,24 +221,19 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
                      DiscreteKeys parent_keys) const;
 
   /// Create new factor by summing all values with the same separator values
-  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
-    return combine(nrFrontals, Ring::add);
-  }
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override;
 
   /// Create new factor by summing all values with the same separator values
-  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
-    return combine(keys, Ring::add);
-  }
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override;
+
+  /// Find the maximum value in the factor.
+  double max() const override;
 
   /// Create new factor by maximizing over all values with the same separator.
-  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
-    return combine(nrFrontals, Ring::max);
-  }
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
 
   /// Create new factor by maximizing over all values with the same separator.
-  DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
-    return combine(keys, Ring::max);
-  }
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
 
   /// @}
   /// @name Advanced Interface

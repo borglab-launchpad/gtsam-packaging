@@ -191,11 +191,19 @@ size_t HybridGaussianConditional::nrComponents() const {
 /* *******************************************************************************/
 GaussianConditional::shared_ptr HybridGaussianConditional::choose(
     const DiscreteValues &discreteValues) const {
-  auto &[factor, _] = factors()(discreteValues);
-  if (!factor) return nullptr;
+  try {
+    auto &[factor, _] = factors()(discreteValues);
+    if (!factor) return nullptr;
 
-  auto conditional = checkConditional(factor);
-  return conditional;
+    auto conditional = checkConditional(factor);
+    return conditional;
+  } catch (const std::out_of_range &e) {
+    GTSAM_PRINT(*this);
+    GTSAM_PRINT(discreteValues);
+    throw std::runtime_error(
+        "HybridGaussianConditional::choose: discreteValues does not contain "
+        "all discrete parents.");
+  }
 }
 
 /* *******************************************************************************/
@@ -313,18 +321,21 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
   std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),
                       std::back_inserter(diff));
 
-  // Find maximum probability value for every combination of our keys.
-  Ordering keys(diff);
-  auto max = discreteProbs.max(keys);
+  // Find maximum probability value for every combination of *our* keys.
+  Ordering ordering(diff);
+  auto max = discreteProbs.max(ordering);
 
   // Check the max value for every combination of our keys.
   // If the max value is 0.0, we can prune the corresponding conditional.
+  bool allPruned = true;
   auto pruner =
       [&](const Assignment<Key> &choices,
           const GaussianFactorValuePair &pair) -> GaussianFactorValuePair {
-    if (max->evaluate(choices) == 0.0)
+    // If this choice is zero probability or Gaussian is null, return infinity
+    if (!pair.first || max->evaluate(choices) == 0.0) {
       return {nullptr, std::numeric_limits<double>::infinity()};
-    else {
+    } else {
+      allPruned = false;
       // Add negLogConstant_ back so that the minimum negLogConstant in the
       // HybridGaussianConditional is set correctly.
       return {pair.first, pair.second + negLogConstant_};
@@ -332,6 +343,7 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
   };
 
   FactorValuePairs prunedConditionals = factors().apply(pruner);
+  if (allPruned) return nullptr;
   return std::make_shared<HybridGaussianConditional>(discreteKeys(),
                                                      prunedConditionals, true);
 }
