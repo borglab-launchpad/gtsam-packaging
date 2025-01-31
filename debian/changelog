@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2698.gbpb524fc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2699.gbp258d20) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @258d2040d4df639c25f70923d102d8b3298bc280 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b524fc5c045560ce74f02c1cc6523298ccae4616 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 31 Jan 2025 05:07:06 +0000
+  [ Frank Dellaert ]
+  * Tiny savings via reserve
+  * Make non-const so we can move
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * kUpdateFrequency for 3x win!
+  * dynamic -> static_pointer_cast
+  * Timing results
+  * Arguments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 31 Jan 2025 23:57:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2697.gbp627901) noble; urgency=medium
 
