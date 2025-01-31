@@ -390,6 +390,36 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::sum(size_t nrFrontals) const {
+return combine(nrFrontals, Ring::add);
+}
+
+/* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::sum(const Ordering& keys) const {
+return combine(keys, Ring::add);
+}
+
+/* ************************************************************************ */
+double TableFactor::max() const {
+  double max_value = std::numeric_limits<double>::lowest();
+  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
+    max_value = std::max(max_value, it.value());
+  }
+  return max_value;
+}
+
+/* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
+  return combine(nrFrontals, Ring::max);
+}
+
+/* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::max(const Ordering& keys) const {
+  return combine(keys, Ring::max);
+}
+
+
+/* ************************************************************************ */
 TableFactor TableFactor::apply(Unary op) const {
   // Initialize new factor.
   uint64_t cardi = 1;

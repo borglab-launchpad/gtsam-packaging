@@ -73,10 +73,7 @@ AlgebraicDecisionTree<Key> DiscreteFactor::errorTree() const {
 
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr DiscreteFactor::scale() const {
-  // Max over all the potentials by pretending all keys are frontal:
-  shared_ptr denominator = this->max(this->size());
-  // Normalize the product factor to prevent underflow.
-  return this->operator/(denominator);
+  return this->operator*(1.0 / max());
 }
 
 }  // namespace gtsam

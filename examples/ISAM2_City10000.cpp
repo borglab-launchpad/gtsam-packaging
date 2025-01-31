@@ -165,7 +165,8 @@ int main(int argc, char* argv[]) {
     // Print loop index and time taken in processor clock ticks
     if (index % 50 == 0 && key_s != key_t - 1) {
       std::cout << "index: " << index << std::endl;
-      std::cout << "acc_time:  " << time_list.back() << std::endl;
+      std::cout << "acc_time:  " << time_list.back() / CLOCKS_PER_SEC
+                << std::endl;
     }
 
     if (key_s == key_t - 1) {
@@ -190,7 +191,7 @@ int main(int argc, char* argv[]) {
 
   clock_t end_time = clock();
   clock_t total_time = end_time - start_time;
-  cout << "total_time: " << total_time << endl;
+  cout << "total_time: " << total_time / CLOCKS_PER_SEC << endl;
 
   /// Write results to file
   write_results(results, (key_t + 1));
