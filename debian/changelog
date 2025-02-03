@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2707.gbpdc6e89) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2708.gbp15a70c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @15a70cedfb1fdf33c0e8033d922f332873019621 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dc6e89b93c759e546309016ddfb4cebd0c734296 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 Feb 2025 00:01:22 +0000
+  [ Frank Dellaert ]
+  * Re-factor line parsing, clean up update
+  * Fix some test for non-merge case
+  * restrict for DT
+  * ReInitialize
+  * Restrict for hybrid factors (and discrete)
+  * Re-linearization
+  * Threshold
+  * Make threshold tighter not looser
+  * Add restrict
+  * Fix some merging-dependent tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 03 Feb 2025 16:32:52 +0000
 
 gtsam (4.1.0-1ubuntu2~2706.gbp88cacf) noble; urgency=medium
 
