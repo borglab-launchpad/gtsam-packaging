@@ -49,11 +49,6 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
     }
   }
 
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override {
-    throw std::runtime_error("SingleValue::error not implemented");
-  }
-
   /// Calculate value
   double evaluate(const Assignment<Key>& values) const override;
 

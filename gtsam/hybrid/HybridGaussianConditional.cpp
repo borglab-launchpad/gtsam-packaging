@@ -363,4 +363,12 @@ double HybridGaussianConditional::evaluate(const HybridValues &values) const {
   return conditional->evaluate(values.continuous());
 }
 
+/* ************************************************************************ */
+std::shared_ptr<Factor> HybridGaussianConditional::restrict(
+    const DiscreteValues &assignment) const {
+  throw std::runtime_error(
+      "HybridGaussianConditional::restrict not implemented");
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam

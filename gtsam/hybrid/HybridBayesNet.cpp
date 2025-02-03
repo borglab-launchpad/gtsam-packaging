@@ -69,11 +69,13 @@ HybridBayesNet HybridBayesNet::prune(
 
   // Go through all the Gaussian conditionals, restrict them according to
   // fixed values, and then prune further.
-  for (std::shared_ptr<gtsam::HybridConditional> conditional : *this) {
+  for (std::shared_ptr<HybridConditional> conditional : *this) {
     if (conditional->isDiscrete()) continue;
 
     // No-op if not a HybridGaussianConditional.
-    if (marginalThreshold) conditional = conditional->restrict(fixed);
+    if (marginalThreshold)
+      conditional = std::static_pointer_cast<HybridConditional>(
+          conditional->restrict(fixed));
 
     // Now decide on type what to do:
     if (auto hgc = conditional->asHybrid()) {

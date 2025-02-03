@@ -157,6 +157,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   virtual HybridGaussianProductFactor asProductFactor() const;
 
+  /// Restrict the factor to the given discrete values.
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues &discreteValues) const override;
+
   /// @}
 
  private:

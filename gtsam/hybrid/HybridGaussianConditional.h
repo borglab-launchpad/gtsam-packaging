@@ -241,6 +241,10 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// Return true if the conditional has already been pruned.
   bool pruned() const { return pruned_; }
 
+  /// Restrict to the given discrete values.
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues &discreteValues) const override;
+
   /// @}
 
  private:

@@ -124,8 +124,10 @@ TEST(DecisionTreeFactor, Divide) {
   EXPECT(assert_inequal(pS, s));
 
   // The underlying data should be the same
+#ifdef GTSAM_DT_MERGING
   using ADT = AlgebraicDecisionTree<Key>;
   EXPECT(assert_equal(ADT(pS), ADT(s)));
+#endif
 
   KeySet keys(joint.keys());
   keys.insert(pA.keys().begin(), pA.keys().end());

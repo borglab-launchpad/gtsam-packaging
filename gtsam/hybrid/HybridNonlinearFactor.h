@@ -80,6 +80,9 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   }
 
  public:
+  /// @name Constructors
+  /// @{
+
   /// Default constructor, mainly for serialization.
   HybridNonlinearFactor() = default;
 
@@ -137,7 +140,7 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * @return double The error of this factor.
    */
   double error(const Values& continuousValues,
-               const DiscreteValues& discreteValues) const;
+               const DiscreteValues& assignment) const;
 
   /**
    * @brief Compute error of factor given hybrid values.
@@ -154,7 +157,8 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    */
   size_t dim() const;
 
-  /// Testable
+  /// @}
+  /// @name Testable
   /// @{
 
   /// print to stdout
@@ -165,15 +169,16 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   bool equals(const HybridFactor& other, double tol = 1e-9) const override;
 
   /// @}
+  /// @name Standard API
+  /// @{
 
   /// Getter for NonlinearFactor decision tree
   const FactorValuePairs& factors() const { return factors_; }
 
   /// Linearize specific nonlinear factors based on the assignment in
   /// discreteValues.
-  GaussianFactor::shared_ptr linearize(
-      const Values& continuousValues,
-      const DiscreteValues& discreteValues) const;
+  GaussianFactor::shared_ptr linearize(const Values& continuousValues,
+                                       const DiscreteValues& assignment) const;
 
   /// Linearize all the continuous factors to get a HybridGaussianFactor.
   std::shared_ptr<HybridGaussianFactor> linearize(
@@ -182,6 +187,12 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /// Prune this factor based on the discrete probabilities.
   HybridNonlinearFactor::shared_ptr prune(
       const DecisionTreeFactor& discreteProbs) const;
+
+  /// Restrict the factor to the given discrete values.
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues& assignment) const override;
+
+  /// @}
 
  private:
   /// Helper struct to assist private constructor below.

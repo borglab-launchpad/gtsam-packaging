@@ -133,9 +133,13 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// Return only the continuous keys for this factor.
   const KeyVector &continuousKeys() const { return continuousKeys_; }
 
-  /// Virtual class to compute tree of linear errors.
+  /// Compute tree of linear errors.
   virtual AlgebraicDecisionTree<Key> errorTree(
       const VectorValues &values) const = 0;
+
+  /// Restrict the factor to the given discrete values.
+  virtual std::shared_ptr<Factor> restrict(
+      const DiscreteValues &discreteValues) const = 0;
 
   /// @}
 

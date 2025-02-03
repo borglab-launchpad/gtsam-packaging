@@ -222,4 +222,29 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::discretePosterior(
 }
 
 /* ************************************************************************ */
+HybridNonlinearFactorGraph HybridNonlinearFactorGraph::restrict(
+    const DiscreteValues& discreteValues) const {
+  using std::dynamic_pointer_cast;
+
+  HybridNonlinearFactorGraph result;
+  result.reserve(size());
+  for (auto& f : factors_) {
+    // First check if it is a valid factor
+    if (!f) {
+      continue;
+    }
+    // Check if it is a hybrid factor
+    if (auto hf = dynamic_pointer_cast<HybridFactor>(f)) {
+      result.push_back(hf->restrict(discreteValues));
+    } else if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
+      result.push_back(df->restrict(discreteValues));
+    } else {
+      result.push_back(f);  // Everything else is just added as is
+    }
+  }
+  
+  return result;
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam

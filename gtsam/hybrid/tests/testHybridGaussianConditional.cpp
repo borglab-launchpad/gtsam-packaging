@@ -318,21 +318,27 @@ TEST(HybridGaussianConditional, Restrict) {
   const auto hc =
       std::make_shared<HybridConditional>(two_mode_measurement::hgc);
 
-  const HybridConditional::shared_ptr same = hc->restrict({});
+  const auto same =
+      std::dynamic_pointer_cast<HybridConditional>(hc->restrict({}));
+  CHECK(same);
   EXPECT(same->isHybrid());
   EXPECT(same->asHybrid()->nrComponents() == 4);
 
-  const HybridConditional::shared_ptr oneParent = hc->restrict({{M(1), 0}});
+  const auto oneParent =
+      std::dynamic_pointer_cast<HybridConditional>(hc->restrict({{M(1), 0}}));
+  CHECK(oneParent);
   EXPECT(oneParent->isHybrid());
   EXPECT(oneParent->asHybrid()->nrComponents() == 2);
 
-  const HybridConditional::shared_ptr oneParent2 =
-      hc->restrict({{M(7), 0}, {M(1), 0}});
+  const auto oneParent2 = std::dynamic_pointer_cast<HybridConditional>(
+      hc->restrict({{M(7), 0}, {M(1), 0}}));
+  CHECK(oneParent2);
   EXPECT(oneParent2->isHybrid());
   EXPECT(oneParent2->asHybrid()->nrComponents() == 2);
 
-  const HybridConditional::shared_ptr gaussian =
-      hc->restrict({{M(1), 0}, {M(2), 1}});
+  const auto gaussian = std::dynamic_pointer_cast<HybridConditional>(
+      hc->restrict({{M(1), 0}, {M(2), 1}}));
+  CHECK(gaussian);
   EXPECT(gaussian->asGaussian());
 }
 

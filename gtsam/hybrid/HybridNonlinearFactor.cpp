@@ -239,4 +239,21 @@ HybridNonlinearFactor::shared_ptr HybridNonlinearFactor::prune(
   return std::make_shared<HybridNonlinearFactor>(discreteKeys(), prunedFactors);
 }
 
+/* ************************************************************************ */
+std::shared_ptr<Factor> HybridNonlinearFactor::restrict(
+    const DiscreteValues& assignment) const {
+  auto restrictedFactors = factors_.restrict(assignment);
+  auto filtered = assignment.filter(discreteKeys_);
+  if (filtered.size() == discreteKeys_.size()) {
+    auto [nonlinearFactor, val] = factors_(filtered);
+    return nonlinearFactor;
+  } else {
+    auto remainingKeys = assignment.missingKeys(discreteKeys());
+    return std::make_shared<HybridNonlinearFactor>(remainingKeys,
+                                                   factors_.restrict(filtered));
+  }
+}
+
+/* ************************************************************************ */
+
 }  // namespace gtsam
