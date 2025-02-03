@@ -27,7 +27,6 @@ namespace gtsam {
 class GTSAM_EXPORT HybridSmoother {
  private:
   HybridBayesNet hybridBayesNet_;
-  HybridGaussianFactorGraph remainingFactorGraph_;
 
   /// The threshold above which we make a decision about a mode.
   std::optional<double> marginalThreshold_;
@@ -43,6 +42,16 @@ class GTSAM_EXPORT HybridSmoother {
    */
   HybridSmoother(const std::optional<double> marginalThreshold = {})
       : marginalThreshold_(marginalThreshold) {}
+
+  /// Return fixed values:
+  const DiscreteValues& fixedValues() const { return fixedValues_; }
+
+  /**
+   * Re-initialize the smoother from a new hybrid Bayes Net.
+   */
+  void reInitialize(HybridBayesNet&& hybridBayesNet) {
+    hybridBayesNet_ = std::move(hybridBayesNet);
+  }
 
   /**
    * Given new factors, perform an incremental update.

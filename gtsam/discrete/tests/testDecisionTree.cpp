@@ -228,9 +228,9 @@ TEST(DecisionTree, Example) {
   // Test choose 0
   DT actual0 = notba.choose(A, 0);
 #ifdef GTSAM_DT_MERGING
-  EXPECT(assert_equal(DT(0.0), actual0));
+  EXPECT(assert_equal(DT(0), actual0));
 #else
-  EXPECT(assert_equal(DT({0.0, 0.0}), actual0));
+  EXPECT(assert_equal(DT(B, 0, 0), actual0));
 #endif
   DOT(actual0);
 
@@ -616,6 +616,21 @@ TEST(DecisionTree, ApplyWithAssignment) {
   // if GTSAM_DT_MERGING is disabled, the count will be full
   EXPECT_LONGS_EQUAL(8, count);
 #endif
+}
+
+/* ************************************************************************** */
+// Test apply with assignment.
+TEST(DecisionTree, Restrict) {
+  // Create three level tree
+  const vector<DT::LabelC> keys{DT::LabelC("C", 2), DT::LabelC("B", 2),
+                                DT::LabelC("A", 2)};
+  DT tree(keys, "1 2 3 4 5 6 7 8");
+
+  DT restrictedTree = tree.restrict({{"A", 0}, {"B", 1}});
+  EXPECT(assert_equal(DT({DT::LabelC("C", 2)}, "3 7"), restrictedTree));
+
+  DT restrictMore = tree.restrict({{"A", 1}, {"B", 1}, {"C", 1}});
+  EXPECT(assert_equal(DT(8), restrictMore));
 }
 
 /* ************************************************************************* */

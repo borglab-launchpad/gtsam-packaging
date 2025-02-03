@@ -167,8 +167,8 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   /**
    * @brief Scale the factor values by the maximum
    * to prevent underflow/overflow.
-   * 
-   * @return DiscreteFactor::shared_ptr 
+   *
+   * @return DiscreteFactor::shared_ptr
    */
   DiscreteFactor::shared_ptr scale() const;
 
@@ -177,6 +177,10 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
    * It could be much smaller than `prod_{key}(cardinality(key))`.
    */
   virtual uint64_t nrValues() const = 0;
+
+  /// Restrict the factor to the given assignment.
+  virtual DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const = 0;
 
   /// @}
   /// @name Wrapper support

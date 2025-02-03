@@ -125,6 +125,17 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
     return toDecisionTreeFactor().max(keys);
   }
 
+  /// Compute error for each assignment and return as a tree
+  AlgebraicDecisionTree<Key> errorTree() const override {
+    throw std::runtime_error("Constraint::error not implemented");
+  }
+
+  /// Compute error for each assignment and return as a tree
+  DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const override {
+    throw std::runtime_error("Constraint::restrict not implemented");
+  }
+  
   /// @}
   /// @name Wrapper support
   /// @{

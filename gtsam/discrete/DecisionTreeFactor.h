@@ -220,6 +220,10 @@ namespace gtsam {
       return combine(keys, Ring::max);
     }
 
+    /// Restrict the factor to the given assignment.
+    DiscreteFactor::shared_ptr restrict(
+        const DiscreteValues& assignment) const override;
+        
     /// @}
     /// @name Advanced Interface
     /// @{

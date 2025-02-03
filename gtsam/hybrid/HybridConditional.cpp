@@ -170,8 +170,8 @@ double HybridConditional::evaluate(const HybridValues &values) const {
 }
 
 /* ************************************************************************ */
-HybridConditional::shared_ptr HybridConditional::restrict(
-    const DiscreteValues &discreteValues) const {
+std::shared_ptr<Factor> HybridConditional::restrict(
+    const DiscreteValues &assignment) const {
   if (auto gc = asGaussian()) {
     return std::make_shared<HybridConditional>(gc);
   } else if (auto dc = asDiscrete()) {
@@ -184,21 +184,20 @@ HybridConditional::shared_ptr HybridConditional::restrict(
         "HybridConditional::restrict: conditional type not handled");
 
   // Case 1: Fully determined, return corresponding Gaussian conditional
-  auto parentValues = discreteValues.filter(discreteKeys_);
+  auto parentValues = assignment.filter(discreteKeys_);
   if (parentValues.size() == discreteKeys_.size()) {
     return std::make_shared<HybridConditional>(hgc->choose(parentValues));
   }
 
   // Case 2: Some live parents remain, build a new tree
-  auto unspecifiedParentKeys = discreteValues.missingKeys(discreteKeys_);
-  if (!unspecifiedParentKeys.empty()) {
+  auto remainingKeys = assignment.missingKeys(discreteKeys_);
+  if (!remainingKeys.empty()) {
     auto newTree = hgc->factors();
     for (const auto &[key, value] : parentValues) {
       newTree = newTree.choose(key, value);
     }
     return std::make_shared<HybridConditional>(
-        std::make_shared<HybridGaussianConditional>(unspecifiedParentKeys,
-                                                    newTree));
+        std::make_shared<HybridGaussianConditional>(remainingKeys, newTree));
   }
 
   // Case 3: No changes needed, return original

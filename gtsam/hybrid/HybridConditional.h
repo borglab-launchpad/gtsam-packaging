@@ -153,7 +153,8 @@ class GTSAM_EXPORT HybridConditional
    * @return HybridGaussianConditional::shared_ptr otherwise
    */
   HybridGaussianConditional::shared_ptr asHybrid() const {
-    return std::dynamic_pointer_cast<HybridGaussianConditional>(inner_);
+    if (!isHybrid()) return nullptr;
+    return std::static_pointer_cast<HybridGaussianConditional>(inner_);
   }
 
   /**
@@ -162,7 +163,8 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianConditional::shared_ptr otherwise
    */
   GaussianConditional::shared_ptr asGaussian() const {
-    return std::dynamic_pointer_cast<GaussianConditional>(inner_);
+    if (!isContinuous()) return nullptr;
+    return std::static_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
@@ -172,7 +174,8 @@ class GTSAM_EXPORT HybridConditional
    */
   template <typename T = DiscreteConditional>
   typename T::shared_ptr asDiscrete() const {
-    return std::dynamic_pointer_cast<T>(inner_);
+    if (!isDiscrete()) return nullptr;
+    return std::static_pointer_cast<T>(inner_);
   }
 
   /// Get the type-erased pointer to the inner type
@@ -221,7 +224,8 @@ class GTSAM_EXPORT HybridConditional
    * which is just a GaussianConditional. If this conditional is *not* a hybrid
    * conditional, just return that.
    */
-  shared_ptr restrict(const DiscreteValues& discreteValues) const;
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues& assignment) const override;
 
   /// @}
 

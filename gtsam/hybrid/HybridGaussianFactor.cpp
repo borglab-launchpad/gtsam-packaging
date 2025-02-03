@@ -199,4 +199,12 @@ double HybridGaussianFactor::error(const HybridValues& values) const {
   return PotentiallyPrunedComponentError(pair, values.continuous());
 }
 
+/* ************************************************************************ */
+std::shared_ptr<Factor> HybridGaussianFactor::restrict(
+    const DiscreteValues& assignment) const {
+  throw std::runtime_error("HybridGaussianFactor::restrict not implemented");
+}
+
+/* ************************************************************************ */
+
 }  // namespace gtsam

@@ -391,12 +391,12 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
 
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::sum(size_t nrFrontals) const {
-return combine(nrFrontals, Ring::add);
+  return combine(nrFrontals, Ring::add);
 }
 
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::sum(const Ordering& keys) const {
-return combine(keys, Ring::add);
+  return combine(keys, Ring::add);
 }
 
 /* ************************************************************************ */
@@ -417,7 +417,6 @@ DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
 DiscreteFactor::shared_ptr TableFactor::max(const Ordering& keys) const {
   return combine(keys, Ring::max);
 }
-
 
 /* ************************************************************************ */
 TableFactor TableFactor::apply(Unary op) const {
@@ -779,6 +778,12 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
 
   // Create pruned decision tree factor and return.
   return TableFactor(this->discreteKeys(), pruned_vec);
+}
+
+/* ************************************************************************ */
+DiscreteFactor::shared_ptr TableFactor::restrict(
+    const DiscreteValues& assignment) const {
+  throw std::runtime_error("TableFactor::restrict not implemented");
 }
 
 /* ************************************************************************ */

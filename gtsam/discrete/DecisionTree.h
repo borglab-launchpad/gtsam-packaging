@@ -393,6 +393,13 @@ namespace gtsam {
       return DecisionTree(newRoot);
     }
 
+    /** Choose multiple values. */
+    DecisionTree restrict(const Assignment<L>& assignment) const {
+      NodePtr newRoot = root_;
+      for (const auto& [l, v] : assignment) newRoot = newRoot->choose(l, v);
+      return DecisionTree(newRoot);
+    }
+
     /** combine subtrees on key with binary operation "op" */
     DecisionTree combine(const L& label, size_t cardinality,
                          const Binary& op) const;

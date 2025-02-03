@@ -102,12 +102,16 @@ TEST(HybridSmoother, IncrementalSmoother) {
     graph.resize(0);
   }
 
-  EXPECT_LONGS_EQUAL(11,
-                     smoother.hybridBayesNet().at(5)->asDiscrete()->nrValues());
+  auto& hybridBayesNet = smoother.hybridBayesNet();
+#ifdef GTSAM_DT_MERGING
+  EXPECT_LONGS_EQUAL(11, hybridBayesNet.at(5)->asDiscrete()->nrValues());
+#else
+  EXPECT_LONGS_EQUAL(16, hybridBayesNet.at(5)->asDiscrete()->nrValues());
+#endif
 
   // Get the continuous delta update as well as
   // the optimal discrete assignment.
-  HybridValues delta = smoother.hybridBayesNet().optimize();
+  HybridValues delta = hybridBayesNet.optimize();
 
   // Check discrete assignment
   DiscreteValues expected_discrete;
@@ -156,8 +160,12 @@ TEST(HybridSmoother, ValidPruningError) {
     graph.resize(0);
   }
 
-  EXPECT_LONGS_EQUAL(14,
-                     smoother.hybridBayesNet().at(8)->asDiscrete()->nrValues());
+  auto& hybridBayesNet = smoother.hybridBayesNet();
+#ifdef GTSAM_DT_MERGING
+  EXPECT_LONGS_EQUAL(14, hybridBayesNet.at(8)->asDiscrete()->nrValues());
+#else
+  EXPECT_LONGS_EQUAL(128, hybridBayesNet.at(8)->asDiscrete()->nrValues());
+#endif
 
   // Get the continuous delta update as well as
   // the optimal discrete assignment.

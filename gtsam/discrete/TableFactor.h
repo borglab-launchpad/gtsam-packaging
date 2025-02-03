@@ -342,6 +342,10 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
 
+  /// Restrict the factor to the given assignment.
+  DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const override;
+
   /// @}
   /// @name Wrapper support
   /// @{

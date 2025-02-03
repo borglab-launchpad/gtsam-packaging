@@ -132,6 +132,18 @@ TEST(HybridNonlinearFactor, Dim) {
 }
 
 /* ************************************************************************* */
+// Test restrict method
+TEST(HybridNonlinearFactor, Restrict) {
+  using namespace test_constructor;
+  HybridNonlinearFactor factor(m1, {f0, f1});
+  DiscreteValues assignment = {{m1.first, 0}};
+  auto restricted = factor.restrict(assignment);
+  auto betweenFactor = dynamic_pointer_cast<BetweenFactor<double>>(restricted);
+  CHECK(betweenFactor);
+  EXPECT(assert_equal(*f0, *betweenFactor));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

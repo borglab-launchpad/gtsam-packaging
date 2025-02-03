@@ -116,6 +116,10 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   AlgebraicDecisionTree<Key> discretePosterior(
       const Values& continuousValues) const;
 
+  /// Restrict all factors in the graph to the given discrete values.
+  HybridNonlinearFactorGraph restrict(
+      const DiscreteValues& assignment) const;
+
   /// @}
 };
 
