@@ -95,6 +95,10 @@ HybridBayesNet HybridBayesNet::prune(
           "HybrdiBayesNet::prune: Unknown HybridConditional type.");
   }
 
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridPruning);
+#endif
+
   // Add the pruned discrete conditionals to the result.
   for (const DiscreteConditional::shared_ptr &discrete : prunedBN)
     result.push_back(discrete);

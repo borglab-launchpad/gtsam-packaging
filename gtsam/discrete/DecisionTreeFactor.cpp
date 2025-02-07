@@ -523,6 +523,10 @@ namespace gtsam {
 
       // Check if value is less than the threshold and
       // we haven't exceeded the maximum number of leaves.
+      // TODO(Varun): Bug since we can have a case where we need to prune higher
+      // probabilities after we have reached N.
+      // E.g. N=3 for [0.2, 0.2, 0.1, 0.2, 0.3]
+      // will give [0.2, 0.2, 0.0, 0.2, 0.0]
       if (value < threshold || total >= N) {
         return 0.0;
       } else {

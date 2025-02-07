@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   Hybrid_City10000.cpp
- * @brief  Example of using hybrid estimation
+ * @file   ISAM2_City10000.cpp
+ * @brief  Example of using ISAM2 estimation
  *         with multiple odometry measurements.
  * @author Varun Agrawal
  * @date   January 22, 2025
@@ -20,6 +20,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/ISAM2Params.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -32,178 +33,189 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+#include "City10000.h"
+
 using namespace gtsam;
-using namespace boost::algorithm;
 
 using symbol_shorthand::X;
 
-// Testing params
-const size_t max_loop_count = 2000;  // 200 //2000 //8000
+// Experiment Class
+class Experiment {
+  /// The City10000 dataset
+  City10000Dataset dataset_;
 
-const bool is_with_ambiguity = false;  // run original iSAM2 without ambiguities
-// const bool is_with_ambiguity = true;  // run original iSAM2 with ambiguities
+ public:
+  // Parameters with default values
+  size_t maxLoopCount = 2000;  // 200 //2000 //8000
 
-noiseModel::Diagonal::shared_ptr prior_noise_model =
-    noiseModel::Diagonal::Sigmas(
-        (Vector(3) << 0.0001, 0.0001, 0.0001).finished());
+  // false: run original iSAM2 without ambiguities
+  // true: run original iSAM2 with ambiguities
+  bool isWithAmbiguity;
 
-noiseModel::Diagonal::shared_ptr pose_noise_model =
-    noiseModel::Diagonal::Sigmas(
-        (Vector(3) << 1.0 / 30.0, 1.0 / 30.0, 1.0 / 100.0).finished());
+ private:
+  ISAM2 isam2_;
+  NonlinearFactorGraph graph_;
+  Values initial_;
+  Values results;
 
-/**
- * @brief Write the results of optimization to filename.
- *
- * @param results The Values object with the final results.
- * @param num_poses The number of poses to write to the file.
- * @param filename The file name to save the results to.
- */
-void write_results(const Values& results, size_t num_poses,
-                   const std::string& filename = "ISAM2_city10000.txt") {
-  ofstream outfile;
-  outfile.open(filename);
-
-  for (size_t i = 0; i < num_poses; ++i) {
-    Pose2 out_pose = results.at<Pose2>(X(i));
-
-    outfile << out_pose.x() << " " << out_pose.y() << " " << out_pose.theta()
-            << std::endl;
+ public:
+  /// Construct with filename of experiment to run
+  explicit Experiment(const std::string& filename, bool isWithAmbiguity = false)
+      : dataset_(filename), isWithAmbiguity(isWithAmbiguity) {
+    ISAM2Params parameters;
+    parameters.optimizationParams = gtsam::ISAM2GaussNewtonParams(0.0);
+    parameters.relinearizeThreshold = 0.01;
+    parameters.relinearizeSkip = 1;
+    isam2_ = ISAM2(parameters);
   }
-  outfile.close();
-  std::cout << "output written to " << filename << std::endl;
+
+  /// @brief Run the main experiment with a given maxLoopCount.
+  void run() {
+    // Initialize local variables
+    size_t index = 0;
+
+    std::list<double> timeList;
+
+    // Set up initial prior
+    Pose2 priorPose(0, 0, 0);
+    initial_.insert(X(0), priorPose);
+    graph_.addPrior<Pose2>(X(0), priorPose, kPriorNoiseModel);
+
+    // Initial update
+    isam2_.update(graph_, initial_);
+    graph_.resize(0);
+    initial_.clear();
+    results = isam2_.calculateBestEstimate();
+
+    // Start main loop
+    size_t keyS = 0;
+    size_t keyT = 0;
+    clock_t startTime = clock();
+
+    std::vector<Pose2> poseArray;
+    std::pair<size_t, size_t> keys;
+
+    while (dataset_.next(&poseArray, &keys) && index < maxLoopCount) {
+      keyS = keys.first;
+      keyT = keys.second;
+      size_t numMeasurements = poseArray.size();
+
+      Pose2 odomPose;
+      if (isWithAmbiguity) {
+        // Get wrong intentionally
+        int id = index % numMeasurements;
+        odomPose = Pose2(poseArray[id]);
+      } else {
+        odomPose = poseArray[0];
+      }
+
+      if (keyS == keyT - 1) {  // new X(key)
+        initial_.insert(X(keyT), results.at<Pose2>(X(keyS)) * odomPose);
+        graph_.add(
+            BetweenFactor<Pose2>(X(keyS), X(keyT), odomPose, kPoseNoiseModel));
+
+      } else {  // loop
+        int id = index % numMeasurements;
+        if (isWithAmbiguity && id % 2 == 0) {
+          graph_.add(BetweenFactor<Pose2>(X(keyS), X(keyT), odomPose,
+                                          kPoseNoiseModel));
+        } else {
+          graph_.add(BetweenFactor<Pose2>(
+              X(keyS), X(keyT), odomPose,
+              noiseModel::Diagonal::Sigmas(Vector3::Ones() * 10.0)));
+        }
+        index++;
+      }
+
+      isam2_.update(graph_, initial_);
+      graph_.resize(0);
+      initial_.clear();
+      results = isam2_.calculateBestEstimate();
+
+      // Print loop index and time taken in processor clock ticks
+      if (index % 50 == 0 && keyS != keyT - 1) {
+        std::cout << "index: " << index << std::endl;
+        std::cout << "accTime:  " << timeList.back() / CLOCKS_PER_SEC
+                  << std::endl;
+      }
+
+      if (keyS == keyT - 1) {
+        clock_t curTime = clock();
+        timeList.push_back(curTime - startTime);
+      }
+
+      if (timeList.size() % 100 == 0 && (keyS == keyT - 1)) {
+        std::string stepFileIdx = std::to_string(100000 + timeList.size());
+
+        std::ofstream stepOutfile;
+        std::string stepFileName = "step_files/ISAM2_City10000_S" + stepFileIdx;
+        stepOutfile.open(stepFileName + ".txt");
+        for (size_t i = 0; i < (keyT + 1); ++i) {
+          Pose2 outPose = results.at<Pose2>(X(i));
+          stepOutfile << outPose.x() << " " << outPose.y() << " "
+                      << outPose.theta() << std::endl;
+        }
+        stepOutfile.close();
+      }
+    }
+
+    clock_t endTime = clock();
+    clock_t totalTime = endTime - startTime;
+    std::cout << "totalTime: " << totalTime / CLOCKS_PER_SEC << std::endl;
+
+    /// Write results to file
+    writeResult(results, (keyT + 1), "ISAM2_City10000.txt");
+
+    std::ofstream outfileTime;
+    std::string timeFileName = "ISAM2_City10000_time.txt";
+    outfileTime.open(timeFileName);
+    for (auto accTime : timeList) {
+      outfileTime << accTime << std::endl;
+    }
+    outfileTime.close();
+    std::cout << "Written cumulative time to: " << timeFileName << " file."
+              << std::endl;
+  }
+};
+
+/* ************************************************************************* */
+// Function to parse command-line arguments
+void parseArguments(int argc, char* argv[], size_t& maxLoopCount,
+                    bool& isWithAmbiguity) {
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--max-loop-count" && i + 1 < argc) {
+      maxLoopCount = std::stoul(argv[++i]);
+    } else if (arg == "--is-with-ambiguity" && i + 1 < argc) {
+      isWithAmbiguity = bool(std::stoul(argv[++i]));
+    } else if (arg == "--help") {
+      std::cout << "Usage: " << argv[0] << " [options]\n"
+                << "Options:\n"
+                << "  --max-loop-count <value>       Set the maximum loop "
+                   "count (default: 2000)\n"
+                << "  --is-with-ambiguity <value=0/1>     Set whether to use "
+                   "ambiguous measurements "
+                   "(default: false)\n"
+                << "  --help                         Show this help message\n";
+      std::exit(0);
+    }
+  }
 }
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
-  ifstream in(findExampleDataFile("T1_city10000_04.txt"));
-  // ifstream in("../data/mh_T1_city10000_04.txt"); //Type #1 only
-  // ifstream in("../data/mh_T3b_city10000_10.txt"); //Type #3 only
-  // ifstream in("../data/mh_T1_T3_city10000_04.txt"); //Type #1 + Type #3
+  Experiment experiment(findExampleDataFile("T1_City10000_04.txt"));
+  // Experiment experiment("../data/mh_T1_City10000_04.txt"); //Type #1 only
+  // Experiment experiment("../data/mh_T3b_City10000_10.txt"); //Type #3 only
+  // Experiment experiment("../data/mh_T1_T3_City10000_04.txt"); //Type #1 +
+  // Type #3
 
-  // ifstream in("../data/mh_All_city10000_groundtruth.txt");
+  // Parse command-line arguments
+  parseArguments(argc, argv, experiment.maxLoopCount,
+                 experiment.isWithAmbiguity);
 
-  size_t pose_count = 0;
-  size_t index = 0;
-
-  std::list<double> time_list;
-
-  ISAM2Params parameters;
-  parameters.optimizationParams = gtsam::ISAM2GaussNewtonParams(0.0);
-  parameters.relinearizeThreshold = 0.01;
-  parameters.relinearizeSkip = 1;
-
-  ISAM2* isam2 = new ISAM2(parameters);
-
-  NonlinearFactorGraph* graph = new NonlinearFactorGraph();
-
-  Values init_values;
-  Values results;
-
-  double x = 0.0;
-  double y = 0.0;
-  double rad = 0.0;
-
-  Pose2 prior_pose(x, y, rad);
-
-  init_values.insert(X(0), prior_pose);
-  pose_count++;
-
-  graph->addPrior<Pose2>(X(0), prior_pose, prior_noise_model);
-
-  isam2->update(*graph, init_values);
-  graph->resize(0);
-  init_values.clear();
-  results = isam2->calculateBestEstimate();
-
-  //*
-  size_t key_s = 0;
-  size_t key_t = 0;
-
-  clock_t start_time = clock();
-  string str;
-  while (getline(in, str) && index < max_loop_count) {
-    // cout << str << endl;
-    vector<string> parts;
-    split(parts, str, is_any_of(" "));
-
-    key_s = stoi(parts[1]);
-    key_t = stoi(parts[3]);
-
-    int num_measurements = stoi(parts[5]);
-    vector<Pose2> pose_array(num_measurements);
-    for (int i = 0; i < num_measurements; ++i) {
-      x = stod(parts[6 + 3 * i]);
-      y = stod(parts[7 + 3 * i]);
-      rad = stod(parts[8 + 3 * i]);
-      pose_array[i] = Pose2(x, y, rad);
-    }
-
-    Pose2 odom_pose;
-    if (is_with_ambiguity) {
-      // Get wrong intentionally
-      int id = index % num_measurements;
-      odom_pose = Pose2(pose_array[id]);
-    } else {
-      odom_pose = pose_array[0];
-    }
-
-    if (key_s == key_t - 1) {  // new X(key)
-      init_values.insert(X(key_t), results.at<Pose2>(X(key_s)) * odom_pose);
-      pose_count++;
-    } else {  // loop
-      index++;
-    }
-    graph->add(
-        BetweenFactor<Pose2>(X(key_s), X(key_t), odom_pose, pose_noise_model));
-
-    isam2->update(*graph, init_values);
-    graph->resize(0);
-    init_values.clear();
-    results = isam2->calculateBestEstimate();
-
-    // Print loop index and time taken in processor clock ticks
-    if (index % 50 == 0 && key_s != key_t - 1) {
-      std::cout << "index: " << index << std::endl;
-      std::cout << "acc_time:  " << time_list.back() / CLOCKS_PER_SEC
-                << std::endl;
-    }
-
-    if (key_s == key_t - 1) {
-      clock_t cur_time = clock();
-      time_list.push_back(cur_time - start_time);
-    }
-
-    if (time_list.size() % 100 == 0 && (key_s == key_t - 1)) {
-      string step_file_idx = std::to_string(100000 + time_list.size());
-
-      ofstream step_outfile;
-      string step_file_name = "step_files/ISAM2_city10000_S" + step_file_idx;
-      step_outfile.open(step_file_name + ".txt");
-      for (size_t i = 0; i < (key_t + 1); ++i) {
-        Pose2 out_pose = results.at<Pose2>(X(i));
-        step_outfile << out_pose.x() << " " << out_pose.y() << " "
-                     << out_pose.theta() << endl;
-      }
-      step_outfile.close();
-    }
-  }
-
-  clock_t end_time = clock();
-  clock_t total_time = end_time - start_time;
-  cout << "total_time: " << total_time / CLOCKS_PER_SEC << endl;
-
-  /// Write results to file
-  write_results(results, (key_t + 1));
-
-  ofstream outfile_time;
-  std::string time_file_name = "ISAM2_city10000_time.txt";
-  outfile_time.open(time_file_name);
-  for (auto acc_time : time_list) {
-    outfile_time << acc_time << std::endl;
-  }
-  outfile_time.close();
-  cout << "output " << time_file_name << " file." << endl;
+  // Run the experiment
+  experiment.run();
 
   return 0;
 }
