@@ -20,6 +20,10 @@
 
 #include <gtsam/linear/linearExceptions.h>
 
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 13
+#pragma GCC diagnostic warning "-Wstringop-overread"
+#endif
+
 namespace gtsam {
 
   /* ************************************************************************* */
