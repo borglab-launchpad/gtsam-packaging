@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2711.gbpe28c02) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2712.gbp99d79a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @99d79aa253736db95fd8561d0d58230a8d6727be **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e28c02a299cfbfad9375673b36a35b6c8854f347 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 03 Feb 2025 16:38:05 +0000
+  [ jmackay2 ]
+  * Silence a warning about a memcpy overread for gcc 13
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ jmackay2 ]
+  * guard warning supression with a gcc version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Feb 2025 04:13:30 +0000
 
 gtsam (4.1.0-1ubuntu2~2710.gbpbae055) noble; urgency=medium
 
