@@ -1,10 +1,66 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2710.gbpd0deaf) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2711.gbp1ec4dd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1ec4dd4591a338a64f939957d9d7ec91eecfb229 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d0deaf2ba68543e61b3a36a6b5902061d09105d9 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Feb 2025 04:20:16 +0000
+  [ Varun Agrawal ]
+  * function for hybrid odometry factor
+  * add timing for hybrid pruning
+  * check for nullptr
+  * update to add loop closures
+  * time dead mode removal
+  * major script improvements
+  * simplify and add smoother_update_times
+  * human-friendly time printing
+  * kill expNormalize since it isn't used anywhere
+  * add scale() method in DiscreteFactor
+  * scale product and sum so we don't get all 0s
+  * switch between TableFactor and DecisionTreeFactor
+  * specify dead mode removal threshold
+  * make note of bug
+  * timing guards for HybridSmoother
+  * fix scaling
+  * reduce noise model
+  * two pass to for addConditionals
+  * add test
+  * don't optimize each time
+  * kill scaling in DiscreteFactorGraph
+  * remove namespacing
+  * updates
+  * cleanup
+  * fix loop closure factor
+  * improve plotting script for City10000
+  * add ambiguous loop closures to ISAM2 version of City10000
+  * update hybrid City10000 example
+  * fix docstring
+  * kill test since we no longer need it
+  * remove unneeded symbol
+  * update output message
+  * City10000 header file
+  * move more things to City10000 header
+  * major refactor to add Experiment class
+  * get data from dataset
+  * convert graph and isam2 from pointer to object
+  * rename variables
+  * rename filenames
+  * small fixes to City10000.h
+  * remove need for std:: namespace
+  * better naming
+  * fix initialization
+  * make isWithAmbiguity a constructor arg
+  * parseArguments function
+  * remove const qualifier from isWithAmbiguity so we can update it in parseArguments
+  * remove need for boost
+  * update plotting script
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Feb 2025 17:29:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2709.gbpb86d26) noble; urgency=medium
 
