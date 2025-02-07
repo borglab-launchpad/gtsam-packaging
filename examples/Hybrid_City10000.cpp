@@ -29,36 +29,28 @@
 #include <gtsam/slam/dataset.h>
 #include <time.h>
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "City10000.h"
+
 using namespace gtsam;
-using namespace boost::algorithm;
 
 using symbol_shorthand::L;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
-auto kOpenLoopModel = noiseModel::Diagonal::Sigmas(Vector3::Ones() * 10);
-const double kOpenLoopConstant = kOpenLoopModel->negLogConstant();
-
-auto kPriorNoiseModel = noiseModel::Diagonal::Sigmas(
-    (Vector(3) << 0.0001, 0.0001, 0.0001).finished());
-
-auto kPoseNoiseModel = noiseModel::Diagonal::Sigmas(
-    (Vector(3) << 1.0 / 30.0, 1.0 / 30.0, 1.0 / 100.0).finished());
-const double kPoseNoiseConstant = kPoseNoiseModel->negLogConstant();
-
 // Experiment Class
 class Experiment {
+  /// The City10000 dataset
+  City10000Dataset dataset_;
+
  public:
   // Parameters with default values
-  size_t maxLoopCount = 3000;
+  size_t maxLoopCount = 8000;
 
   // 3000: {1: 62s, 2: 21s, 3: 20s, 4: 31s, 5: 39s} No DT optimizations
   // 3000: {1: 65s, 2: 20s, 3: 16s, 4: 21s, 5: 28s} With DT optimizations
@@ -73,31 +65,9 @@ class Experiment {
   double marginalThreshold = 0.9999;
 
  private:
-  std::string filename_;
   HybridSmoother smoother_;
   HybridNonlinearFactorGraph newFactors_, allFactors_;
   Values initial_;
-
-  /**
-   * @brief Write the result of optimization to file.
-   *
-   * @param result The Values object with the final result.
-   * @param num_poses The number of poses to write to the file.
-   * @param filename The file name to save the result to.
-   */
-  void writeResult(const Values& result, size_t numPoses,
-                   const std::string& filename = "Hybrid_city10000.txt") const {
-    std::ofstream outfile;
-    outfile.open(filename);
-
-    for (size_t i = 0; i < numPoses; ++i) {
-      Pose2 outPose = result.at<Pose2>(X(i));
-      outfile << outPose.x() << " " << outPose.y() << " " << outPose.theta()
-              << std::endl;
-    }
-    outfile.close();
-    std::cout << "Output written to " << filename << std::endl;
-  }
 
   /**
    * @brief Create a hybrid loop closure factor where
@@ -135,7 +105,7 @@ class Experiment {
   }
 
   /// @brief Perform smoother update and optimize the graph.
-  auto smootherUpdate(size_t maxNrHypotheses) {
+  clock_t smootherUpdate(size_t maxNrHypotheses) {
     std::cout << "Smoother update: " << newFactors_.size() << std::endl;
     gttic_(SmootherUpdate);
     clock_t beforeUpdate = clock();
@@ -148,7 +118,7 @@ class Experiment {
   }
 
   /// @brief Re-linearize, solve ALL, and re-initialize smoother.
-  auto reInitialize() {
+  clock_t reInitialize() {
     std::cout << "================= Re-Initialize: " << allFactors_.size()
               << std::endl;
     clock_t beforeUpdate = clock();
@@ -164,40 +134,13 @@ class Experiment {
     return afterUpdate - beforeUpdate;
   }
 
-  // Parse line from file
-  std::pair<std::vector<Pose2>, std::pair<size_t, size_t>> parseLine(
-      const std::string& line) const {
-    std::vector<std::string> parts;
-    split(parts, line, is_any_of(" "));
-
-    size_t keyS = stoi(parts[1]);
-    size_t keyT = stoi(parts[3]);
-
-    int numMeasurements = stoi(parts[5]);
-    std::vector<Pose2> poseArray(numMeasurements);
-    for (int i = 0; i < numMeasurements; ++i) {
-      double x = stod(parts[6 + 3 * i]);
-      double y = stod(parts[7 + 3 * i]);
-      double rad = stod(parts[8 + 3 * i]);
-      poseArray[i] = Pose2(x, y, rad);
-    }
-    return {poseArray, {keyS, keyT}};
-  }
-
  public:
   /// Construct with filename of experiment to run
   explicit Experiment(const std::string& filename)
-      : filename_(filename), smoother_(marginalThreshold) {}
+      : dataset_(filename), smoother_(marginalThreshold) {}
 
   /// @brief Run the main experiment with a given maxLoopCount.
   void run() {
-    // Prepare reading
-    std::ifstream in(filename_);
-    if (!in.is_open()) {
-      std::cerr << "Failed to open file: " << filename_ << std::endl;
-      return;
-    }
-
     // Initialize local variables
     size_t discreteCount = 0, index = 0, loopCount = 0, updateCount = 0;
 
@@ -221,9 +164,11 @@ class Experiment {
     Values result;
     size_t keyS = 0, keyT = 0;
     clock_t startTime = clock();
-    std::string line;
-    while (getline(in, line) && index < maxLoopCount) {
-      auto [poseArray, keys] = parseLine(line);
+
+    std::vector<Pose2> poseArray;
+    std::pair<size_t, size_t> keys;
+
+    while (dataset_.next(&poseArray, &keys) && index < maxLoopCount) {
       keyS = keys.first;
       keyT = keys.second;
       size_t numMeasurements = poseArray.size();
@@ -311,13 +256,6 @@ class Experiment {
 
     // Write results to file
     writeResult(result, keyT + 1, "Hybrid_City10000.txt");
-
-    // TODO Write to file
-    //  for (size_t i = 0; i < smoother_update_times.size(); i++) {
-    //    auto p = smoother_update_times.at(i);
-    //    std::cout << p.first << ", " << p.second / CLOCKS_PER_SEC <<
-    //    std::endl;
-    //  }
 
     // Write timing info to file
     std::ofstream outfileTime;

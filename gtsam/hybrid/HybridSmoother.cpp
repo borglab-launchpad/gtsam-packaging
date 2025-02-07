@@ -89,8 +89,14 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
     ordering = *given_ordering;
   }
 
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridSmootherEliminate);
+#endif
   // Eliminate.
   HybridBayesNet bayesNetFragment = *updatedGraph.eliminateSequential(ordering);
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridSmootherEliminate);
+#endif
 
 #ifdef DEBUG_SMOOTHER_DETAIL
   for (auto conditional : bayesNetFragment) {
@@ -110,12 +116,18 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
 
   /// Prune
   if (maxNrLeaves) {
+#if GTSAM_HYBRID_TIMING
+    gttic_(HybridSmootherPrune);
+#endif
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
     DiscreteValues newlyFixedValues;
     bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves, marginalThreshold_,
                                               &newlyFixedValues);
     fixedValues_.insert(newlyFixedValues);
+#if GTSAM_HYBRID_TIMING
+    gttoc_(HybridSmootherPrune);
+#endif
   }
 
 #ifdef DEBUG_SMOOTHER
@@ -158,7 +170,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
     // in the previous `hybridBayesNet` to the graph
 
     // New conditionals to add to the graph
-    gtsam::HybridBayesNet newConditionals;
+    HybridBayesNet newConditionals;
 
     // NOTE(Varun) Using a for-range loop doesn't work since some of the
     // conditionals are invalid pointers
