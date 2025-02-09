@@ -1,10 +1,37 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2714.gbp9a6b78) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2715.gbp97f069) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @97f069a27e0a0e3c594931522655b7056a8e22a1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9a6b78994c69610f185a13041b6af9dc33bd6bf4 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Feb 2025 17:33:41 +0000
+  [ Varun Agrawal ]
+  * remove rvalue argument so we can wrap method
+  * wrap HybridSmoother
+  * basic skeleton of python script
+  * implement City10000Dataset class
+  * finish up script
+  * fix bugs
+  * wrap HybridNonlinearFactorGraph methods
+  * wrap negLogConstant in noiseModel
+  * wrap more HybridSmoother methods
+  * update C++ script
+  * undo C++ changes and add additional reInitialize method
+  * move HybridSmoother method definitions to cpp file
+  * City10000 plotting script
+  * module docstring
+  * parse command line arguments
+  * use command line args
+  * use loop
+  * improve plot_city10000 script
+  * move to python examples directory
+  * fix docstring
+  * add local .gitignore to ignore results files
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 09 Feb 2025 18:44:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2713.gbpf88127) noble; urgency=medium
 
