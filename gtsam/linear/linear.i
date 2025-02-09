@@ -32,6 +32,8 @@ virtual class Gaussian : gtsam::noiseModel::Base {
   gtsam::Vector unwhiten(gtsam::Vector v) const;
   gtsam::Matrix Whiten(gtsam::Matrix H) const;
 
+  double negLogConstant() const;
+
   // enabling serialization functionality
   void serializable() const;
 };

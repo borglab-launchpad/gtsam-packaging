@@ -25,6 +25,16 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+void HybridSmoother::reInitialize(HybridBayesNet &&hybridBayesNet) {
+  hybridBayesNet_ = std::move(hybridBayesNet);
+}
+
+/* ************************************************************************* */
+void HybridSmoother::reInitialize(HybridBayesNet &hybridBayesNet) {
+  this->reInitialize(std::move(hybridBayesNet));
+}
+
+/* ************************************************************************* */
 Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
                                      const KeySet &lastKeysToEliminate) {
   // Get all the discrete keys from the factors
@@ -78,9 +88,11 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
   // If no ordering provided, then we compute one
   if (!given_ordering.has_value()) {
     // Get the keys from the new factors
-    KeySet continuousKeysToInclude;  // Scheme 1: empty, 15sec/2000, 64sec/3000 (69s without TF)
-    // continuousKeysToInclude = newFactors.keys();  // Scheme 2: all, 8sec/2000, 160sec/3000
-    // continuousKeysToInclude = updatedGraph.keys();  // Scheme 3: all, stopped after 80sec/2000
+    KeySet continuousKeysToInclude;  // Scheme 1: empty, 15sec/2000, 64sec/3000
+                                     // (69s without TF)
+    // continuousKeysToInclude = newFactors.keys();  // Scheme 2: all,
+    // 8sec/2000, 160sec/3000 continuousKeysToInclude = updatedGraph.keys();  //
+    // Scheme 3: all, stopped after 80sec/2000
 
     // Since updatedGraph now has all the connected conditionals,
     // we can get the correct ordering.
