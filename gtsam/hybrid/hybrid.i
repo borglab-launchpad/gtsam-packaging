@@ -227,14 +227,20 @@ class HybridNonlinearFactorGraph {
   void push_back(gtsam::HybridFactor* factor);
   void push_back(gtsam::NonlinearFactor* factor);
   void push_back(gtsam::DiscreteFactor* factor);
+  void push_back(const gtsam::HybridNonlinearFactorGraph& graph);
+  // TODO(Varun) Wrap add() methods
+
   gtsam::HybridGaussianFactorGraph linearize(
       const gtsam::Values& continuousValues) const;
 
   bool empty() const;
   void remove(size_t i);
   size_t size() const;
+  void resize(size_t size);
   gtsam::KeySet keys() const;
   const gtsam::HybridFactor* at(size_t i) const;
+  gtsam::HybridNonlinearFactorGraph restrict(
+      const gtsam::DiscreteValues& assignment) const;
 
   void print(string s = "HybridNonlinearFactorGraph\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -243,9 +249,8 @@ class HybridNonlinearFactorGraph {
 
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 class HybridNonlinearFactor : gtsam::HybridFactor {
-  HybridNonlinearFactor(
-      const gtsam::DiscreteKey& discreteKey,
-      const std::vector<gtsam::NoiseModelFactor*>& factors);
+  HybridNonlinearFactor(const gtsam::DiscreteKey& discreteKey,
+                        const std::vector<gtsam::NoiseModelFactor*>& factors);
 
   HybridNonlinearFactor(
       const gtsam::DiscreteKey& discreteKey,
@@ -264,6 +269,31 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
   void print(string s = "HybridNonlinearFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
+};
+
+#include <gtsam/hybrid/HybridSmoother.h>
+class HybridSmoother {
+  HybridSmoother(const std::optional<double> marginalThreshold = std::nullopt);
+
+  const gtsam::DiscreteValues& fixedValues() const;
+  void reInitialize(gtsam::HybridBayesNet& hybridBayesNet);
+
+  void update(
+      const gtsam::HybridGaussianFactorGraph& graph,
+      std::optional<size_t> maxNrLeaves = std::nullopt,
+      const std::optional<gtsam::Ordering> given_ordering = std::nullopt);
+
+  gtsam::Ordering getOrdering(const gtsam::HybridGaussianFactorGraph& factors,
+                              const gtsam::KeySet& newFactorKeys);
+
+  std::pair<gtsam::HybridGaussianFactorGraph, gtsam::HybridBayesNet>
+  addConditionals(const gtsam::HybridGaussianFactorGraph& graph,
+                  const gtsam::HybridBayesNet& hybridBayesNet) const;
+
+  gtsam::HybridGaussianConditional* gaussianMixture(size_t index) const;
+
+  const gtsam::HybridBayesNet& hybridBayesNet() const;
+  gtsam::HybridValues optimize() const;
 };
 
 }  // namespace gtsam
