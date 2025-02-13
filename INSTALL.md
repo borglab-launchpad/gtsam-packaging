@@ -1,4 +1,6 @@
-# Quickstart
+# Installation Guide
+
+## Quickstart
 
 In the root library folder execute:
 

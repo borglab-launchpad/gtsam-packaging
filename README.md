@@ -1,4 +1,4 @@
-# README - Georgia Tech Smoothing and Mapping Library
+# GTSAM: Georgia Tech Smoothing and Mapping Library
 
 **Important Note**
 
