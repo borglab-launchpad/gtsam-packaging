@@ -1,0 +1,31 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: 7a62a86d-a893-4ab1-9473-b1a957f78902
+  title: GTSAM Docs
+  description: GTSAM is a library of C++ classes that implement smoothing and mapping (SAM) in robotics and vision, using factor graphs and Bayes networks as the underlying computing paradigm rather than sparse matrices.
+  github: https://github.com/borglab/gtsam
+  toc:
+    - file: README.md
+    - file: INSTALL.md
+    - title: User Guide
+      children: 
+      - title: Geometry
+        children:
+        - pattern: './gtsam/geometry/doc/*'
+site:
+  nav: 
+    - title: Getting started
+      children:
+      - title: Overview
+        url: /readme
+      - title: Install guide
+        url: /install
+    - title: C++ reference
+      url: https://gtsam.org/doxygen/
+  template: book-theme
+
+  # TODO: Graphics for favicon and to replace "Made with MyST" in the top left
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png

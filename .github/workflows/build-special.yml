@@ -1,6 +1,11 @@
 name: Special Cases CI
 
-on: [pull_request]
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb' 
+      - 'myst.yml'
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
