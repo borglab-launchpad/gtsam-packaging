@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2723.gbp17cc09) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2724.gbp31910a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @31910ae18b6da3058b317a005e1be5695d8eadb4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @17cc093acbf1ba1ac1c36f6ba2f52604d7f6d3e2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 09 Feb 2025 18:48:27 +0000
+  [ p-zach ]
+  * Set up MyST deploy
+  * Fix Colab buttons
+  * Only redeploy on docs change
+  * Python reference -> user guide with sections
+  * Modify build workflows to only trigger on non-doc changes
+  * Fix Colab button links
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Feb 2025 16:15:00 +0000
 
 gtsam (4.1.0-1ubuntu2~2722.gbpfde20e) noble; urgency=medium
 
