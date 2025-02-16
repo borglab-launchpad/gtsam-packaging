@@ -8,11 +8,11 @@ project:
   toc:
     - file: README.md
     - file: INSTALL.md
-    - title: User Guide
+    - file: ./gtsam/user_guide.md
       children: 
-      - title: Geometry
+      - file: ./gtsam/geometry/geometry.md
         children:
-        - pattern: './gtsam/geometry/doc/*'
+        - pattern: ./gtsam/geometry/doc/*
 site:
   nav: 
     - title: Getting started
