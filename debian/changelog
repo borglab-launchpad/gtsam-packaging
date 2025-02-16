@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2722.gbp935e1a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2723.gbpd46cb9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d46cb910b5c305aa44935b99e4d7acee37b800fd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @935e1a82da616c3712a9a39f82a744b3a3dcaf5f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 13 Feb 2025 16:20:38 +0000
+  [ p-zach ]
+  * Add overviews for existing docs folders on MyST site
+  * Edit required check so that it doesn't hang when only non-code files modified
+  * Edit correct workflow
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 16 Feb 2025 05:46:38 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2721.gbp787a3b) noble; urgency=medium
 
