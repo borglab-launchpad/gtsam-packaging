@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2726.gbp084152) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2727.gbpf3925a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f3925ad437eb33bcf13eb03379f9b111ad065b35 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0841525f539595e9832e19eab344ddbc3d12f9a4 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 16 Feb 2025 05:50:39 +0000
+  [ p-zach ]
+  * Create doc ipynb for Rot2
+
+  [ Porter Zach ]
+  * Fix req workflow
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Feb 2025 19:15:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2725.gbpe6a7c8) noble; urgency=medium
 
