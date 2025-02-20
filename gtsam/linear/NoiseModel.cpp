@@ -191,8 +191,6 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   gttic(Gaussian_noise_model_QR);
 
-  static const bool debug = false;
-
   // get size(A) and maxRank
   // TODO: really no rank problems ?
    size_t m = Ab.rows(), n = Ab.cols()-1;
@@ -201,15 +199,8 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
 
-  if(debug) gtsam::print(Ab, "Whitened Ab: ");
-
   // Eigen QR - much faster than older householder approach
   inplace_QR(Ab);
-  Ab.triangularView<Eigen::StrictlyLower>().setZero();
-
-  // hand-coded householder implementation
-  // TODO: necessary to isolate last column?
-  // householder(Ab, maxRank);
 
   return noiseModel::Unit::Create(maxRank);
 }

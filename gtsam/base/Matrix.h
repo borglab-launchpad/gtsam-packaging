@@ -217,19 +217,6 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
 }
 
 /**
- * Zeros all of the elements below the diagonal of a matrix, in place
- * @param A is a matrix, to be modified in place
- * @param cols is the number of columns to zero, use zero for all columns
- */
-template<class MATRIX>
-void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
-  const size_t m = A.rows(), n = A.cols();
-  const size_t k = (cols) ? std::min(cols, std::min(m,n)) : std::min(m,n);
-  for (size_t j=0; j<k; ++j)
-    A.col(j).segment(j+1, m-(j+1)).setZero();
-}
-
-/**
  * static transpose function, just calls Eigen transpose member function
  */
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
