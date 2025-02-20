@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2730.gbp7abdaa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2731.gbp0bff40) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0bff40294f3281ca3b9d0a8b69f02ffdef0df3f0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7abdaa10ea69e47f478320fb815dff0c0b611ed2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Feb 2025 19:19:30 +0000
+  [ Frank Dellaert ]
+  * Got rid of zeroBelowDiagonal, as Eigen has it, and was used in only a single place
+  * inplace_QR *already* zeros out below diagonal
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 20 Feb 2025 21:50:01 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2729.gbpddfb37) noble; urgency=medium
 
