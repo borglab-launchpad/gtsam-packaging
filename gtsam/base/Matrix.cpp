@@ -639,7 +639,7 @@ void inplace_QR(Matrix& A){
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 #endif
 
-  zeroBelowDiagonal(A);
+  A.triangularView<Eigen::StrictlyLower>().setZero();
 }
 
 } // namespace gtsam

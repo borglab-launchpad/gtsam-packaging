@@ -827,8 +827,6 @@ std::pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr> Eliminate
     // The inplace variant will have no valid rows anymore below m==n
     // and only entries above the diagonal are valid.
     inplace_QR(Ab.matrix());
-    // We zero below the diagonal to agree with the result from noieModel QR
-    Ab.matrix().triangularView<Eigen::StrictlyLower>().setZero();
     size_t m = Ab.rows(), n = Ab.cols() - 1;
     size_t maxRank = min(m, n);
     jointFactor->model_ = noiseModel::Unit::Create(maxRank);

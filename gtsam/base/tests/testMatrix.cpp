@@ -597,61 +597,6 @@ TEST(Matrix, scalar_divide )
 }
 
 /* ************************************************************************* */
-TEST(Matrix, zero_below_diagonal ) {
-  Matrix A1 = (Matrix(3, 4) <<
-      1.0, 2.0, 3.0, 4.0,
-      1.0, 2.0, 3.0, 4.0,
-      1.0, 2.0, 3.0, 4.0).finished();
-
-  Matrix expected1 = (Matrix(3, 4) <<
-      1.0, 2.0, 3.0, 4.0,
-      0.0, 2.0, 3.0, 4.0,
-      0.0, 0.0, 3.0, 4.0).finished();
-  Matrix actual1r = A1;
-  zeroBelowDiagonal(actual1r);
-  EXPECT(assert_equal(expected1, actual1r, 1e-10));
-
-  Matrix actual1c = A1;
-  zeroBelowDiagonal(actual1c);
-  EXPECT(assert_equal(Matrix(expected1), actual1c, 1e-10));
-
-  actual1c = A1;
-  zeroBelowDiagonal(actual1c, 4);
-  EXPECT(assert_equal(Matrix(expected1), actual1c, 1e-10));
-
-  Matrix A2 = (Matrix(5, 3) <<
-        1.0, 2.0, 3.0,
-        1.0, 2.0, 3.0,
-        1.0, 2.0, 3.0,
-        1.0, 2.0, 3.0,
-        1.0, 2.0, 3.0).finished();
-  Matrix expected2 = (Matrix(5, 3) <<
-      1.0, 2.0, 3.0,
-      0.0, 2.0, 3.0,
-      0.0, 0.0, 3.0,
-      0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0).finished();
-
-  Matrix actual2r = A2;
-  zeroBelowDiagonal(actual2r);
-  EXPECT(assert_equal(expected2, actual2r, 1e-10));
-
-  Matrix actual2c = A2;
-  zeroBelowDiagonal(actual2c);
-  EXPECT(assert_equal(Matrix(expected2), actual2c, 1e-10));
-
-  Matrix expected2_partial = (Matrix(5, 3) <<
-        1.0, 2.0, 3.0,
-        0.0, 2.0, 3.0,
-        0.0, 2.0, 3.0,
-        0.0, 2.0, 3.0,
-        0.0, 2.0, 3.0).finished();
-  actual2c = A2;
-  zeroBelowDiagonal(actual2c, 1);
-  EXPECT(assert_equal(Matrix(expected2_partial), actual2c, 1e-10));
-}
-
-/* ************************************************************************* */
 TEST(Matrix, inverse )
 {
   Matrix A(3, 3);
@@ -825,7 +770,7 @@ TEST(Matrix, eigen_QR )
       10, 0, 0,  0,-10,0,   2,
       00, 10,0, 0, 0, -10, -1).finished());
   Matrix actual = A.householderQr().matrixQR();
-  zeroBelowDiagonal(actual);
+  actual.triangularView<Eigen::StrictlyLower>().setZero();
 
   EXPECT(assert_equal(expected, actual, 1e-3));
 
