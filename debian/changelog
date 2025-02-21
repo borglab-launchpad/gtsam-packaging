@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2734.gbp488934) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2735.gbp506a81) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @506a819ee5c6531790a2666b7a6a09f2144c883a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4889345a0faebe8abc6e562952dc5eadfe4fc61d **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 20 Feb 2025 21:55:33 +0000
+  [ mkielo3 ]
+  * Updated elaboratePoint2KalmanFilter.cpp example and easyPoint2KF bugfix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ mkielo3 ]
+  * Addressed PR feedback: applied suggested improvements
+  * Reverted unintended changes to nonlinear.i
+  * Removed make_shared & x variables
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 21 Feb 2025 06:01:50 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2733.gbpdd7eab) noble; urgency=medium
 
