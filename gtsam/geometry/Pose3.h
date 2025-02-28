@@ -132,7 +132,10 @@ public:
    * @param T End point of interpolation.
    * @param t A value in [0, 1].
    */
-  Pose3 interpolateRt(const Pose3& T, double t) const;
+  Pose3 interpolateRt(const Pose3& T, double t,
+                      OptionalJacobian<6, 6> Hself = {},
+                      OptionalJacobian<6, 6> Harg = {},
+                      OptionalJacobian<6, 1> Ht = {}) const;
 
   /// @}
   /// @name Lie Group
