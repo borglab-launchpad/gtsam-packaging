@@ -171,9 +171,29 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
+Pose3 Pose3::interpolateRt(const Pose3& T, double t,
+                           OptionalJacobian<6, 6> Hself,
+                           OptionalJacobian<6, 6> Harg,
+                           OptionalJacobian<6, 1> Ht) const {
+  if(Hself || Harg || Ht){
+    typename MakeJacobian<Rot3, Rot3>::type HselfRot, HargRot;
+    typename MakeJacobian<Rot3, double>::type HtRot;
+    typename MakeJacobian<Point3, Point3>::type HselfPoint, HargPoint;
+    typename MakeJacobian<Point3, double>::type HtPoint;
+
+    Rot3 Rint = interpolate<Rot3>(R_, T.R_, t, HselfRot, HargRot, HtRot);
+    Point3 Pint = interpolate<Point3>(t_, T.t_, t, HselfPoint, HargPoint, HtPoint);
+    Pose3 result = Pose3(Rint, Pint);
+
+    if(Hself) *Hself << HselfRot, Z_3x3, Z_3x3, Rint.transpose() * R_.matrix() * HselfPoint;
+    if(Harg) *Harg << HargRot, Z_3x3, Z_3x3, Rint.transpose() * T.R_.matrix() * HargPoint;
+    if(Ht) *Ht << HtRot, Rint.transpose() * HtPoint;
+
+    return result;
+  }
   return Pose3(interpolate<Rot3>(R_, T.R_, t),
                interpolate<Point3>(t_, T.t_, t));
+
 }
 
 /* ************************************************************************* */

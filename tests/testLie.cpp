@@ -139,16 +139,19 @@ TEST(Lie, Interpolate) {
   Product y(Point2(6, 7), Pose2(8, 9, 0));
 
   double t;
-  Matrix actH1, numericH1, actH2, numericH2;
+  Matrix actH1, numericH1, actH2, numericH2, actH3, numericH3;
 
   t = 0.0;
-  interpolate<Product>(x, y, t, actH1, actH2);
+  interpolate<Product>(x, y, t, actH1, actH2, actH3);
   numericH1 = numericalDerivative31<Product, Product, Product, double>(
       interpolate_proxy, x, y, t);
   EXPECT(assert_equal(numericH1, actH1, tol));
   numericH2 = numericalDerivative32<Product, Product, Product, double>(
       interpolate_proxy, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, tol));
+  numericH3 = numericalDerivative33<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH3, actH3, tol));
 
   t = 0.5;
   interpolate<Product>(x, y, t, actH1, actH2);
@@ -158,6 +161,9 @@ TEST(Lie, Interpolate) {
   numericH2 = numericalDerivative32<Product, Product, Product, double>(
       interpolate_proxy, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, tol));
+  numericH3 = numericalDerivative33<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH3, actH3, tol));
 
   t = 1.0;
   interpolate<Product>(x, y, t, actH1, actH2);
@@ -167,6 +173,9 @@ TEST(Lie, Interpolate) {
   numericH2 = numericalDerivative32<Product, Product, Product, double>(
       interpolate_proxy, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, tol));
+  numericH3 = numericalDerivative33<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH3, actH3, tol));
 }
 
 //******************************************************************************
