@@ -1,10 +1,29 @@
-gtsam (4.1.0-1ubuntu2~2747.gbp837187) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2748.gbpae3d58) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ae3d5882e694035f61b7d83e38c2b327929de438 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8371870d3d4b8f3f0222d886bbe2fa7062bd4e79 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Feb 2025 14:46:53 +0000
+  [ p-zach ]
+  * Fix header
+  * Add Rot3
+
+  [ Brett Downing ]
+  * adds jacobian for t in Lie::Interpolate
+  * adds jacobians to Pose3::InterpolateRt
+  * adds Expression wrapper for Pose3::InterpolateRt
+  * exposes templated Expression wrappers for interpolate
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Brett Downing ]
+  * adds test for expression wrappers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Feb 2025 03:50:36 +0000
 
 gtsam (4.1.0-1ubuntu2~2746.gbpa48640) noble; urgency=medium
 
