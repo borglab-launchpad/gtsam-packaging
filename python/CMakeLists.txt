@@ -284,9 +284,9 @@ endif()
 add_custom_target(
         python-stubs
         COMMAND
-        ${CMAKE_COMMAND} -E env
-        "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam
+          ${CMAKE_COMMAND} -E env
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+        ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
 )
