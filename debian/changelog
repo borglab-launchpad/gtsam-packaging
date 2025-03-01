@@ -1,10 +1,51 @@
-gtsam (4.1.0-1ubuntu2~2751.gbpc06fd0) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2752.gbp1a5773) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1a57730928423385d9cac61b4b25a1a17d898544 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c06fd04cf67f1252666fb158aaf39076ebe836ef **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 28 Feb 2025 03:54:40 +0000
+  [ Yashas Ambati ]
+  * Create initial workflow for cibuildwheel
+  * Update CMake command to point to right path
+  * Update another bad path
+  * Fix ANOTHER bad path
+  * Install dependencies in manylinux container as well
+  * Trying something
+  * Install boost from source, delete CMakeCache before building
+  * Make shared libraries
+  * Update make command
+  * Use CMake as generator
+  * Modify setup.py.in to force root to be platform-dependent
+  * Publish to TestPyPI after wheels are built
+  * Set package name to gtsam-nightly if nightly build
+  * Pass NIGHTLY env variable to cibw container
+  * Address some comments on PR
+  * Make version string PEP440 compliant
+  * Make upload to PyPI verbose
+  * New version string for gtsam-develop
+  * Run workflow on push to develop
+  * Add target for Linux ARM
+  * Add more python versions for Linux x86, do not install ninja for arm64 archs
+  * Add MacOS targets, modify build script for Darwin, generate type annotations
+  * Fix install rules for macOS support
+  * Potential fix for python-stubs target file not found
+  * Minor fix
+  * Use sysctl to get number of CPUs if on MacOS
+  * Comment out MacOS targets for now
+  * Use same system time for version string across jobs
+  * Add all Python version for Linux aarch64, add names to stages
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Yashas Ambati ]
+  * Add comments
+  * Switch to PyPI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 Mar 2025 00:47:07 +0000
 
 gtsam (4.1.0-1ubuntu2~2750.gbp5d697f) noble; urgency=medium
 
