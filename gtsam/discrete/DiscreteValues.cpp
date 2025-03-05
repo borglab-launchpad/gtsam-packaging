@@ -145,6 +145,11 @@ string DiscreteValues::html(const KeyFormatter& keyFormatter,
 }
 
 /* ************************************************************************ */
+void PrintDiscreteValues(const DiscreteValues& values, const std::string& s,
+                         const KeyFormatter& keyFormatter) {
+  values.print(s, keyFormatter);
+}
+
 string markdown(const DiscreteValues& values, const KeyFormatter& keyFormatter,
                 const DiscreteValues::Names& names) {
   return values.markdown(keyFormatter, names);
