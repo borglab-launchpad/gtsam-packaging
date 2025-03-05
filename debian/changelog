@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2758.gbp305f68) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2759.gbpc58c6d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c58c6d4a95237984fbb9689fcc8f7abc8adb0534 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @305f683f3fc74a1b2e308204e54942e24ffb07ab **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 Mar 2025 14:56:18 +0000
+  [ Dan McGann ]
+  * Bugfix Bearing/Range Pose3toPose3 Jacobians
+  * Update test bearingPose3toPose3
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 Mar 2025 15:24:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2757.gbp389df9) noble; urgency=medium
 
