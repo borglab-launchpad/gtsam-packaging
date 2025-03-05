@@ -442,9 +442,11 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> Hself,
 /* ************************************************************************* */
 double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> Hself,
                     OptionalJacobian<1, 6> Hpose) const {
+  Matrix36 D_point_pose;
   Matrix13 D_local_point;
-  double r = range(pose.translation(), Hself, Hpose ? &D_local_point : 0);
-  if (Hpose) *Hpose << Matrix13::Zero(), D_local_point * pose.rotation().matrix();
+  Point3 point = pose.translation(Hpose ? &D_point_pose : 0);
+  double r = range(point, Hself, Hpose ? &D_local_point : 0);
+  if (Hpose) *Hpose = D_local_point * D_point_pose;
   return r;
 }
 
@@ -467,12 +469,13 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> Hself,
 
 /* ************************************************************************* */
 Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
-                     OptionalJacobian<2, 6> Hpose) const {
-  if (Hpose) {
-    Hpose->setZero();
-    return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
-  }
-  return bearing(pose.translation(), Hself, {});
+  OptionalJacobian<2, 6> Hpose) const {
+  Matrix36 D_point_pose;
+  Matrix23 D_local_point;
+  Point3 point = pose.translation(Hpose ? &D_point_pose : 0);
+  Unit3 b = bearing(point, Hself, Hpose ? &D_local_point : 0);
+  if (Hpose) *Hpose = D_local_point * D_point_pose;
+  return b;
 }
 
 /* ************************************************************************* */
