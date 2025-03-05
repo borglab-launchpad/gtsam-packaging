@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~2759.gbp246380) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2760.gbp8b5a2d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8b5a2dbe93e3f9997390d3bf78a1fe87721c5f08 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @246380dc54142a55884326b521e8b7af1b953a88 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 01 Mar 2025 04:51:37 +0000
+  [ Varun Agrawal ]
+  * rename to reinitialize and separate method for saving results
+  * wrap choose method
+  * plot all hypotheses
+  * improve plot saving
+  * check for invalid Bayes nets
+  * more command line arguments
+  * wrap more HybridBayesNet methods
+  * arg to plot hypotheses
+  * small fixes
+  * generate a single plot with subplots
+  * return whether loop is ambiguous
+  * update noise model so we don't get ILS
+  * add discrete assignments as labels
+  * better filenaming and improved plotting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * helper method for printing DiscreteValues
+  * fix return type of DiscreteSearch method
+  * add probability values for modes in each subplot and better plotting
+  * check CI
+  * Revert "check CI"
+  * set GTSAM_EXPORT for PrintDiscreteValues
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 Mar 2025 14:50:10 +0000
 
 gtsam (4.1.0-1ubuntu2~2758.gbp233f13) noble; urgency=medium
 
