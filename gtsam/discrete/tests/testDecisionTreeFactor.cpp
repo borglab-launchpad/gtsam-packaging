@@ -132,7 +132,6 @@ TEST(DecisionTreeFactor, Divide) {
   KeySet keys(joint.keys());
   keys.insert(pA.keys().begin(), pA.keys().end());
   EXPECT(assert_inequal(KeySet(pS.keys()), keys));
-  
 }
 
 /* ************************************************************************* */
@@ -234,6 +233,12 @@ TEST(DecisionTreeFactor, Prune) {
   maxNrAssignments = 5;
   auto pruned3 = factor.prune(maxNrAssignments);
   EXPECT(assert_equal(expected3, pruned3));
+
+  // Edge case where the number of hypotheses are less than maxNrAssignments
+  DecisionTreeFactor f(A, "0.50001 0.49999");
+  auto pruned4 = f.prune(10);
+  DecisionTreeFactor expected4(A, "0.50001 0.49999");
+  EXPECT(assert_equal(expected4, pruned4));
 }
 
 /* ************************************************************************** */

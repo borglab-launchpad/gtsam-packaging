@@ -501,6 +501,10 @@ namespace gtsam {
     };
     this->visitWith(op);
 
+    // If total number of hypotheses is less than N, return 0.0
+    if (min_heap.size() < N) {
+      return 0.0;
+    }
     return min_heap.top();
   }
 
