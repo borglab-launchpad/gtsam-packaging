@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2767.gbp69633d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2768.gbp76963b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @76963bec7eedeab7cd933f4de9893b7228ec1151 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @69633d2732a3bb3b1e78d86178c9174a80178327 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 05 Mar 2025 15:32:47 +0000
+  [ Varun Agrawal ]
+  * add edge case pruning test and fix
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Mar 2025 18:41:51 +0000
 
 gtsam (4.1.0-1ubuntu2~2766.gbp49b317) noble; urgency=medium
 
