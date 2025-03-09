@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2766.gbp1c7043) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2767.gbp8cb3f3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8cb3f3748f8988e5abfb93c3aa289a5c4ee9461a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1c704383b10549665755ccc3a2c6086f137820fe **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 07 Mar 2025 18:46:09 +0000
+  [ Frank Dellaert ]
+  * Hat and Vee enforcement
+  * Hat and Vee in geometry
+  * Hat and Vee in navigation
+  * MatrixLieGroup
+  * MatrixLieGroup in geometry
+  * MatrixLieGroup in navigation
+  * Skip a unit test that became very slow
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 09 Mar 2025 17:00:24 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2765.gbpbf9a89) noble; urgency=medium
 
