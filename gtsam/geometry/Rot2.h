@@ -33,7 +33,6 @@ namespace gtsam {
    * \nosubgrouping
    */
   class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
-
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
@@ -125,6 +124,8 @@ namespace gtsam {
     /// @name Lie Group
     /// @{
 
+    using LieAlgebra = Matrix2;
+
     /// Exponential map at identity - create a rotation from canonical coordinates
     static Rot2 Expmap(const Vector1& v, ChartJacobian H = {});
 
@@ -155,6 +156,12 @@ namespace gtsam {
     };
 
     using LieGroup<Rot2, 1>::inverse; // version with derivative
+
+    /// Hat maps from tangent vector to Lie algebra
+    static Matrix2 Hat(const Vector1& xi);
+
+    /// Vee maps from Lie algebra to tangent vector
+    static Vector1 Vee(const Matrix2& X);
 
     /// @}
     /// @name Group Action on Point2
@@ -216,7 +223,9 @@ namespace gtsam {
     /** Find closest valid rotation matrix, given a 2x2 matrix */
     static Rot2 ClosestTo(const Matrix2& M);
 
-  private:
+    /// @}
+
+    private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
@@ -230,9 +239,9 @@ namespace gtsam {
   };
 
   template<>
-  struct traits<Rot2> : public internal::LieGroup<Rot2> {};
+  struct traits<Rot2> : public internal::MatrixLieGroup<Rot2> {};
 
   template<>
-  struct traits<const Rot2> : public internal::LieGroup<Rot2> {};
+  struct traits<const Rot2> : public internal::MatrixLieGroup<Rot2> {};
 
 } // gtsam

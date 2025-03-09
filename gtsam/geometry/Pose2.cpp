@@ -204,6 +204,20 @@ Pose2 Pose2::inverse() const {
 }
 
 /* ************************************************************************* */
+Matrix3 Pose2::Hat(const Pose2::TangentVector& xi) {
+  Matrix3 X;
+  X << 0., -xi.z(), xi.x(),
+    xi.z(), 0., xi.y(),
+    0., 0., 0.;
+  return X;
+}
+
+/* ************************************************************************* */
+Pose2::TangentVector Pose2::Vee(const Matrix3& X) {
+  return TangentVector(X(0, 2), X(1, 2), X(1,0));
+}
+
+/* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
 Point2 Pose2::transformTo(const Point2& point,
     OptionalJacobian<2, 3> Hpose, OptionalJacobian<2, 2> Hpoint) const {

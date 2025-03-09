@@ -41,6 +41,13 @@ static const Pose3 T2(Rot3::Rodrigues(0.3,0.2,0.1),P2);
 static const Pose3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3));
 static const double tol=1e-5;
 
+//******************************************************************************
+TEST(Pose3 , Concept) {
+  GTSAM_CONCEPT_ASSERT(IsGroup<Pose3 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Pose3 >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<Pose3 >);
+}
+
 /* ************************************************************************* */
 TEST( Pose3, equals)
 {
@@ -221,20 +228,41 @@ TEST(Pose3, AdjointTranspose)
 }
 
 /* ************************************************************************* */
-// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose3, HatAndVee) {
+  // Create a few test vectors
+  Vector6 v1(1, 2, 3, 4, 5, 6);
+  Vector6 v2(0.1, -0.5, 1.0, -1.0, 0.5, 2.0);
+  Vector6 v3(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Pose3::Vee(Pose3::Hat(v1))));
+  EXPECT(assert_equal(v2, Pose3::Vee(Pose3::Hat(v2))));
+  EXPECT(assert_equal(v3, Pose3::Vee(Pose3::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix4 expected;
+  expected << 0, -3, 2, 4,
+    3, 0, -1, 5,
+    -2, 1, 0, 6,
+    0, 0, 0, 0;
+
+  EXPECT(assert_equal(expected, Pose3::Hat(v1)));
+}
+
+/* ************************************************************************* */
+// assert that T*Hat(xi)*T^-1 is equal to Hat(Ad_T(xi))
 TEST(Pose3, Adjoint_hat)
 {
-  auto hat = [](const Vector& xi) { return ::wedge<Pose3>(xi); };
-  Matrix4 expected = T.matrix() * hat(screwPose3::xi) * T.matrix().inverse();
-  Matrix4 xiprime = hat(T.Adjoint(screwPose3::xi));
+  Matrix4 expected = T.matrix() * Pose3::Hat(screwPose3::xi) * T.matrix().inverse();
+  Matrix4 xiprime = Pose3::Hat(T.Adjoint(screwPose3::xi));
   EXPECT(assert_equal(expected, xiprime, 1e-6));
 
-  Matrix4 expected2 = T2.matrix() * hat(screwPose3::xi) * T2.matrix().inverse();
-  Matrix4 xiprime2 = hat(T2.Adjoint(screwPose3::xi));
+  Matrix4 expected2 = T2.matrix() * Pose3::Hat(screwPose3::xi) * T2.matrix().inverse();
+  Matrix4 xiprime2 = Pose3::Hat(T2.Adjoint(screwPose3::xi));
   EXPECT(assert_equal(expected2, xiprime2, 1e-6));
 
-  Matrix4 expected3 = T3.matrix() * hat(screwPose3::xi) * T3.matrix().inverse();
-  Matrix4 xiprime3 = hat(T3.Adjoint(screwPose3::xi));
+  Matrix4 expected3 = T3.matrix() * Pose3::Hat(screwPose3::xi) * T3.matrix().inverse();
+  Matrix4 xiprime3 = Pose3::Hat(T3.Adjoint(screwPose3::xi));
   EXPECT(assert_equal(expected3, xiprime3, 1e-6));
 }
 

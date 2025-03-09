@@ -40,9 +40,12 @@ class GTSAM_EXPORT Pose2: public LieGroup<Pose2, 3> {
 
 public:
 
-  /** Pose Concept requirements */
-  typedef Rot2 Rotation;
-  typedef Point2 Translation;
+  /// Pose Concept requirements
+  using Rotation = Rot2;
+  using Translation = Point2;
+
+  /// LieGroup Concept requirements
+  using LieAlgebra = Matrix3;
 
 private:
 
@@ -183,21 +186,6 @@ public:
   static Matrix3 adjointMap_(const Vector3 &xi) { return adjointMap(xi);}
   static Vector3 adjoint_(const Vector3 &xi, const Vector3 &y) { return adjoint(xi, y);}
 
-  /**
-   * wedge for SE(2):
-   * @param xi 3-dim twist (v,omega) where
-   *  omega is angular velocity
-   *  v (vx,vy) = 2D velocity
-   * @return xihat, 3*3 element of Lie algebra that can be exponentiated
-   */
-  static inline Matrix3 wedge(double vx, double vy, double w) {
-    Matrix3 m;
-    m << 0.,-w,  vx,
-         w,  0., vy,
-         0., 0.,  0.;
-    return m;
-  }
-
   /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& v);
 
@@ -211,6 +199,12 @@ public:
   };
 
   using LieGroup<Pose2, 3>::inverse; // version with derivative
+
+  /// Hat maps from tangent vector to Lie algebra
+  static Matrix3 Hat(const Vector3& xi);
+
+  /// Vee maps from Lie algebra to tangent vector
+  static Vector3 Vee(const Matrix3& X);
 
   /// @}
   /// @name Group Action on Point2
@@ -339,6 +333,16 @@ public:
   friend std::ostream &operator<<(std::ostream &os, const Pose2& p);
 
   /// @}
+  /// @name deprecated
+  /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use Hat
+  static inline Matrix3 wedge(double vx, double vy, double w) {
+    return Hat(TangentVector(vx, vy, w));
+  }
+#endif
+  /// @}
 
  private:
 
@@ -357,22 +361,24 @@ public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
-/** specialization for pose2 wedge function (generic template in Lie.h) */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated: use T::Hat
 template <>
 inline Matrix wedge<Pose2>(const Vector& xi) {
   // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
-  return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
+  return Matrix(Pose2::Hat(xi)).eval();
 }
+#endif
 
 // Convenience typedef
 using Pose2Pair = std::pair<Pose2, Pose2>;
 using Pose2Pairs = std::vector<Pose2Pair>;
 
 template <>
-struct traits<Pose2> : public internal::LieGroup<Pose2> {};
+struct traits<Pose2> : public internal::MatrixLieGroup<Pose2> {};
 
 template <>
-struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
+struct traits<const Pose2> : public internal::MatrixLieGroup<Pose2> {};
 
 // bearing and range traits, used in RangeFactor
 template <typename T>

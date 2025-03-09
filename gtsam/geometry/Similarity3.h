@@ -139,6 +139,8 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// @name Lie Group
   /// @{
 
+  using LieAlgebra = Matrix4;
+
   /** Log map at the identity
    * \f$ [R_x,R_y,R_z, t_x, t_y, t_z, \lambda] \f$
    */
@@ -164,16 +166,18 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
 
   using LieGroup<Similarity3, 7>::inverse;
 
-  /**
-   * wedge for Similarity3:
-   * @param xi 7-dim twist (w,u,lambda) where
-   * @return 4*4 element of Lie algebra that can be exponentiated
-   * TODO(frank): rename to Hat, make part of traits
-   */
-  static Matrix4 wedge(const Vector7& xi);
-
   /// Project from one tangent space to another
   Matrix7 AdjointMap() const;
+
+  /**
+   * Hat for Similarity3:
+   * @param xi 7-dim twist (w,u,lambda) where
+   * @return 4*4 element of Lie algebra that can be exponentiated
+   */
+  static Matrix4 Hat(const Vector7& xi);
+
+  /// Vee maps from Lie algebra to tangent vector
+  static Vector7 Vee(const Matrix4& X);
 
   /// @}
   /// @name Standard interface
@@ -198,6 +202,17 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   inline size_t dim() const { return 7; }
 
   /// @}
+  /// @name Deprecated
+  /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use Similarity3::Hat
+    static Matrix4 wedge(const Vector7& xi) {
+      return Similarity3::Hat(xi);
+    }
+#endif
+  
+  /// @}
   /// @name Helper functions
   /// @{
 
@@ -220,15 +235,17 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// @}
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated: use Similarity3::Hat
 template <>
 inline Matrix wedge<Similarity3>(const Vector& xi) {
-  return Similarity3::wedge(xi);
+  return Similarity3::Hat(xi);
 }
+#endif
+template <>
+struct traits<Similarity3> : public internal::MatrixLieGroup<Similarity3> {};
 
 template <>
-struct traits<Similarity3> : public internal::LieGroup<Similarity3> {};
-
-template <>
-struct traits<const Similarity3> : public internal::LieGroup<Similarity3> {};
+struct traits<const Similarity3> : public internal::MatrixLieGroup<Similarity3> {};
 
 }  // namespace gtsam

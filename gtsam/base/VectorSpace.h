@@ -51,6 +51,8 @@ struct VectorSpaceImpl {
   /// @name Lie Group
   /// @{
 
+  typedef Eigen::Matrix<double, N, 1> LieAlgebra;
+
   static TangentVector Logmap(const Class& m, ChartJacobian Hm = {}) {
     if (Hm) *Hm = Jacobian::Identity();
     return m.vector();
@@ -80,6 +82,13 @@ struct VectorSpaceImpl {
     return -v;
   }
 
+  static LieAlgebra Hat(const TangentVector& v) {
+    return v;
+  }
+
+  static TangentVector Vee(const LieAlgebra& X) {
+    return X;
+  }
   /// @}
 };
 
@@ -411,6 +420,8 @@ struct DynamicTraits {
 
   /// @name Lie Group
   /// @{
+  using LieAlgebra = Dynamic;
+    
   static TangentVector Logmap(const Dynamic& m, ChartJacobian H = {}) {
     if (H) *H = Eye(m);
     TangentVector result(GetDimension(m));
@@ -441,6 +452,15 @@ struct DynamicTraits {
     if (H2) *H2 = Eye(v1);
     return v2 - v1;
   }
+  
+  static LieAlgebra Hat(const TangentVector& v) {
+    return v;
+  }
+  
+  static TangentVector Vee(const LieAlgebra& X) {
+    return X;
+  }
+  
   /// @}
 
 };

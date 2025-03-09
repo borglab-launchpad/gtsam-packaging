@@ -56,18 +56,27 @@ public:
   NavState() :
       t_(0, 0, 0), v_(Vector3::Zero()) {
   }
+
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
       R_(R), t_(t), v_(v) {
   }
+
   /// Construct from pose and velocity
   NavState(const Pose3& pose, const Velocity3& v) :
       R_(pose.rotation()), t_(pose.translation()), v_(v) {
   }
+
   /// Construct from SO(3) and R^6
   NavState(const Matrix3& R, const Vector6& tv) :
       R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
   }
+
+  /// Construct from Matrix5
+  NavState(const Matrix5& T) :
+    R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 3)), v_(T.block<3, 1>(0, 4)) {
+  }
+
   /// Named constructor with derivatives
   static NavState Create(const Rot3& R, const Point3& t, const Velocity3& v,
                          OptionalJacobian<9, 3> H1 = {},
@@ -154,10 +163,6 @@ public:
   /// Syntactic sugar
   const Rot3& rotation() const { return attitude(); };
 
-  /// @}
-  /// @name Lie Group
-  /// @{
-
   // Tangent space sugar.
   // TODO(frank): move to private navstate namespace in cpp
   static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) {
@@ -188,6 +193,12 @@ public:
   Vector9 localCoordinates(const NavState& g, //
       OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
           {}) const;
+
+  /// @}
+  /// @name Lie Group
+  /// @{
+
+  using LieAlgebra = Matrix5;
 
   /**
    * Exponential map at identity - create a NavState from canonical coordinates
@@ -242,6 +253,12 @@ public:
     static Vector9 Local(const NavState& state, ChartJacobian Hstate = {});
   };
 
+  /// Hat maps from tangent vector to Lie algebra
+  static Matrix5 Hat(const Vector9& xi);
+
+  /// Vee maps from Lie algebra to tangent vector
+  static Vector9 Vee(const Matrix5& X);
+
   /// @}
   /// @name Dynamics
   /// @{
@@ -283,9 +300,9 @@ private:
 
 // Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
 template <>
-struct traits<NavState> : public internal::LieGroup<NavState> {};
+struct traits<NavState> : public internal::MatrixLieGroup<NavState> {};
 
 template <>
-struct traits<const NavState> : public internal::LieGroup<NavState> {};
+struct traits<const NavState> : public internal::MatrixLieGroup<NavState> {};
 
 } // namespace gtsam

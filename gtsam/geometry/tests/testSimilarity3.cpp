@@ -56,7 +56,7 @@ const double degree = M_PI / 180;
 TEST(Similarity3, Concepts) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Similarity3 >);
   GTSAM_CONCEPT_ASSERT(IsManifold<Similarity3 >);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<Similarity3 >);
 }
 
 //******************************************************************************
@@ -80,14 +80,43 @@ TEST(Similarity3, Getters) {
   EXPECT_DOUBLES_EQUAL(7.0, sim3.scale(), 1e-9);
 }
 
+/* ************************************************************************* */
+TEST(Similarity3, HatAndVee) {
+  // Create a few test vectors
+  Vector7 v1(1, 2, 3, 4, 5, 6, 7);
+  Vector7 v2(0.1, -0.5, 1.0, -1.0, 0.5, 2.0, -0.3);
+  Vector7 v3(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Similarity3::Vee(Similarity3::Hat(v1))));
+  EXPECT(assert_equal(v2, Similarity3::Vee(Similarity3::Hat(v2))));
+  EXPECT(assert_equal(v3, Similarity3::Vee(Similarity3::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix4 expected;
+  expected << 0, -3, 2, 4,
+              3, 0, -1, 5,
+              -2, 1, 0, 6,
+              0, 0, 0, -7;
+
+  EXPECT(assert_equal(expected, Similarity3::Hat(v1)));
+}
+
+/* ************************************************************************* */
+// Checks correct exponential map (Expmap) with brute force matrix exponential
+TEST(Similarity3, BruteForceExpmap) {
+  const Vector7 xi(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
+  EXPECT(assert_equal(Similarity3::Expmap(xi), expm<Similarity3>(xi), 1e-4));
+}
+
 //******************************************************************************
 TEST(Similarity3, AdjointMap) {
   const Matrix4 T = T2.matrix();
   // Check Ad with actual definition
   Vector7 delta;
   delta << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
-  Matrix4 W = Similarity3::wedge(delta);
-  Matrix4 TW = Similarity3::wedge(T2.AdjointMap() * delta);
+  Matrix4 W = Similarity3::Hat(delta);
+  Matrix4 TW = Similarity3::Hat(T2.AdjointMap() * delta);
   EXPECT(assert_equal(TW, Matrix4(T * W * T.inverse()), 1e-9));
 }
 
@@ -209,10 +238,6 @@ TEST(Similarity3, ExpLogMap) {
   Similarity3 expZero = Similarity3::Expmap(zeros);
   Similarity3 ident = Similarity3::Identity();
   EXPECT(assert_equal(expZero, ident));
-
-  // Compare to matrix exponential, using expm in Lie.h
-  EXPECT(
-      assert_equal(expm<Similarity3>(delta), Similarity3::Expmap(delta), 1e-3));
 }
 
 //******************************************************************************

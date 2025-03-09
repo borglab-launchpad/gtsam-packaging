@@ -161,6 +161,21 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 }
 
 /* ************************************************************************* */
+Matrix4 Pose3::Hat(const Vector6& xi) {
+  Matrix4 X;
+  const double wx = xi(0), wy = xi(1), wz = xi(2), vx = xi(3), vy = xi(4), vz = xi(5);
+  X << 0., -wz, wy, vx, wz, 0., -wx, vy, -wy, wx, 0., vz, 0., 0., 0., 0.;
+  return X;
+}
+
+/* ************************************************************************* */
+Vector6 Pose3::Vee(const Matrix4& Xi) {
+  Vector6 xi;
+  xi << Xi(2, 1), Xi(0, 2), Xi(1, 0), Xi(0, 3), Xi(1, 3), Xi(2, 3);
+  return xi;
+}
+
+/* ************************************************************************* */
 void Pose3::print(const std::string& s) const {
   std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }

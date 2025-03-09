@@ -59,6 +59,9 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
+  /// LieGroup Concept requirements
+  using LieAlgebra = MatrixNN;
+
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(true)
 
  protected:
@@ -393,14 +396,14 @@ void serialize(
 #endif
 
 /*
- * Define the traits. internal::LieGroup provides both Lie group and Testable
+ * Define the traits. internal::MatrixLieGroup provides both Lie group and Testable
  */
 
 template <int N>
-struct traits<SO<N>> : public internal::LieGroup<SO<N>> {};
+struct traits<SO<N>> : public internal::MatrixLieGroup<SO<N>> {};
 
 template <int N>
-struct traits<const SO<N>> : public internal::LieGroup<SO<N>> {};
+struct traits<const SO<N>> : public internal::MatrixLieGroup<SO<N>> {};
 
 }  // namespace gtsam
 

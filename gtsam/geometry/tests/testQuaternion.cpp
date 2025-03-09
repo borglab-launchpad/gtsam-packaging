@@ -31,7 +31,7 @@ typedef traits<Q>::ChartJacobian QuaternionJacobian;
 TEST(Quaternion , Concept) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Quaternion >);
   GTSAM_CONCEPT_ASSERT(IsManifold<Quaternion >);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Quaternion >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<Quaternion >);
 }
 
 //******************************************************************************

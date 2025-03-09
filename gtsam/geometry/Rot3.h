@@ -371,6 +371,8 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// @name Lie Group
     /// @{
 
+    using LieAlgebra = Matrix3;
+
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
@@ -406,6 +408,12 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     };
 
     using LieGroup<Rot3, 3>::inverse; // version with derivative
+
+    /// Hat maps from tangent vector to Lie algebra
+    static inline Matrix3 Hat(const Vector3& xi) { return SO3::Hat(xi); }
+
+    /// Vee maps from Lie algebra to tangent vector
+    static inline Vector3 Vee(const Matrix3& X) { return SO3::Vee(X); }
 
     /// @}
     /// @name Group Action on Point3
@@ -581,10 +589,10 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
       const Matrix3& A, OptionalJacobian<3, 9> H = {});
 
   template<>
-  struct traits<Rot3> : public internal::LieGroup<Rot3> {};
+  struct traits<Rot3> : public internal::MatrixLieGroup<Rot3> {};
 
   template<>
-  struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
+  struct traits<const Rot3> : public internal::MatrixLieGroup<Rot3> {};
   
 }  // namespace gtsam
 

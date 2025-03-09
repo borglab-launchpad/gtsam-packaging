@@ -271,6 +271,29 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
 }
 
 //------------------------------------------------------------------------------
+Matrix5 NavState::Hat(const Vector9& xi) {
+  Matrix5 X;
+  const double wx = xi(0), wy = xi(1), wz = xi(2);
+  const double px = xi(3), py = xi(4), pz = xi(5);
+  const double vx = xi(6), vy = xi(7), vz = xi(8);
+  X << 0., -wz, wy, px, vx,
+    wz, 0., -wx, py, vy,
+    -wy, wx, 0., pz, vz,
+    0., 0., 0., 0., 0.,
+    0., 0., 0., 0., 0.;
+  return X;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::Vee(const Matrix5& Xi) {
+  Vector9 xi;
+  xi << Xi(2, 1), Xi(0, 2), Xi(1, 0),
+    Xi(0, 3), Xi(1, 3), Xi(2, 3),
+    Xi(0, 4), Xi(1, 4), Xi(2, 4);
+  return xi;
+}
+
+//------------------------------------------------------------------------------
 NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
                                           ChartJacobian Hxi) {
   return Expmap(xi, Hxi);
