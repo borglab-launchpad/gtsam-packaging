@@ -104,6 +104,25 @@ TEST(Rot2, logmap)
 }
 
 /* ************************************************************************* */
+TEST(Rot2, HatAndVee) {
+  // Create a few test vectors
+  Vector1 v1 = (Vector1() << 1).finished();
+  Vector1 v2 = (Vector1() << 0.1).finished();
+  Vector1 v3 = (Vector1() << 0.0).finished();
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Rot2::Vee(Rot2::Hat(v1))));
+  EXPECT(assert_equal(v2, Rot2::Vee(Rot2::Hat(v2))));
+  EXPECT(assert_equal(v3, Rot2::Vee(Rot2::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix2 expected;
+  expected << 0., -1., 1., 0.;
+
+  EXPECT(assert_equal(expected, Rot2::Hat(v1)));
+}
+
+/* ************************************************************************* */
 // rotate and derivatives
 inline Point2 rotate_(const Rot2 & R, const Point2& p) {return R.rotate(p);}
 TEST( Rot2, rotate)

@@ -224,13 +224,13 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
 }  //  namespace so3
 
 /*
- * Define the traits. internal::LieGroup provides both Lie group and Testable
+ * Define the traits. internal::MatrixLieGroup provides both Lie group and Testable
  */
 
 template <>
-struct traits<SO3> : public internal::LieGroup<SO3> {};
+struct traits<SO3> : public internal::MatrixLieGroup<SO3> {};
 
 template <>
-struct traits<const SO3> : public internal::LieGroup<SO3> {};
+struct traits<const SO3> : public internal::MatrixLieGroup<SO3> {};
 
 }  // end namespace gtsam

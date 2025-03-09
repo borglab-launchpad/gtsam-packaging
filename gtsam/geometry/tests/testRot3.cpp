@@ -40,7 +40,7 @@ static double error = 1e-9, epsilon = 0.001;
 TEST(Rot3 , Concept) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Rot3 >);
   GTSAM_CONCEPT_ASSERT(IsManifold<Rot3 >);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3 >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<Rot3 >);
 }
 
 /* ************************************************************************* */
@@ -322,6 +322,34 @@ TEST(Rot3, manifold_expmap)
   Rot3 R5 = Rot3::Expmap (5 * d);
   CHECK(assert_equal(R5,R2*R3));
   CHECK(assert_equal(R5,R3*R2));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, HatAndVee) {
+  // Create a few test vectors
+  Vector3 v1(1, 2, 3);
+  Vector3 v2(0.1, -0.5, 1.0);
+  Vector3 v3(0.0, 0.0, 0.0);
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Rot3::Vee(Rot3::Hat(v1))));
+  EXPECT(assert_equal(v2, Rot3::Vee(Rot3::Hat(v2))));
+  EXPECT(assert_equal(v3, Rot3::Vee(Rot3::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix3 expected;
+  expected << 0, -3, 2,
+    3, 0, -1,
+    -2, 1, 0;
+
+  EXPECT(assert_equal(expected, Rot3::Hat(v1)));
+}
+
+/* ************************************************************************* */
+// Checks correct exponential map (Expmap) with brute force matrix exponential
+TEST(Rot3, BruteForceExpmap) {
+  const Vector3 xi(0.1, 0.2, 0.3);
+  EXPECT(assert_equal(Rot3::Expmap(xi), expm<Rot3>(xi), 1e-6));
 }
 
 /* ************************************************************************* */

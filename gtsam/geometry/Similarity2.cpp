@@ -222,6 +222,24 @@ Matrix4 Similarity2::AdjointMap() const {
   throw std::runtime_error("Similarity2::AdjointMap not implemented");
 }
 
+Matrix3 Similarity2::Hat(const Vector4 &xi) {
+  const auto w = xi[2];
+  const auto u = xi.head<2>();
+  const double lambda = xi[3];
+  Matrix3 W;
+  W << 0, -w, u[0],
+       w,  0, u[1],
+       0,  0, -lambda;
+  return W;
+}
+
+Vector4 Similarity2::Vee(const Matrix3 &Xi) {
+  Vector4 xi;
+  xi[2] = Xi(1, 0);
+  xi.head<2>() = Xi.topRightCorner<2, 1>();
+  xi[3] = -Xi(2, 2);
+  return xi;
+}
 std::ostream& operator<<(std::ostream& os, const Similarity2& p) {
   os << "[" << p.rotation().theta() << " " << p.translation().transpose() << " "
      << p.scale() << "]\';";

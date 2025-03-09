@@ -54,8 +54,23 @@ class NavState {
   gtsam::Vector velocity() const;
   gtsam::Pose3 pose() const;
 
+  // Manifold
   gtsam::NavState retract(const gtsam::Vector& x) const;
   gtsam::Vector localCoordinates(const gtsam::NavState& g) const;
+
+  // Lie Group
+  static gtsam::NavState Expmap(gtsam::Vector v);
+  static gtsam::Vector Logmap(const gtsam::NavState& p);
+  static gtsam::NavState Expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H);
+  static gtsam::Vector Logmap(const gtsam::NavState& p, Eigen::Ref<Eigen::MatrixXd> H);
+  gtsam::NavState expmap(gtsam::Vector v);
+  gtsam::NavState expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
+  gtsam::Vector logmap(const gtsam::NavState& p);
+  gtsam::Vector logmap(const gtsam::NavState& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
+  gtsam::Matrix AdjointMap() const;
+  gtsam::Vector Adjoint(gtsam::Vector xi) const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& xi);
 
   // enabling serialization functionality
   void serialize() const;

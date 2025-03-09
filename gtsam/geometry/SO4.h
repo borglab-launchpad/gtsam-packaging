@@ -106,13 +106,13 @@ void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
 #endif
 
 /*
- * Define the traits. internal::LieGroup provides both Lie group and Testable
+ * Define the traits. internal::MatrixLieGroup provides both Lie group and Testable
  */
 
 template <>
-struct traits<SO4> : public internal::LieGroup<SO4> {};
+struct traits<SO4> : public internal::MatrixLieGroup<SO4> {};
 
 template <>
-struct traits<const SO4> : public internal::LieGroup<SO4> {};
+struct traits<const SO4> : public internal::MatrixLieGroup<SO4> {};
 
 }  // end namespace gtsam

@@ -192,7 +192,7 @@ Similarity3 Similarity3::Align(const Pose3Pairs &abPosePairs) {
   return internal::alignGivenR(abPointPairs, aRb_estimate);
 }
 
-Matrix4 Similarity3::wedge(const Vector7 &xi) {
+Matrix4 Similarity3::Hat(const Vector7 &xi) {
   // http://www.ethaneade.org/latex2html/lie/node29.html
   const auto w = xi.head<3>();
   const auto u = xi.segment<3>(3);
@@ -200,6 +200,14 @@ Matrix4 Similarity3::wedge(const Vector7 &xi) {
   Matrix4 W;
   W << skewSymmetric(w), u, 0, 0, 0, -lambda;
   return W;
+}
+
+Vector7 Similarity3::Vee(const Matrix4 &Xi) {
+  Vector7 xi;
+  xi.head<3>() = Rot3::Vee(Xi.topLeftCorner<3, 3>());
+  xi.segment<3>(3) = Xi.topRightCorner<3, 1>();
+  xi[6] = -Xi(3, 3);
+  return xi;
 }
 
 Matrix7 Similarity3::AdjointMap() const {

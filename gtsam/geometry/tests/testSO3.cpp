@@ -38,7 +38,7 @@ TEST(SO3, Identity) {
 TEST(SO3, Concept) {
   GTSAM_CONCEPT_ASSERT(IsGroup<SO3>);
   GTSAM_CONCEPT_ASSERT(IsManifold<SO3>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<SO3>);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<SO3>);
 }
 
 //******************************************************************************
