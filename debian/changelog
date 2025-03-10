@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2774.gbp1c8774) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2775.gbpec4dc0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ec4dc05fefcf01a8f00ef9cbb1bad3873f86b3e3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1c8774d4f7ae2ed90c218bc55e69cb00e9c9e7a9 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 00:20:54 +0000
+  [ p-zach ]
+  * Update Rot3 doc
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Fan Jiang ]
+  * Fix ODR violations in Navigation expressions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 14:33:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2773.gbpd6d64e) noble; urgency=medium
 
