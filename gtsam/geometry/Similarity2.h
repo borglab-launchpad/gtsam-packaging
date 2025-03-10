@@ -141,6 +141,9 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
 
   using LieAlgebra = Matrix3;
 
+  /// Calculate expmap and logmap coefficients.
+  static Matrix2 GetV(double theta, double lambda);
+
   /**
    * Log map at the identity
    * \f$ [t_x, t_y, \delta, \lambda] \f$
