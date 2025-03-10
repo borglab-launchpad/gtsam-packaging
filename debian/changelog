@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2783.gbp62d664) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2784.gbp77d337) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @77d3370f43bd7c12959ff9636ac969f8ce515a96 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @62d664d66ed497462bcd91c1e8218c110e413100 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 14:41:01 +0000
+  [ Varun Agrawal ]
+  * Squashed 'wrap/' changes from 38a1bfa01..4cca84a07
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 20:18:54 +0000
 
 gtsam (4.1.0-1ubuntu2~2782.gbp658e9c) noble; urgency=medium
 
