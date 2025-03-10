@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2770.gbp0830d0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2771.gbp41a410) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @41a41013e883928cefae5077cb6a581e00b3a99f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0830d02da0eeb47d2eefec7dd3d1c41f2e4a8a0e **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 09 Mar 2025 17:05:40 +0000
+  [ Varun Agrawal ]
+  * move scripts for building wheels to CI directory
+  * update CI yaml for building wheels
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 00:16:50 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2769.gbpac235d) noble; urgency=medium
 
