@@ -142,11 +142,11 @@ jobs:
           # Use build instead of pip wheel to build the wheels. This is recommended by PyPA.
           # See https://cibuildwheel.pypa.io/en/stable/options/#build-frontend.
           CIBW_BUILD_FRONTEND: "build"
-          CIBW_BEFORE_ALL: bash {project}/build_tools/wheels/cibw_before_all.sh ${{ matrix.python_version }} {project}
+          CIBW_BEFORE_ALL: bash .github/scripts/python_wheels/cibw_before_all.sh ${{ matrix.python_version }} {project}
 
           CIBW_BUILD_VERBOSITY: 1
 
-        run: bash build_tools/wheels/build_wheels.sh
+        run: bash .github/scripts/python_wheels/build_wheels.sh
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4
