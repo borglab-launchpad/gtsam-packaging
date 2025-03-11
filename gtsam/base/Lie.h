@@ -229,7 +229,7 @@ struct LieGroupTraits: public GetDimensionImpl<Class, Class::dimension> {
 /// Both LieGroupTraits and Testable
 template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
-/// Adds LieAlgebra, Hat, and Vie to LieGroupTraits
+/// Adds LieAlgebra, Hat, and Vee to LieGroupTraits
 template<class Class> struct MatrixLieGroupTraits: LieGroupTraits<Class> {
   using LieAlgebra = typename Class::LieAlgebra;
   using TangentVector = typename LieGroupTraits<Class>::TangentVector;
@@ -351,7 +351,7 @@ template <class T> Matrix wedge(const Vector& x);
  */
 template <class T>
 T expm(const Vector& x, int K = 7) {
-  auto xhat = T::Hat(x);
+  const Matrix xhat = T::Hat(x);
   return T(expm(xhat, K));
 }
 

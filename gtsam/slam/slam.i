@@ -403,21 +403,21 @@ gtsam::Rot3 FindKarcherMean(const gtsam::Rot3Vector& rotations);
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
                                                 size_t d);
 
-template <T = {gtsam::SO3, gtsam::SO4}>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
   FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const T& R1, const T& R2);
+  gtsam::Vector evaluateError(const T& T1, const T& T2);
 };
 
-template <T = {gtsam::SO3, gtsam::SO4}>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3}>
 virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
-  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
-  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12,
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& T12);
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& T12,
                          gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const T& R1, const T& R2);
+  gtsam::Vector evaluateError(const T& T1, const T& T2);
 };
 
 #include <gtsam/slam/TriangulationFactor.h>
