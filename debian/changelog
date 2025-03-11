@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2786.gbp1f66d0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2787.gbp069481) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0694812a2f3d62718e2d1d979a75e5dc7922c194 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1f66d0d6affeb233a045f888cb6e856860eb73a6 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 10 Mar 2025 21:26:58 +0000
+  [ Frank Dellaert ]
+  * Address review comments
+  * Rot2::vec, Rot3::vec, Pose2::vec, Pose3::vec
+  * FrobeniusFactors now work for any Matrix Lie group with vec
+  * Don't use column
+  * One more straggler
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 11 Mar 2025 03:41:42 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2785.gbp8e6733) noble; urgency=medium
 
