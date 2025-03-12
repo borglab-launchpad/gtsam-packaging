@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2790.gbpaa912e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2791.gbp2676a2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2676a2b8c9f8b9c6953ac5006d1bcf9bd3e39d9f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @aa912e9b890a11526c016027cf6ec70895119405 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 11 Mar 2025 03:46:02 +0000
+  [ Fan Jiang ]
+  * Fix Pose3 Wedge operator
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 12 Mar 2025 06:40:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2789.gbp806018) noble; urgency=medium
 
