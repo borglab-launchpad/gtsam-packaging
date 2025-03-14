@@ -171,7 +171,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
   HybridBayesNet updatedHybridBayesNet(hybridBayesNet);
 
   KeySet involvedKeys = newFactors.keys();
-  auto involved = [&involvedKeys](const Key &key) {
+  auto involved = [](const KeySet &involvedKeys, const Key &key) {
     return involvedKeys.find(key) != involvedKeys.end();
   };
 
@@ -195,7 +195,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
       auto conditional = hybridBayesNet.at(i);
 
       for (auto &key : conditional->frontals()) {
-        if (involved(key)) {
+        if (involved(involvedKeys, key)) {
           // Add the conditional parents to involvedKeys
           // so we add those conditionals too.
           for (auto &&parentKey : conditional->parents()) {
@@ -214,7 +214,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
       auto conditional = hybridBayesNet.at(i);
 
       for (auto &key : conditional->frontals()) {
-        if (involved(key)) {
+        if (involved(involvedKeys, key)) {
           newConditionals.push_back(conditional);
 
           // Remove the conditional from the updated Bayes net
