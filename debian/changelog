@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~2799.gbpc2b3d3) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2800.gbp299eb8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @299eb8c15e1b28fba2f0e63677c10319d6555d22 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c2b3d3e09cace8235f948e4d259ad665c9335991 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 12 Mar 2025 06:47:14 +0000
+  [ jenniferoum ]
+  * Implement Equivariant Filter Bias example in Python
+  * Update to use findExampleDataFile and Rot3 hat and Vee
+  * Add EqFData.csv to examples/Data
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ jenniferoum ]
+  * Address PR comments - code cleanup
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Mar 2025 11:57:13 +0000
 
 gtsam (4.1.0-1ubuntu2~2798.gbp861146) noble; urgency=medium
 
