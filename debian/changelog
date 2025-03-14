@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~2803.gbp3f4246) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2804.gbp05cabc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @05cabca4bc55e66c3b11b1819e5bb16992524eaa **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3f42468067b0df721259c5ad8f020192ab23bd56 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Mar 2025 12:02:27 +0000
+  [ Varun Agrawal ]
+  * use GTSAM_CONCEPT_USAGE in lieu of BOOST_CONCEPT_USAGE
+  * replace BOOST_CONCEPT_USAGE with GTSAM_CONCEPT_USAGE
+  * more functional form of involved function
+  * Print full factors in HybridNonlinearFactor
+  * fix test
+  * set printing precision
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Mar 2025 20:13:13 +0000
 
 gtsam (4.1.0-1ubuntu2~2802.gbp13864c) noble; urgency=medium
 
