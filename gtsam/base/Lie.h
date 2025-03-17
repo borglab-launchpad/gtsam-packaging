@@ -313,7 +313,7 @@ public:
 typedef typename traits<T>::LieAlgebra LieAlgebra;
 typedef typename traits<T>::TangentVector TangentVector;
 
-  BOOST_CONCEPT_USAGE(IsMatrixLieGroup) {
+  GTSAM_CONCEPT_USAGE(IsMatrixLieGroup) {
     // hat and vee
     X = traits<T>::Hat(xi);
     xi = traits<T>::Vee(X);
