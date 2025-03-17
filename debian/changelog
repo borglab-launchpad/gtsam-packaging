@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2802.gbpd779d3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2803.gbpbb8a14) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bb8a14970724b364f3b158b897cdd419127e89a2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d779d3a91dc7eb77259dfe9850f06e3b699bd14f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 14 Mar 2025 20:18:59 +0000
+  [ Fan Jiang ]
+  * Squashed 'wrap/' changes from 4cca84a07..4cefad122
+  * Fix wrong CONCEPT ASSERT
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Mar 2025 02:02:01 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2801.gbp92bde4) noble; urgency=medium
 
