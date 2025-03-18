@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2811.gbp467a9e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2812.gbpa49d0a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a49d0a9041a9b5ad5576262da574db6d95eb6057 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @467a9e2ad4a8e1bfde108e8ba8a932c5da89322b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Mar 2025 02:07:13 +0000
+  [ mkielo3 ]
+  * Exposed ExtendedKalmanFilter to Python and added ports of easyPoint2KalmanFilter and elaboratePoint2KalmanFilter notebooks
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Mar 2025 01:16:35 +0000
 
 gtsam (4.1.0-1ubuntu2~2810.gbpec34f2) noble; urgency=medium
 
