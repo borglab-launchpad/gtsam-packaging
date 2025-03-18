@@ -62,6 +62,40 @@ Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************* */
+Ordering HybridSmoother::maybeComputeOrdering(
+    const HybridGaussianFactorGraph &updatedGraph,
+    const std::optional<Ordering> givenOrdering) {
+  Ordering ordering;
+  // If no ordering provided, then we compute one
+  if (!givenOrdering.has_value()) {
+    // Get the keys from the new factors
+    KeySet continuousKeysToInclude;  // Scheme 1: empty, 15sec/2000, 64sec/3000
+                                     // (69s without TF)
+    // continuousKeysToInclude = newFactors.keys();  // Scheme 2: all,
+    // 8sec/2000, 160sec/3000 continuousKeysToInclude = updatedGraph.keys();  //
+    // Scheme 3: all, stopped after 80sec/2000
+
+    // Since updatedGraph now has all the connected conditionals,
+    // we can get the correct ordering.
+    ordering = this->getOrdering(updatedGraph, continuousKeysToInclude);
+  } else {
+    ordering = *givenOrdering;
+  }
+
+  return ordering;
+}
+
+/* ************************************************************************* */
+void HybridSmoother::removeFixedValues(
+    const HybridGaussianFactorGraph &newFactors) {
+  for (Key key : newFactors.discreteKeySet()) {
+    if (fixedValues_.find(key) != fixedValues_.end()) {
+      fixedValues_.erase(key);
+    }
+  }
+}
+
+/* ************************************************************************* */
 void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
                             std::optional<size_t> maxNrLeaves,
                             const std::optional<Ordering> given_ordering) {
@@ -84,22 +118,7 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
             << std::endl;
 #endif
 
-  Ordering ordering;
-  // If no ordering provided, then we compute one
-  if (!given_ordering.has_value()) {
-    // Get the keys from the new factors
-    KeySet continuousKeysToInclude;  // Scheme 1: empty, 15sec/2000, 64sec/3000
-                                     // (69s without TF)
-    // continuousKeysToInclude = newFactors.keys();  // Scheme 2: all,
-    // 8sec/2000, 160sec/3000 continuousKeysToInclude = updatedGraph.keys();  //
-    // Scheme 3: all, stopped after 80sec/2000
-
-    // Since updatedGraph now has all the connected conditionals,
-    // we can get the correct ordering.
-    ordering = this->getOrdering(updatedGraph, continuousKeysToInclude);
-  } else {
-    ordering = *given_ordering;
-  }
+  Ordering ordering = this->maybeComputeOrdering(updatedGraph, given_ordering);
 
 #if GTSAM_HYBRID_TIMING
   gttic_(HybridSmootherEliminate);
@@ -117,6 +136,9 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
     GTSAM_PRINT(*e);
   }
 #endif
+
+  // Remove fixed values for discrete keys which are introduced in newFactors
+  removeFixedValues(newFactors);
 
 #ifdef DEBUG_SMOOTHER
   // Print discrete keys in the bayesNetFragment:
