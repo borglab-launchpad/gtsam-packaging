@@ -725,5 +725,22 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   VALUE calculateEstimate(size_t key) const;
 };
 
+#include <gtsam/nonlinear/ExtendedKalmanFilter.h>
+template <T = {gtsam::Point2,
+               gtsam::Point3,
+               gtsam::Rot2,
+               gtsam::Rot3,
+               gtsam::Pose2,
+               gtsam::Pose3,
+               gtsam::NavState,
+               gtsam::imuBias::ConstantBias}>
+virtual class ExtendedKalmanFilter {
+  ExtendedKalmanFilter(gtsam::Key key_initial, const T& x_initial, const gtsam::noiseModel::Gaussian* P_initial);
+  
+  T predict(const gtsam::NoiseModelFactor& motionFactor);
+  T update(const gtsam::NoiseModelFactor& measurementFactor);
+  
+  gtsam::JacobianFactor::shared_ptr Density() const;
+};
 
 }  // namespace gtsam
