@@ -122,6 +122,14 @@ class GTSAM_EXPORT HybridSmoother {
 
   /// Optimize the hybrid Bayes Net, taking into accound fixed values.
   HybridValues optimize() const;
+
+ private:
+  /// Helper to compute the ordering if ordering is not given.
+  Ordering maybeComputeOrdering(const HybridGaussianFactorGraph& updatedGraph,
+                                const std::optional<Ordering> givenOrdering);
+
+  /// Remove fixed discrete values for discrete keys introduced in `newFactors`.
+  void removeFixedValues(const HybridGaussianFactorGraph& newFactors);
 };
 
 }  // namespace gtsam
