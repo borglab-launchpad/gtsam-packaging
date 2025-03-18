@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2806.gbpa2d887) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2807.gbpbdb76a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bdb76ae23650be55d6e96ac4d528aca9e3757b08 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a2d88725f8c14bd3e137f8a07fdd4abfa4d8adc1 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Mar 2025 02:07:24 +0000
+  [ mkielo3 ]
+  * Exposed ExtendedKalmanFilter to Python and added ports of easyPoint2KalmanFilter and elaboratePoint2KalmanFilter notebooks
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Mar 2025 01:16:36 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2805.gbp4a1e48) noble; urgency=medium
 
