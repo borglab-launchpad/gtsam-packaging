@@ -96,9 +96,17 @@ void HybridSmoother::removeFixedValues(
 }
 
 /* ************************************************************************* */
-void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
+void HybridSmoother::update(const HybridNonlinearFactorGraph &newFactors,
+                            const Values &initial,
                             std::optional<size_t> maxNrLeaves,
                             const std::optional<Ordering> given_ordering) {
+  HybridGaussianFactorGraph linearizedFactors = *newFactors.linearize(initial);
+
+  // Record the new nonlinear factors and
+  // linearization point for relinearization
+  allFactors_.push_back(newFactors);
+  linearizationPoint_.insert_or_assign(initial);
+
   const KeySet originalNewFactorKeys = newFactors.keys();
 #ifdef DEBUG_SMOOTHER
   std::cout << "hybridBayesNet_ size before: " << hybridBayesNet_.size()
@@ -108,7 +116,7 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &newFactors,
   HybridGaussianFactorGraph updatedGraph;
   // Add the necessary conditionals from the previous timestep(s).
   std::tie(updatedGraph, hybridBayesNet_) =
-      addConditionals(newFactors, hybridBayesNet_);
+      addConditionals(linearizedFactors, hybridBayesNet_);
 #ifdef DEBUG_SMOOTHER
   // print size of newFactors, updatedGraph, hybridBayesNet_
   std::cout << "updatedGraph size: " << updatedGraph.size() << std::endl;
@@ -281,6 +289,27 @@ HybridValues HybridSmoother::optimize() const {
     throw std::runtime_error("At least one nullptr factor in hybridBayesNet_");
   }
   return HybridValues(continuous, mpe);
+}
+
+/* ************************************************************************* */
+void HybridSmoother::relinearize() {
+  allFactors_ = allFactors_.restrict(fixedValues_);
+  HybridGaussianFactorGraph::shared_ptr linearized =
+      allFactors_.linearize(linearizationPoint_);
+  HybridBayesNet::shared_ptr bayesNet = linearized->eliminateSequential();
+  HybridValues delta = bayesNet->optimize();
+  linearizationPoint_ = linearizationPoint_.retract(delta.continuous());
+  reInitialize(*bayesNet);
+}
+
+/* ************************************************************************* */
+Values HybridSmoother::linearizationPoint() const {
+  return linearizationPoint_;
+}
+
+/* ************************************************************************* */
+HybridNonlinearFactorGraph HybridSmoother::allFactors() const {
+  return allFactors_;
 }
 
 }  // namespace gtsam
