@@ -1,10 +1,33 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2822.gbpb20f0d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2823.gbp9a7fdf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9a7fdf6720a7318628024844f8e60c9ab28240c7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b20f0d5401e25d9083449fc18d03a4557f9fb96c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 22 Mar 2025 17:50:56 +0000
+  [ Maciej Halber ]
+  * Add serialization to Similarity2
+  * Extend template values with Similarity2 and Similarity3
+  * Add tests for Similarity3
+  * Add BetweenFactor for Similiarity2
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Save half the cos() evals for Points
+  * Add test for coinciding point and avoid copy/pasta
+  * use helpers coincidentPoint and signedDistances
+  * Avoid half the cosines in IntegrationWeights
+  * Make Clenshaw-Curtis weights faster in case [-1,1]
+  * Helper differentiationMatrixRow cuts down on copy/pasta
+  * IntegrationMatrix
+  * IntegrationMatrix and DoubleIntegrationWeights
+  * int -> size_t
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 23 Mar 2025 22:26:10 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2821.gbp533a5f) noble; urgency=medium
 
