@@ -200,6 +200,19 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// Dimensionality of tangent space = 4 DOF
   inline size_t dim() const { return 4; }
 
+ private:
+
+  #if GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_NVP(R_);
+      ar & BOOST_SERIALIZATION_NVP(t_);
+      ar & BOOST_SERIALIZATION_NVP(s_);
+    }
+  #endif
+
   /// @}
 };
 
