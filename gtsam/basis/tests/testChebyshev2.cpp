@@ -561,8 +561,6 @@ TEST(Chebyshev2, DoubleIntegrationWeights) {
   // Let's integrate constant twice get a test case:
   Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
   auto ones = Vector::Ones(N);
-  Vector ramp = P * ones;
-  Vector quadratic = P * ramp;
   
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:
   Weights w = Chebyshev2::DoubleIntegrationWeights(N, a, b);
@@ -575,8 +573,6 @@ TEST(Chebyshev2, DoubleIntegrationWeights2) {
   // Let's integrate constant twice get a test case:
   Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
   auto ones = Vector::Ones(N);
-  Vector ramp = P * ones;
-  Vector quadratic = P * ramp;
   
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:
   Weights w = Chebyshev2::DoubleIntegrationWeights(N, a, b);
