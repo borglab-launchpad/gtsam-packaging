@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2839.gbp1c9b2d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2840.gbp84fbe1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @84fbe123696eb2214d77d0e7f330e10790d3f94e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1c9b2d8847d3df0866cf25bfff92bf0eb39ef9b2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 27 Mar 2025 22:08:43 +0000
+  [ Varun Agrawal ]
+  * update Metis' cmake_minimum_required to 3.5
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Apr 2025 22:51:48 +0000
 
 gtsam (4.1.0-1ubuntu2~2838.gbp9db800) noble; urgency=medium
 
