@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2838.gbp6a75eb) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2839.gbp6d2979) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6d29790dc88cd4a8e58132c35b6b41b8561664b8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6a75eb4a4658c4444c20feb981496eed78c3709e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 03 Apr 2025 22:56:16 +0000
+  [ Varun Agrawal ]
+  * fix DiscreteBayesTree::marginalFactor return type
+  * fix return type of DiscreteFactorGraoh::product
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 04 Apr 2025 04:15:53 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2837.gbpc0a3e8) noble; urgency=medium
 
