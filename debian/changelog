@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~2855.gbpc2d992) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2856.gbpdfc281) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dfc28190624c6e66007a67c5525859c84003dc4e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c2d9922e2f570b03c24f354a582611cb39106b8a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Apr 2025 22:37:36 +0000
+  [ p-zach ]
+  * Move incremental fls
+  * Fix ifls dependency
+  * Move bayes tree marg helper (no .i presence)
+  * Fix wrapper interface error from typo
+  * Remove IncrementalFixedLagSmoother from gtsam_unstable wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Apr 2025 22:44:44 +0000
 
 gtsam (4.1.0-1ubuntu2~2854.gbpfac352) noble; urgency=medium
 
