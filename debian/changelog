@@ -1,10 +1,47 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2846.gbpccc378) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2847.gbp28e919) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @28e919227373976acf665f4700801ed6e0e3431a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ccc378eb0439cdf7dfaf8503e41696b99fa183f2 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Apr 2025 19:36:03 +0000
+  [ p-zach ]
+  * Script to generate .ipynb doc files
+  * First run of generating docs; most of nonlinear
+  * Usage example for script
+
+  [ Frank Dellaert ]
+  * Added comments
+  * Moved BatchFixedLagSmoother in right spot
+  * Move optimizer docs to nonlinear
+  * Better overview
+  * NLO and Dogleg docs
+
+  [ p-zach ]
+  * Explanatory text
+  * Regenerated failed files
+  * Nitpicking
+  * Refine other optimizers' docs
+  * Files for nonlinearopt
+  * Move remaining files
+
+  [ Frank Dellaert ]
+  * CustomFactor docs
+  * Added examples to site
+  * Moved stuff to notebook, Jacobian guidance
+  * Move and update expressions.md from BitBucket
+  * Reviewed 3 more
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Moved example notebooks to examples
+  * Reviewed all remaining notebooks
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Apr 2025 22:33:19 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2845.gbpb0e139) noble; urgency=medium
 
