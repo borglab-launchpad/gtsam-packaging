@@ -13,6 +13,9 @@ project:
       - file: ./gtsam/geometry/geometry.md
         children:
         - pattern: ./gtsam/geometry/doc/*
+      - file: ./gtsam/navigation/navigation.md
+        children:
+        - pattern: ./gtsam/navigation/doc/*
 site:
   nav: 
     - title: Getting started
