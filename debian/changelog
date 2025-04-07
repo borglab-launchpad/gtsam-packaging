@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~2859.gbpab6e30) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2860.gbp36675b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @36675bf837c7abcdf47693f719960932a5a0b8bb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ab6e30b382843ae1ae0f2049d9489fc353ed581c **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Apr 2025 22:48:59 +0000
+  [ Frank Dellaert ]
+  * Mermaid diagram
+  * Split AHRS and IMU overviews
+  * Split off params diagram
+  * Almost perfect Gemini 2.5 notebooks
+  * AttitudeFactor
+  * BarometricFactor
+  * ConstantVelocityFactor + wrapping
+  * GPSFactor + wrapping
+  * MagFactor + wrapping
+  * MagPoseFactor + wrapping
+  * Scenario and ScenarioRunner
+  * Add files and links
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 07 Apr 2025 22:48:17 +0000
 
 gtsam (4.1.0-1ubuntu2~2858.gbp7b3565) noble; urgency=medium
 
