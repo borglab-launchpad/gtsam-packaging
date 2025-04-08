@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2858.gbp3fa3fc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2859.gbp3e6916) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3e691601bf9ad57523228939645897f9aeca1c7d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3fa3fcdff71d6b93b96f92259a0818f622c61088 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 07 Apr 2025 22:52:41 +0000
+  [ Varun Agrawal ]
+  * correctly fix script and record timing information
+  * record timing information
+  * implement DecisionTreeFactor::restrict
+  * optionally provide ordering for HybridSmoother::relinearize
+  * default argument for ordering in wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Apr 2025 15:55:59 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2857.gbp84ee91) noble; urgency=medium
 
