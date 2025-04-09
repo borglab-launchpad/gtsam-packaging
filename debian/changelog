@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2867.gbpc6c1e6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2868.gbp86560f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @86560f75f9d63f9b6fbbbb9f9497a84a1b9bcc1e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c6c1e6f0f09b90ee2c3e6386ec861c71d59a4dc7 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Apr 2025 16:02:13 +0000
+  [ jmackay2 ]
+  * Fix the FixedLagSmootherExample and move it out of gtsam_unstable
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 09 Apr 2025 18:34:41 +0000
 
 gtsam (4.1.0-1ubuntu2~2866.gbpaf8142) noble; urgency=medium
 
