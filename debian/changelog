@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2866.gbp0ce315) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2867.gbpaf15d4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @af15d4c82b857f187305fe191a8d888b74938421 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0ce31548e42ca3ae5000721cc4a9ffef88d4015b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 09 Apr 2025 18:40:58 +0000
+  [ Porter Zach ]
+  * Add how to generate docstrings
+
+  [ Yashas Ambati ]
+  * Add CMake flag for enabling doxygen XML generation
+  * Comment for doxygen variables
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Apr 2025 02:48:12 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2865.gbpd5a01e) noble; urgency=medium
 
