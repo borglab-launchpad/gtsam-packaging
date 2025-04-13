@@ -223,7 +223,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @note If marginal greater than this threshold, the mode gets assigned that
    * value and is considered "dead" for hybrid elimination. The mode can then be
    * removed since it only has a single possible assignment.
-   
+   *
    * @return A pruned HybridBayesNet
    */
   HybridBayesNet prune(size_t maxNrLeaves,

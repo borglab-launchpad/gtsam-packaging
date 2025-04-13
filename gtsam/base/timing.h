@@ -206,8 +206,8 @@ namespace gtsam {
        * (CPU time, number of times, wall time, time + children in seconds, min
        * time, max time)
        *
-       * @param addLineBreak Flag indicating if a line break should be added at
-       * the end. Only used at the top-leve.
+       * @param addLineBreak Flag indicating if a line break should be
+       * added at the end. Only used at the top-level.
        */
       GTSAM_EXPORT void printCsvHeader(bool addLineBreak = false) const;
 
@@ -217,8 +217,8 @@ namespace gtsam {
        * (CPU time, number of times, wall time, time + children in seconds, min
        * time, max time)
        *
-       * @param addLineBreak Flag indicating if a line break should be added at
-       * the end. Only used at the top-leve.
+       * @param addLineBreak Flag indicating if a line break should be
+       * added at the end. Only used at the top-level.
        */
       GTSAM_EXPORT void printCsv(bool addLineBreak = false) const;
 
