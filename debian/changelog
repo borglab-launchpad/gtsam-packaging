@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2870.gbp6ec74b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2871.gbpb4e8a8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b4e8a8e58542b300cb012ecf38dd5649c73d5b17 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6ec74b26530368377219ab718fdd2f47ff81be70 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 10 Apr 2025 02:52:33 +0000
+  [ Varun Agrawal ]
+  * add missing tests for DecisionTreeFactor::restrict
+  * update restrict to remove restricted keys
+  * test case for edge case of restrict
+  * update HybridNonlinearFactorGraph::restrict to ignore empty discrete factors
+  * first restrict before checking numer of keys
+  * fix docstring
+  * formatting
+  * update comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 13 Apr 2025 18:36:14 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2869.gbpe4f102) noble; urgency=medium
 
