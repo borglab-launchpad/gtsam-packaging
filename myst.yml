@@ -13,6 +13,9 @@ project:
       - file: ./gtsam/geometry/geometry.md
         children:
         - pattern: ./gtsam/geometry/doc/*
+      - file: ./gtsam/inference/inference.md
+        children:
+        - pattern: ./gtsam/inference/doc/*
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
