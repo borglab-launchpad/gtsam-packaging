@@ -122,6 +122,7 @@ class Ordering {
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
                       gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+                      
   static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
   static gtsam::Ordering Colamd(const gtsam::VariableIndex& variableIndex);
 
@@ -195,6 +196,9 @@ class VariableIndex {
                  gtsam::NonlinearFactorGraph}>
   VariableIndex(const T& factorGraph);
   VariableIndex(const gtsam::VariableIndex& other);
+
+  gtsam::FactorIndices& at(gtsam::Key variable) const;
+  bool empty(gtsam::Key variable) const;
 
   // Testable
   bool equals(const gtsam::VariableIndex& other, double tol) const;
