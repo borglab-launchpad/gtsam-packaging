@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2874.gbp63e816) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2875.gbp82b840) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @82b8403ad956ae2e6e2800da4d3a2bc1a1122f74 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @63e8169a8d5519709ab156b1597b711e25a09f60 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 13 Apr 2025 18:40:31 +0000
+  [ p-zach ]
+  * Initial Gemini 2.5 output
+  * Fixing code & adding formulae
+  * Summarize, add to myst
+  * Remove install runs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ p-zach ]
+  * Add remove-cell tags
+  * ClusterTree
+  * Tab copy errors
+  * BayesTree cleanup
+  * Graphviz/dot cleanup
+  * Remove .roots()
+  * Ordering fixes
+  * Fix DBT
+  * Fix Python char nonexistence with ord()
+  * Clean up BN, Factor
+  * Remove COLAMD varindex overload
+  * Wrap VariableIndex.at(), .empty()
+  * Wrap GaussianEliminationTree
+  * Fix syntax errors
+  * Actually the Colamd wrap is fine
+  * GaussianISAM interface
+  * Notebook errors fixed after wrapper updates
+
+  [ Yashas Ambati ]
+  * Pull changes from wrap
+
+  [ Frank Dellaert ]
+  * Add range SLAM example
+
+  [ p-zach ]
+  * Documentation
+  * Better visualizations
+  * Asia example
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Apr 2025 22:34:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2873.gbp117125) noble; urgency=medium
 
