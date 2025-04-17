@@ -3,9 +3,9 @@ name: Linux CI
 on:
   pull_request:
     paths-ignore:
-      - '**.md'
-      - '**.ipynb' 
-      - 'myst.yml'
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
@@ -30,9 +30,9 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-            # "Bracket" the versions from GCC [9-14] and Clang [9-16]
-            ubuntu-20.04-gcc-9,
-            ubuntu-20.04-clang-9,
+            # "Bracket" the versions from GCC [9-14] and Clang [11-16]
+            ubuntu-22.04-gcc-9,
+            ubuntu-22.04-clang-11,
             ubuntu-24.04-gcc-14,
             ubuntu-24.04-clang-16,
           ]
@@ -40,15 +40,15 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: ubuntu-20.04-gcc-9
-            os: ubuntu-20.04
+          - name: ubuntu-22.04-gcc-9
+            os: ubuntu-22.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-20.04-clang-9
-            os: ubuntu-20.04
+          - name: ubuntu-22.04-clang-11
+            os: ubuntu-22.04
             compiler: clang
-            version: "9"
+            version: "11"
 
           - name: ubuntu-24.04-gcc-14
             os: ubuntu-24.04
