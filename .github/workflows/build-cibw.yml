@@ -76,22 +76,22 @@ jobs:
             manylinux_image: manylinux2014
 
           # MacOS x86_64
-          # - os: macos-13
-          #   python_version: "3.10"
-          #   cibw_python_version: 310
-          #   platform_id: macosx_x86_64
-          # - os: macos-13
-          #   python_version: "3.11"
-          #   cibw_python_version: 311
-          #   platform_id: macosx_x86_64
-          # - os: macos-13
-          #   python_version: "3.12"
-          #   cibw_python_version: 312
-          #   platform_id: macosx_x86_64
-          # - os: macos-13
-          #   python_version: "3.13"
-          #   cibw_python_version: 313
-          #   platform_id: macosx_x86_64
+          - os: macos-13
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: macosx_x86_64
+          - os: macos-13
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: macosx_x86_64
+          - os: macos-13
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: macosx_x86_64
+          - os: macos-13
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: macosx_x86_64
 
     steps:
       - name: Checkout
@@ -130,6 +130,14 @@ jobs:
         run: |
           cmake . -B build -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
 
+      # If on macOS, we previously installed boost using homebrew for the first build.
+      # We need to uninstall it before building the wheels with cibuildwheel, which will
+      # install boost from source.
+      - name: Uninstall Boost (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew uninstall boost
+
       - name: Build and test wheels
         env:
           # Generate the platform identifier. See https://cibuildwheel.pypa.io/en/stable/options/#build-skip.
@@ -138,6 +146,13 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_ARCHS: all
           CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
+
+          # Set the minimum required MacOS version for the wheels.
+          MACOSX_DEPLOYMENT_TARGET: 10.15
+
+          # Set DYLD_LIBRARY_PATH to REPAIR_LIBRARY_PATH, which is set in cibw_before_all.sh. REPAIR_LIBRARY_PATH
+          # simply appends BOOST_LIBRARYDIR to the path, which is required during during link-time repair.
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
 
           # Use build instead of pip wheel to build the wheels. This is recommended by PyPA.
           # See https://cibuildwheel.pypa.io/en/stable/options/#build-frontend.
