@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2886.gbp25ac86) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2887.gbpbbbea9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bbbea97e09dd8560a5ce2caa8a44ccb79e37118b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @25ac86fba8da1b13aec4d21d4edc76bc380b6a3e **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 04:51:29 +0000
+  [ Yashas Ambati ]
+  * Changes to build macOS wheels for 10.15 or newer
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ p-zach ]
+  * Ordering minor fixes
+  * %pip install --quiet gtsam-develop
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 18:17:34 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2885.gbp7bdcb7) noble; urgency=medium
 
