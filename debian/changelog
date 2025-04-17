@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2878.gbpcdf80d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2879.gbpf9b292) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f9b29249e5661146ea54110d28db3e6273b09dcc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cdf80de54fe64ea0fd0c35e2e28baa0bcd4af6d4 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 16 Apr 2025 22:39:02 +0000
+  [ Yashas Ambati ]
+  * Bump minimum ubuntu runner version to 22.04 since 20.04 is deprecated as of April 16, 2025
+  * Bump clang version
+  * Bump Ubuntu version in Python CI
+  * Oops, missed a change
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 00:11:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2877.gbp3a6e1c) noble; urgency=medium
 
