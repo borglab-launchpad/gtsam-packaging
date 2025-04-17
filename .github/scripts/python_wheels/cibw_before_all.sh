@@ -15,16 +15,46 @@ export PYTHON="python${PYTHON_VERSION}"
 if [ "$(uname)" == "Linux" ]; then
     # manylinux2014 is based on CentOS 7, so use yum to install dependencies
     yum install -y wget doxygen
-
-    # Install Boost from source
-    wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz --quiet
-    tar -xzf boost_1_87_0.tar.gz
-    cd boost_1_87_0
-    ./bootstrap.sh --prefix=/opt/boost
-    ./b2 install --prefix=/opt/boost --with=all -d0 
-    cd ..
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install wget cmake boost doxygen
+    brew install cmake doxygen
+
+    # If MACOSX_DEPLOYMENT_TARGET is not explicitly set, default to the version of the host system.
+    if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then
+        export MACOSX_DEPLOYMENT_TARGET="$(sw_vers -productVersion | cut -d '.' -f 1-2)"
+    fi
+fi
+
+# Install Boost from source
+wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz --quiet
+tar -xzf boost_1_87_0.tar.gz
+cd boost_1_87_0
+
+BOOST_PREFIX="$HOME/opt/boost"
+./bootstrap.sh --prefix=${BOOST_PREFIX}
+
+if [ "$(uname)" == "Linux" ]; then
+    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0
+elif [ "$(uname)" == "Darwin" ]; then
+    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0 \
+        cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+        linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+fi
+cd ..
+
+# Export paths so CMake or build system can find Boost
+export BOOST_ROOT="${BOOST_PREFIX}"
+export BOOST_INCLUDEDIR="${BOOST_PREFIX}/include"
+export BOOST_LIBRARYDIR="${BOOST_PREFIX}/lib"
+
+# Ensure runtime linker can find Boost libraries
+export LD_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$LD_LIBRARY_PATH" # For Linux
+export REPAIR_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$DYLD_LIBRARY_PATH" # For macOS, REPAIR_LIBRARY_PATH is used by delocate
+
+if [ "$(uname)" == "Darwin" ]; then
+    # Explicitly add rpath to Boost dylibs so delocate can find them
+    for dylib in ${BOOST_LIBRARYDIR}/*.dylib; do
+        install_name_tool -add_rpath "@loader_path" "$dylib"
+    done
 fi
 
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
