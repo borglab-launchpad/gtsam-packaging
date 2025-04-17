@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~2887.gbpcb4d43) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2888.gbpea367b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ea367ba4be22bda116d54c74a1c0da35a1393f34 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cb4d432f9ec2909a7dc507132f6eb05bc545264f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 00:15:40 +0000
+  [ Yashas Ambati ]
+  * Trigger doxygen generation in cibuildwheel
+  * Set GTWRAP_ADD_DOCSTRINGS to ON
+  * Supress boost output
+  * Fix errors in xml_parser and rerun
+  * Remove unnecessary change
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ p-zach ]
+  * Clarify Symbol
+  * COLAMD vs METIS details
+  * Ameliorate visuals
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 04:47:06 +0000
 
 gtsam (4.1.0-1ubuntu2~2886.gbp392a34) noble; urgency=medium
 
