@@ -22,18 +22,18 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          predicate-quantifier: 'every' # If any changed file matches every filter, proceed with build
+          predicate-quantifier: "every" # If any changed file matches every filter, proceed with build
           filters: |
             relevant_changes:
               - '!**.md'
               - '!**.ipynb' 
               - '!myst.yml'
-              
+
   build:
     # Only run build if relevant files have been modified in this PR.
     needs: check-paths
     if: needs.check-paths.outputs.should_run == 'true'
-    
+
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
 
@@ -52,8 +52,8 @@ jobs:
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
           [
-            ubuntu-20.04-gcc-9,
-            ubuntu-20.04-clang-9,
+            ubuntu-22.04-gcc-9,
+            ubuntu-22.04-clang-11,
             macos-13-xcode-14.2,
             macos-14-xcode-15.4,
             windows-2022-msbuild,
@@ -62,15 +62,15 @@ jobs:
         build_type: [Release]
         python_version: [3]
         include:
-          - name: ubuntu-20.04-gcc-9
-            os: ubuntu-20.04
+          - name: ubuntu-22.04-gcc-9
+            os: ubuntu-22.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-20.04-clang-9
-            os: ubuntu-20.04
+          - name: ubuntu-22.04-clang-11
+            os: ubuntu-22.04
             compiler: clang
-            version: "9"
+            version: "11"
 
           - name: macos-13-xcode-14.2
             os: macos-13
