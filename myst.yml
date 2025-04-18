@@ -28,17 +28,15 @@ project:
     - file: ./doc/expressions.md
 site:
   nav: 
-    - title: Getting started
-      children:
-      - title: Overview
-        url: /readme
-      - title: Install guide
-        url: /install
+    - title: GTSAM.org
+      url: https://gtsam.org
     - title: C++ reference
       url: https://gtsam.org/doxygen/
+  options:
+    logo_text: GTSAM 
   template: book-theme
 
-  # TODO: Graphics for favicon and to replace "Made with MyST" in the top left
+  # TODO: Graphics for favicon, site logo
   # options:
   #   favicon: favicon.ico
   #   logo: site_logo.png
