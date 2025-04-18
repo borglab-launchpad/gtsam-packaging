@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~2895.gbp64ce0c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2896.gbpa662c8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a662c823a69d6224e1acf0e2c0d4eeac4dfd3e1d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @64ce0c7a44a4765c8edb156315aceae53b178ac2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 17 Apr 2025 18:23:14 +0000
+  [ Yashas Ambati ]
+  * Add targets for Mac ARM 64
+
+  [ p-zach ]
+  * Update navbar
+  * Rerun CI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Apr 2025 15:29:07 +0000
 
 gtsam (4.1.0-1ubuntu2~2894.gbp85da0a) noble; urgency=medium
 
