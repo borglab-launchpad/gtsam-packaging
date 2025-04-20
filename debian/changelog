@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2894.gbpc003b5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2895.gbp9d34b9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9d34b901e1e0da1bcc940f9aa77c52db5fadfc69 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c003b56ed49b951d3ee6ca7409c477058d1827a4 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Apr 2025 15:33:32 +0000
+  [ Frank Dellaert ]
+  * Wrap BayesTree traversal
+  * Symbolic docs
+  * Add to toc
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Apr 2025 04:56:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2893.gbp2f4359) noble; urgency=medium
 
