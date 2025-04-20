@@ -185,6 +185,8 @@ class SymbolicBayesTreeClique {
   const gtsam::SymbolicConditional* conditional() const;
   bool isRoot() const;
   gtsam::SymbolicBayesTreeClique* parent() const;
+  size_t nrChildren() const;
+  gtsam::SymbolicBayesTreeClique* operator[](size_t j) const;
   size_t treeSize() const;
   size_t numCachedSeparatorMarginals() const;
   void deleteCachedShortcuts();
@@ -204,7 +206,7 @@ class SymbolicBayesTree {
   // Standard Interface
   bool empty() const;
   size_t size() const;
-
+  const SymbolicBayesTree::Roots& roots() const;
   const gtsam::SymbolicBayesTreeClique* operator[](size_t j) const;
 
   void saveGraph(string s,

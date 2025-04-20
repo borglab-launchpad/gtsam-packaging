@@ -19,6 +19,9 @@ project:
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
+      - file: ./gtsam/symbolic/symbolic.md
+        children:
+        - pattern: ./gtsam/symbolic/doc/*
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*

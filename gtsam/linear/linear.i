@@ -657,6 +657,21 @@ virtual class GaussianBayesNet {
 };
 
 #include <gtsam/linear/GaussianBayesTree.h>
+class GaussianBayesTreeClique {
+  GaussianBayesTreeClique();
+  GaussianBayesTreeClique(const gtsam::GaussianConditional* conditional);
+  bool equals(const gtsam::GaussianBayesTreeClique& other, double tol) const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter);
+  const gtsam::GaussianConditional* conditional() const;
+  bool isRoot() const;
+  gtsam::GaussianBayesTreeClique* parent() const;
+  size_t nrChildren() const;
+  gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
+  size_t treeSize() const;
+  size_t numCachedSeparatorMarginals() const;
+  void deleteCachedShortcuts();
+};
 virtual class GaussianBayesTree {
   // Standard Constructors and Named Constructors
   GaussianBayesTree();
@@ -666,6 +681,8 @@ virtual class GaussianBayesTree {
                                 gtsam::DefaultKeyFormatter);
   size_t size() const;
   bool empty() const;
+  const GaussianBayesTree::Roots& roots() const;
+  const gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
   size_t numCachedSeparatorMarginals() const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
