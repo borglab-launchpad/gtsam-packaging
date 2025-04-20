@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2899.gbp9c944a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2900.gbpf9624f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f9624fdaa28736c634aaf6b5a45bbf6ba2dc5167 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9c944aad2ae74b50439fa2086c75cd321faa8f6b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 18 Apr 2025 15:33:28 +0000
+  [ Frank Dellaert ]
+  * Wrap BayesTree traversal
+  * Symbolic docs
+  * Add to toc
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Apr 2025 04:56:46 +0000
 
 gtsam (4.1.0-1ubuntu2~2898.gbp227c10) noble; urgency=medium
 
