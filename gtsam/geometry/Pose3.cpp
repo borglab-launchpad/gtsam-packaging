@@ -219,8 +219,7 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
   // Instantiate functor for Dexp-related operations:
-  const bool nearZero = (w.dot(w) <= 1e-5);
-  const so3::DexpFunctor local(w, nearZero);
+  const so3::DexpFunctor local(w);
 
   // Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
@@ -256,25 +255,17 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
 
 /* ************************************************************************* */
 Vector6 Pose3::Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose) {
-  if (Hpose) *Hpose = LogmapDerivative(pose);
   const Vector3 w = Rot3::Logmap(pose.rotation());
-  const Vector3 T = pose.translation();
-  const double t = w.norm();
-  if (t < 1e-10) {
-    Vector6 log;
-    log << w, T;
-    return log;
-  } else {
-    const Matrix3 W = skewSymmetric(w / t);
-    // Formula from Agrawal06iros, equation (14)
-    // simplified with Mathematica, and multiplying in T to avoid matrix math
-    const double Tan = tan(0.5 * t);
-    const Vector3 WT = W * T;
-    const Vector3 u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W * WT);
-    Vector6 log;
-    log << w, u;
-    return log;
-  }
+
+  // Instantiate functor for Dexp-related operations:
+  const so3::DexpFunctor local(w);
+
+  const Vector3 t = pose.translation();
+  const Vector3 u = local.applyLeftJacobianInverse(t);
+  Vector6 xi;
+  xi << w, u;
+  if (Hpose) *Hpose = LogmapDerivative(xi);
+  return xi;
 }
 
 /* ************************************************************************* */
@@ -310,25 +301,6 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi,
-                                           double nearZeroThreshold) {
-  const auto w = xi.head<3>();
-  const auto v = xi.tail<3>();
-
-  // Instantiate functor for Dexp-related operations:
-  bool nearZero = (w.dot(w) <= nearZeroThreshold);
-  so3::DexpFunctor local(w, nearZero);
-
-  // Call applyLeftJacobian to get its Jacobian
-  Matrix3 H;
-  local.applyLeftJacobian(v, H);
-
-  // Multiply with R^T to account for the Pose3::Create Jacobian.
-  const Matrix3 R = local.expmap();
-  return R.transpose() * H;
-}
-
-/* ************************************************************************* */
 Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
   Matrix6 J;
   Expmap(xi, J);
@@ -336,15 +308,34 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
 }
 
 /* ************************************************************************* */
+Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
+  const Vector3 w = xi.head<3>();
+  Vector3 v = xi.segment<3>(3);
+
+  // Instantiate functor for Dexp-related operations:
+  const so3::DexpFunctor local(w);
+
+  // Call applyLeftJacobian to get its Jacobians
+  Matrix3 H_t_w;
+  local.applyLeftJacobian(v, H_t_w);
+
+  // Multiply with R^T to account for NavState::Create Jacobian.
+  const Matrix3 R = local.expmap();
+  const Matrix3 Qt = R.transpose() * H_t_w;
+
+  // Now compute the blocks of the LogmapDerivative Jacobian
+  const Matrix3 Jw = Rot3::LogmapDerivative(w);
+  const Matrix3 Qt2 = -Jw * Qt * Jw;
+
+  Matrix6 J;
+  J << Jw, Z_3x3, Qt2, Jw;
+  return J;
+}
+
+/* ************************************************************************* */
 Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
   const Vector6 xi = Logmap(pose);
-  const Vector3 w = xi.head<3>();
-  const Matrix3 Jw = Rot3::LogmapDerivative(w);
-  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
-  const Matrix3 Q2 = -Jw*Q*Jw;
-  Matrix6 J;
-  J << Jw, Z_3x3, Q2, Jw;
-  return J;
+  return LogmapDerivative(xi);
 }
 
 /* ************************************************************************* */

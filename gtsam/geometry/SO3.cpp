@@ -42,6 +42,20 @@ static constexpr double one_180th = 1.0 / 180.0;
 static constexpr double one_720th = 1.0 / 720.0;
 static constexpr double one_1260th = 1.0 / 1260.0;
 
+static constexpr double kPi_inv = 1.0 / M_PI;
+static constexpr double kPi2 = M_PI * M_PI;
+static constexpr double k1_Pi2 = 1.0 / kPi2;
+static constexpr double kPi3 = M_PI * kPi2;
+static constexpr double k1_Pi3 = 1.0 / kPi3;
+static constexpr double k2_Pi3 = 2.0 * k1_Pi3;
+static constexpr double k1_4Pi = 0.25 * kPi_inv; // 1/(4*pi)
+
+// --- Thresholds ---
+// Tolerance for near zero (theta^2)
+static constexpr double kNearZeroThresholdSq = 1e-6;
+// Tolerance for near pi (delta^2 = (pi - theta)^2)
+static constexpr double kNearPiThresholdSq = 1e-6;
+
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& Q) {
   Matrix99 H;
   auto R = Q.matrix();
@@ -58,10 +72,11 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
   return MR;
 }
 
-void ExpmapFunctor::init(bool nearZeroApprox) {
-  nearZero =
-      nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
+void ExpmapFunctor::init(double nearZeroThresholdSq) {
+  nearZero = (theta2 <= nearZeroThresholdSq);
+
   if (!nearZero) {
+    // General case: Use standard stable formulas for A and B
     const double sin_theta = std::sin(theta);
     A = sin_theta / theta;
     const double s2 = std::sin(theta / 2.0);
@@ -69,36 +84,51 @@ void ExpmapFunctor::init(bool nearZeroApprox) {
         2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
     B = one_minus_cos / theta2;
   } else {
-    // Taylor expansion at 0
+    // Taylor expansion at 0 for A, B (Order theta^2)
     A = 1.0 - theta2 * one_6th;
     B = 0.5 - theta2 * one_24th;
   }
 }
 
-ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega) :ExpmapFunctor(kNearZeroThresholdSq, omega) {}
+
+ExpmapFunctor::ExpmapFunctor(double nearZeroThresholdSq, const Vector3& omega)
     : theta2(omega.dot(omega)),
       theta(std::sqrt(theta2)),
       W(skewSymmetric(omega)),
       WW(W * W) {
-  init(nearZeroApprox);
+  init(nearZeroThresholdSq);
 }
 
-ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle,
-                             bool nearZeroApprox)
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
     : theta2(angle * angle),
       theta(angle),
       W(skewSymmetric(axis * angle)),
       WW(W * W) {
-  init(nearZeroApprox);
+  init(kNearZeroThresholdSq);
 }
+
 
 Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
 
-DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
-    : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
+DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
+  : ExpmapFunctor(nearZeroThresholdSq, omega), omega(omega) {
   if (!nearZero) {
-    C = (1 - A) / theta2;
-    D = (1.0 - A / (2.0 * B)) / theta2;
+    // General case or nearPi: Use standard stable formulas first
+    C = (1.0 - A) / theta2; // Usually stable, even near pi (1-0)/pi^2
+
+    // Calculate delta = pi - theta (non-negative) for nearPi check
+    const double delta = M_PI > theta ? M_PI - theta : 0.0;
+    const double delta2 = delta * delta;
+    const bool nearPi = (delta2 < nearPiThresholdSq);
+    if (nearPi) {
+      // Taylor expansion near pi *only for D* (Order delta)
+      D = k1_Pi2 + (k2_Pi3 - k1_4Pi) * delta; // D ~ 1/pi^2 + delta*(2/pi^3 - 1/(4*pi))
+    } else {
+      // General case D:
+      D = (1.0 - A / (2.0 * B)) / theta2;
+    }
+    // Calculate E and F using standard formulas (stable near pi)
     E = (2.0 * B - A) / theta2;
     F = (3.0 * C - B) / theta2;
   } else {
@@ -111,51 +141,46 @@ DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
   }
 }
 
-Vector3 DexpFunctor::crossB(const Vector3& v, OptionalJacobian<3, 3> H) const {
-  // Wv = omega x v
-  const Vector3 Wv = gtsam::cross(omega, v);
-  if (H) {
-    // Apply product rule to (B Wv)
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    // - skewSymmetric(v) is 3x3 Jacobian of Wv = gtsam::cross(omega, v)
-    *H = - Wv * E * omega.transpose() - B * skewSymmetric(v);
-  }
-  return B * Wv;
+DexpFunctor::DexpFunctor(const Vector3& omega)
+  : DexpFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
+
+Matrix3 DexpFunctor::rightJacobianInverse() const {
+  if (theta > M_PI) return rightJacobian().inverse();
+  return I_3x3 + 0.5 * W + D * WW;
 }
 
-Vector3 DexpFunctor::doubleCrossC(const Vector3& v,
-                                  OptionalJacobian<3, 3> H) const {
-  // WWv = omega x (omega x * v)
-  Matrix3 doubleCrossJacobian;
-  const Vector3 WWv =
-      gtsam::doubleCross(omega, v, H ? &doubleCrossJacobian : nullptr);
-  if (H) {
-    // Apply product rule to (C WWv)
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    // doubleCrossJacobian is 3x3 Jacobian of WWv = gtsam::doubleCross(omega, v)
-    *H = - WWv * F * omega.transpose() + C * doubleCrossJacobian;
-  }
-  return C * WWv;
+Matrix3 DexpFunctor::leftJacobianInverse() const {
+  if (theta > M_PI) return leftJacobian().inverse();
+  return I_3x3 - 0.5 * W + D * WW;
 }
 
 // Multiplies v with left Jacobian through vector operations only.
-Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
-                               OptionalJacobian<3, 3> H2) const {
-  Matrix3 D_BWv_w, D_CWWv_w;
-  const Vector3 BWv = crossB(v, H1 ? &D_BWv_w : nullptr);
-  const Vector3 CWWv = doubleCrossC(v, H1 ? &D_CWWv_w : nullptr);
-  if (H1) *H1 = -D_BWv_w + D_CWWv_w;
+Vector3 DexpFunctor::applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1,
+  OptionalJacobian<3, 3> H2) const {
+  const Vector3 Wv = gtsam::cross(omega, v);
+
+  Matrix3 WWv_H_w;
+  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
+
+  if (H1) {
+    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
+    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
+    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
+    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
+    *H1 = -BWv_H_w + CWWv_H_w;
+  }
+
   if (H2) *H2 = rightJacobian();
-  return v - BWv + CWWv;
+  return v - B * Wv + C * WWv;
 }
 
-Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
-                                  OptionalJacobian<3, 3> H2) const {
+Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
+  OptionalJacobian<3, 3> H2) const {
   const Matrix3 invJr = rightJacobianInverse();
   const Vector3 c = invJr * v;
   if (H1) {
     Matrix3 H;
-    applyDexp(c, H);  // get derivative H of forward mapping
+    applyRightJacobian(c, H);  // get derivative H of forward mapping
     *H1 = -invJr * H;
   }
   if (H2) *H2 = invJr;
@@ -163,19 +188,26 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 }
 
 Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
-                                       OptionalJacobian<3, 3> H1,
-                                       OptionalJacobian<3, 3> H2) const {
-  Matrix3 D_BWv_w, D_CWWv_w;
-  const Vector3 BWv = crossB(v, H1 ? &D_BWv_w : nullptr);
-  const Vector3 CWWv = doubleCrossC(v, H1 ? &D_CWWv_w : nullptr);
-  if (H1) *H1 = D_BWv_w + D_CWWv_w;
+  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
+  const Vector3 Wv = gtsam::cross(omega, v);
+
+  Matrix3 WWv_H_w;
+  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
+
+  if (H1) {
+    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
+    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
+    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
+    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
+    *H1 = BWv_H_w + CWWv_H_w;
+  }
+
   if (H2) *H2 = leftJacobian();
-  return v + BWv + CWWv;
+  return v + B * Wv + C * WWv;
 }
 
 Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
-                                              OptionalJacobian<3, 3> H1,
-                                              OptionalJacobian<3, 3> H2) const {
+  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
   const Matrix3 invJl = leftJacobianInverse();
   const Vector3 c = invJl * v;
   if (H1) {
@@ -250,50 +282,24 @@ Matrix3 SO3::AdjointMap() const {
 template <>
 GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
-  if (H) {
-    so3::DexpFunctor local(omega);
-    *H = local.dexp();
-    return SO3(local.expmap());
-  } else {
-    return SO3(so3::ExpmapFunctor(omega).expmap());
-  }
+  so3::DexpFunctor local(omega);
+  if (H) *H = local.rightJacobian();
+  return SO3(local.expmap());
 }
 
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-  return so3::DexpFunctor(omega).dexp();
+  return so3::DexpFunctor(omega).rightJacobian();
 }
 
 //******************************************************************************
-/* Right Jacobian for Log map in SO(3) - equation (10.86) and following
- equations in G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie
- Groups", Volume 2, 2008.
-
-   logmap( Rhat * expmap(omega) ) \approx logmap(Rhat) + Jrinv * omega
-
- where Jrinv = LogmapDerivative(omega). This maps a perturbation on the
- manifold (expmap(omega)) to a perturbation in the tangent space (Jrinv *
- omega)
- */
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
-  using std::cos;
-  using std::sin;
-
-  double theta2 = omega.dot(omega);
-  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
-  double theta = std::sqrt(theta2);  // rotation angle
-
-  // element of Lie algebra so(3): W = omega^
-  const Matrix3 W = Hat(omega);
-  return I_3x3 + 0.5 * W +
-         (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) *
-             W * W;
+  return so3::DexpFunctor(omega).rightJacobianInverse();
 }
 
-//******************************************************************************
 template <>
 GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
@@ -306,9 +312,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   const double &R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
   const double &R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
 
-  // Get trace(R)
   const double tr = R.trace();
-
   Vector3 omega;
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
@@ -357,7 +361,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   } else {
     double magnitude;
     const double tr_3 = tr - 3.0; // could be non-negative if the matrix is off orthogonal
-    if (tr_3 < -1e-6) {
+    if (tr_3 < -so3::kNearZeroThresholdSq) {
       // this is the normal case -1 < trace < 3
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));
@@ -365,7 +369,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       // see https://github.com/borglab/gtsam/issues/746 for details
-      magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0;
+      magnitude = 0.5 - tr_3 * so3::one_12th + tr_3 * tr_3 * so3::one_60th;
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
