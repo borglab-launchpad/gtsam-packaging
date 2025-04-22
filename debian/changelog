@@ -1,10 +1,33 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2898.gbp09cd4b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2899.gbp7ec082) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7ec082d474b0b95db472e839122c62fe013898fc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @09cd4b9742d718a9f41bf48aa440c4d1c3db4be4 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 20 Apr 2025 05:01:07 +0000
+  [ Frank Dellaert ]
+  * LogmapDerivative(xi)
+  * Expmap to .cpp file
+  * LogmapDerivative == rightJacobianInverse
+  * Revamp Thresholds in SO3
+  * SO3 docs
+  * Better tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Deprecated dexp() and dexpInv, inlined crossB and doubleCrossC
+  * Use inverse() beyond pi
+  * Fix bug in refactor
+  * Undid Logmap refactor: there is some subtle bug with that lambda that I could not resolve withing reasonable time.
+  * Instrument code for failing windows test
+  * Another attempt at windows debugging
+  * Fix const
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 22 Apr 2025 14:13:25 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2897.gbp40e066) noble; urgency=medium
 
