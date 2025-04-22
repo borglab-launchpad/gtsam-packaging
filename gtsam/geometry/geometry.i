@@ -198,6 +198,39 @@ class Rot2 {
 };
 
 #include <gtsam/geometry/SO3.h>
+
+namespace so3 {
+  class ExpmapFunctor {
+    const double theta2;
+    const double theta;
+    const Matrix3 W;
+    const Matrix3 WW;
+    const bool nearZero;
+    double A;  // A = sin(theta) / theta
+    double B;  // B = (1 - cos(theta))
+    ExpmapFunctor(const gtsam::Vector3& omega);
+    ExpmapFunctor(double nearZeroThresholdSq, const gtsam::Vector3& axis);
+    ExpmapFunctor(const gtsam::Vector3& axis, double angle);
+    gtsam::Matrix3 expmap() const;
+  };
+  
+  virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
+    const gtsam::Vector3 omega;
+    const double C;  // (1 - A) / theta^2
+    const double D;  // (1 - A/2B) / theta2
+    DexpFunctor(const gtsam::Vector3& omega);
+    DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
+    gtsam::Matrix3 rightJacobian() const;
+    gtsam::Matrix3 leftJacobian() const;
+    gtsam::Matrix3 rightJacobianInverse() const;
+    gtsam::Matrix3 leftJacobianInverse() const;
+    gtsam::Vector3 applyRightJacobian(const gtsam::Vector3& v) const;
+    gtsam::Vector3 applyRightJacobianInverse(const gtsam::Vector3& v) const;
+    gtsam::Vector3 applyLeftJacobian(const gtsam::Vector3& v) const;
+    gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
+  };  
+}
+
 class SO3 {
   // Standard Constructors
   SO3();
@@ -220,21 +253,22 @@ class SO3 {
   gtsam::SO3 operator*(const gtsam::SO3& R) const;
 
   // Lie Group
-  static gtsam::SO3 Expmap(gtsam::Vector v);
-  static gtsam::Vector Logmap(const gtsam::SO3& p);
-  gtsam::SO3 expmap(gtsam::Vector v);
-  gtsam::Vector logmap(const gtsam::SO3& p);
-  static gtsam::Matrix Hat(const gtsam::Vector& xi);
-  static gtsam::Vector Vee(const gtsam::Matrix& xi);
+  static gtsam::SO3 Expmap(gtsam::Vector3 v);
+  static gtsam::Vector3 Logmap(const gtsam::SO3& p);
+  static gtsam::Matrix3 ExpmapDerivative(const gtsam::Vector3& omega);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
+  gtsam::SO3 expmap(gtsam::Vector3 v);
+  gtsam::Vector3 logmap(const gtsam::SO3& p);
+  static gtsam::Matrix3 Hat(const gtsam::Vector3& xi);
+  static gtsam::Vector3 Vee(const gtsam::Matrix3& xi);
 
   // Manifold
-  gtsam::SO3 retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::SO3& R) const;
-  static gtsam::SO3 Expmap(gtsam::Vector v);
+  gtsam::SO3 retract(gtsam::Vector3 v) const;
+  gtsam::Vector3 localCoordinates(const gtsam::SO3& R) const;
 
   // Other methods
-  gtsam::Vector vec() const;
-  gtsam::Matrix matrix() const;
+  gtsam::Vector3 vec() const;
+  gtsam::Matrix3 matrix() const;
 };
 
 #include <gtsam/geometry/SO4.h>
@@ -376,6 +410,8 @@ class Rot3 {
   // Lie group
   static gtsam::Rot3 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Rot3& p);
+  static gtsam::Matrix3 ExpmapDerivative(const gtsam::Vector3& omega);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
   gtsam::Rot3 expmap(const gtsam::Vector& v);
   gtsam::Vector logmap(const gtsam::Rot3& p);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
@@ -532,12 +568,17 @@ class Pose3 {
   // Lie Group
   static gtsam::Pose3 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Pose3& p);
+  static gtsam::Matrix6 ExpmapDerivative(const gtsam::Vector6& xi);
+  static gtsam::Matrix6 LogmapDerivative(const gtsam::Vector6& xi);
+  static gtsam::Matrix6 LogmapDerivative(const gtsam::Pose3& xi);
   static gtsam::Pose3 Expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H);
   static gtsam::Vector Logmap(const gtsam::Pose3& p, Eigen::Ref<Eigen::MatrixXd> H);
+  
   gtsam::Pose3 expmap(gtsam::Vector v);
   gtsam::Pose3 expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
   gtsam::Vector logmap(const gtsam::Pose3& p);
   gtsam::Vector logmap(const gtsam::Pose3& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
+  
   gtsam::Matrix AdjointMap() const;
   gtsam::Vector Adjoint(gtsam::Vector xi) const;
   gtsam::Vector Adjoint(gtsam::Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
@@ -550,8 +591,7 @@ class Pose3 {
   static gtsam::Matrix adjointMap_(gtsam::Vector xi);
   static gtsam::Vector adjoint_(gtsam::Vector xi, gtsam::Vector y);
   static gtsam::Vector adjointTranspose(gtsam::Vector xi, gtsam::Vector y);
-  static gtsam::Matrix ExpmapDerivative(gtsam::Vector xi);
-  static gtsam::Matrix LogmapDerivative(const gtsam::Pose3& xi);
+
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& xi);
 

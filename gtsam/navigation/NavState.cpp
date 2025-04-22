@@ -118,8 +118,7 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
   Vector3 w = xi.head<3>(), rho = xi.segment<3>(3), nu = xi.tail<3>();
 
   // Instantiate functor for Dexp-related operations:
-  const bool nearZero = (w.dot(w) <= 1e-5);
-  const so3::DexpFunctor local(w, nearZero);
+  const so3::DexpFunctor local(w);
 
   // Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
@@ -238,15 +237,13 @@ Matrix9 NavState::ExpmapDerivative(const Vector9& xi) {
 }
 
 //------------------------------------------------------------------------------
-Matrix9 NavState::LogmapDerivative(const NavState& state) {
-  const Vector9 xi = Logmap(state);
+Matrix9 NavState::LogmapDerivative(const Vector9& xi) {
   const Vector3 w = xi.head<3>();
   Vector3 rho = xi.segment<3>(3);
   Vector3 nu = xi.tail<3>();
 
   // Instantiate functor for Dexp-related operations:
-  const bool nearZero = (w.dot(w) <= 1e-5);
-  const so3::DexpFunctor local(w, nearZero);
+  const so3::DexpFunctor local(w);
 
   // Call applyLeftJacobian to get its Jacobians
   Matrix3 H_t_w, H_v_w;
@@ -268,6 +265,12 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
        Qt2,    Jw, Z_3x3,
        Qv2, Z_3x3,    Jw;
   return J;
+}
+
+//------------------------------------------------------------------------------
+Matrix9 NavState::LogmapDerivative(const NavState& state) {
+  const Vector9 xi = Logmap(state);
+  return LogmapDerivative(xi);
 }
 
 //------------------------------------------------------------------------------

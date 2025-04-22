@@ -374,20 +374,13 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     using LieAlgebra = Matrix3;
 
     /**
-     * Exponential map at identity - create a rotation from canonical coordinates
+     * Exponential map - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
      */
-    static Rot3 Expmap(const Vector3& v, OptionalJacobian<3,3> H = {}) {
-      if(H) *H = Rot3::ExpmapDerivative(v);
-#ifdef GTSAM_USE_QUATERNIONS
-      return traits<gtsam::Quaternion>::Expmap(v);
-#else
-      return Rot3(traits<SO3>::Expmap(v));
-#endif
-    }
+    static Rot3 Expmap(const Vector3& v, OptionalJacobian<3,3> H = {});
 
     /**
-     * Log map at identity - returns the canonical coordinates
+     * Log map - returns the canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
     static Vector3 Logmap(const Rot3& R, OptionalJacobian<3,3> H = {});

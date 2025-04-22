@@ -245,6 +245,9 @@ public:
   static Matrix9 ExpmapDerivative(const Vector9& xi);
 
   /// Derivative of Logmap
+  static Matrix9 LogmapDerivative(const Vector9& xi);
+
+  /// Derivative of Logmap, NavState version
   static Matrix9 LogmapDerivative(const NavState& xi);
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
