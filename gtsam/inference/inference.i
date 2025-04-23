@@ -143,7 +143,7 @@ class Ordering {
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
                       gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
-  static gtsam::Ordering Natural(const FACTOR_GRAPH& graph);
+  static gtsam::Ordering Natural(const FACTOR_GRAPH& fg);
 
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
@@ -159,7 +159,7 @@ class Ordering {
   // Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::Ordering& ord, double tol) const;
+  bool equals(const gtsam::Ordering& other, double tol) const;
 
   // Standard interface
   size_t size() const;

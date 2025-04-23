@@ -34,7 +34,7 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
   void serialize() const;
 
   // enabling function to compare objects
-  bool equals(const gtsam::SfmTrack& expected, double tol) const;
+  bool equals(const gtsam::SfmTrack& sfmTrack, double tol) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -67,7 +67,7 @@ class SfmData {
   void serialize() const;
 
   // enabling function to compare objects
-  bool equals(const gtsam::SfmData& expected, double tol) const;
+  bool equals(const gtsam::SfmData& sfmData, double tol) const;
 };
 
 gtsam::SfmData readBal(string filename);

@@ -39,7 +39,7 @@ virtual class HybridFactor : gtsam::Factor {
   void print(string s = "HybridFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::HybridFactor& other, double tol = 1e-9) const;
+  bool equals(const gtsam::HybridFactor& lf, double tol = 1e-9) const;
 
   // Standard interface:
   double error(const gtsam::HybridValues& values) const;
@@ -145,7 +145,7 @@ class HybridBayesNet {
   const gtsam::HybridConditional* at(size_t i) const;
 
   // Standard interface:
-  double logProbability(const gtsam::HybridValues& values) const;
+  double logProbability(const gtsam::HybridValues& x) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double error(const gtsam::HybridValues& values) const;
 
@@ -163,7 +163,7 @@ class HybridBayesNet {
   void print(string s = "HybridBayesNet\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::HybridBayesNet& other, double tol = 1e-9) const;
+  bool equals(const gtsam::HybridBayesNet& fg, double tol = 1e-9) const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,

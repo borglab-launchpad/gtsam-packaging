@@ -49,7 +49,7 @@ class Values {
   void update(const gtsam::Values& values);
   void insert_or_assign(const gtsam::Values& values);
   void erase(size_t j);
-  void swap(gtsam::Values& values);
+  void swap(gtsam::Values& other);
 
   bool exists(size_t j) const;
   gtsam::KeyVector keys() const;
