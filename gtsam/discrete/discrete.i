@@ -45,7 +45,7 @@ virtual class DiscreteFactor : gtsam::Factor {
   void print(string s = "DiscreteFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::DiscreteFactor& other, double tol = 1e-9) const;
+  bool equals(const gtsam::DiscreteFactor& lf, double tol = 1e-9) const;
   double operator()(const gtsam::DiscreteValues& values) const;
 };
 
@@ -142,7 +142,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(size_t value) const;
   size_t sample() const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
-  size_t argmax(const gtsam::DiscreteValues& parents) const;
+  size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
 
   // Markdown and HTML
   string markdown(const gtsam::KeyFormatter& keyFormatter =
@@ -226,7 +226,7 @@ class DiscreteBayesNet {
   void print(string s = "DiscreteBayesNet\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+  bool equals(const gtsam::DiscreteBayesNet& bn, double tol = 1e-9) const;
 
   // Standard interface.
   double logProbability(const gtsam::DiscreteValues& values) const;

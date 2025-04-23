@@ -309,7 +309,7 @@ virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
                             const gtsam::noiseModel::Base *model);
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::EssentialMatrixConstraint& other, double tol) const;
+  bool equals(const gtsam::EssentialMatrixConstraint& expected, double tol) const;
   gtsam::Vector evaluateError(const gtsam::Pose3& p1, const gtsam::Pose3& p2) const;
   const gtsam::EssentialMatrix& measured() const;
 };
@@ -407,14 +407,14 @@ gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
-  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
+  FrobeniusFactor(size_t j1, size_t j2, gtsam::noiseModel::Base* model);
 
   gtsam::Vector evaluateError(const T& T1, const T& T2);
 };
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3}>
 virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
-  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& T12);
+  FrobeniusBetweenFactor(size_t j1, size_t j2, const T& T12);
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& T12,
                          gtsam::noiseModel::Base* model);
 

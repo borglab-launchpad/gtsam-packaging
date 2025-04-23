@@ -85,7 +85,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   void print(const std::string& s = "Preintegrated Measurements: ") const;
 
   /// equals
-  bool equals(const PreintegratedAhrsMeasurements&, double tol = 1e-9) const;
+  bool equals(const PreintegratedAhrsMeasurements& expected, double tol = 1e-9) const;
 
   /// Reset integrated quantities to zero
   void resetIntegration();
