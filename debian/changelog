@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2911.gbp397755) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2912.gbp2d7ebd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2d7ebd6e9f6f117da6025ec1b572878289e8f1c1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @397755b4312cdadb1cd1bf4c92656103c7e6ccad **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 23 Apr 2025 22:54:17 +0000
+  [ Fan Jiang ]
+  * Add wrapper for imuBias in iSAM2
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 24 Apr 2025 13:55:16 +0000
 
 gtsam (4.1.0-1ubuntu2~2910.gbp3c479f) noble; urgency=medium
 
