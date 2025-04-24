@@ -1,3 +1,11 @@
+gtsam-no-tbb (4.1.0-1ubuntu2~2910.gbp3bcf2f) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @3bcf2ff75ad92103ec25123853755479069235ff **
+
+  * modified changelog for distro noble
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 24 Apr 2025 14:01:42 +0000
+
 gtsam-no-tbb (4.1.0-1ubuntu2~2909.gbp301796) noble; urgency=medium
 
   ** SNAPSHOT build @301796b9f188e9adf1ae13f717176a4572abb14f **
