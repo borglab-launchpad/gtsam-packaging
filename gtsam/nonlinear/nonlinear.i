@@ -549,7 +549,7 @@ class ISAM2 {
   gtsam::Values calculateEstimate() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
-                     gtsam::Cal3f, gtsam::Cal3Bundler, 
+                     gtsam::Cal3f, gtsam::Cal3Bundler, gtsam::imuBias::ConstantBias,
                      gtsam::EssentialMatrix, gtsam::FundamentalMatrix, gtsam::SimpleFundamentalMatrix,
                      gtsam::PinholeCamera<gtsam::Cal3_S2>,
                      gtsam::PinholeCamera<gtsam::Cal3Bundler>,
@@ -626,6 +626,7 @@ template <T = {double,
                gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::NavState,
                gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior,
