@@ -1,4 +1,4 @@
-# Symbolic Module
+# Symbolic
 
 The `symbolic` module in GTSAM deals with the *structure* of factor graphs and Bayesian networks, independent of the specific numerical types of factors (like Gaussian or discrete). It allows for analyzing graph connectivity, determining optimal variable elimination orders, and understanding the sparsity structure of the resulting inference objects.
 
