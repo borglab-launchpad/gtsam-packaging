@@ -670,16 +670,16 @@ virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/nonlinear/FixedLagSmoother.h>
+// This class is not available in python, just use a dictionary
 class FixedLagSmootherKeyTimestampMapValue {
   FixedLagSmootherKeyTimestampMapValue(size_t key, double timestamp);
   FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
 };
 
+// This class is not available in python, just use a dictionary
 class FixedLagSmootherKeyTimestampMap {
   FixedLagSmootherKeyTimestampMap();
   FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
-
-  // Note: no print function
 
   // common STL methods
   size_t size() const;
@@ -740,6 +740,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   void print(string s = "IncrementalFixedLagSmoother:\n") const;
 
+  gtsam::Matrix marginalCovariance(size_t key) const;
   gtsam::ISAM2Params params() const;
 
   gtsam::NonlinearFactorGraph getFactors() const;
