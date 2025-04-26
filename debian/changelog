@@ -1,10 +1,29 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2914.gbpd787e9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2915.gbp81a960) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @81a9606b1d24abec12201f1e9a32d2267c7b35c5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d787e9a37fedb20e67980b58f0a0ff8e76c36cd4 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Apr 2025 04:22:45 +0000
+  [ Frank Dellaert ]
+  * Converted PlanarSLAM
+  * Pose-SLAM and rendering
+  * EKF-SLAM proto
+  * Two new modules
+  * More modular
+  * Even more modular
+  * Plot side by side
+  * SVG graphs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Better plotting, true filter
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Apr 2025 14:49:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2913.gbp908394) noble; urgency=medium
 
