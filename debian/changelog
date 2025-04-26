@@ -1,10 +1,41 @@
-gtsam (4.1.0-1ubuntu2~2915.gbp8eaf65) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2916.gbp5027f4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5027f4c8b103cd7d053e212bc0af11305e2cb808 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8eaf652b08b88c8c7b57cace90f40c35fcaf1bd8 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 24 Apr 2025 14:01:36 +0000
+  [ darshan-17 ]
+  * Implement ABC_EQF in cpp - Inputs are simulated- Use with caution
+  * c++ implementation - use with caution
+  * Adding a function to translate output data into csv and store in local directory
+  * Used GTSAM ExpmapDerivative to calculate Left Jacobian(-1)
+
+  [ jenniferoum ]
+  * Update wedge and vee to Rot3 Hat and Vee for EqF
+
+  [ darshan-17 ]
+  * C++ implementation of the EqF to estimate bias.
+  * Removed older linux dependencies, updated cmake version requirement in METIS CMakeLists.txt & removed variables that were not used
+
+  [ jenniferoum ]
+  * Address some pr comments - remove ABC_EQF.cpp, clean up comments, change Input class to struct, remove changes to target
+
+  [ darshan-17 ]
+  * Resolved the direction class -> Unit3, and local_coords, local_inv functions to be inline with the state class
+
+  [ jenniferoum ]
+  * Inline measurement, G, and State functions, use brace initialization
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ jenniferoum ]
+  * Template on size_t, Darshan's updates to cleanup comments, default coordinate to exponential, separate filter and demo specific functions, rename stateAction to operator *, fix brace initialization
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Apr 2025 04:18:14 +0000
 
 gtsam (4.1.0-1ubuntu2~2914.gbp0f7886) noble; urgency=medium
 
