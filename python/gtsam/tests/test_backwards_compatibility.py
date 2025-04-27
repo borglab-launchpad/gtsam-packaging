@@ -315,7 +315,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
 
         rotations = gtsam.Rot3Vector([R, R.inverse()])
         expected = Rot3()
-        actual = gtsam.FindKarcherMean(rotations)
+        actual = gtsam.FindKarcherMeanRot3(rotations)
         self.gtsamAssertEquals(expected, actual)
 
     def test_find_karcher_mean_identity(self):
@@ -327,7 +327,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
         aRb_list = gtsam.Rot3Vector([a1Rb1, a2Rb2, a3Rb3])
         aRb_expected = Rot3()
 
-        aRb = gtsam.FindKarcherMean(aRb_list)
+        aRb = gtsam.FindKarcherMeanRot3(aRb_list)
         self.gtsamAssertEquals(aRb, aRb_expected)
 
     def test_factor(self):
@@ -354,7 +354,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
         expected = Rot3()
 
         result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
-        actual = gtsam.FindKarcherMean(
+        actual = gtsam.FindKarcherMeanRot3(
             gtsam.Rot3Vector([result.atRot3(1),
                               result.atRot3(2)]))
         self.gtsamAssertEquals(expected, actual)

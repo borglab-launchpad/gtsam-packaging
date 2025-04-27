@@ -355,7 +355,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   gtsam::Vector error_vector(const gtsam::VectorValues& c) const;
   double error(const gtsam::VectorValues& c) const;
 
-  //Standard Interface
+  // Standard Interface
   gtsam::Matrix getA() const;
   gtsam::Vector getb() const;
   size_t rows() const;
