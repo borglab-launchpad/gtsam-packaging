@@ -1,10 +1,45 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2918.gbp5e7929) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2919.gbp829e81) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @829e818504beed9406c95c6860364f44f2412393 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5e79299a90b776fce1e4d2ffa3123215a73bbc96 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 26 Apr 2025 14:54:16 +0000
+  [ p-zach ]
+  * New SLAM notebooks
+  * pip install gtsam-develop
+  * yml and summary
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fixed KarcherMean issue
+  * Fix LAGO docs, add test
+  * Fixed PlanarProjectionFactor
+
+  [ p-zach ]
+  * Wrap OrientedPlane3
+  * Wrap many SLAM classes
+  * Fix SLAM notebook wrap problems and typos
+
+  [ Frank Dellaert ]
+  * Add OrientedPlane3 to Values wrapper
+  * Fix FindKarcherMean tests
+  * Expanded SmartFactor wrapping
+  * Edited docs only
+  * Wrap Rig version
+
+  [ p-zach ]
+  * Fix ReferenceFrameFactor
+
+  [ Frank Dellaert ]
+  * Working rig !
+  * Better docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Apr 2025 21:58:15 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2917.gbp669671) noble; urgency=medium
 
