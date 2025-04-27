@@ -694,6 +694,45 @@ class Unit3 {
   bool equals(const gtsam::Unit3& expected, double tol) const;
 };
 
+#include <gtsam/geometry/OrientedPlane3.h>
+class OrientedPlane3 {
+  // Standard constructors
+  OrientedPlane3();
+  OrientedPlane3(const gtsam::Unit3& n, double d);
+  OrientedPlane3(const gtsam::Vector& vec);
+  OrientedPlane3(double a, double b, double c, double d);
+
+  // Testable
+  void print(string s = "") const;
+  bool equals(const gtsam::OrientedPlane3& s, double tol = 1e-9) const;
+
+  gtsam::OrientedPlane3 transform(const gtsam::Pose3& xr) const;
+  gtsam::OrientedPlane3 transform(const gtsam::Pose3& xr,
+                           Eigen::Ref<Eigen::MatrixXd> Hp,
+                           Eigen::Ref<Eigen::MatrixXd> Hr) const;
+
+  gtsam::Vector3 errorVector(const gtsam::OrientedPlane3& other) const;
+  gtsam::Vector3 errorVector(const gtsam::OrientedPlane3& other,
+                      Eigen::Ref<Eigen::MatrixXd> H1,
+                      Eigen::Ref<Eigen::MatrixXd> H2) const;
+
+  static size_t Dim();
+  size_t dim() const;
+  
+  gtsam::OrientedPlane3 retract(const gtsam::Vector3& v) const;
+  gtsam::OrientedPlane3 retract(const gtsam::Vector3& v,
+                        Eigen::Ref<Eigen::MatrixXd> H) const;
+
+  gtsam::Vector3 localCoordinates(const gtsam::OrientedPlane3& s) const;
+
+  gtsam::Vector planeCoefficients() const;
+
+  gtsam::Unit3 normal() const;
+  gtsam::Unit3 normal(Eigen::Ref<Eigen::MatrixXd> H) const;
+  double distance() const;
+  double distance(Eigen::Ref<Eigen::MatrixXd> H) const;
+};
+
 #include <gtsam/geometry/EssentialMatrix.h>
 class EssentialMatrix {
   // Standard Constructors
@@ -1278,7 +1317,7 @@ class Similarity3 {
   double scale() const;
 };
 
-template <T>
+template <T = {gtsam::PinholePoseCal3_S2}>
 class CameraSet {
   CameraSet();
 

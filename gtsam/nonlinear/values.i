@@ -12,6 +12,7 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -94,6 +95,7 @@ class Values {
   void insert(size_t j, const gtsam::EssentialMatrix& E);
   void insert(size_t j, const gtsam::FundamentalMatrix& F);
   void insert(size_t j, const gtsam::SimpleFundamentalMatrix& F);
+  void insert(size_t j, const gtsam::OrientedPlane3& plane);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3f>& camera);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
@@ -138,6 +140,7 @@ class Values {
   void update(size_t j, const gtsam::EssentialMatrix& E);
   void update(size_t j, const gtsam::FundamentalMatrix& F);
   void update(size_t j, const gtsam::SimpleFundamentalMatrix& F);
+  void update(size_t j, const gtsam::OrientedPlane3& plane);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3f>& camera);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
@@ -179,6 +182,7 @@ class Values {
   void insert_or_assign(size_t j, const gtsam::EssentialMatrix& E);
   void insert_or_assign(size_t j, const gtsam::FundamentalMatrix& F);
   void insert_or_assign(size_t j, const gtsam::SimpleFundamentalMatrix& F);
+  void insert_or_assign(size_t j, const gtsam::OrientedPlane3& plane);
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3f>& camera);
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
@@ -216,6 +220,7 @@ class Values {
                  gtsam::EssentialMatrix, 
                  gtsam::FundamentalMatrix, 
                  gtsam::SimpleFundamentalMatrix,
+                 gtsam::OrientedPlane3,
                  gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                  gtsam::PinholeCamera<gtsam::Cal3f>,
                  gtsam::PinholeCamera<gtsam::Cal3_S2>,

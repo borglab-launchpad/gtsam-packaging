@@ -201,7 +201,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, landmarkKey, poseKey),
+            NoiseModelFactorN(model, poseKey, landmarkKey),
             bTc_(bTc),
             calib_(calib) {}
 
