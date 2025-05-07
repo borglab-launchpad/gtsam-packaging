@@ -277,6 +277,10 @@ inline Class expmap_default(const Class& t, const Vector& d) {
 template<typename T>
 class IsLieGroup: public IsGroup<T>, public IsManifold<T> {
 public:
+  // Concept marker: allows checking IsLieGroup<T>::value in templates
+  static constexpr bool value =
+    std::is_base_of<lie_group_tag, typename traits<T>::structure_category>::value;
+
   typedef typename traits<T>::structure_category structure_category_tag;
   typedef typename traits<T>::ManifoldType ManifoldType;
   typedef typename traits<T>::TangentVector TangentVector;
@@ -284,7 +288,7 @@ public:
 
   GTSAM_CONCEPT_USAGE(IsLieGroup) {
     static_assert(
-        (std::is_base_of<lie_group_tag, structure_category_tag>::value),
+        value,
         "This type's trait does not assert it is a Lie group (or derived)");
 
     // group operations with Jacobians
