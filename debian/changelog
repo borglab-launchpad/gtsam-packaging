@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2926.gbp98130e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2927.gbpb4d7b2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b4d7b2a0bba1f8db38140f420cb595b2d1540ee3 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @98130e077dc0a3208e9d8681ce8f04f79ac5c852 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 07 May 2025 13:03:30 +0000
+  [ scottiyio ]
+  * Add files via upload
+  * Add files via upload
+  * Add files via upload
+  * Add files via upload
+  * Delete examples/SE2LIEKF_NoFactors.cpp
+  * clang-formatted, changed getFoobar() to foobar()
+  * Added documentation and format changes.
+  * Added authors
+  * Added documentation & clang formatting
+  * Added authors
+
+  [ Frank Dellaert ]
+  * no_boost
+  * Templated predict/update
+  * More symmetric templating
+  * Comments with o4-mini
+  * Move to nav
+  * Docs with o4-mini
+  * Test WIP
+  * Use nav version
+  * Added Rot3 example to show state-dependent control
+  * Review comments
+  * SFINAE to restrict template matching
+  * Update testLIEKF.cpp
+  * well-tested predictMean
+  * predictMean for state=control f
+  * Correct jacobian for h_gps
+  * Rename
+  * Fix compilation
+  * Add value to concepts
+  * EKF hierarchy
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Renamed GroupEKF -> LieGroupEKF, moved invariant predicts
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 07 May 2025 16:13:22 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2925.gbp1c6437) noble; urgency=medium
 
