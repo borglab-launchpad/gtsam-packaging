@@ -138,10 +138,13 @@ public:
   static const int dim = traits<T>::dimension;
   typedef typename traits<T>::ManifoldType ManifoldType;
   typedef typename traits<T>::TangentVector TangentVector;
+  // Concept marker: allows checking IsManifold<T>::value in templates
+  static constexpr bool value =
+    std::is_base_of<manifold_tag, structure_category_tag>::value;
 
   GTSAM_CONCEPT_USAGE(IsManifold) {
     static_assert(
-        (std::is_base_of<manifold_tag, structure_category_tag>::value),
+        value,
         "This type's structure_category trait does not assert it as a manifold (or derived)");
     static_assert(TangentVector::SizeAtCompileTime == dim);
 
