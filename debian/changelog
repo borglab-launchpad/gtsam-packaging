@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2930.gbpadb540) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2931.gbp7eeb74) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7eeb742ff15102bc4502ee7a760caa2b1e5af4e0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @adb54030e4278eb09a9ec2c28221b3857d4c558f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 07 May 2025 16:17:49 +0000
+  [ Frank Dellaert ]
+  * Format, document, optimize slightly - Gemini 2.5
+  * Fix link
+  * Smart factors math overview
+  * Fix type
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 May 2025 17:10:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2929.gbp8eecf4) noble; urgency=medium
 
