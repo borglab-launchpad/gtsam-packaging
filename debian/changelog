@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~2939.gbp353738) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2940.gbpb958b5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b958b5c6d9d9ddebb7bc2002d5e3085bec6470e9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @353738576003a7509704d14dc63f609a317a2232 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 May 2025 17:16:31 +0000
+  [ Frank Dellaert ]
+  * Add explicit update
+  * Now handle dynamic types
+  * Retain efficiency in static case
+  * Reduce clutter
+  * Add AdjointMap into traits
+  * Deal with Matrix
+  * Simplify tests
+  * Added dynamic test for LieGroupEKF as well
+  * naming
+  * Fix bug in Debug
+  * Fix figure to autosize, also remove menu
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 10 May 2025 16:20:48 +0000
 
 gtsam (4.1.0-1ubuntu2~2938.gbpe6b50e) noble; urgency=medium
 
