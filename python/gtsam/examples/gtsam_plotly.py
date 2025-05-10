@@ -353,7 +353,7 @@ def configure_figure_layout(
             type="buttons",
             showactive=False,
             direction="left",
-            pad={"r": 10, "t": 87},
+            pad={"r": 10, "t": 20},
             x=plot_domain[0],
             xanchor="left",
             y=0,
@@ -401,20 +401,21 @@ def configure_figure_layout(
             scaleratio=1,
             domain=[0, 1],
         ),
-        width=1000,
+        autosize=True,
         height=600,
         hovermode="closest",
         updatemenus=updatemenus,
         sliders=sliders,
         shapes=initial_shapes,  # Initial shapes (frame 0)
         images=([initial_image] if initial_image else []),  # Initial image (frame 0)
-        showlegend=True,  # Keep legend for clarity
         legend=dict(
             x=plot_domain[0],
             y=1,
             traceorder="normal",  # Position legend
             bgcolor="rgba(255,255,255,0.5)",
         ),
+        showlegend=False,
+        margin=dict(l=0, r=0, t=50, b=50),
     )
 
 

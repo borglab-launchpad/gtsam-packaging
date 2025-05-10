@@ -37,91 +37,111 @@ namespace gtsam {
    * @class LieGroupEKF
    * @brief Extended Kalman Filter on a Lie group G, derived from ManifoldEKF
    *
-   * @tparam G Lie group type providing group operations and Expmap/AdjointMap.
-   *       Must satisfy LieGroup concept (`gtsam::IsLieGroup<G>::value`).
+   * @tparam G Lie group type (must satisfy LieGroup concept).
    *
    * This filter specializes ManifoldEKF for Lie groups, offering predict methods
    * with state-dependent dynamics functions.
    * Use the InvariantEKF class for prediction via group composition.
+   * For details on how static and dynamic dimensions are handled, please refer to
+   * the `ManifoldEKF` class documentation.
    */
   template <typename G>
   class LieGroupEKF : public ManifoldEKF<G> {
   public:
     using Base = ManifoldEKF<G>; ///< Base class type
-    static constexpr int n = Base::n; ///< Group dimension (tangent space dimension)
-    using TangentVector = typename Base::TangentVector; ///< Tangent vector type for the group G
-    using MatrixN = typename Base::MatrixN; ///< Square matrix of size n for covariance and Jacobians
-    using Jacobian = Eigen::Matrix<double, n, n>; ///< Jacobian matrix type specific to the group G
+    static constexpr int Dim = Base::Dim; ///< Compile-time dimension of G.
+    using TangentVector = typename Base::TangentVector; ///< Tangent vector type for G.
+    /// Jacobian for group operations (Adjoint, Expmap derivatives, F).
+    using Jacobian = typename Base::Jacobian; // Eigen::Matrix<double, Dim, Dim>
+    using Covariance = typename Base::Covariance; // Eigen::Matrix<double, Dim, Dim>
 
-    /// Constructor: initialize with state and covariance
-    LieGroupEKF(const G& X0, const MatrixN& P0) : Base(X0, P0) {
+    /**
+     * Constructor: initialize with state and covariance.
+     * @param X0 Initial state on Lie group G.
+     * @param P0 Initial covariance in the tangent space at X0.
+     */
+    LieGroupEKF(const G& X0, const Covariance& P0) : Base(X0, P0) {
       static_assert(IsLieGroup<G>::value, "Template parameter G must be a GTSAM Lie Group");
     }
 
     /**
      * SFINAE check for correctly typed state-dependent dynamics function.
-     * Signature: TangentVector f(const G& X, OptionalJacobian<n, n> Df)
+     * Signature: TangentVector f(const G& X, OptionalJacobian<Dim, Dim> Df)
      * Df = d(xi)/d(local(X))
      */
     template <typename Dynamics>
     using enable_if_dynamics = std::enable_if_t<
       !std::is_convertible_v<Dynamics, TangentVector>&&
       std::is_invocable_r_v<TangentVector, Dynamics, const G&,
-      OptionalJacobian<n, n>&>>;
+      OptionalJacobian<Dim, Dim>&>>;
 
     /**
      * Predict mean and Jacobian A with state-dependent dynamics:
-     *   xi = f(X_k, Df)       (Compute tangent vector dynamics and Jacobian Df)
+     *   xi = f(X_k, Df)           (Compute tangent vector dynamics and Jacobian Df)
      *   U = Expmap(xi * dt, Dexp) (Compute motion increment U and Expmap Jacobian Dexp)
-     *   X_{k+1} = X_k * U     (Predict next state)
-     *   F = Ad_{U^{-1}} + Dexp * Df * dt (Compute full state transition Jacobian)
+     *   X_{k+1} = X_k * U         (Predict next state)
+     *   A = Ad_{U^{-1}} + Dexp * Df * dt (Compute full state transition Jacobian)
      *
-     * @tparam Dynamics Functor signature: TangentVector f(const G&, OptionalJacobian<n,n>&)
+     * @tparam Dynamics Functor signature: TangentVector f(const G&, OptionalJacobian<Dim,Dim>&)
      * @param f Dynamics functor returning tangent vector xi and its Jacobian Df w.r.t. local(X).
      * @param dt Time step.
-     * @param A Optional pointer to store the computed state transition Jacobian A.
+     * @param A OptionalJacobian to store the computed state transition Jacobian A.
      * @return Predicted state X_{k+1}.
      */
     template <typename Dynamics, typename = enable_if_dynamics<Dynamics>>
-    G predictMean(Dynamics&& f, double dt, OptionalJacobian<n, n> A = {}) const {
-      Jacobian Df, Dexp;
-      TangentVector xi = f(this->X_, Df); // xi and Df = d(xi)/d(localX)
-      G U = traits<G>::Expmap(xi * dt, Dexp); // U and Dexp = d(Log(Exp(v)))/dv | v=xi*dt
-      G X_next = this->X_.compose(U);
+    G predictMean(Dynamics&& f, double dt, OptionalJacobian<Dim, Dim> A = {}) const {
+      Jacobian Df, Dexp; // Eigen::Matrix<double, Dim, Dim>
 
-      if (A) {
-        // Full state transition Jacobian for left-invariant EKF:
-        *A = traits<G>::Inverse(U).AdjointMap() + Dexp * Df * dt;
+      if constexpr (std::is_same_v<G, Matrix>) {
+        // Specialize to Matrix case as its Expmap is not defined.
+        TangentVector xi = f(this->X_, A ? &Df : nullptr);
+        const Matrix nextX = traits<Matrix>::Retract(this->X_, xi * dt, A ? &Dexp : nullptr); // just addition
+        if (A) {
+          const Matrix I_n = Matrix::Identity(this->n_, this->n_);
+          *A = I_n + Dexp * Df * dt; // AdjointMap is always identity for Matrix
+        }
+        return nextX;
       }
-      return X_next;
+      else {
+        TangentVector xi = f(this->X_, A ? &Df : nullptr); // xi and Df = d(xi)/d(localX)
+        G U = traits<G>::Expmap(xi * dt, A ? &Dexp : nullptr);
+        if (A) {
+          // State transition Jacobian for left-invariant EKF:
+          *A = traits<G>::Inverse(U).AdjointMap() + Dexp * Df * dt;
+        }
+        return this->X_.compose(U);
+      }
     }
 
 
     /**
      * Predict step with state-dependent dynamics:
-     * Uses predictMean to compute X_{k+1} and F, then calls base predict.
-     *   X_{k+1}, F = predictMean(f, dt)
-     *   P_{k+1} = F P_k F^T + Q
+     * Uses predictMean to compute X_{k+1} and A, then updates covariance.
+     *   X_{k+1}, A = predictMean(f, dt)
+     *   P_{k+1} = A P_k A^T + Q
      *
-     * @tparam Dynamics Functor signature: TangentVector f(const G&, OptionalJacobian<n,n>&)
+     * @tparam Dynamics Functor signature: TangentVector f(const G&, OptionalJacobian<Dim,Dim>&)
      * @param f Dynamics functor.
      * @param dt Time step.
-     * @param Q Process noise covariance (size nxn).
+     * @param Q Process noise covariance.
      */
     template <typename Dynamics, typename = enable_if_dynamics<Dynamics>>
-    void predict(Dynamics&& f, double dt, const Matrix& Q) {
+    void predict(Dynamics&& f, double dt, const Covariance& Q) {
       Jacobian A;
+      if constexpr (Dim == Eigen::Dynamic) {
+        A.resize(this->n_, this->n_);
+      }
       this->X_ = predictMean(std::forward<Dynamics>(f), dt, A);
       this->P_ = A * this->P_ * A.transpose() + Q;
     }
 
     /**
      * SFINAE check for state- and control-dependent dynamics function.
-     * Signature: TangentVector f(const G& X, const Control& u, OptionalJacobian<n, n> Df)
+     * Signature: TangentVector f(const G& X, const Control& u, OptionalJacobian<Dim, Dim> Df)
      */
     template<typename Control, typename Dynamics>
     using enable_if_full_dynamics = std::enable_if_t<
-      std::is_invocable_r_v<TangentVector, Dynamics, const G&, const Control&, OptionalJacobian<n, n>&>
+      std::is_invocable_r_v<TangentVector, Dynamics, const G&, const Control&, OptionalJacobian<Dim, Dim>&>
     >;
 
     /**
@@ -130,7 +150,7 @@ namespace gtsam {
      *   xi = f(X_k, u, Df)
      *
      * @tparam Control Control input type.
-     * @tparam Dynamics Functor signature: TangentVector f(const G&, const Control&, OptionalJacobian<n,n>&)
+     * @tparam Dynamics Functor signature: TangentVector f(const G&, const Control&, OptionalJacobian<Dim,Dim>&)
      * @param f Dynamics functor.
      * @param u Control input.
      * @param dt Time step.
@@ -138,8 +158,8 @@ namespace gtsam {
      * @return Predicted state X_{k+1}.
      */
     template <typename Control, typename Dynamics, typename = enable_if_full_dynamics<Control, Dynamics>>
-    G predictMean(Dynamics&& f, const Control& u, double dt, OptionalJacobian<n, n> A = {}) const {
-      return predictMean([&](const G& X, OptionalJacobian<n, n> Df) { return f(X, u, Df); }, dt, A);
+    G predictMean(Dynamics&& f, const Control& u, double dt, OptionalJacobian<Dim, Dim> A = {}) const {
+      return predictMean([&](const G& X, OptionalJacobian<Dim, Dim> Df) { return f(X, u, Df); }, dt, A);
     }
 
 
@@ -149,15 +169,15 @@ namespace gtsam {
      *   xi = f(X_k, u, Df)
      *
      * @tparam Control Control input type.
-     * @tparam Dynamics Functor signature: TangentVector f(const G&, const Control&, OptionalJacobian<n,n>&)
+     * @tparam Dynamics Functor signature: TangentVector f(const G&, const Control&, OptionalJacobian<Dim,Dim>&)
      * @param f Dynamics functor.
      * @param u Control input.
      * @param dt Time step.
-     * @param Q Process noise covariance (size nxn).
+     * @param Q Process noise covariance.
      */
     template <typename Control, typename Dynamics, typename = enable_if_full_dynamics<Control, Dynamics>>
-    void predict(Dynamics&& f, const Control& u, double dt, const Matrix& Q) {
-      return predict([&](const G& X, OptionalJacobian<n, n> Df) { return f(X, u, Df); }, dt, Q);
+    void predict(Dynamics&& f, const Control& u, double dt, const Covariance& Q) {
+      return predict([&](const G& X, OptionalJacobian<Dim, Dim> Df) { return f(X, u, Df); }, dt, Q);
     }
 
   }; // LieGroupEKF

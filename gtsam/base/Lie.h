@@ -169,32 +169,34 @@ namespace internal {
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Class> : public internal::LieGroupTraits<Class> {};
 /// Assumes existence of: identity, dimension, localCoordinates, retract,
-/// and additionally Logmap, Expmap, compose, between, and inverse
+/// and additionally Logmap, Expmap, AdjointMap, compose, between, and inverse
 template<class Class>
-struct LieGroupTraits: public GetDimensionImpl<Class, Class::dimension> {
+struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
   using structure_category = lie_group_tag;
 
   /// @name Group
   /// @{
   using group_flavor = multiplicative_group_tag;
-  static Class Identity() { return Class::Identity();}
+  static Class Identity() { return Class::Identity(); }
   /// @}
 
   /// @name Manifold
   /// @{
   using ManifoldType = Class;
+  // Note: Class::dimension can be an int or Eigen::Dynamic.
+  // GetDimensionImpl handles resolving this to a static value or providing GetDimension(obj).
   inline constexpr static auto dimension = Class::dimension;
   using TangentVector = Eigen::Matrix<double, dimension, 1>;
   using ChartJacobian = OptionalJacobian<dimension, dimension>;
 
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian Horigin = {}, ChartJacobian Hother = {}) {
-    return origin.localCoordinates(other, Horigin, Hother);
+    ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
+    return origin.localCoordinates(other, H1, H2);
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian Horigin = {}, ChartJacobian Hv = {}) {
-    return origin.retract(v, Horigin, Hv);
+    ChartJacobian H = {}, ChartJacobian Hv = {}) {
+    return origin.retract(v, H, Hv);
   }
   /// @}
 
@@ -209,18 +211,25 @@ struct LieGroupTraits: public GetDimensionImpl<Class, Class::dimension> {
   }
 
   static Class Compose(const Class& m1, const Class& m2, //
-      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
+    ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     return m1.compose(m2, H1, H2);
   }
 
   static Class Between(const Class& m1, const Class& m2, //
-      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
+    ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     return m1.between(m2, H1, H2);
   }
 
   static Class Inverse(const Class& m, //
-      ChartJacobian H = {}) {
+    ChartJacobian H = {}) {
     return m.inverse(H);
+  }
+
+  static Eigen::Matrix<double, dimension, dimension> AdjointMap(const Class& m) {
+    // This assumes that the Class itself provides a member function `AdjointMap()`
+    // For dynamically-sized types (dimension == Eigen::Dynamic),
+    // m.AdjointMap() must return a gtsam::Matrix of the correct runtime dimensions.
+    return m.AdjointMap();
   }
   /// @}
 };
