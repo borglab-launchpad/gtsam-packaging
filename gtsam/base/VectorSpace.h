@@ -35,7 +35,7 @@ struct VectorSpaceImpl {
       ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
-    Class v = other-origin;
+    Class v = other - origin;
     return v.vector();
   }
 
@@ -82,12 +82,12 @@ struct VectorSpaceImpl {
     return -v;
   }
 
-  static LieAlgebra Hat(const TangentVector& v) {
-    return v;
-  }
+  static LieAlgebra Hat(const TangentVector& v) { return v; }
 
-  static TangentVector Vee(const LieAlgebra& X) {
-    return X;
+  static TangentVector Vee(const LieAlgebra& X) { return X; }
+
+  static Jacobian AdjointMap(const Class& /*m*/) {
+    return Jacobian::Identity();
   }
   /// @}
 };
@@ -118,7 +118,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
       ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = - Eye(origin);
     if (H2) *H2 = Eye(other);
-    Class v = other-origin;
+    Class v = other - origin;
     return v.vector();
   }
 
@@ -141,8 +141,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 
   static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
     Class result(v);
-    if (Hv)
-      *Hv = Eye(v);
+    if (Hv) *Hv = Eye(v);
     return result;
   }
 
@@ -165,6 +164,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
     return -v;
   }
 
+  static Eigen::MatrixXd AdjointMap(const Class& m) { return Eye(m); }
   /// @}
 };
 
@@ -273,8 +273,8 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
     if (H) (*H)[0] = 1.0;
     return v[0];
   }
+  // AdjointMap for ScalarTraits is inherited from VectorSpaceImpl<Scalar, 1>
   /// @}
-
 };
 
 } // namespace internal
@@ -352,6 +352,9 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
     if (H) *H = Jacobian::Identity();
     return m + Eigen::Map<const Fixed>(v.data());
   }
+
+  // AdjointMap for fixed-size Eigen matrices is inherited from
+  // internal::VectorSpaceImpl< Eigen::Matrix<double, M, N, ...> , M*N >
   /// @}
 };
 
@@ -404,7 +407,7 @@ struct DynamicTraits {
   static TangentVector Local(const Dynamic& m, const Dynamic& other, //
       ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = -Eye(m);
-    if (H2) *H2 =  Eye(m);
+    if (H2) *H2 = Eye(m);
     TangentVector v(GetDimension(m));
     Eigen::Map<Dynamic>(v.data(), m.rows(), m.cols()) = other - m;
     return v;
@@ -425,7 +428,7 @@ struct DynamicTraits {
   static TangentVector Logmap(const Dynamic& m, ChartJacobian H = {}) {
     if (H) *H = Eye(m);
     TangentVector result(GetDimension(m));
-    Eigen::Map<Dynamic>(result.data(), m.cols(), m.rows()) = m;
+    Eigen::Map<Dynamic>(result.data(), m.rows(), m.cols()) = m;
     return result;
   }
 
@@ -460,7 +463,8 @@ struct DynamicTraits {
   static TangentVector Vee(const LieAlgebra& X) {
     return X;
   }
-  
+
+  static Jacobian AdjointMap(const Dynamic& m) { return Eye(m); }
   /// @}
 
 };
@@ -505,5 +509,4 @@ private:
   T p, q, r;
 };
 
-} // namespace gtsam
-
+}  // namespace gtsam

@@ -119,6 +119,68 @@ TEST(IEKF_Pose2, PredictUpdateSequence) {
 
 }
 
+// Define simple dynamics and measurement for a 2x2 Matrix state
+namespace exampleDynamicMatrix {
+  Matrix f(const Matrix& p, const Vector& vTangent, double dt) {
+    return traits<Matrix>::Retract(p, vTangent * dt);
+  }
+  double h(const Matrix& p, OptionalJacobian<-1, -1> H = {}) {
+    if (H) {
+      H->resize(1, p.size());
+      (*H) << 1.0, 0.0, 0.0, 1.0; // Assuming 2x2
+    }
+    return p(0, 0) + p(1, 1); // trace !
+  }
+} // namespace exampleDynamicMatrix
+
+TEST(InvariantEKF_DynamicMatrix, PredictAndUpdate) {
+  // --- Setup ---
+  Matrix p0Matrix = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix p0Covariance = I_4x4 * 0.01;
+  Vector velocityTangent = (Vector(4) << 0.5, 0.1, -0.1, -0.5).finished();
+  double dt = 0.1;
+  Matrix Q = I_4x4 * 0.001;
+  Matrix R = Matrix::Identity(1, 1) * 0.005;
+
+  InvariantEKF<Matrix> ekf(p0Matrix, p0Covariance);
+  EXPECT_LONGS_EQUAL(4, ekf.state().size());
+  EXPECT_LONGS_EQUAL(4, ekf.dimension());
+
+  // --- Predict ---
+  ekf.predict(velocityTangent, dt, Q);
+
+  // Verification for Predict
+  Matrix pPredictedExpected = exampleDynamicMatrix::f(p0Matrix, velocityTangent, dt);
+  Matrix pCovariancePredictedExpected = p0Covariance + Q;
+  EXPECT(assert_equal(pPredictedExpected, ekf.state(), 1e-9));
+  EXPECT(assert_equal(pCovariancePredictedExpected, ekf.covariance(), 1e-9));
+
+  // --- Update ---
+  // Use the state after prediction for the update step
+  Matrix pStateBeforeUpdate = ekf.state();
+  Matrix pCovarianceBeforeUpdate = ekf.covariance();
+
+  double zTrue = exampleDynamicMatrix::h(pStateBeforeUpdate);
+  double zObserved = zTrue - 0.03; // Simulated measurement with some error
+
+  ekf.update(exampleDynamicMatrix::h, zObserved, R);
+
+  // Verification for Update (Manual Kalman Steps)
+  Matrix H(1, 4);
+  double zPredictionManual = exampleDynamicMatrix::h(pStateBeforeUpdate, H);
+  double innovationY_tangent = zObserved - zPredictionManual;
+  Matrix S = H * pCovarianceBeforeUpdate * H.transpose() + R;
+  Matrix kalmanGainK = pCovarianceBeforeUpdate * H.transpose() * S.inverse();
+  Vector deltaXiTangent = kalmanGainK * innovationY_tangent;
+  Matrix pUpdatedExpected = traits<Matrix>::Retract(pStateBeforeUpdate, deltaXiTangent);
+  Matrix I_KH = I_4x4 - kalmanGainK * H;
+  Matrix pUpdatedCovarianceExpected = I_KH * pCovarianceBeforeUpdate * I_KH.transpose() + kalmanGainK * R * kalmanGainK.transpose();
+
+  EXPECT(assert_equal(pUpdatedExpected, ekf.state(), 1e-9));
+  EXPECT(assert_equal(pUpdatedCovarianceExpected, ekf.covariance(), 1e-9));
+}
+
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

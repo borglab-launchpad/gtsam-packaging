@@ -108,6 +108,92 @@ TEST(GroupeEKF, StateAndControl) {
   EXPECT(assert_equal(expectedH, actualH));
 }
 
+// Namespace for dynamic Matrix LieGroupEKF test
+namespace exampleLieGroupDynamicMatrix {
+  // Constant tangent vector for dynamics (same as "velocityTangent" in IEKF test)
+  const Vector kFixedVelocityTangent = (Vector(4) << 0.5, 0.1, -0.1, -0.5).finished();
+
+  // Dynamics function: xi = f(X, H_X)
+  // Returns a constant tangent vector, so Df_DX = 0.
+  // H_X is D(xi)/D(X_local), where X_local is the tangent space perturbation of X.
+  Vector f(const Matrix& X, OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H_X = {}) {
+    if (H_X) {
+      size_t state_dim = X.size();
+      size_t tangent_dim = kFixedVelocityTangent.size();
+      // Ensure Jacobian dimensions are consistent even if state or tangent is 0-dim
+      H_X->setZero(tangent_dim, state_dim);
+    }
+    return kFixedVelocityTangent;
+  }
+
+  // Measurement function h(X, H)
+  double h(const Matrix& p, OptionalJacobian<-1, -1> H = {}) {
+    // Specialized for a 2x2 matrix!
+    if (p.rows() != 2 || p.cols() != 2) {
+      throw std::invalid_argument("Matrix must be 2x2.");
+    }
+    if (H) {
+      H->resize(1, p.size());
+      *H << 1.0, 0.0, 0.0, 1.0; // d(trace)/dp00, d(trace)/dp01, d(trace)/dp10, d(trace)/dp11
+    }
+    return p(0, 0) + p(1, 1); // Trace of the matrix
+  }
+} // namespace exampleLieGroupDynamicMatrix
+
+TEST(LieGroupEKF_DynamicMatrix, PredictAndUpdate) {
+  // --- Setup ---
+  Matrix p0Matrix = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix p0Covariance = I_4x4 * 0.01;
+  double dt = 0.1;
+  Matrix process_noise_Q = I_4x4 * 0.001;
+  Matrix measurement_noise_R = Matrix::Identity(1, 1) * 0.005;
+
+  LieGroupEKF<Matrix> ekf(p0Matrix, p0Covariance);
+  EXPECT_LONGS_EQUAL(4, ekf.state().size());
+  EXPECT_LONGS_EQUAL(4, ekf.dimension());
+
+  // --- Predict ---
+  // ekf.predict takes f(X, H_X), dt, process_noise_Q
+  ekf.predict(exampleLieGroupDynamicMatrix::f, dt, process_noise_Q);
+
+  // Verification for Predict
+  // For f, Df_DXk = 0 (Jacobian of xi w.r.t X_local is Zero).
+  // State transition Jacobian A = Ad_Uinv + Dexp * Df_DXk * dt.
+  // For Matrix (VectorSpace): Ad_Uinv = I, Dexp = I.
+  // So, A = I + I * 0 * dt = I.
+  // Covariance update: P_next = A * P_current * A.transpose() + Q = I * P_current * I + Q = P_current + Q.
+  Matrix pPredictedExpected = traits<Matrix>::Retract(p0Matrix, exampleLieGroupDynamicMatrix::kFixedVelocityTangent * dt);
+  Matrix pCovariancePredictedExpected = p0Covariance + process_noise_Q;
+
+  EXPECT(assert_equal(pPredictedExpected, ekf.state(), 1e-9));
+  EXPECT(assert_equal(pCovariancePredictedExpected, ekf.covariance(), 1e-9));
+
+  // --- Update ---
+  Matrix pStateBeforeUpdate = ekf.state();
+  Matrix pCovarianceBeforeUpdate = ekf.covariance();
+
+  double zTrue = exampleLieGroupDynamicMatrix::h(pStateBeforeUpdate);
+  double zObserved = zTrue - 0.03; // Simulated measurement with some error
+
+  ekf.update(exampleLieGroupDynamicMatrix::h, zObserved, measurement_noise_R);
+
+  // Verification for Update (Manual Kalman Steps)
+  Matrix H_update(1, 4); // Measurement Jacobian: 1x4 for 2x2 matrix, trace measurement
+  double zPredictionManual = exampleLieGroupDynamicMatrix::h(pStateBeforeUpdate, H_update);
+  // Innovation: y_tangent = traits<Measurement>::Local(prediction, observation)
+  // For double (scalar), Local(A,B) is B-A.
+  double innovationY_tangent = zObserved - zPredictionManual;
+  Matrix S_innovation_cov = H_update * pCovarianceBeforeUpdate * H_update.transpose() + measurement_noise_R;
+  Matrix K_gain = pCovarianceBeforeUpdate * H_update.transpose() * S_innovation_cov.inverse();
+  Vector deltaXiTangent = K_gain * innovationY_tangent; // Tangent space correction for Matrix state
+  Matrix pUpdatedExpected = traits<Matrix>::Retract(pStateBeforeUpdate, deltaXiTangent);
+  Matrix I_KH = I_4x4 - K_gain * H_update; // I_4x4 because state dimension is 4
+  Matrix pUpdatedCovarianceExpected = I_KH * pCovarianceBeforeUpdate * I_KH.transpose() + K_gain * measurement_noise_R * K_gain.transpose();
+
+  EXPECT(assert_equal(pUpdatedExpected, ekf.state(), 1e-9));
+  EXPECT(assert_equal(pUpdatedCovarianceExpected, ekf.covariance(), 1e-9));
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
