@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~2943.gbp1ba78c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2944.gbp799143) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7991437b5d6c412dc6d9d489b2f2704e3b60bde4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1ba78c5e5dde2a61fdc42156b7e7bc57c3dec751 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 10 May 2025 16:25:12 +0000
+  [ Varun Agrawal ]
+  * include IncrementalFixedLagSmoother from gtsam and not gtsam_unstable
+  * move IncrementalFixedLagSmoother tests to gtsam directory
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 May 2025 00:57:35 +0000
 
 gtsam (4.1.0-1ubuntu2~2942.gbpd3fb06) noble; urgency=medium
 
