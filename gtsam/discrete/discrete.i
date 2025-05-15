@@ -494,4 +494,18 @@ class DiscreteSearch {
   std::vector<gtsam::DiscreteSearchSolution> run(size_t K = 1) const;
 };
 
+#include <gtsam/discrete/DiscreteMarginals.h>
+
+class DiscreteMarginals {
+  DiscreteMarginals();
+  DiscreteMarginals(const gtsam::DiscreteFactorGraph& graph);
+
+  gtsam::DiscreteFactor* operator()(gtsam::Key variable) const;
+  gtsam::Vector marginalProbabilities(const gtsam::DiscreteKey& key) const;
+
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+};
+
 }  // namespace gtsam
