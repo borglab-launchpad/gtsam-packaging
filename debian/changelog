@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~2947.gbp1add1b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2948.gbp84f90c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @84f90cf73f9a1fb3049e528b854315b8ee31b4e9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1add1b8e410c1ea66f7cd4c3f0a882cf2b163d35 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 May 2025 01:02:08 +0000
+  [ Varun Agrawal ]
+  * separate DiscreteMarginals into .h and .cpp
+  * add print method to DiscreteMarginals
+  * wrap DiscreteMarginals class
+  * fix includes
+  * small fixes
+  * mark DiscreteMarginals with GTSAM_EXPORT
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 15 May 2025 16:27:48 +0000
 
 gtsam (4.1.0-1ubuntu2~2946.gbp9956af) noble; urgency=medium
 
