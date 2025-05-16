@@ -136,6 +136,16 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
                            const std::optional<double>& marginalThreshold = {},
                            DiscreteValues* fixedValues = nullptr) const;
 
+    /**
+     * @brief Multiply all conditionals into one big joint conditional
+     * and return it.
+     *
+     * NOTE: possibly quite expensive.
+     *
+     * @return DiscreteConditional
+     */
+    DiscreteConditional joint() const;
+
     ///@}
     /// @name Wrapper support
     /// @{
