@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~2951.gbpea83fc) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2952.gbp36a03a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @36a03a3d7d171d5bc653229b3f4034c017083358 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ea83fc7d0dcae18ca071a9ea35af2317966df130 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 15 May 2025 16:33:12 +0000
+  [ Varun Agrawal ]
+  * new helper method in DiscreteBayesNet to compute joint conditional
+  * use DiscreteBayesNet::joint in HybridBayesNet
+  * wrap HybridBayesNet::discreteMarginal
+  * update removeFixedValues to reintroduce a discrete factor on the removed value.
+  * update TableFactor to only consider values greater than 1e-11
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * address review comment
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 02:55:34 +0000
 
 gtsam (4.1.0-1ubuntu2~2950.gbpe106c1) noble; urgency=medium
 
