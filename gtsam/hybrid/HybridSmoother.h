@@ -145,8 +145,19 @@ class GTSAM_EXPORT HybridSmoother {
   Ordering maybeComputeOrdering(const HybridGaussianFactorGraph& updatedGraph,
                                 const std::optional<Ordering> givenOrdering);
 
-  /// Remove fixed discrete values for discrete keys introduced in `newFactors`.
-  void removeFixedValues(const HybridGaussianFactorGraph& newFactors);
+  /**
+   * @brief Remove fixed discrete values for discrete keys
+   * introduced in `newFactors`, and reintroduce discrete factors
+   * with marginalThreshold_ as the probability value.
+   *
+   * @param graph The factor graph with previous conditionals added in.
+   * @param newFactors The new factors added to the smoother,
+   * used to check if a fixed discrete value has been reintroduced.
+   * @return HybridGaussianFactorGraph
+   */
+  HybridGaussianFactorGraph removeFixedValues(
+      const HybridGaussianFactorGraph& graph,
+      const HybridGaussianFactorGraph& newFactors);
 };
 
 }  // namespace gtsam

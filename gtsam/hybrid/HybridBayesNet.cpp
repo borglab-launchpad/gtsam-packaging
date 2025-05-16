@@ -53,11 +53,11 @@ HybridBayesNet HybridBayesNet::prune(
 
   // Prune discrete Bayes net
   DiscreteValues fixed;
-  auto prunedBN = marginal.prune(maxNrLeaves, marginalThreshold, &fixed);
+  DiscreteBayesNet prunedBN =
+      marginal.prune(maxNrLeaves, marginalThreshold, &fixed);
 
   // Multiply into one big conditional. NOTE: possibly quite expensive.
-  DiscreteConditional pruned;
-  for (auto &&conditional : prunedBN) pruned = pruned * (*conditional);
+  DiscreteConditional pruned = prunedBN.joint();
 
   // Set the fixed values if requested.
   if (marginalThreshold && fixedValues) {
