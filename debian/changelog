@@ -1,10 +1,38 @@
-gtsam (4.1.0-1ubuntu2~2959.gbpe19993) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2960.gbp0c1ed4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0c1ed444ee361cfef9ec90c85d9ae539184356bc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e1999310e21d4cef6ca5fcd5b9edb95df51372c5 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 14:06:22 +0000
+  [ mkielo3 ]
+  * Implement working Gal3 class with passing tests
+  * Add Galilean 3 group
+
+  [ Matthew Kielo ]
+  * Update .gitignore
+
+  [ mkielo3 ]
+  * gal3 implementation
+  * removed navstate order comment
+  * refactored Expmap/Logmap to remove calculate E and remove redundancy
+  * refactored to inherit from LieGroup wherever possible
+  * addressed PR comments
+  * fixed Event paths
+  * fixed Event paths
+  * fixed paths to move Event from unstable
+  * fixed python build error
+  * fixed IncrementalFixedLagSmooth
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ mkielo3 ]
+  * cleanup
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 18:14:14 +0000
 
 gtsam (4.1.0-1ubuntu2~2958.gbpac0d85) noble; urgency=medium
 
