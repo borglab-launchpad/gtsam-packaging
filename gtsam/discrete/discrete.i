@@ -138,10 +138,13 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   gtsam::DecisionTreeFactor* likelihood(
       const gtsam::DiscreteValues& frontalValues) const;
   gtsam::DecisionTreeFactor* likelihood(size_t value) const;
-  size_t sample(const gtsam::DiscreteValues& parentsValues) const;
-  size_t sample(size_t value) const;
-  size_t sample() const;
-  void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+  size_t sample(const gtsam::DiscreteValues& parentsValues,
+                std::mt19937_64 @rng = nullptr) const;
+  size_t sample(size_t value,
+                std::mt19937_64 @rng = nullptr) const;
+  size_t sample(std::mt19937_64 @rng = nullptr) const;
+  void sampleInPlace(gtsam::DiscreteValues @parentsValues,
+                     std::mt19937_64 @rng = nullptr) const;
   size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
 
   // Markdown and HTML
@@ -233,8 +236,11 @@ class DiscreteBayesNet {
   double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
 
-  gtsam::DiscreteValues sample() const;
-  gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
+  gtsam::DiscreteValues sample(std::mt19937_64
+                               @rng = nullptr) const;
+  gtsam::DiscreteValues sample(gtsam::DiscreteValues given,
+                               std::mt19937_64
+                               @rng = nullptr) const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
