@@ -1,10 +1,42 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2950.gbp004968) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2951.gbp67fda1) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @67fda191ba5fa2e27305b79e931cdeaf66b18d6f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @004968d941a2797175fe3f90d2c9c9c32e84298b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 03:00:08 +0000
+  [ Varun Agrawal ]
+  * fix docstrings
+  * create common PRNG object in DiscreteConditional
+  * update wrapper comment in GaussianConditional
+  * add python test for sampling from GaussianConditional with a PRNG
+  * DiscreteConditional::sample which uses a pseudo RNG
+  * default rng argument to make code DRY
+  * update wrapper
+  * remove PRNG declaration since it is now imported from DiscreteConditional
+  * wrap rng in hybrid
+  * wrap rng in DiscreteConditional
+  * wrap mt19937_64
+  * sampling tests
+  * fix regressions
+  * some docs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * pass in the rng within the DiscreteBayesNet sample call
+  * set default pointer value to nullptr which is more idiomatic
+  * nullptr check and assign default
+  * use nullptr for pointer default in discrete wrapping
+  * add print to verify regression values
+  * fix regression for linux
+  * reduce swap file size so CI doesn't fail
+  * fix regression in test_HybridFactorGraph.py
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 13:58:09 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2949.gbpd639c9) noble; urgency=medium
 
