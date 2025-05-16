@@ -50,12 +50,13 @@ double DiscreteBayesNet::evaluate(const DiscreteValues& values) const {
 }
 
 /* ************************************************************************* */
-DiscreteValues DiscreteBayesNet::sample() const {
+DiscreteValues DiscreteBayesNet::sample(std::mt19937_64* rng) const {
   DiscreteValues result;
-  return sample(result);
+  return sample(result, rng);
 }
 
-DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
+DiscreteValues DiscreteBayesNet::sample(DiscreteValues result,
+                                        std::mt19937_64* rng) const {
   // sample each node in turn in topological sort order (parents first)
   for (auto it = std::make_reverse_iterator(end());
        it != std::make_reverse_iterator(begin()); ++it) {
@@ -63,7 +64,7 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
     // Sample the conditional only if value for j not already in result
     const Key j = conditional->firstFrontalKey();
     if (result.count(j) == 0) {
-      conditional->sampleInPlace(&result);
+      conditional->sampleInPlace(&result, rng);
     }
   }
   return result;

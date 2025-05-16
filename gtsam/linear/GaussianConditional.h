@@ -215,7 +215,7 @@ namespace gtsam {
      * Sample from conditional, zero parent version
      * Example:
      *   std::mt19937_64 rng(42);
-     *   auto sample = gbn.sample(&rng);
+     *   auto sample = gc.sample(&rng);
      */
     VectorValues sample(std::mt19937_64* rng) const;
 
@@ -224,7 +224,7 @@ namespace gtsam {
      * Example:
      *   std::mt19937_64 rng(42);
      *   VectorValues given = ...;
-     *   auto sample = gbn.sample(given, &rng);
+     *   auto sample = gc.sample(given, &rng);
      */
     VectorValues sample(const VectorValues& parentsValues,
                         std::mt19937_64* rng) const;

@@ -144,9 +144,8 @@ void TableDistribution::prune(size_t maxNrAssignments) {
 }
 
 /* ****************************************************************************/
-size_t TableDistribution::sample(const DiscreteValues& parentsValues) const {
-  static mt19937 rng(2);  // random number generator
-
+size_t TableDistribution::sample(const DiscreteValues& parentsValues,
+                                 std::mt19937_64* rng) const {
   DiscreteKeys parentsKeys;
   for (auto&& [key, _] : parentsValues) {
     parentsKeys.push_back({key, table_.cardinality(key)});
@@ -172,8 +171,12 @@ size_t TableDistribution::sample(const DiscreteValues& parentsValues) const {
       return value;  // shortcut exit
     }
   }
+
+  // Check if rng is nullptr, then assign default
+  rng = (rng == nullptr) ? &kRandomNumberGenerator : rng;
+
   std::discrete_distribution<size_t> distribution(p.begin(), p.end());
-  return distribution(rng);
+  return distribution(*rng);
 }
 
 }  // namespace gtsam

@@ -158,6 +158,8 @@ class HybridBayesNet {
   gtsam::HybridValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::DiscreteValues& assignment) const;
 
+  gtsam::HybridValues sample(const gtsam::HybridValues& given, std::mt19937_64@ rng) const;
+  gtsam::HybridValues sample(std::mt19937_64@ rng) const;
   gtsam::HybridValues sample(const gtsam::HybridValues& given) const;
   gtsam::HybridValues sample() const;
 

@@ -25,9 +25,6 @@
 
 #include <memory>
 
-// In Wrappers we have no access to this so have a default ready
-static std::mt19937_64 kRandomNumberGenerator(42);
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -191,7 +188,7 @@ HybridValues HybridBayesNet::sample(const HybridValues &given,
     }
   }
   // Sample a discrete assignment.
-  const DiscreteValues assignment = dbn.sample(given.discrete());
+  const DiscreteValues assignment = dbn.sample(given.discrete(), rng);
   // Select the continuous Bayes net corresponding to the assignment.
   GaussianBayesNet gbn = choose(assignment);
   // Sample from the Gaussian Bayes net.

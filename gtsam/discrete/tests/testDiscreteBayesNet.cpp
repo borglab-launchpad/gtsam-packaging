@@ -99,9 +99,9 @@ TEST(DiscreteBayesNet, Asia) {
 
   // now sample from it
   DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
-                                {XRay.first, 1},       {Tuberculosis.first, 0},
-                                {Smoking.first, 1},    {Either.first, 1},
-                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
+                                {XRay.first, 0},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 0},
+                                {LungCancer.first, 0}, {Bronchitis.first, 1}};
   SETDEBUG("DiscreteConditional::sample", false);
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));

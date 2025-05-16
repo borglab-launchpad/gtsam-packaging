@@ -34,7 +34,7 @@
 #include <string>
 #include <cmath>
 
-// In Wrappers we have no access to this so have a default ready
+// In wrappers we can access std::mt19937_64 via gtsam.MT19937
 static std::mt19937_64 kRandomNumberGenerator(42);
 
 using namespace std;
