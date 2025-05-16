@@ -162,7 +162,7 @@ class BearingS2 {
   void serializable() const; // enabling serialization functionality
 };
 
-  
+
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
   SimWall2D();
@@ -378,17 +378,6 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> RangeFactorRTV;
-
-#include <gtsam_unstable/geometry/Event.h>
-class Event {
-  Event();
-  Event(double t, const gtsam::Point3& p);
-  Event(double t, double x, double y, double z);
-  double time() const;
-  gtsam::Point3 location() const;
-  double height() const;
-  void print(string s) const;
-};
 
 class TimeOfArrival {
   TimeOfArrival();

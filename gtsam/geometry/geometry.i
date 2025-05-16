@@ -213,7 +213,7 @@ namespace so3 {
     ExpmapFunctor(const gtsam::Vector3& axis, double angle);
     gtsam::Matrix3 expmap() const;
   };
-  
+
   virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
     const gtsam::Vector3 omega;
     const double C;  // (1 - A) / theta^2
@@ -228,7 +228,7 @@ namespace so3 {
     gtsam::Vector3 applyRightJacobianInverse(const gtsam::Vector3& v) const;
     gtsam::Vector3 applyLeftJacobian(const gtsam::Vector3& v) const;
     gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
-  };  
+  };
 }
 
 class SO3 {
@@ -427,7 +427,7 @@ class Rot3 {
                       Eigen::Ref<Eigen::MatrixXd> HR,
                       Eigen::Ref<Eigen::MatrixXd> Hp) const;
   gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
-  
+
   // Standard Interface
   gtsam::Matrix matrix() const;
   gtsam::Matrix transpose() const;
@@ -522,7 +522,7 @@ class Pose2 {
   // enabling serialization functionality
   void serialize() const;
 };
-  
+
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
   // Standard Constructors
@@ -573,12 +573,12 @@ class Pose3 {
   static gtsam::Matrix6 LogmapDerivative(const gtsam::Pose3& xi);
   static gtsam::Pose3 Expmap(gtsam::Vector xi, Eigen::Ref<Eigen::MatrixXd> Hxi);
   static gtsam::Vector Logmap(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hpose);
-  
+
   gtsam::Pose3 expmap(gtsam::Vector v);
   gtsam::Pose3 expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
   gtsam::Vector logmap(const gtsam::Pose3& p);
   gtsam::Vector logmap(const gtsam::Pose3& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
-  
+
   gtsam::Matrix AdjointMap() const;
   gtsam::Vector Adjoint(gtsam::Vector xi_b) const;
   gtsam::Vector Adjoint(gtsam::Vector xi_b, Eigen::Ref<Eigen::MatrixXd> H_this,
@@ -718,7 +718,7 @@ class OrientedPlane3 {
 
   static size_t Dim();
   size_t dim() const;
-  
+
   gtsam::OrientedPlane3 retract(const gtsam::Vector3& v) const;
   gtsam::OrientedPlane3 retract(const gtsam::Vector3& v,
                         Eigen::Ref<Eigen::MatrixXd> H) const;
@@ -1491,7 +1491,7 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
 
-// Cal3Unified versions                                
+// Cal3Unified versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3Unified* sharedCal,
                                 const gtsam::Point2Vector& measurements,
@@ -1514,6 +1514,17 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
 
+
+#include <gtsam/geometry/Event.h>
+class Event {
+  Event();
+  Event(double t, const gtsam::Point3& p);
+  Event(double t, double x, double y, double z);
+  double time() const;
+  gtsam::Point3 location() const;
+  double height() const;
+  void print(string s) const;
+};
 
 
 #include <gtsam/geometry/BearingRange.h>
