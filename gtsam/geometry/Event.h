@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam_unstable/dllexport.h>
+#include <gtsam/dllexport.h>
 
 #include <cmath>
 #include <iosfwd>
@@ -34,7 +34,7 @@ namespace gtsam {
  * SLAM, where we have "time of arrival" measurements at a set of sensors. The
  * TOA functor below provides a measurement function for those applications.
  */
-class GTSAM_UNSTABLE_EXPORT Event {
+class GTSAM_EXPORT Event {
   double time_;      ///< Time event was generated
   Point3 location_;  ///< Location at time event was generated
 
@@ -84,7 +84,7 @@ template <>
 struct traits<Event> : internal::Manifold<Event> {};
 
 /// Time of arrival to given sensor
-class TimeOfArrival {
+class GTSAM_EXPORT TimeOfArrival {
   const double speed_;  ///< signal speed
 
  public:

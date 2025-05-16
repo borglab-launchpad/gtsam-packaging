@@ -17,7 +17,7 @@
  *  @date December 2014
  */
 
-#include <gtsam_unstable/geometry/Event.h>
+#include <gtsam/geometry/Event.h>
 #include <iostream>
 
 namespace gtsam {
