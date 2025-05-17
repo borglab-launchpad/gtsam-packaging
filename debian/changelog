@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~2963.gbp08c717) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2964.gbpa08b78) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a08b78e99061562b95a5e851bfa8e1197d423ecc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @08c71747c2cc41d241462038ce107a59c9d0f787 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 May 2025 18:20:17 +0000
+  [ Frank Dellaert ]
+  * Fix comment
+  * Fix include for Retract
+  * Upgrade cmake version
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 May 2025 01:21:52 +0000
 
 gtsam (4.1.0-1ubuntu2~2962.gbp9c14ba) noble; urgency=medium
 
