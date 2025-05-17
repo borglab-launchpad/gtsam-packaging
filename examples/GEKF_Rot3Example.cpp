@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file IEKF_Rot3Example.cpp
+ * @file GEKF_Rot3Example.cpp
  * @brief Left‐Invariant EKF on SO(3) with state‐dependent pitch/roll control
  * and a single magnetometer update.
  * @date April 25, 2025

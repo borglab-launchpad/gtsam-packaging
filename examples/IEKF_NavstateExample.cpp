@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/navigation/InvariantEKF.h>
 #include <gtsam/navigation/NavState.h>
@@ -73,23 +74,23 @@ int main() {
   z2 << 0.6, 0, 0;
 
   cout << "=== Init ===\nX: " << ekf.state() << "\nP: " << ekf.covariance()
-       << "\n\n";
+    << "\n\n";
 
   // --- first predict/update ---
   ekf.predict(dynamics(imu1), dt, Q);
   cout << "--- After predict 1 ---\nX: " << ekf.state()
-       << "\nP: " << ekf.covariance() << "\n\n";
+    << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z1, R);
   cout << "--- After update 1 ---\nX: " << ekf.state()
-       << "\nP: " << ekf.covariance() << "\n\n";
+    << "\nP: " << ekf.covariance() << "\n\n";
 
   // --- second predict/update ---
   ekf.predict(dynamics(imu2), dt, Q);
   cout << "--- After predict 2 ---\nX: " << ekf.state()
-       << "\nP: " << ekf.covariance() << "\n\n";
+    << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z2, R);
   cout << "--- After update 2 ---\nX: " << ekf.state()
-       << "\nP: " << ekf.covariance() << "\n";
+    << "\nP: " << ekf.covariance() << "\n";
 
   return 0;
 }
