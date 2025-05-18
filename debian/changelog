@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~2967.gbp8e5d92) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2968.gbp4cb2ca) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4cb2cae41790322d5f5fe38d0d0e4e8459afb92f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8e5d92c2758155daa0e8ea4f768f7d891f1c2fde **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 May 2025 01:26:17 +0000
+  [ Tomas Jurov ]
+  * In a similar way, add Multi RobotKeyFormatter as an external variable
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 May 2025 18:15:39 +0000
 
 gtsam (4.1.0-1ubuntu2~2966.gbp30c611) noble; urgency=medium
 
