@@ -1,31 +1,16 @@
 # This workflow builds the Python wheels using cibuildwheel and uploads them to TestPyPI.
 # It can be triggered on push to the develop branch or manually via Github Actions.
 
-name: Build Wheels for Develop
+name: Build Wheels for Release
 
 on:
-  push:
-    branches:
-      - develop
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
-  # Get the system time and store it in an output. This is used to tag the wheels.
-  # This needs to be done in a separate job so that each matrix job in build_wheels can
-  # access the same timestamp.
-  get_system_time:
-    name: Get System Time
-    runs-on: ubuntu-latest
-    outputs:
-      timestamp: ${{ steps.get_time.outputs.timestamp }}
-    steps:
-      - name: Get system time
-        id: get_time
-        run: echo "timestamp=$(date +'%Y%m%d%H%M')" >> "$GITHUB_OUTPUT"
-
   build_wheels:
     name: Build Wheels
-    needs: get_system_time
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -114,18 +99,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
-
-      # Set the DEVELOP flag and the TIMESTAMP environment variables. This is used in the
-      # top-level CMakeLists.txt to generate the GTSAM_VERSION_STRING.
-      - name: Set Develop Flag
-        run: |
-          echo "DEVELOP=1" >> $GITHUB_ENV
-          echo "TIMESTAMP=${{ needs.get_system_time.outputs.timestamp }}" >> $GITHUB_ENV
 
       - name: Install Dependencies
         run: |
@@ -133,7 +114,7 @@ jobs:
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools libboost-all-dev ninja-build
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install wget icu4c boost ninja python-setuptools
+            brew install boost ninja python-setuptools
           else
             echo "$RUNNER_OS not supported"
             exit 1
@@ -163,7 +144,6 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_ARCHS: all
-          CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
 
           # Set the minimum required MacOS version for the wheels.
           MACOSX_DEPLOYMENT_TARGET: 10.15
@@ -205,4 +185,4 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
-          # repository-url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/
