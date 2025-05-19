@@ -55,6 +55,9 @@ Optional prerequisites - used automatically if findable by CMake:
 
 GTSAM 4 introduces several new features, most notably Expressions and a Python toolbox. It also introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 is deprecated, so please be aware that this might render functions using their default constructor incorrect.
 
+ There is a flag `GTSAM_ALLOW_DEPRECATED_SINCE_V43` for newly deprecated methods since the 4.3 release, which is on by default, allowing anyone to just pull version 4.3 and compile.
+
+
 ## Wrappers
 
 We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.

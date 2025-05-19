@@ -127,6 +127,9 @@ class GTSAM_EXPORT DiscreteFactorGraph
   template <class DERIVED_FACTOR>
   DiscreteFactorGraph(const FactorGraph<DERIVED_FACTOR>& graph) : Base(graph) {}
 
+  /// Destructor
+  virtual ~DiscreteFactorGraph() {}
+
   /// @name Testable
   /// @{
 
