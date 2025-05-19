@@ -1,10 +1,107 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2970.gbp07f3c6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2971.gbp2334ea) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2334ea30962fb580baef4d46c40ac8ac8afc6f93 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @07f3c67b3f7226f1f3ea0abc1442e0c57a250769 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 May 2025 03:12:43 +0000
+  [ Frank Dellaert ]
+  * Deprecate `filter` in favor of `extract`, which copies to std::map without boost.
+  * Removed filter from examples and timing scripts
+  * Move some Eigen methods to cpp
+  * Deprecated boost iterators in Values
+  * Fixed some stragglers in timing
+  * Fix some CI issues (running in Debug, with TBB)
+  * Added a const_iterator back in
+  * Added some more functions and fixed both flag paths.
+  * Forgot [key, value] only works for c++17
+  * Use boost::shared ptr
+
+  [ chris ]
+  * Fix (issue #1336) dangling pointer access violation.
+
+  [ Frank Dellaert ]
+  * Avoid warning
+  * Fix version
+  * Fix docs
+
+  [ Varun Agrawal ]
+  * update examples to use C++11
+  * fix warnings
+  * only print cmake compile options for current build version
+  * remove commented Cmake commands
+
+  [ Jose Luis Blanco Claraco ]
+  * Update ROS package.xml format to v3 and update gtsam version
+
+  [ Frank Dellaert ]
+  * Add missing header to fix gtbook.
+  * Switch to 4.2a9 version
+
+  [ Varun Agrawal ]
+  * Add better hybrid support
+  * add ordering method for HybridSmoother
+
+  [ Frank Dellaert ]
+  * Improved documentation and tests
+  * Better documentation and new test
+  * wrapped List[float] constructor
+  * Derive factors from gtsam::Factor
+  * Test more things in BayesTree
+  * wrap operator[] in DiscreteBayesTree
+  * Wrapped elimination and junction trees
+  * cartesianProduct
+  * Wrap forgotten max
+  * refactor into smaller tests
+  * multifrontal lookup table tests
+  * multifrontal MPE in python
+
+  [ Martin Valgur ]
+  * Fix an invalid include in DsfTrackGenerator.h
+
+  [ Frank Dellaert ]
+  * more discrete BT wrapper + test
+  * Address review comments
+  * Skip test that is problematic for gcc
+
+  [ senselessdev1 ]
+  * Cherrypick transitivity fix for DsfTrackGenerator
+
+  [ Frank Dellaert ]
+  * Fix 4.3 python style
+
+  [ Grady Williams ]
+  * Bugfixes for ISAM2
+  * Test for not increasing graph size when adding marginal factors
+
+  [ Fan Jiang ]
+  * Adapt to 4.2  function
+
+  [ Dan McGann ]
+  * Adds jacobians for Pose2 component extraction
+  * Extends python iface Pose2 component jacobians
+  * Convert Pose2 r/t accessors to inline
+  * Revert changes to Pose2 r(), t()
+
+  [ Jose Luis Blanco-Claraco ]
+  * Update package.xml: boost, eigen, and tbb are needed by users too
+
+  [ Yashas Ambati ]
+  * Add production workflow for cibw
+  * Push to TestPyPI
+
+  [ Frank Dellaert ]
+  * Undo some changes
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix loss-of-data warning on windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 May 2025 03:37:40 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2969.gbp401853) noble; urgency=medium
 
