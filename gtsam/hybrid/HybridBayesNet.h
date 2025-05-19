@@ -181,10 +181,11 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *   auto sample = bn.sample(given, &rng);
    *
    * @param given Values of missing variables.
-   * @param rng The pseudo-random number generator.
+   * @param rng The optional pseudo-random number generator.
    * @return HybridValues
    */
-  HybridValues sample(const HybridValues &given, std::mt19937_64 *rng) const;
+  HybridValues sample(const HybridValues &given,
+                      std::mt19937_64 *rng = nullptr) const;
 
   /**
    * @brief Sample using ancestral sampling.
@@ -193,25 +194,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *   std::mt19937_64 rng(42);
    *   auto sample = bn.sample(&rng);
    *
-   * @param rng The pseudo-random number generator.
+   * @param rng The optional pseudo-random number generator.
    * @return HybridValues
    */
-  HybridValues sample(std::mt19937_64 *rng) const;
-
-  /**
-   * @brief Sample from an incomplete BayesNet, use default rng.
-   *
-   * @param given Values of missing variables.
-   * @return HybridValues
-   */
-  HybridValues sample(const HybridValues &given) const;
-
-  /**
-   * @brief Sample using ancestral sampling, use default rng.
-   *
-   * @return HybridValues
-   */
-  HybridValues sample() const;
+  HybridValues sample(std::mt19937_64 *rng = nullptr) const;
 
   /**
    * @brief Prune the Bayes Net such that we have at most maxNrLeaves leaves.

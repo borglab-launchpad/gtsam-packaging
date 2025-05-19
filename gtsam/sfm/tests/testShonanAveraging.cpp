@@ -45,7 +45,7 @@ ShonanAveraging3 fromExampleName(
 
 static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
 
-static std::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kPRNG(42);
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, checkConstructor) {
@@ -78,7 +78,7 @@ TEST(ShonanAveraging3, buildGraphAt) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, checkOptimality) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(4, randomRotations);  // lift to 4!
   auto Lambda = kShonan.computeLambda(random);
   EXPECT_LONGS_EQUAL(15, Lambda.rows());
@@ -106,7 +106,7 @@ TEST(ShonanAveraging3, checkSubgraph) {
 
   // Create initial random estimation
   Values initial;
-  initial = subgraphShonan.initializeRandomly(kRandomNumberGenerator);
+  initial = subgraphShonan.initializeRandomly(kPRNG);
 
   // Run Shonan with SUBGRAPH solver
   auto result = subgraphShonan.run(initial, 3, 3);
@@ -115,7 +115,7 @@ TEST(ShonanAveraging3, checkSubgraph) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt3) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values initial = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);  // convert to SOn
   EXPECT(!kShonan.checkOptimality(initial));
   const Values result = kShonan.tryOptimizingAt(3, initial);
@@ -130,7 +130,7 @@ TEST(ShonanAveraging3, tryOptimizingAt3) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt4) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(4, randomRotations);  // lift to 4!
   const Values result = kShonan.tryOptimizingAt(4, random);
   EXPECT(kShonan.checkOptimality(result));
@@ -228,7 +228,7 @@ TEST(ShonanAveraging3, CheckWithEigen) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, initializeWithDescent) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);
   const Values Qstar3 = kShonan.tryOptimizingAt(3, random);
   Vector minEigenVector;
@@ -240,7 +240,7 @@ TEST(ShonanAveraging3, initializeWithDescent) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, run) {
-  auto initial = kShonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = kShonan.initializeRandomly(kPRNG); 
   auto result = kShonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
@@ -295,7 +295,7 @@ TEST(ShonanAveraging3, runKlaus) {
   EXPECT(assert_equal(R02, wR0.between(wR2), 0.1));
 
   // Run Shonan (with prior on first rotation)
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-9.2259161494467889e-05, result.second,
@@ -323,7 +323,7 @@ TEST(ShonanAveraging3, runKlausKarcher) {
   static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o");
 
   // Run Shonan (with Karcher mean prior)
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
@@ -353,7 +353,7 @@ TEST(ShonanAveraging2, noisyToyGraph) {
   // Check graph building
   NonlinearFactorGraph graph = shonan.buildGraphAt(2);
   EXPECT_LONGS_EQUAL(6, graph.size());
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
@@ -391,7 +391,7 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   }
 
   // test result
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
+  auto initial = shonan.initializeRandomly(kPRNG);
   auto result = shonan.run(initial, 2,2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
