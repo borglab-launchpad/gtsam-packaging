@@ -39,7 +39,7 @@ using namespace gtsam;
 using namespace std;
 
 // In Wrappers we have no access to this so have a default ready.
-static std::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kPRNG(42);
 
 // Some relative translations may be zero. We treat nodes that have a zero
 // relativeTranslation as a single node.
@@ -185,7 +185,7 @@ Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const Values &initialValues) const {
   return initializeRandomly(relativeTranslations, betweenTranslations,
-                            &kRandomNumberGenerator, initialValues);
+                            &kPRNG, initialValues);
 }
 
 Values TranslationRecovery::run(

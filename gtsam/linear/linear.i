@@ -560,10 +560,9 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
       const gtsam::VectorValues& frontalValues) const;
   gtsam::JacobianFactor* likelihood(gtsam::Vector frontal) const;
 
-  gtsam::VectorValues sample(std::mt19937_64@ rng) const;
-  gtsam::VectorValues sample(const gtsam::VectorValues& parents, std::mt19937_64@ rng) const;
-  gtsam::VectorValues sample() const;
-  gtsam::VectorValues sample(const gtsam::VectorValues& parents) const;
+  gtsam::VectorValues sample(std::mt19937_64 @rng = nullptr) const;
+  gtsam::VectorValues sample(const gtsam::VectorValues& parents,
+                             std::mt19937_64 @rng = nullptr) const;
 
   // Advanced Interface
   gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
@@ -629,9 +628,10 @@ virtual class GaussianBayesNet {
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::VectorValues& given) const;
   gtsam::VectorValues optimizeGradientSearch() const;
-  
-  gtsam::VectorValues sample(const gtsam::VectorValues& given) const;
-  gtsam::VectorValues sample() const;
+
+  gtsam::VectorValues sample(const gtsam::VectorValues& given,
+                             std::mt19937_64 @rng = nullptr) const;
+  gtsam::VectorValues sample(std::mt19937_64 @rng = nullptr) const;
   gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
   gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
 

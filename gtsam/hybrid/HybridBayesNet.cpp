@@ -203,16 +203,6 @@ HybridValues HybridBayesNet::sample(std::mt19937_64 *rng) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(const HybridValues &given) const {
-  return sample(given, &kRandomNumberGenerator);
-}
-
-/* ************************************************************************* */
-HybridValues HybridBayesNet::sample() const {
-  return sample(&kRandomNumberGenerator);
-}
-
-/* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);

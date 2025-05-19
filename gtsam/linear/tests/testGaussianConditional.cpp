@@ -441,7 +441,7 @@ TEST(GaussianConditional, likelihood) {
 
 /* ************************************************************************* */
 // Test sampling
-TEST(GaussianConditional, sample) {
+TEST(GaussianConditional, Sample) {
   Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
   const Vector2 b(20, 40), x1(3, 4);
   const double sigma = 0.01;
@@ -465,8 +465,10 @@ TEST(GaussianConditional, sample) {
   auto actual3 = conditional.sample(given, &rng);
   EXPECT_LONGS_EQUAL(1, actual2.size());
   // regressions
-#if __APPLE__ || _WIN32
-  EXPECT(assert_equal(Vector2(31.0111856, 64.9850775), actual2[X(0)], 1e-5));
+#if __APPLE__
+EXPECT(assert_equal(Vector2(31.0111856, 64.9850775), actual2[X(0)], 1e-5));
+#elif _WIN32
+  EXPECT(assert_equal(Vector2(30.995317, 64.9943165), actual2[X(0)], 1e-5));
 #elif __linux__
   EXPECT(assert_equal(Vector2(30.9809331, 64.9927588), actual2[X(0)], 1e-5));
 #endif

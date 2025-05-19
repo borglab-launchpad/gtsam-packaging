@@ -27,9 +27,6 @@
 #include <string>
 #include <vector>
 
-// In wrappers we can access std::mt19937_64 via gtsam.MT19937
-static std::mt19937_64 kRandomNumberGenerator(42);
-
 namespace gtsam {
 
 /**

@@ -18,6 +18,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>

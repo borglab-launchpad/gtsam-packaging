@@ -42,7 +42,7 @@
 namespace gtsam {
 
 // In Wrappers we have no access to this so have a default ready
-static std::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kPRNG(42);
 
 using Sparse = Eigen::SparseMatrix<double>;
 
@@ -869,7 +869,7 @@ Values ShonanAveraging<d>::initializeRandomly(std::mt19937 &rng) const {
 /* ************************************************************************* */
 template <size_t d>
 Values ShonanAveraging<d>::initializeRandomly() const {
-  return initializeRandomly(kRandomNumberGenerator);
+  return initializeRandomly(kPRNG);
 }
 
 /* ************************************************************************* */
@@ -883,7 +883,7 @@ Values ShonanAveraging<d>::initializeRandomlyAt(size_t p,
 /* ************************************************************************* */
 template <size_t d>
 Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
-  return initializeRandomlyAt(p, kRandomNumberGenerator);
+  return initializeRandomlyAt(p, kPRNG);
 }
 
 /* ************************************************************************* */
