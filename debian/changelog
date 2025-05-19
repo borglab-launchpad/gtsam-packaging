@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~2971.gbp07eacc) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2972.gbpc74afe) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c74afe7c8ff64d9a550b7f3540a838fd1ca89742 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @07eacc4e07d4fd07354aaf61ba38ac8c44b18691 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 May 2025 18:20:21 +0000
+  [ Varun Agrawal ]
+  * make sample methods DRY in HybridBayesNet and GaussianConditional
+  * update wrapper with rng default args
+  * add global PRNG to utilities.h
+  * use default RNG object for mt19937_64 everywhere
+  * use global kRandomNumberGenerator
+  * rename kRandomNumberGenerator in local files to kPRNG to prevent collision
+  * remove more collisions
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * separate checks for Apple and Windows since the RNG values are different
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 May 2025 03:04:58 +0000
 
 gtsam (4.1.0-1ubuntu2~2970.gbpbea51e) noble; urgency=medium
 
