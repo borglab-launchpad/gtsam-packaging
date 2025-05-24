@@ -175,7 +175,7 @@ class Rot2 {
   static gtsam::Rot2 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Rot2& r);
   gtsam::Rot2 expmap(gtsam::Vector v);
-  gtsam::Vector logmap(const gtsam::Rot2& p);
+  gtsam::Vector logmap(const gtsam::Rot2& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -258,7 +258,7 @@ class SO3 {
   static gtsam::Matrix3 ExpmapDerivative(const gtsam::Vector3& omega);
   static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
   gtsam::SO3 expmap(gtsam::Vector3 v);
-  gtsam::Vector3 logmap(const gtsam::SO3& p);
+  gtsam::Vector3 logmap(const gtsam::SO3& g);
   static gtsam::Matrix3 Hat(const gtsam::Vector3& xi);
   static gtsam::Vector3 Vee(const gtsam::Matrix3& xi);
 
@@ -295,7 +295,7 @@ class SO4 {
   static gtsam::SO4 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::SO4& p);
   gtsam::SO4 expmap(gtsam::Vector v);
-  gtsam::Vector logmap(const gtsam::SO4& p);
+  gtsam::Vector logmap(const gtsam::SO4& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& xi);
 
@@ -333,7 +333,7 @@ class SOn {
   static gtsam::SOn Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::SOn& p);
   gtsam::SOn expmap(gtsam::Vector v);
-  gtsam::Vector logmap(const gtsam::SOn& p);
+  gtsam::Vector logmap(const gtsam::SOn& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& xi);
 
@@ -413,7 +413,7 @@ class Rot3 {
   static gtsam::Matrix3 ExpmapDerivative(const gtsam::Vector3& omega);
   static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
   gtsam::Rot3 expmap(const gtsam::Vector& v);
-  gtsam::Vector logmap(const gtsam::Rot3& p);
+  gtsam::Vector logmap(const gtsam::Rot3& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -487,8 +487,8 @@ class Pose2 {
   static gtsam::Vector Logmap(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H);
   gtsam::Pose2 expmap(gtsam::Vector v);
   gtsam::Pose2 expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
-  gtsam::Vector logmap(const gtsam::Pose2& p);
-  gtsam::Vector logmap(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
+  gtsam::Vector logmap(const gtsam::Pose2& g);
+  gtsam::Vector logmap(const gtsam::Pose2& g, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
   static gtsam::Matrix ExpmapDerivative(gtsam::Vector v);
   static gtsam::Matrix LogmapDerivative(const gtsam::Pose2& v);
   gtsam::Matrix AdjointMap() const;
@@ -576,8 +576,9 @@ class Pose3 {
 
   gtsam::Pose3 expmap(gtsam::Vector v);
   gtsam::Pose3 expmap(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
-  gtsam::Vector logmap(const gtsam::Pose3& p);
-  gtsam::Vector logmap(const gtsam::Pose3& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
+  
+  gtsam::Vector logmap(const gtsam::Pose3& g);
+  gtsam::Vector logmap(const gtsam::Pose3& g, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
 
   gtsam::Matrix AdjointMap() const;
   gtsam::Vector Adjoint(gtsam::Vector xi_b) const;
@@ -1272,7 +1273,7 @@ class Similarity2 {
   static gtsam::Similarity2 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Similarity2& S);
   gtsam::Similarity2 expmap(const gtsam::Vector& v);
-  gtsam::Vector logmap(const gtsam::Similarity2& p);
+  gtsam::Vector logmap(const gtsam::Similarity2& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -1304,7 +1305,7 @@ class Similarity3 {
   static gtsam::Similarity3 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Similarity3& s);
   gtsam::Similarity3 expmap(const gtsam::Vector& v);
-  gtsam::Vector logmap(const gtsam::Similarity3& p);
+  gtsam::Vector logmap(const gtsam::Similarity3& g);
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
