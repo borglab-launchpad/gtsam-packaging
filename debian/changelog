@@ -1,10 +1,64 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2978.gbpd42f49) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2979.gbpc999b0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c999b00800f8869c5a1983842e5af30bf43512d4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d42f4996e90b2921929b360a46dc2407b61b756f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 May 2025 11:49:22 +0000
+  [ Varun Agrawal ]
+  * initial DCSAM tests
+  * more DCSAM tests
+  * use keys instead of symbols
+  * include DiscreteBoundaryFactor
+  * add discrete mixture fixture
+  * more fixtures
+  * DCSAM class
+  * new DiscreteBoundaryFactor
+  * better docs
+  * update CMake version in Metis so CI can run
+  * mark DiscreteFactorFromErrors function
+  * return underlying graphs as const references
+  * update using HybridValues
+  * HybridValues constructor which only takes DiscreteValues and Values
+  * record initial guesses better
+  * record hybrid factors separately
+  * properly optimize continuous factors
+  * small fixes
+  * update header file
+  * refactor to only have updateContinuous and updateDiscrete
+  * make updateDiscrete and updateContinuous protected
+  * use DiscreteBoundaryFactors everywhere in tests
+  * fix DiscreteBounaryFactor
+  * use default ISAM2 params
+  * fix comments
+  * add class comment
+  * refactor updateDiscrete
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * moved non-DCSAM hybrid tests to testHybridEstimation.run
+  * fix includes
+  * separate file for fixtures used in discrete+hybrid elimination
+  * add test for DiscreteFactor as a discrete prior
+  * update docstring to elaborate what is a semantic landmark
+
+  [ scottiyio ]
+  * docs: Add Invariant Kalman Filtering to navigation.md
+  * Update navigation.md
+
+  [ Frank Dellaert ]
+  * Create documention
+  * insertNonlinear
+  * Better tests
+  * Fix wrapper
+  * Try setting swap dynamically
+  * Add some docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 May 2025 13:28:25 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2977.gbpa836f2) noble; urgency=medium
 
