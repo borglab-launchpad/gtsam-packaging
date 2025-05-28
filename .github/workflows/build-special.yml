@@ -197,11 +197,28 @@ jobs:
           echo "GTSAM_BUILD_UNSTABLE=OFF" >> $GITHUB_ENV
           echo "GTSAM 'unstable' will not be built."
 
-      - name: Set Swap Space
+      - name: Create swap (Linux only)
         if: runner.os == 'Linux'
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 8
+        shell: bash
+        run: |
+          # Attempts to create and enable a swap file at /mnt/swapfile.
+          # It tries different sizes (8G, 4G, 2G, 1G) until successful.
+          set -euo pipefail
+          SWAP=/mnt/swapfile
+          sudo swapoff $SWAP 2>/dev/null || true
+          sudo rm -f $SWAP
+          
+          for SIZE in 8 4 2 1; do
+            if sudo fallocate -l ${SIZE}G $SWAP; then
+              sudo chmod 600 $SWAP
+              sudo mkswap $SWAP
+              sudo swapon $SWAP && break
+              fi
+              sudo rm -f $SWAP
+              done
+              
+          # Displays active swap spaces at the end.
+          swapon --show
 
       - name: Build & Test
         run: |

@@ -16,6 +16,9 @@ project:
       - file: ./gtsam/inference/inference.md
         children:
         - pattern: ./gtsam/inference/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
