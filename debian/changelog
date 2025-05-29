@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2982.gbpac0d51) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2983.gbpdee1c9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dee1c93c001ec6c36586841361023cfe329bdcce **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ac0d517f5dd0b428a2944543db43576f39957139 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 28 May 2025 13:33:03 +0000
+  [ Frank Dellaert ]
+  * Wrap HybridBayesNet methods
+  * New comprehensive tests
+  * Also add HybridConditional changes
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix paths
+  * DiscreteBN::prune test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 May 2025 18:06:28 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2981.gbp4f829e) noble; urgency=medium
 
