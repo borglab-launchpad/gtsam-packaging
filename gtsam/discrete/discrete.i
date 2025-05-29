@@ -47,6 +47,7 @@ virtual class DiscreteFactor : gtsam::Factor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteFactor& lf, double tol = 1e-9) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+  gtsam::AlgebraicDecisionTreeKey errorTree() const;
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
