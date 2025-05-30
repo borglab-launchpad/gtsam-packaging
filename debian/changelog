@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2986.gbp1ec421) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2987.gbp5df84c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5df84cc785f91b25068ea6d725a88b3a526f3938 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1ec421fb218b3f530952ea44e2aeceb9ade6cf58 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 May 2025 18:13:56 +0000
+  [ Yao Chen ]
+  * Remove static identity matrices in lago.cpp to avoid memory corruption in downstream tasks
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 May 2025 07:46:48 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2985.gbp975bc7) noble; urgency=medium
 
