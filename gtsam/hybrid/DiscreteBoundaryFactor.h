@@ -95,11 +95,15 @@ class GTSAM_EXPORT DiscreteBoundaryFactor : public DecisionTreeFactor {
   /// @name Standard Interface
   /// @{
 
+  using DecisionTreeFactor::operator*;
+
   /// multiply with a scalar
   DiscreteFactor::shared_ptr operator*(double s) const override;
 
   /// multiply two factors
   DiscreteBoundaryFactor operator*(const DiscreteBoundaryFactor& f) const;
+
+  using DecisionTreeFactor::operator/;
 
   /**
    * @brief Divide by factor f (safely).
