@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~2995.gbpff3489) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~2996.gbp52ad5e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @52ad5ea27079ef82bca72c46079a9bf0957fc047 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ff348914e0b4e00768675918c3fd8e52177554dc **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 May 2025 07:51:20 +0000
+  [ Oliver Lee ]
+  * Fixed SLAM Example link in Pose2 Doc
+
+  [ Fan Jiang ]
+  * Fix compiler warning of operator being shadowed
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 03 Jun 2025 06:00:24 +0000
 
 gtsam (4.1.0-1ubuntu2~2994.gbp9519ca) noble; urgency=medium
 
