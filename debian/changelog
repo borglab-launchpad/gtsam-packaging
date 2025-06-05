@@ -1,10 +1,29 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~2994.gbpe0b321) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~2995.gbpe0e6ea) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e0e6ea921490f94b405bf2157cd56fd2007da96f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e0b32101647f21b6a651d81e5c6709bb200d8847 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 03 Jun 2025 06:06:18 +0000
+  [ Oliver Lee ]
+  * Added initial draft of Cal3_S2 user guide
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Oliver Lee ]
+  * Made large quality updates to Cal3_S2 user guide
+  * Improved Cal3_S2 user guide
+
+  [ Oliver S. Lee ]
+  * docs: clarify Cal3_S2 manifold description
+
+  [ Oliver Lee ]
+  * Minor grammatical/syntax fix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jun 2025 07:57:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~2993.gbp9b753a) noble; urgency=medium
 
