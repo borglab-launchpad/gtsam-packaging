@@ -60,7 +60,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   Cal3_S2(double fov, int w, int h) : Cal3(fov, w, h) {}
 
   /**
-   * Convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
+   * Convert intrinsic coordinates xy to image coordinates uv, fixed derivatives
    * @param p point in intrinsic coordinates
    * @param Dcal optional 2*5 Jacobian wrpt Cal3 parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
