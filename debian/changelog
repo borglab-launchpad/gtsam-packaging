@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3003.gbp874bb4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3004.gbp1194ca) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1194ca6000607335833c0ae7a6462806bc0c16a0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @874bb4c68bb980bc24e305a1af9f06f83346c14b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 05 Jun 2025 08:06:55 +0000
+  [ Fan Jiang ]
+  * Fix misuses of `size_t` for `gtsam::Key`
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 13:30:33 +0000
 
 gtsam (4.1.0-1ubuntu2~3002.gbp9dd0bb) noble; urgency=medium
 
