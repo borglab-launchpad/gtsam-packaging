@@ -94,7 +94,7 @@ class NonlinearFactorGraph {
                  gtsam::PinholeCamera<gtsam::Cal3Unified>,
                  gtsam::PinholeCamera<gtsam::CalibratedCamera>,
                  gtsam::imuBias::ConstantBias}>
-  void addPrior(size_t key, const T& prior,
+  void addPrior(gtsam::Key key, const T& prior,
                 const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
@@ -555,8 +555,8 @@ class ISAM2 {
                      gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                      gtsam::PinholeCamera<gtsam::Cal3Unified>, gtsam::Vector, gtsam::Matrix}>
-  VALUE calculateEstimate(size_t key) const;
-  gtsam::Matrix marginalCovariance(size_t key) const;
+  VALUE calculateEstimate(gtsam::Key key) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
   double error(const gtsam::VectorValues& x) const;
@@ -583,7 +583,7 @@ class NonlinearISAM {
   void printStats() const;
   void saveGraph(string s) const;
   gtsam::Values estimate() const;
-  gtsam::Matrix marginalCovariance(size_t key) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   int reorderInterval() const;
   int reorderCounter() const;
   void update(const gtsam::NonlinearFactorGraph& newFactors,
@@ -629,7 +629,7 @@ template <T = {double,
                gtsam::NavState,
                gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
-  PriorFactor(size_t key, const T& prior,
+  PriorFactor(gtsam::Key key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
 
@@ -672,7 +672,7 @@ virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
 #include <gtsam/nonlinear/FixedLagSmoother.h>
 // This class is not available in python, just use a dictionary
 class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(size_t key, double timestamp);
+  FixedLagSmootherKeyTimestampMapValue(gtsam::Key key, double timestamp);
   FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
 };
 
@@ -686,7 +686,7 @@ class FixedLagSmootherKeyTimestampMap {
   bool empty() const;
   void clear();
 
-  double at(const size_t key) const;
+  double at(const gtsam::Key key) const;
   void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
 };
 
@@ -729,7 +729,7 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Vector, gtsam::Matrix}>
-  VALUE calculateEstimate(size_t key) const;
+  VALUE calculateEstimate(gtsam::Key key) const;
 };
 
 #include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
@@ -740,7 +740,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   void print(string s = "IncrementalFixedLagSmoother:\n") const;
 
-  gtsam::Matrix marginalCovariance(size_t key) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   gtsam::ISAM2Params params() const;
 
   gtsam::NonlinearFactorGraph getFactors() const;
