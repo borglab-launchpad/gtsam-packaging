@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~3007.gbp79b46f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3008.gbpcd5e8e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cd5e8e136508e96a96d69e72f1e34ef84c9f2e73 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @79b46f4b751cf4394a8426f72ab597b33a35ee60 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 13:35:12 +0000
+  [ yetongumich ]
+  * add constrained optimizers
+  * update tests
+  * update constrained optimizers
+  * add headers
+  * fix include
+  * add GTSAM_EXPORT to AL optimizer
+  * remove MeritFunction for next PR
+
+  [ Oliver Lee ]
+  * Fixed minor format issues
+  * Added citations and bibliography
+
+  [ yetongumich ]
+  * update by comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 16:25:55 +0000
 
 gtsam (4.1.0-1ubuntu2~3006.gbp099778) noble; urgency=medium
 
