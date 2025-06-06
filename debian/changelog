@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3002.gbp46ae62) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3003.gbpe7de0c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e7de0c7adafd20bdf757a40d26ea9ba52d03f8d4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @46ae6219f7a345bd1b44b3c7b2a8986c0ea7e65e **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 13:35:04 +0000
+  [ yetongumich ]
+  * add constrained optimizers
+  * update tests
+  * update constrained optimizers
+  * add headers
+  * fix include
+  * add GTSAM_EXPORT to AL optimizer
+  * remove MeritFunction for next PR
+
+  [ Oliver Lee ]
+  * Fixed minor format issues
+  * Added citations and bibliography
+
+  [ yetongumich ]
+  * update by comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 16:25:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3001.gbp572440) noble; urgency=medium
 
