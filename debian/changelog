@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3006.gbpd0afef) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3007.gbpb1e750) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b1e7505b6ec44efcf898821ec596c9c57c762cb1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d0afef6b02b977c2aaa810eeaea80a7a5c6b08db **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Jun 2025 16:30:16 +0000
+  [ Tal Regev ]
+  * Add vcpkg ci
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Jun 2025 02:27:22 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3005.gbp51b29b) noble; urgency=medium
 
