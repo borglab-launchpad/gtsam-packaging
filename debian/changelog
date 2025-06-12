@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3015.gbp6bc83c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3016.gbp753a1d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @753a1d3593a40416b41f3ff1e722dc147c5d8c11 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6bc83c2a8547f8ed78c3145248834f14affcad91 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Jun 2025 02:31:56 +0000
+  [ Daniel Butterfield ]
+  * Fix for Issue #2161 in borglab/gtsam
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Jun 2025 07:25:40 +0000
 
 gtsam (4.1.0-1ubuntu2~3014.gbp3cab62) noble; urgency=medium
 
