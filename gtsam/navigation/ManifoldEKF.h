@@ -159,9 +159,8 @@ namespace gtsam {
 
       static constexpr int MeasDim = traits<Measurement>::dimension;
 
-      int m_runtime;
       if constexpr (MeasDim == Eigen::Dynamic) {
-        m_runtime = traits<Measurement>::GetDimension(z);
+        int m_runtime = traits<Measurement>::GetDimension(z);
         if (traits<Measurement>::GetDimension(prediction) != m_runtime) {
           throw std::invalid_argument(
             "ManifoldEKF::update: Dynamic measurement 'prediction' and 'z' have different dimensions.");
@@ -172,7 +171,6 @@ namespace gtsam {
         }
       }
       else {
-        m_runtime = MeasDim;
         if constexpr (Dim == Eigen::Dynamic) {
           if (H.cols() != n_) {
             throw std::invalid_argument(
