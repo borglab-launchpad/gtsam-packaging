@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3010.gbp8dcde1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3011.gbpc22d09) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c22d096515d58b673e6b6fe5828185c0d07c88c6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8dcde11f7c7edf685d17245d912827f2613c93b5 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Jun 2025 02:31:46 +0000
+  [ Daniel Butterfield ]
+  * Fix for Issue #2161 in borglab/gtsam
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Jun 2025 07:25:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3009.gbp6931d2) noble; urgency=medium
 
