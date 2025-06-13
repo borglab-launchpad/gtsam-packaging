@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 
   auto p = imuParams();
 
-  std::shared_ptr<PreintegrationType> preintegrated =
+  std::shared_ptr<DefaultPreintegrationType> preintegrated =
       std::make_shared<PreintegratedImuMeasurements>(p, prior_imu_bias);
 
   assert(preintegrated);
