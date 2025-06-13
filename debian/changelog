@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3018.gbp49a60b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3019.gbp68a617) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @68a61795c2efddee19e8aac49b27f66de7a373ed **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @49a60bc8879c1bc5b49feb49a8f4539eed22d3bc **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Jun 2025 17:20:54 +0000
+  [ Varun Agrawal ]
+  * unhide base class operators in DiscreteBoundaryFactor
+  * cleaner use of diff
+  * ensure fixedValues are empty so we're functional
+  * similarly ensure fixedValues is empty when passed in + improved comments
+  * use DiscreteConditional instead of factor within removeFixedValues
+  * raise error if product factor is 0.0
+  * DiscreteValues::insert_or_assign
+  * use DiscreteValues::insert_or_assign
+  * Fix TableFactor threshold
+  * call keyFormatter for DiscreteKeys
+  * remove base class operators
+  * add descriptive comment
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Jun 2025 22:32:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3017.gbp1beca4) noble; urgency=medium
 
