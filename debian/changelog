@@ -1,10 +1,32 @@
-gtsam (4.1.0-1ubuntu2~3019.gbp12854d) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3020.gbp85804a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @85804a8fd7af2241e1019a84953bf0ab9e6e50cf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @12854d408eba37651d51fa73a61d31e9b6137fff **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 12 Jun 2025 07:31:47 +0000
+  [ p-zach ]
+  * Template ImuFactor with flag-defined default
+  * Template CombinedImuFactor with flag-defined default
+  * Add template keyword for gcc+clang
+  * Remove undefs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ p-zach ]
+  * Use using for default types
+  * Using using so it actually works
+  * PIMType_ -> PIM within PIM classes
+  * PreintegrationBackend -> PreintegrationType
+  * PIMType_ -> PIM for factors
+  * PIM pim_
+  * Fix factors examples with PreintegrationType
+  * Add custom preint type note to docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Jun 2025 17:13:24 +0000
 
 gtsam (4.1.0-1ubuntu2~3018.gbpb736f8) noble; urgency=medium
 
