@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3022.gbpef70c7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3023.gbpdcc4aa) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dcc4aa549ebcdd9c4c01ea76b102ced526035aa8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ef70c737dd82cf670fdbbfc550f1a9e993d9cda5 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 13 Jun 2025 22:37:06 +0000
+  [ scottiyio ]
+  * Markdown documentation for InvariantEKF
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Jose Luis Blanco-Claraco ]
+  * ROS package.xml: do not depend on boost
+
+  [ scottiyio ]
+  * Update InvariantEKF.md
+  * Update InvariantEKF.md
+  * Update InvariantEKF.md
+  * Update InvariantEKF.md
+  * Update InvariantEKF.md
+  * Update InvariantEKF.md
+  * Rename gtsam/navigation/InvariantEKF.md to gtsam/navigation/doc/InvariantEKF.md
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jun 2025 14:22:30 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3021.gbpea30e0) noble; urgency=medium
 
