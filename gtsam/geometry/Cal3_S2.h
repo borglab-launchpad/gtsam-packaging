@@ -33,7 +33,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3_S2 : public Cal3 {
  public:
-  inline constexpr static auto dimension = 5;
+  constexpr static auto dimension = 5;
 
   ///< shared pointer to calibration object
   using shared_ptr = std::shared_ptr<Cal3_S2>;
@@ -101,7 +101,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
   /// "Between", subtracts calibrations. between(p,q) == compose(inverse(p),q)
-  inline Cal3_S2 between(const Cal3_S2& q,
+  Cal3_S2 between(const Cal3_S2& q,
                          OptionalJacobian<5, 5> H1 = {},
                          OptionalJacobian<5, 5> H2 = {}) const {
     if (H1) *H1 = -I_5x5;
@@ -115,10 +115,10 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// Given 5-dim tangent vector, create new calibration
-  inline Cal3_S2 retract(const Vector& d) const {
+  Cal3_S2 retract(const Vector& d) const {
     return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
   }
 
