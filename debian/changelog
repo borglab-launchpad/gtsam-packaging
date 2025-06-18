@@ -1,10 +1,35 @@
-gtsam (4.1.0-1ubuntu2~3031.gbpd5c3a2) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3032.gbp9f4f32) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @9f4f32d2e93084dc4c4f2f54a2dc0b927ba0fe12 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d5c3a2594d53ab664a74db127a291366834c5ccf **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jun 2025 14:28:33 +0000
+  [ Oliver Lee ]
+  * First draft of PinholePose user guide
+  * Minor code corrections
+
+  [ Oliver S. Lee ]
+  * docs: expand PinholePose tutorial
+
+  [ Oliver Lee ]
+  * Updated Geometry markdown page
+  * Edited some description
+  * Revert "Updated Geometry markdown page"
+  * Removed redundant inline keyword in calibration model classes
+  * Added PinholeCamera and PinholePose userguides to the same branch
+  * Updated Calibration Models section
+  * Temporarily removed broken PinHoleCamera userguide
+  * Minor fix to geometry.md
+  * Updated calibration model headings and added links
+  * Removed PinholePose userguide from this branch
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jun 2025 21:08:13 +0000
 
 gtsam (4.1.0-1ubuntu2~3030.gbpad9883) noble; urgency=medium
 
