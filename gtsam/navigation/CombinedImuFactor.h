@@ -97,7 +97,7 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
       const Eigen::Matrix<double, 15, 15>& preintMeasCov =
           Eigen::Matrix<double, 15, 15>::Zero())
       : PreintegrationType(p, biasHat), preintMeasCov_(preintMeasCov) {
-    this->resetIntegration();
+    this->PreintegrationType::resetIntegration();
   }
 
   /**
