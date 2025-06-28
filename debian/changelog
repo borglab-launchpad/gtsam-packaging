@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3030.gbpf742c8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3031.gbp80eae3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @80eae3a315a2abf3ef51c1f07ae6dd7be0bf3e7a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f742c87279b7402abd8f9806761d1bfe90940b43 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 18 Jun 2025 21:12:50 +0000
+  [ Porter Zach ]
+  * Fix constructor preintMeasCov reset
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Oliver Lee ]
+  * Only committed relevent file changes
+  * Added override keyword to dim() in Cal3_S2.h
+  * Updated geometry.i to fix Python CI build error
+
+  [ Frank Dellaert ]
+  * Similarity2 tests
+  * Similarity3 tests
+  * Notebooks
+
+  [ Oliver Lee ]
+  * removed dim() from Cal3, restored Cal3 constructor wrappers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 28 Jun 2025 05:41:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3029.gbp0338a4) noble; urgency=medium
 
