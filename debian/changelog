@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3039.gbpb629ec) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3040.gbpbf6c38) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bf6c38ed0abfc0181d85dda6e1a380b56fd17a19 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b629ec16cc97ef03139ff0ec45ea0e9af129c7f9 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 28 Jun 2025 05:46:15 +0000
+  [ Tal Regev ]
+  * Add GTSAM_USE_SYSTEM_PYBIND option Improve cache for vcpkg
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Jun 2025 15:04:51 +0000
 
 gtsam (4.1.0-1ubuntu2~3038.gbp2cce20) noble; urgency=medium
 
