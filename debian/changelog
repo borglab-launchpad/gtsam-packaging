@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~3043.gbpd89b4e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3044.gbp35ea25) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @35ea25154aeef7a8a7de38cde0d9bcb2edc04750 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d89b4e4e303013f91d0890234fc63f27f04f8bb2 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 30 Jun 2025 15:11:00 +0000
+  [ Frank Dellaert ]
+  * AdjointMap and vec
+  * Sim2 now works with FF
+  * Small optimization
+  * Vec and new Ad test
+  * Sim3 in FF
+  * Restore some tiny things
+  * Review
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Jul 2025 13:51:00 +0000
 
 gtsam (4.1.0-1ubuntu2~3042.gbp9a9266) noble; urgency=medium
 
