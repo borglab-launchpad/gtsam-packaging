@@ -34,11 +34,14 @@ class Pose3;
  * 3D similarity transform
  */
 class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
+ public:
   /// @name Pose Concept
   /// @{
   typedef Rot3 Rotation;
   typedef Point3 Translation;
   /// @}
+
+  using Vector16 = Eigen::Matrix<double, 16, 1>;
 
  private:
   Rot3 R_;
@@ -63,6 +66,9 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
 
   /// Construct from matrix [R t; 0 s^-1]
   Similarity3(const Matrix4& T);
+
+  /// Vectorize 4x4 matrix into a 16-dim vector.
+  Vector16 vec(OptionalJacobian<16, 7> H = {}) const;
 
   /// @}
   /// @name Testable

@@ -111,13 +111,30 @@ TEST(Similarity3, BruteForceExpmap) {
 
 //******************************************************************************
 TEST(Similarity3, AdjointMap) {
+  // 1. Calculate the Adjoint map using the fast, closed-form function.
+  Matrix7 actual = T2.AdjointMap();
+
+  // 2. Calculate the Adjoint map using the general, "brute force" definition.
+  // Ad_i = Vee(T * Hat(e_i) * T_inv)
+  // Get the 7 generators G_i = Hat(e_i) for sim(3)
+  std::vector<Matrix4> G;
+  for (int i = 0; i < 7; ++i) {
+    G.push_back(Similarity3::Hat(Vector7::Unit(i)));
+  }
+
+  // Calculate T and its inverse
   const Matrix4 T = T2.matrix();
-  // Check Ad with actual definition
-  Vector7 delta;
-  delta << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
-  Matrix4 W = Similarity3::Hat(delta);
-  Matrix4 TW = Similarity3::Hat(T2.AdjointMap() * delta);
-  EXPECT(assert_equal(TW, Matrix4(T * W * T.inverse()), 1e-9));
+  const Matrix4 T_inv = T2.inverse().matrix();
+
+  // Loop through columns to build the expected Adjoint matrix
+  Matrix7 expected;
+  for (int i = 0; i < 7; ++i) {
+    Matrix4 T_Gi_Tinv = T * G[i] * T_inv;
+    expected.col(i) = Similarity3::Vee(T_Gi_Tinv);
+  }
+
+  // 3. Assert that the two matrices are equal.
+  EXPECT(assert_equal(expected, actual));
 }
 
 //******************************************************************************
@@ -551,6 +568,32 @@ TEST(Similarity3 , LieGroupDerivatives) {
   CHECK_LIE_GROUP_DERIVATIVES(T2, id);
   CHECK_LIE_GROUP_DERIVATIVES(T2, T3);
 }
+
+//******************************************************************************
+TEST(Similarity3, vec) {
+  const Rot3 R_test = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  const Point3 t_test(0.4, 0.5, 0.6);
+  const double s_test = 0.7;
+  const Similarity3 sim(R_test, t_test, s_test);
+
+  // 1. Test the Value
+  Similarity3::Vector16 expected_vec;
+  const Matrix3 R = R_test.matrix();
+  expected_vec << R.col(0), 0.0, R.col(1), 0.0, R.col(2), 0.0, t_test.x(),
+    t_test.y(), t_test.z(), 1.0 / s_test;
+  Similarity3::Vector16 actual_vec = sim.vec();
+  EXPECT(assert_equal(expected_vec, actual_vec, 1e-9));
+
+  // 2. Test the Jacobian
+  Matrix H_actual(16, 7);
+  sim.vec(H_actual);
+  auto vec_fun = [](const Similarity3& sim_arg) -> Similarity3::Vector16 {
+    return sim_arg.vec();
+    };
+  Matrix H_numerical = numericalDerivative11<Similarity3::Vector16, Similarity3, 7>(vec_fun, sim);
+  EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
+}
+
 
 //******************************************************************************
 int main() {

@@ -185,6 +185,9 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// Calculate 4*4 matrix group equivalent
   Matrix3 matrix() const;
 
+  /// Return vectorized Similarity2 matrix in column order
+  Vector9 vec(OptionalJacobian<9, 4> H = {}) const;
+
   /// Return a GTSAM rotation
   Rot2 rotation() const { return R_; }
 
