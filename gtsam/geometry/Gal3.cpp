@@ -41,9 +41,6 @@ namespace gtsam {
 namespace { // Anonymous namespace for internal linkage
   constexpr double kSmallAngleThreshold = 1e-10;
 
-  // The type of the Lie algebra (matrix representation)
-  using LieAlgebra = Matrix5;
-
   // Helper functions for accessing tangent vector components
   Eigen::Block<Vector10, 3, 1> rho(Vector10& v) { return v.block<3, 1>(0, 0); }
   Eigen::Block<Vector10, 3, 1> nu(Vector10& v) { return v.block<3, 1>(3, 0); }
@@ -54,6 +51,45 @@ namespace { // Anonymous namespace for internal linkage
   Eigen::Block<const Vector10, 3, 1> nu(const Vector10& v) { return v.block<3, 1>(3, 0); }
   Eigen::Block<const Vector10, 3, 1> theta(const Vector10& v) { return v.block<3, 1>(6, 0); }
   Eigen::Block<const Vector10, 1, 1> t_tan(const Vector10& v) { return v.block<1, 1>(9, 0); }
+
+  // The 25x10 matrix of vectorized generators for SGal(3).
+  // The columns correspond to perturbations in [rho, nu, theta, t_tan].
+  // The tangent vector is [rho(3), nu(3), theta(3), t_tan(1)].
+  // P_gal3 = [vec(G_rho), vec(G_nu), vec(G_theta), vec(G_t)]
+  static const Eigen::Matrix<double, 25, 10> P_gal3 =
+      (Eigen::Matrix<double, 25, 10>() <<
+          // rho(0-2), nu(3-5), theta(6-8), t_tan(9)
+          // --- M(i,0) --- rows 0-4
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+          0, 0, 0, 0, 0, 0, 0, -1, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          // --- M(i,1) --- rows 5-9
+          0, 0, 0, 0, 0, 0, 0, 0, -1, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          // --- M(i,2) --- rows 10-14
+          0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+          0, 0, 0, 0, 0, 0, -1, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          // --- M(i,3) --- rows 15-19
+          0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          // --- M(i,4) --- rows 20-24
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          ).finished();
 
 } // end anonymous namespace
 
@@ -163,8 +199,6 @@ const double& Gal3::time(OptionalJacobian<1, 10> H) const {
 }
 
 //------------------------------------------------------------------------------
-// Matrix Representation
-//------------------------------------------------------------------------------
 Matrix5 Gal3::matrix() const {
     // Returns 5x5 matrix representation as in Equation 9, Page 5
     Matrix5 M = Matrix5::Identity();
@@ -175,6 +209,20 @@ Matrix5 Gal3::matrix() const {
     M.block<1,3>(3,0).setZero();
     M.block<1,4>(4,0).setZero();
     return M;
+}
+
+//------------------------------------------------------------------------------
+Vector25 Gal3::vec(OptionalJacobian<25, 10> H) const {
+    const Matrix5 T = this->matrix();
+    if (H) {
+        // The Jacobian is given by the formula H = (I_5 ⊗ T) * P_gal3
+        // where P_gal3 is the matrix of vectorized generators.
+        // This can be implemented efficiently with block-wise multiplication.
+        *H << T * P_gal3.block<5, 10>(0, 0), T* P_gal3.block<5, 10>(5, 0),
+            T* P_gal3.block<5, 10>(10, 0), T* P_gal3.block<5, 10>(15, 0),
+            T* P_gal3.block<5, 10>(20, 0);
+    }
+    return Eigen::Map<const Vector25>(T.data());
 }
 
 //------------------------------------------------------------------------------

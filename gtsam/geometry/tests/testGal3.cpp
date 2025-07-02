@@ -1170,6 +1170,31 @@ TEST(Gal3, ExpLog_NearZero) {
     EXPECT(assert_equal(xi_zero, Gal3::Logmap(Gal3::Expmap(xi_zero)), kTol));
 }
 
+//******************************************************************************
+TEST(Gal3, vec) {
+    // Create a non-trivial Gal3 object
+    const Rot3 R_test = Rot3::Rodrigues(0.1, 0.2, 0.3);
+    const Point3 r_test(1.0, 2.0, 3.0);
+    const Velocity3 v_test(0.4, 0.5, 0.6);
+    const double t_test = 0.7;
+    const Gal3 gal3(R_test, r_test, v_test, t_test);
+
+    // 1. Test the Value
+    const Matrix5 T = gal3.matrix();
+    const Vector25 expected_vec = Eigen::Map<const Vector25>(T.data());
+    Vector25 actual_vec = gal3.vec();
+    EXPECT(assert_equal(expected_vec, actual_vec, 1e-9));
+
+    // 2. Test the Jacobian
+    Eigen::Matrix<double, 25, 10> H_actual;
+    gal3.vec(H_actual);
+    auto vec_fun = [](const Gal3& g) -> Vector25 {
+        return g.vec();
+        };
+    Matrix H_numerical = numericalDerivative11<Vector25, Gal3, 10>(vec_fun, gal3);
+    EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
+}
+
 /* ************************************************************************* */
 int main() {
     TestResult tr;
