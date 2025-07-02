@@ -37,6 +37,8 @@ using Vector10 = Eigen::Matrix<double, 10, 1>;
 using Matrix5 = Eigen::Matrix<double, 5, 5>;
 // Define Matrix10 for Jacobians
 using Matrix10 = Eigen::Matrix<double, 10, 10>;
+// Define Vector25 for vec() method
+using Vector25 = Eigen::Matrix<double, 25, 1>;
 
 /**
  * Represents an element of the 3D Galilean group SGal(3).
@@ -50,6 +52,7 @@ class GTSAM_EXPORT Gal3 : public LieGroup<Gal3, 10> {
   double t_;    ///< Time component
 
  public:
+  using LieAlgebra = Matrix5;
 
   /// The dimension of the tangent space
   inline static constexpr size_t dimension = 10;
@@ -118,6 +121,9 @@ class GTSAM_EXPORT Gal3 : public LieGroup<Gal3, 10> {
 
   /// Return 5x5 homogeneous matrix representation
   Matrix5 matrix() const;
+
+  /// Vectorize 5x5 matrix into a 25-dim vector.
+  Vector25 vec(OptionalJacobian<25, 10> H = {}) const;
 
   /// @}
   /// @name Testable

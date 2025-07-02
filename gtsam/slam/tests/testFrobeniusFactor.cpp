@@ -27,6 +27,7 @@
 #include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -335,6 +336,43 @@ TEST(FrobeniusBetweenFactorSimilarity3, evaluateError) {
   Values values;
   values.insert(1, P1);
   values.insert(2, P2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+namespace gal3 {
+  Gal3 id;
+  Gal3 G1(Rot3::Rz(0.1), Point3(0.2, 0.3, 0.4), Velocity3(0.5, 0.6, 0.7), 0.8);
+  Gal3 G2(Rot3::Rz(0.2), Point3(0.3, 0.4, 0.5), Velocity3(0.6, 0.7, 0.8), 0.9);
+}  // namespace gal3
+
+/* ************************************************************************* */
+TEST(FrobeniusFactorGal3, evaluateError) {
+  using namespace ::gal3;
+  auto factor = FrobeniusFactor<Gal3>(1, 2, noiseModel::Unit::Create(25));
+  Vector actual = factor.evaluateError(G1, G2);
+  Vector expected = G2.vec() - G1.vec();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, G1);
+  values.insert(2, G2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorGal3, evaluateError) {
+  using namespace ::gal3;
+  auto factor = FrobeniusBetweenFactor<Gal3>(1, 2, G1.between(G2));
+  Matrix H1, H2;
+  Vector actual = factor.evaluateError(G1, G2, H1, H2);
+  Vector expected(25);
+  expected.setZero();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, G1);
+  values.insert(2, G2);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
