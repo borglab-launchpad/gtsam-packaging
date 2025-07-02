@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~3047.gbpc392ab) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3048.gbpf2c0cc) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f2c0cc3232c53dc6301da72010dac1bd643a37af **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c392ab26a7ef7acded26d0b655eccbb07d22654f **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 01 Jul 2025 13:57:00 +0000
+  [ Frank Dellaert ]
+  * vec
+  * Make Gal3 work with FF
+  * Add Gal3 wrapper
+  * test new FF types in python
+  * Add operator/between
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Jul 2025 14:22:12 +0000
 
 gtsam (4.1.0-1ubuntu2~3046.gbp9c6e72) noble; urgency=medium
 
