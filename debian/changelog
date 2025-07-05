@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3046.gbp086d67) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3047.gbp8bfc42) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8bfc4228d8119212fedc9ceb31cd4c79d74b50b2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @086d67811ae8ac9194b9b068f9c4a3cd0869634b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 02 Jul 2025 14:33:11 +0000
+  [ Oliver Lee ]
+  * Updated Cal3DS2_Base python wrapper
+
+  [ Porter Zach ]
+  * Add friendly instructions for custom wrapper extensions
+  * Fix .md typo
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 05 Jul 2025 13:26:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3045.gbp83b0c0) noble; urgency=medium
 
