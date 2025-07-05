@@ -829,6 +829,10 @@ virtual class Cal3DS2_Base : gtsam::Cal3 {
   // Standard Interface
   double k1() const;
   double k2() const;
+  double p1() const;
+  double p2() const;
+  gtsam::Vector4 k() const;
+  gtsam::Vector9 vector() const;
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
