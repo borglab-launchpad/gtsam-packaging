@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3059.gbp47ded5) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3060.gbp7a8cb9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7a8cb935083eb3f705fabf20c570cd4de6447bb7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @47ded5288fdc5326ff42fa8fbb842a047ec8887c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 18:19:21 +0000
+  [ Frank Dellaert ]
+  * test both PIM variants
+  * Use lambda
+  * Test all PIMS in combined factor
+  * Moved TEST_PIM to common header
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 20:09:55 +0000
 
 gtsam (4.1.0-1ubuntu2~3058.gbpa93d6f) noble; urgency=medium
 
