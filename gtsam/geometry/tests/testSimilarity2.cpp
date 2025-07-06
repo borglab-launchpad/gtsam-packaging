@@ -183,7 +183,7 @@ TEST(Similarity2, TransformFrom_Pose2) {
 }
 
 //******************************************************************************
-TEST(Similarity2, vec) {
+TEST(Similarity2, Vec) {
   const double theta = 0.3;
   const Rot2 R_test = Rot2::fromAngle(theta);
   const Point2 t_test(0.2, 0.7);
@@ -217,33 +217,14 @@ TEST(Similarity2, AdjointMap) {
   const double s = 0.5;
   const Similarity2 sim(R, t, s);
 
-  // 1. Calculate the Adjoint map using the fast, closed-form function.
-  // This is the "actual" value we want to test.
-  Matrix4 actual_Adj = sim.AdjointMap();
+  // Call the specialized AdjointMap
+  Matrix4 specialized_Adj = sim.AdjointMap();
 
-  // 2. Calculate the Adjoint map using the general, "brute force" definition.
-  // This is the "expected" ground truth.
-  // Ad_i = Vee(T * Hat(e_i) * T_inv)
+  // Call the generic AdjointMap from the base class
+  Matrix4 generic_Adj = static_cast<const MatrixLieGroup<Similarity2, 4, 3>*>(&sim)->AdjointMap();
 
-  // Get the 4 generators G_i = Hat(e_i) for sim(2)
-  std::vector<Matrix3> G;
-  for (int i = 0; i < 4; ++i) {
-    G.push_back(Similarity2::Hat(Vector4::Unit(i)));
-  }
-
-  // Calculate T and its inverse
-  const Matrix3 T = sim.matrix();
-  const Matrix3 T_inv = sim.inverse().matrix(); // Or calculate analytically
-
-  // Loop through columns to build the expected Adjoint matrix
-  Matrix4 expected_Adj;
-  for (int i = 0; i < 4; ++i) {
-    Matrix3 T_Gi_Tinv = T * G[i] * T_inv;
-    expected_Adj.col(i) = Similarity2::Vee(T_Gi_Tinv);
-  }
-
-  // 3. Assert that the two matrices are equal.
-  EXPECT(assert_equal(expected_Adj, actual_Adj, 1e-9));
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
 }
 
 //******************************************************************************

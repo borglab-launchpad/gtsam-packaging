@@ -36,7 +36,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2: public LieGroup<Pose2, 3> {
+class GTSAM_EXPORT Pose2: public MatrixLieGroup<Pose2, 3, 3> {
 
 public:
 
@@ -328,8 +328,7 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return {2, 2}; }
 
-  /// Return vectorized SE(2) matrix in column order.
-  Vector9 vec(OptionalJacobian<9, 3> H = {}) const;
+  
 
   /// Output stream operator
   GTSAM_EXPORT
@@ -378,10 +377,10 @@ using Pose2Pair = std::pair<Pose2, Pose2>;
 using Pose2Pairs = std::vector<Pose2Pair>;
 
 template <>
-struct traits<Pose2> : public internal::MatrixLieGroup<Pose2> {};
+struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {};
 
 template <>
-struct traits<const Pose2> : public internal::MatrixLieGroup<Pose2> {};
+struct traits<const Pose2> : public internal::MatrixLieGroup<Pose2, 3> {};
 
 // bearing and range traits, used in RangeFactor
 template <typename T>

@@ -295,42 +295,7 @@ Matrix4 Similarity3::matrix() const {
   return T;
 }
 
-namespace {
-// The 16x7 matrix of vectorized generators for Sim(3).
-// The columns correspond to perturbations in [w_x, w_y, w_z, u_x, u_y, u_z, lambda].
-// P_sim3 = [vec(G_wx), vec(G_wy), vec(G_wz), vec(G_ux), vec(G_uy), vec(G_uz), vec(G_lambda)]
-  static const Eigen::Matrix<double, 16, 7> P_sim3 =
-    (Eigen::Matrix<double, 16, 7>() <<
-      // wx,  wy,  wz,  ux,  uy,  uz,  la
-      0, 0, 0, 0, 0, 0, 0,
-      0, 0, 1, 0, 0, 0, 0,
-      0, -1, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
-      0, 0, -1, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
-      1, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
-      0, 1, 0, 0, 0, 0, 0,
-      -1, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 1, 0, 0, 0,
-      0, 0, 0, 0, 1, 0, 0,
-      0, 0, 0, 0, 0, 1, 0,
-      0, 0, 0, 0, 0, 0, -1
-      ).finished();
-} // namespace
 
-Similarity3::Vector16 Similarity3::vec(OptionalJacobian<16, 7> H) const {
-  const Matrix4 T = this->matrix();
-  if (H) {
-    // The Jacobian is given by the formula H = (I_4 ⊗ T) * P_sim3
-    // where P_sim3 is the matrix of vectorized generators.
-    *H << T * P_sim3.block<4, 7>(0, 0), T* P_sim3.block<4, 7>(4, 0),
-      T* P_sim3.block<4, 7>(8, 0), T* P_sim3.block<4, 7>(12, 0);
-  }
-  return Eigen::Map<const Vector16>(T.data());
-}
 
 
 } // namespace gtsam

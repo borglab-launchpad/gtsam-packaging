@@ -33,7 +33,7 @@ class Pose3;
 /**
  * 3D similarity transform
  */
-class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
+class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
  public:
   /// @name Pose Concept
   /// @{
@@ -67,8 +67,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// Construct from matrix [R t; 0 s^-1]
   Similarity3(const Matrix4& T);
 
-  /// Vectorize 4x4 matrix into a 16-dim vector.
-  Vector16 vec(OptionalJacobian<16, 7> H = {}) const;
+  
 
   /// @}
   /// @name Testable
@@ -249,9 +248,9 @@ inline Matrix wedge<Similarity3>(const Vector& xi) {
 }
 #endif
 template <>
-struct traits<Similarity3> : public internal::MatrixLieGroup<Similarity3> {};
+struct traits<Similarity3> : public internal::MatrixLieGroup<Similarity3, 4> {};
 
 template <>
-struct traits<const Similarity3> : public internal::MatrixLieGroup<Similarity3> {};
+struct traits<const Similarity3> : public internal::MatrixLieGroup<Similarity3, 4> {};
 
 }  // namespace gtsam

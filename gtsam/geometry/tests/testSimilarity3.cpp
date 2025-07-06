@@ -110,34 +110,6 @@ TEST(Similarity3, BruteForceExpmap) {
 }
 
 //******************************************************************************
-TEST(Similarity3, AdjointMap) {
-  // 1. Calculate the Adjoint map using the fast, closed-form function.
-  Matrix7 actual = T2.AdjointMap();
-
-  // 2. Calculate the Adjoint map using the general, "brute force" definition.
-  // Ad_i = Vee(T * Hat(e_i) * T_inv)
-  // Get the 7 generators G_i = Hat(e_i) for sim(3)
-  std::vector<Matrix4> G;
-  for (int i = 0; i < 7; ++i) {
-    G.push_back(Similarity3::Hat(Vector7::Unit(i)));
-  }
-
-  // Calculate T and its inverse
-  const Matrix4 T = T2.matrix();
-  const Matrix4 T_inv = T2.inverse().matrix();
-
-  // Loop through columns to build the expected Adjoint matrix
-  Matrix7 expected;
-  for (int i = 0; i < 7; ++i) {
-    Matrix4 T_Gi_Tinv = T * G[i] * T_inv;
-    expected.col(i) = Similarity3::Vee(T_Gi_Tinv);
-  }
-
-  // 3. Assert that the two matrices are equal.
-  EXPECT(assert_equal(expected, actual));
-}
-
-//******************************************************************************
 TEST(Similarity3, inverse) {
   Similarity3 sim3(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix3 Re; // some values from matlab
@@ -570,7 +542,7 @@ TEST(Similarity3 , LieGroupDerivatives) {
 }
 
 //******************************************************************************
-TEST(Similarity3, vec) {
+TEST(Similarity3, Vec) {
   const Rot3 R_test = Rot3::Rodrigues(0.1, 0.2, 0.3);
   const Point3 t_test(0.4, 0.5, 0.6);
   const double s_test = 0.7;
@@ -594,6 +566,23 @@ TEST(Similarity3, vec) {
   EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
 }
 
+//******************************************************************************
+TEST(Similarity3, AdjointMap) {
+  // Create a non-trivial Similarity3 object
+  const Rot3 R = Rot3::Rodrigues(0.3, 0.2, 0.1);
+  const Point3 t(3.5, -8.2, 4.2);
+  const double s = 1.0;
+  const Similarity3 sim(R, t, s);
+
+  // Call the specialized AdjointMap
+  Matrix7 specialized_Adj = sim.AdjointMap();
+
+  // Call the generic AdjointMap from the base class
+  Matrix7 generic_Adj = static_cast<const MatrixLieGroup<Similarity3, 7, 4>*>(&sim)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+}
 
 //******************************************************************************
 int main() {

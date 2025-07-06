@@ -238,23 +238,6 @@ struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
 /// Both LieGroupTraits and Testable
 template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
-/// Adds LieAlgebra, Hat, and Vee to LieGroupTraits
-template<class Class> struct MatrixLieGroupTraits: LieGroupTraits<Class> {
-  using LieAlgebra = typename Class::LieAlgebra;
-  using TangentVector = typename LieGroupTraits<Class>::TangentVector;
-
-  static LieAlgebra Hat(const TangentVector& v) {
-    return Class::Hat(v);
-  }
-
-  static TangentVector Vee(const LieAlgebra& X) {
-    return Class::Vee(X);
-  }
-};
-
-/// Both LieGroupTraits and Testable
-template<class Class> struct MatrixLieGroup: MatrixLieGroupTraits<Class>, Testable<Class> {};
-
 } // \ namespace internal
 
 /**
@@ -310,63 +293,14 @@ public:
     // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
     v = traits<T>::Logmap(g, Hg);
+    // AdjointMap
+    *Hg = traits<T>::AdjointMap(g);
   }
 private:
   T g, h;
   TangentVector v;
   ChartJacobian Hg, Hh;
 };
-
-/**
- * Matrix Lie Group Concept
- */
-template<typename T>
-class IsMatrixLieGroup: public IsLieGroup<T> {
-public:
-typedef typename traits<T>::LieAlgebra LieAlgebra;
-typedef typename traits<T>::TangentVector TangentVector;
-
-  GTSAM_CONCEPT_USAGE(IsMatrixLieGroup) {
-    // hat and vee
-    X = traits<T>::Hat(xi);
-    xi = traits<T>::Vee(X);
-  }
-private:
-  LieAlgebra X;
-  TangentVector xi;
-};
-
-/**
- *  Three term approximation of the Baker-Campbell-Hausdorff formula
- *  In non-commutative Lie groups, when composing exp(Z) = exp(X)exp(Y)
- *  it is not true that Z = X+Y. Instead, Z can be calculated using the BCH
- *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
- *  http://en.wikipedia.org/wiki/Baker-Campbell-Hausdorff_formula
- */
-/// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
-template<class T>
-T BCH(const T& X, const T& Y) {
-  static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
-  T X_Y = bracket(X, Y);
-  return T(X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y, bracket(X, X_Y)));
-}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-/// @deprecated: use T::Hat
-template <class T> Matrix wedge(const Vector& x);
-#endif
-
-/**
- * Exponential map given exponential coordinates
- * class T needs a constructor from Matrix.
- * @param x exponential coordinates, vector of size n
- * @ return a T
- */
-template <class T>
-T expm(const Vector& x, int K = 7) {
-  const Matrix xhat = T::Hat(x);
-  return T(expm(xhat, K));
-}
 
 /**
  * Linear interpolation between X and Y by coefficient t. Typically t \in [0,1],
