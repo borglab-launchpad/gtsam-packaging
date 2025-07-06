@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~3063.gbp8a607c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3064.gbpd4476e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d4476e52d01e261dff34a9777d9f477385c905d5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8a607c4360ec1665704b2ff172ed5248b13be88b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 20:14:34 +0000
+  [ Frank Dellaert ]
+  * Formatting only
+  * Split off MatrixLieGroup.h
+  * vec now in MatrixLieGroup
+  * Undo formatting changes
+  * Naming
+  * Switch easy cases to MatrixLieGroup
+  * generic AdjointMap
+  * Simplified all tests with generic impl.
+  * No more MatrixM
+  * Switch SO classes to MatrixLieGroup
+  * inline
+  * dynamic size vec
+  * Fix AdjointMap
+  * Fix vec
+  * Refactor
+  * Gal3 conformance
+  * Remove obsolete vecs
+  * Use traits in FF
+  * Test MatrixLieGroup behavior
+  * Fix CI for quaternions
+  * Fix more quaternion issues
+  * AdjointMap for product
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 20:32:14 +0000
 
 gtsam (4.1.0-1ubuntu2~3062.gbp0ca84d) noble; urgency=medium
 
