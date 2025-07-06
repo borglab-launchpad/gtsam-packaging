@@ -321,38 +321,4 @@ Matrix3 Similarity2::matrix() const {
   return T;
 }
 
-// In Similarity2.cpp, e.g., after the #includes
-
-namespace {
-  // The 9x4 matrix of vectorized generators for Sim(2).
-  // The columns correspond to perturbations in [u_x, u_y, w, lambda].
-  // P_sim2 = [vec(G_ux), vec(G_uy), vec(G_w), vec(G_lambda)]
-  static const Eigen::Matrix<double, 9, 4> P_sim2 =
-    (Eigen::Matrix<double, 9, 4>() <<
-      // u_x u_y w lambda
-      0, 0, 0, 0,  // row 0
-      0, 0, 1, 0,  // row 1
-      0, 0, 0, 0,  // row 2
-      0, 0, -1, 0,  // row 3
-      0, 0, 0, 0,  // row 4
-      0, 0, 0, 0,  // row 5
-      1, 0, 0, 0,  // row 6
-      0, 1, 0, 0,  // row 7
-      0, 0, 0, -1   // row 8
-      ).finished();
-} // namespace
-
-//******************************************************************************
-Vector9 Similarity2::vec(OptionalJacobian<9, 4> H) const {
-  const Matrix3 T = this->matrix();
-  if (H) {
-    // The Jacobian is given by the formula H = (I_3 ⊗ T) * P_sim2
-    // where P_sim2 is the matrix of vectorized generators.
-    // This can be implemented efficiently with block-wise multiplication.
-    *H << T * P_sim2.block<3, 4>(0, 0),
-      T* P_sim2.block<3, 4>(3, 0),
-      T* P_sim2.block<3, 4>(6, 0);
-  }
-  return Eigen::Map<const Vector9>(T.data());
-}
 }  // namespace gtsam

@@ -35,7 +35,7 @@ using Velocity3 = Vector3;
  * NOTE: While Barrau20icra follow a R,v,t order,
  * we use a R,t,v order to maintain backwards compatibility.
  */
-class GTSAM_EXPORT NavState : public LieGroup<NavState, 9> {
+class GTSAM_EXPORT NavState : public MatrixLieGroup<NavState, 9, 5> {
  private:
 
   // TODO(frank):
@@ -303,9 +303,9 @@ private:
 
 // Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
 template <>
-struct traits<NavState> : public internal::MatrixLieGroup<NavState> {};
+struct traits<NavState> : public internal::MatrixLieGroup<NavState, 5> {};
 
 template <>
-struct traits<const NavState> : public internal::MatrixLieGroup<NavState> {};
+struct traits<const NavState> : public internal::MatrixLieGroup<NavState, 5> {};
 
 } // namespace gtsam
