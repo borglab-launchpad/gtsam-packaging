@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~3055.gbpb86f1e) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3056.gbpb01d22) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b01d22820e0588e185c49dd3d8384b8ff6dbe962 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b86f1e68cb972ff63461381df6eeb5a674060160 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 05 Jul 2025 13:31:04 +0000
+  [ Oliver Lee ]
+  * Added complete draft of StereoVOExample notebook from another branch
+  * Added check to porting progress table
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Let's try ASAN on windows
+  * Remove flag
+  * Fix possible static/global object destruction order problem
+  * Undo workflow change
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 18:14:34 +0000
 
 gtsam (4.1.0-1ubuntu2~3054.gbp4a90bd) noble; urgency=medium
 
