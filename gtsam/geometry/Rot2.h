@@ -217,14 +217,14 @@ namespace gtsam {
     /** return 2*2 rotation matrix */
     Matrix2 matrix() const;
 
-    /** return 2*2 transpose (inverse) rotation matrix   */
+    /** return 2*2 transpose (inverse) rotation matrix */
     Matrix2 transpose() const;
 
     /** Find closest valid rotation matrix, given a 2x2 matrix */
     static Rot2 ClosestTo(const Matrix2& M);
 
-    
-
+    /** Vectorize the rotation matrix into a 4D vector */
+    Vector4 vec(OptionalJacobian<4, 1> H = {}) const;
     /// @}
 
     private:

@@ -45,9 +45,8 @@ class GTSAM_EXPORT NavState : public MatrixLieGroup<NavState, 9, 5> {
   Velocity3 v_; ///< velocity n_v in nav frame
 
 public:
-
-  inline constexpr static auto dimension = 9;
-
+  using LieAlgebra = Matrix5;
+  using Vector25 = Eigen::Matrix<double, 25, 1>;
 
   /// @name Constructors
   /// @{
@@ -127,6 +126,9 @@ public:
   /// nTb = [nRb n_t n_v; 0_1x3 1 0; 0_1x3 0 1]
   Matrix5 matrix() const;
 
+  /// Vectorize 5x5 matrix into a 25-dim vector.
+  Vector25 vec(OptionalJacobian<25, 9> H = {}) const;
+
   /// @}
   /// @name Testable
   /// @{
@@ -197,8 +199,6 @@ public:
   /// @}
   /// @name Lie Group
   /// @{
-
-  using LieAlgebra = Matrix5;
 
   /**
    * Exponential map at identity - create a NavState from canonical coordinates

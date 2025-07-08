@@ -1198,7 +1198,6 @@ TEST(Gal3, Vec) {
 }
 
 //******************************************************************************
-
 TEST(Gal3, AdjointMap) {
   // Create a non-trivial Gal3 object
   const Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);

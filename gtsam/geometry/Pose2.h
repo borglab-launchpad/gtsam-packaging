@@ -273,8 +273,11 @@ public:
     return r_;
   }
 
-  //// return transformation matrix
+  /// return transformation matrix
   Matrix3 matrix() const;
+
+  /// Vectorize the rotation matrix into a 9D vector.
+  Vector9 vec(OptionalJacobian<9, 3> H = {}) const;
 
   /**
    * Calculate bearing to a landmark

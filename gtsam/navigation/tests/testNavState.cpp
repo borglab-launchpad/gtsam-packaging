@@ -746,8 +746,7 @@ TEST(NavState, ChartDerivatives) {
 }
 
 /* ************************************************************************* */
-TEST(NavState, vec) {
-  // Test the 'vec' method
+TEST(NavState, Vec) {
   using Vector25 = Eigen::Matrix<double, 25, 1>;
   const NavState navState(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0), Velocity3(0.4, 0.5, 0.6));
 

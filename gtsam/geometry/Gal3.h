@@ -45,6 +45,7 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
 
  public:
   using LieAlgebra = Matrix5;
+  using Vector25 = Eigen::Matrix<double, 25, 1>;
 
   /// @name Constructors
   /// @{
@@ -111,7 +112,8 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Return 5x5 homogeneous matrix representation
   Matrix5 matrix() const;
 
-  
+  /// Vectorize 5x5 matrix into a 25-dim vector.
+  Vector25 vec(OptionalJacobian<25, 10> H = {}) const;
 
   /// @}
   /// @name Testable
