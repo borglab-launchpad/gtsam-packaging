@@ -361,6 +361,28 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
+Pose3::Vector16 Pose3::vec(OptionalJacobian<16, 6> H) const {
+  // Vectorize
+  const Matrix4 M = matrix();
+  const Vector16 v = Eigen::Map<const Vector16>(M.data());
+
+  // If requested, calculate H
+  if (H) {
+    H->setZero();
+    auto R = M.block<3, 3>(0, 0);
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(4, 0) = R.col(2);
+    H->block<3, 1>(4, 2) = -R.col(0);
+    H->block<3, 1>(8, 0) = -R.col(1);
+    H->block<3, 1>(8, 1) = R.col(0);
+    H->block<3,3>(12,3) = R;
+  }
+
+  return v;
+}
+
+/* ************************************************************************* */
 Pose3 Pose3::transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself,
                                OptionalJacobian<6, 6> HaTb) const {
   const Pose3& wTa = *this;
@@ -524,10 +546,6 @@ std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
 Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
   return interpolate(*this, other, t, Hx, Hy);
 }
-
-/* ************************************************************************* */
-// Compute vectorized Lie algebra generators for SE(3)
-
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {

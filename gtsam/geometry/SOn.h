@@ -294,6 +294,12 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
   /// @name Other methods
   /// @{
 
+  /// Return vectorized rotation matrix in column order.
+  VectorN2 vec(OptionalJacobian<internal::NSquaredSO(N), dimension> H =
+    {}) const {
+    return MatrixLieGroup<SO<N>, internal::DimensionSO(N), N>::vec(H);
+  }
+
   /// Calculate N^2 x dim matrix of vectorized Lie algebra generators for SO(N)
   template <int N_ = N, typename = IsFixed<N_>>
   static Matrix VectorizedGenerators() {

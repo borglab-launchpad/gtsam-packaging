@@ -39,8 +39,6 @@ template <>
 GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta);
 
-static constexpr size_t MatrixM = 3;
-
 template <>
 GTSAM_EXPORT
 SO3 SO3::ClosestTo(const Matrix3& M);
@@ -95,6 +93,10 @@ SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H);
 template <>
 GTSAM_EXPORT
 Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H);
+
+template <>
+GTSAM_EXPORT
+Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>

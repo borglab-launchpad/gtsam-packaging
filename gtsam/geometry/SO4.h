@@ -51,6 +51,9 @@ template <>
 GTSAM_EXPORT
 SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
 
+template <>
+GTSAM_EXPORT
+SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
 GTSAM_EXPORT

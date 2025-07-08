@@ -48,6 +48,24 @@ Matrix3 Pose2::matrix() const {
 }
 
 /* ************************************************************************* */
+Vector9 Pose2::vec(OptionalJacobian<9, 3> H) const {
+  // Vectorize
+  const Matrix3 M = matrix();
+  const Vector9 v = Eigen::Map<const Vector9>(M.data());
+
+  // If requested, calculate H
+  if (H) {
+    H->setZero();
+    auto R = M.block<2, 2>(0, 0);
+    H->block<2, 1>(0, 2) = R.col(1);
+    H->block<2, 1>(3, 2) = -R.col(0);
+    H->block<2, 2>(6, 0) = R;
+  }
+
+  return v;
+}
+
+/* ************************************************************************* */
 void Pose2::print(const string& s) const {
   std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }

@@ -26,6 +26,8 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Group.h>
 
+#include <type_traits>
+
 namespace gtsam {
 
 /// A CRTP helper class that implements Lie group methods
@@ -56,7 +58,7 @@ struct LieGroup {
   Class compose(const Class& g, ChartJacobian H1,
       ChartJacobian H2 = {}) const {
     if (H1) *H1 = g.inverse().AdjointMap();
-    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    if (H2) *H2 = identityMatrix();
     return derived() * g;
   }
 
@@ -64,7 +66,7 @@ struct LieGroup {
       ChartJacobian H2 = {}) const {
     Class result = derived().inverse() * g;
     if (H1) *H1 = - result.inverse().AdjointMap();
-    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    if (H2) *H2 = identityMatrix();
     return result;
   }
 
@@ -157,6 +159,17 @@ struct LieGroup {
     if (H1) *H1 = - D_v_h * h.inverse().AdjointMap();
     if (H2) *H2 = D_v_h;
     return v;
+  }
+
+ private:
+
+  // Helper to get identity matrix of correct size for static or dynamic N
+  Jacobian identityMatrix() const {
+    if constexpr (N == Eigen::Dynamic) {
+      return Jacobian::Identity(derived().dim(), derived().dim());
+    } else {
+      return Jacobian::Identity();
+    }
   }
 };
 
@@ -271,12 +284,12 @@ class IsLieGroup: public IsGroup<T>, public IsManifold<T> {
 public:
   // Concept marker: allows checking IsLieGroup<T>::value in templates
   static constexpr bool value =
-    std::is_base_of<lie_group_tag, typename traits<T>::structure_category>::value;
+    std::is_base_of_v<lie_group_tag, typename traits<T>::structure_category>;
 
-  typedef typename traits<T>::structure_category structure_category_tag;
-  typedef typename traits<T>::ManifoldType ManifoldType;
-  typedef typename traits<T>::TangentVector TangentVector;
-  typedef typename traits<T>::ChartJacobian ChartJacobian;
+  using structure_category_tag = typename traits<T>::structure_category;
+  using ManifoldType = typename traits<T>::ManifoldType;
+  using TangentVector = typename traits<T>::TangentVector;
+  using ChartJacobian = typename traits<T>::ChartJacobian;
 
   GTSAM_CONCEPT_USAGE(IsLieGroup) {
     static_assert(

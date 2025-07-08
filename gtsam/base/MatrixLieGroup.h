@@ -173,8 +173,8 @@ namespace gtsam {
   template<typename T>
   class IsMatrixLieGroup : public IsLieGroup<T> {
   public:
-    typedef typename traits<T>::LieAlgebra LieAlgebra;
-    typedef typename traits<T>::TangentVector TangentVector;
+    using LieAlgebra = typename traits<T>::LieAlgebra;
+    using TangentVector = typename traits<T>::TangentVector;
 
     GTSAM_CONCEPT_USAGE(IsMatrixLieGroup) {
       // hat and vee
@@ -207,7 +207,7 @@ namespace gtsam {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use T::Hat
   template <class T>
-  Matrix wedge(const Vector& x) {
+  [[deprecated("use T::Hat instead")]] Matrix wedge(const Vector& x) {
     return T::Hat(x);
   }
 #endif
