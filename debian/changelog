@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3062.gbpcea88e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3063.gbp11e3fd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @11e3fd42a3a6a234667c87127bb3a3bac3e3984e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cea88efb24771ffeb6e630c5be04e8cd2081353f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 06 Jul 2025 20:36:41 +0000
+  [ Frank Dellaert ]
+  * Time FrobeniusFactor
+  * Fix timing for non-boost case
+  * No NavState yet
+  * Bespoke vec methods
+  * Tiny changes in tests
+  * use fixed size!
+  * custom vecs
+  * Time FrobeniusFactor
+  * Fix timing for non-boost case
+  * Attempt at fixing segfault
+  * Address review comments
+  * C++17 improvements
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Jul 2025 08:27:35 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3061.gbp39f02e) noble; urgency=medium
 
