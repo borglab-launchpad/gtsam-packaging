@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3066.gbpf9eccf) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3067.gbpad5863) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ad5863a48cc2297ec78c3fba1eca3897868fcf3c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f9eccffc9b1b9e19f17694536994de9cc35011d1 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 08 Jul 2025 08:35:07 +0000
+  [ Oliver Lee ]
+  * replaced legacy typedef syntax with new using syntax
+  * Received Cal3_S2Stereo userguide from the userguide branch
+  * Fixed Cal3_S2Stereo python wrapper problems
+  * updates to Cal3_S2Stereo user guide
+  * More polish to Cal3_S2Stereo user guide
+  * Specified that baseline is measured in meters
+  * Initial draft of ported StereoVOExample
+  * Final polishes towards Cal3_S2Stereo user guide
+  * Added initial draft of StereoCamera userguide
+  * minor edits to StereoCamera user guide
+  * Changed typedef to using
+  * changed typedef to using
+  * Completed StereoVOExample python notebook
+  * Minor changes to StereoCamera userguide
+  * Fixed minor typo in StereoVOExample
+  * minor changes to StereoVOExample, update to StereoVOExample_large
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Oliver Lee ]
+  * small syntax changes in StereoVOExample, completed StereoVOExample_large
+  * Small change in StereoVOExample_large
+  * Cleaned up imports in StereoVOExample_large
+  * Fixed colab link, set some cells to hide, added Colab env check
+  * set some cells to hide, added Colab env check, changed all data file load to use findExampleDataFile
+  * Large changes to StereoVOExample_large, with incomplete graphing
+  * saved plotly draft in StereoVOExample_large
+  * completed StereoVOExample_large notebook
+  * Additional revisions to StereoVOExample notebook
+  * Updated cell tags with minor stylistic changes
+  * Finished Cal3_S2Stereo userguide
+  * Completed StereoCamera user guide
+  * Slight updates to Cal3_S2 userguide
+  * Capitalized static member function
+  * Removed print statements from Colab check
+  * small format fix in Cal3_S2Stereo user guide
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Jul 2025 07:20:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3065.gbp4742b2) noble; urgency=medium
 
