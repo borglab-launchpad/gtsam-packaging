@@ -1,10 +1,30 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3070.gbp67f509) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3071.gbp2b5c60) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2b5c6048d2b22c5ac4e0baa364932137ecaa9da1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @67f5094f044ec5268a634572387251a2cf1b80af **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Jul 2025 07:26:37 +0000
+  [ Frank Dellaert ]
+  * Fixed refs
+  * Comparison, initial check-in
+  * Allow numerical derivatives for bias
+  * Comparing side-by-side
+  * Deprecate initial covariance on biases
+  * Fix regression test
+  * Comparing both factors
+  * Fix preintegration test
+  * Fixed docs
+  * Fix wrapper
+  * Re-add bias_prior_sigma
+  * Fix formatting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jul 2025 11:33:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3069.gbp9a335f) noble; urgency=medium
 
