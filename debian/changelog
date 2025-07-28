@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~3079.gbpf2cc1b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3080.gbpce1e23) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ce1e23c334b6339b2a5f383aec4e4329a7fffc25 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f2cc1bde791c5c9e56dff47e62256084b7b064e6 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jul 2025 11:38:08 +0000
+  [ Stephen Lee ]
+  * Increase `maxIterations` in Cal3DS2_Base.cpp calibrate function
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jul 2025 14:41:43 +0000
 
 gtsam (4.1.0-1ubuntu2~3078.gbp7af683) noble; urgency=medium
 
