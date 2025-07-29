@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3078.gbp8aa85f) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3079.gbpd0a825) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d0a8252fcf8613dbcc94dbe8b96741fcbcbf7113 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8aa85ff494b2f319cc4877f159ab64fc5b030656 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Jul 2025 14:47:10 +0000
+  [ Varun Agrawal ]
+  * Fix examples using biasAccOmegaInt
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * fix license header
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Jul 2025 16:32:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3077.gbpd4613f) noble; urgency=medium
 
