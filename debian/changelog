@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3082.gbp1e98f7) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3083.gbp66c7de) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @66c7ded8eba8ceacff509ce9ac9bf5bcbc3df32a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1e98f72a6f9ea52b56e6c71c962e1a9a76dc8421 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Jul 2025 16:39:12 +0000
+  [ p-zach ]
+  * Add DiscreteScenario
+  * Scenario: add tests and move to cpp
+
+  [ Porter Zach ]
+  * Add reference to wrap docs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Jul 2025 06:53:17 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3081.gbp6ed8c0) noble; urgency=medium
 
