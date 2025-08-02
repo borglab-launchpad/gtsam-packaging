@@ -1,10 +1,60 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3086.gbp7cec01) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3087.gbp253cc2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @253cc2af9425921717a7d4125f41cfed0bfac55c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7cec01014987266f6a40e871dbbbcf2ff60c6b0d **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Jul 2025 06:57:54 +0000
+  [ Hyungtae Lim ]
+  * Upload SL4 to geometry folder
+  * Fix SL4s to support pybinding in geometry.i
+  * Complete to support SL4 (functions with Jacobians are not fully supported yet)
+  * (minor) rename variables for clarity
+  * Fix errors: now support compose function in python
+  * Support other functionalities: inverse, between
+  * Update brief README.md for helping manual installation
+
+  [ zhangzdd ]
+  * Created jupyter notebook for the LQR example.
+  * Added much richer mathematical explanation text to the code. Added link to colab runtime. Added visualization of the factor graph and Bayes net (obtained from different elimination ordering).
+
+  [ Shape Lim ]
+  * (minor) mention VGGT-SLAM in README.md
+
+  [ Hyungtae Lim ]
+  * Update README.md
+
+  [ zhangzdd ]
+  * Finalized LQR example. Fixed colab env verification. Fixed elimination ordering in visualization and markdown text
+  * First commit of iLQR example. The iLQR algorithm is implemented with CustomFactor in GTSAM, and compared against results from classical iLQR recursions (they almost perfectly match). Added mathematical expositions of both the iLQR algorithm and how it is handled in GTSAM
+
+  [ Frank Dellaert ]
+  * Undo some changes
+  * GTSAM-style formatting
+  * Convert example to notebook
+  * Simplify using MatrixLieGroup
+  * Cleaned up test
+  * ChartAtOrigin
+  * Throw for Jacobians
+  * Fix headers
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Zhouyu Zhang ]
+  * Updated link to personal website. Added cell hiding for implementation of vanilla iLQR
+  * Corrected parent-child visulization of BayesNets. Added link to personal website. Reviewing of code.
+  * Quick fixes
+
+  [ Frank Dellaert ]
+  * Resolve boost serialization
+  * Fix serialization
+  * Fix serialization, v2
+  * Serialization v3
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Aug 2025 07:19:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3085.gbp7350a6) noble; urgency=medium
 
