@@ -1,10 +1,40 @@
-gtsam (4.1.0-1ubuntu2~3095.gbp1460ef) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3096.gbp095bf3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @095bf3154089b6800a8a59abd763aeec5438704c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1460effda7d1aee6403b1a570d827eefbf987eb5 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Aug 2025 07:24:25 +0000
+  [ Frank Dellaert ]
+  * Move concepts to doc
+  * Initial base docs
+  * Geometry Concepts
+  * Header links
+  * remove Dim/dim from all fixed-size types
+  * dim() needed for dynamic case only
+
+  [ Varun Agrawal ]
+  * Fix examples using biasAccOmegaInt
+
+  [ Frank Dellaert ]
+  * VectorSpace
+  * Fix up docs
+  * Address comments/CI
+  * Fix StereoPoint2 wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Undo test changes
+  * Manifold types need Dim/dim
+  * Fix docs
+  * Improve wrapper
+  * Re-add dim/Dim
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Aug 2025 15:00:27 +0000
 
 gtsam (4.1.0-1ubuntu2~3094.gbped0c52) noble; urgency=medium
 
