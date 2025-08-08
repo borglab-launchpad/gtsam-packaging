@@ -34,7 +34,7 @@
 
 #include "imuFactorTesting.h"
 
-namespace testing {
+namespace combined {
 // Create default parameters with Z-down and above noise parameters
 static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
     const Matrix3& biasAccCovariance = Matrix3::Zero(),
@@ -47,7 +47,7 @@ static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
   p->biasOmegaCovariance = biasOmegaCovariance;
   return p;
 }
-}  // namespace testing
+}  // namespace combined
 
 /* ************************************************************************* */
 TEST_PIM(CombinedImuFactor, PreintegratedMeasurements ) {
@@ -60,7 +60,7 @@ TEST_PIM(CombinedImuFactor, PreintegratedMeasurements ) {
   double deltaT = 0.5;
   double tol = 1e-6;
 
-  auto p = testing::Params();
+  auto p = combined::Params();
 
   // Actual preintegrated values
   PIM expected1(p, bias);
@@ -87,7 +87,7 @@ TEST_PIM(CombinedImuFactor, ErrorWithBiases ) {
       Point3(5.5, 1.0, -50.0));
   Vector3 v2(0.5, 0.0, 0.0);
 
-  auto p = testing::Params();
+  auto p = combined::Params();
   p->omegaCoriolis = Vector3(0,0.1,0.1);
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
@@ -135,7 +135,7 @@ TEST_PIM(CombinedImuFactor, ErrorWithBiases ) {
 /* ************************************************************************* */
 // This test only works with tangent preintegration.
 TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
-  auto p = testing::Params();
+  auto p = combined::Params();
   testing::SomeMeasurements measurements;
 
   auto preintegrated = [&](const Vector3& a, const Vector3& w) {
@@ -158,7 +158,7 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
 TEST_PIM(CombinedImuFactor, PredictPositionAndVelocity) {
   const Bias bias(Vector3(0, 0.1, 0), Vector3(0, 0.1, 0));  // Biases (acc, rot)
 
-  auto p = testing::Params();
+  auto p = combined::Params();
 
   // Measurements
   const Vector3 measuredOmega(0, 0.1, 0);  // M_PI/10.0+0.3;
@@ -186,7 +186,7 @@ TEST_PIM(CombinedImuFactor, PredictPositionAndVelocity) {
 /* ************************************************************************* */
 TEST_PIM(CombinedImuFactor, PredictRotation) {
   const Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
-  auto p = testing::Params();
+  auto p = combined::Params();
   CombinedPIM pim(p, bias);
   const Vector3 measuredAcc = - kGravityAlongNavZDown;
   const Vector3 measuredOmega(0, 0, M_PI / 10.0);
@@ -303,7 +303,7 @@ TEST(CombinedImuFactor, Accelerating) {
 
   const double T = 3.0;  // seconds
 
-  CombinedScenarioRunner runner(scenario, testing::Params(), T / 10);
+  CombinedScenarioRunner runner(scenario, combined::Params(), T / 10);
 
   PreintegratedCombinedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
