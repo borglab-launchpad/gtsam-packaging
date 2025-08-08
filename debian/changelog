@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~3099.gbp0d8d03) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3100.gbpe68f12) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e68f1253c9e7ac8211dec2e91437a3af09f00001 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0d8d034f61056fb35ec44ee7e17b7955d0cc7391 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 02 Aug 2025 15:05:00 +0000
+  [ Frank Dellaert ]
+  * Pull Params in test header
+  * Get rid of redundant bias
+  * AhrsScenarioRunner
+  * Modernize AHRSFactor
+  * Mimic ImuFactor
+  * Kill obsolete method
+  * Add Jacobian
+  * Refactor w expmap
+  * Small typos
+  * Fix params issue
+  * Use logmap
+  * Fix covariance in classic PIM
+  * Address comments
+  * Add math comments (Gemini 2.5)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Aug 2025 14:48:07 +0000
 
 gtsam (4.1.0-1ubuntu2~3098.gbp922962) noble; urgency=medium
 
