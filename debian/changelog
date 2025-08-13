@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3098.gbp3b3286) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3099.gbp508fe6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @508fe638e5c87842ec962494eb105520ebcd12ba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3b32861ac2fecddb8add7064aff5b33351cfedd1 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 08 Aug 2025 14:53:57 +0000
+  [ Frank Dellaert ]
+  * insertPoint3 is deprecated
+  * uniform install of gtsam-develop
+  * Gal3 (and SL4) docs
+  * Disable windows vcpkg workflow for now
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 13 Aug 2025 21:49:21 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3097.gbpebf6ec) noble; urgency=medium
 
