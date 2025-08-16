@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3102.gbp35afc1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3103.gbp63093f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @63093f483ffc3cae15b8e9a5704ee2226dc65d27 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @35afc18b0d4ba2732377492d3c62a7df9657e3b0 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 13 Aug 2025 21:53:47 +0000
+  [ Frank Dellaert ]
+  * Fix two warnings on ubuntu_latest
+  * Fix issues with Unit3
+  * re-enable windows
+  * Fix yet another warning
+  * Fix eigen assignment issue
+  * Exclude windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 16 Aug 2025 12:43:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3101.gbp5c036e) noble; urgency=medium
 
