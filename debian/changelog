@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3106.gbp315351) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3107.gbpd0440e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d0440e5fbd0eb702c8ef92d32bad8a8387623236 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @31535146b046dceba561980b9053f8afdbbb5a22 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 16 Aug 2025 12:48:20 +0000
+  [ Tal Regev ]
+  * Exclude windows tests: - Change to stable openmp for windows - Change to pytest module - Rename tests according to test_* pattern - Add PYTEST_EXTRA_ARGS - Ignore test_sumProduct and test_sumProduct_chain - Ignore check_inference_program check_symbolic_program check_discrete_program tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 17 Aug 2025 05:49:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3105.gbpb961c0) noble; urgency=medium
 
