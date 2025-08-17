@@ -16,15 +16,18 @@ jobs:
       fail-fast: false
       matrix:
         include:      
-          # - os: windows-latest
-          #   triplet: x64-windows-release
-          #   build_type: Release
-          #   test_target: RUN_TESTS
-          #   binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
-          #   python: python
-          #   # check_constraint_program fail on windows. should fix it for windows.
-          #   # Remove this excluded test when you fix it for windows.
-          #   ctest_extra_flags: -E check_constraint_program
+          - os: windows-latest
+            triplet: x64-windows-release
+            build_type: Release
+            test_target: RUN_TESTS
+            binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
+            python: python
+            # check_constraint_program fail on windows. should fix it for windows.
+            # Remove this excluded test when you fix it for windows.
+            ctest_extra_flags: -E "check_constraint_program|check_inference_program|check_symbolic_program|check_discrete_program"
+            # Exclude test_sumProduct and test_sumProduct_chain from pytest on windows.
+            # These tests should be fixed for windows.
+            pytest_extra_flags: -k "not test_sumProduct"
           - os: ubuntu-latest
             triplet: x64-linux-release
             build_type: Release
@@ -125,7 +128,7 @@ jobs:
         if: success()
         shell: bash
         run: |
-          export CL=-openmp:experimental
+          export CL=-openmp
 
           # This is due an error in linux:
           # error: argument 2 null where non-null expected [-Werror=nonnull]
@@ -148,7 +151,8 @@ jobs:
               -DGTSAM_USE_SYSTEM_METIS=ON \
               -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
-              -DCTEST_EXTRA_ARGS="${{ matrix.ctest_extra_flags }}" \
+              -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
+              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}' \
               ${{ matrix.cxxflags }}
 
       - name: cmake build

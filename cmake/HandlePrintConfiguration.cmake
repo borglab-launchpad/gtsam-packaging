@@ -108,4 +108,8 @@ if(GTSAM_BUILD_PYTHON)
     print_config("Python version" ${GTSAM_PYTHON_VERSION})
 endif()
 
+message(STATUS "Extra test flags")
+print_config("CTEST_EXTRA_ARGS" "${CTEST_EXTRA_ARGS}")
+print_config("PYTEST_EXTRA_ARGS" "${PYTEST_EXTRA_ARGS}")
+
 message(STATUS "===============================================================")
