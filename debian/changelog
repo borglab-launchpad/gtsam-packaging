@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3110.gbp5bbef4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3111.gbpef1978) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ef19789f9074dde58a5923c65ed69a408469fe54 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5bbef4dfd0689854c01127db889e7da810121b77 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 17 Aug 2025 05:54:25 +0000
+  [ Tal Regev ]
+  * Remove cxx_flags
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Aug 2025 04:46:52 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3109.gbp5b05dc) noble; urgency=medium
 
