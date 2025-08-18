@@ -1,10 +1,33 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3114.gbp4675cc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3115.gbp7f86f3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7f86f3f2f9404aa73b2f32033184f85c6a9b16ba **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4675ccd5701df8164bfc81eed3ea8e2cc8d05df5 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Aug 2025 04:54:13 +0000
+  [ Frank Dellaert ]
+  * Do less work for special CI
+  * Try single executable
+  * fix script to honor env var
+  * Yet another multiple defined symbol
+  * namespace clash
+  * [[maybe_unused]] static
+  * fixed single exe for hybrid
+  * Fix single exe for discrete
+  * fix constrained
+  * fix navigation
+  * fix more print regressions
+  * Check if discrete was linking
+  * added std::
+  * Revert "Check if discrete was linking"
+  * Exclude mysterious failing tests
+  * Fix issue flagged by copilot
+  * Fix groupName
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Aug 2025 23:54:46 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3113.gbpeaa92a) noble; urgency=medium
 
