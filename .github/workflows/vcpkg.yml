@@ -22,9 +22,9 @@ jobs:
             test_target: RUN_TESTS
             binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
             python: python
-            # check_constraint_program fail on windows. should fix it for windows.
+            # check_constrained_program fail on windows. should fix it for windows.
             # Remove this excluded test when you fix it for windows.
-            ctest_extra_flags: -E "check_constraint_program|check_inference_program|check_symbolic_program|check_discrete_program"
+            ctest_extra_flags: -E "check_constrained_program|check_inference_program|check_symbolic_program|check_discrete_program"
             # Exclude test_sumProduct and test_sumProduct_chain from pytest on windows.
             # These tests should be fixed for windows.
             pytest_extra_flags: -k "not test_sumProduct"

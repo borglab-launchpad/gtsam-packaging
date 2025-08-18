@@ -234,7 +234,8 @@ void HybridGaussianConditional::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << -negLogConstant() << std::endl
+            << " logNormalizationConstant: " << std::fixed
+            << std::setprecision(4) << -negLogConstant() << std::endl
             << std::endl;
   factors().print(
       "", [&](Key k) { return formatter(k); },
