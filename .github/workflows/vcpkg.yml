@@ -33,7 +33,6 @@ jobs:
             build_type: Release
             test_target: test
             binary_cache: /home/runner/.cache/vcpkg/archives
-            cxxflags: -DCMAKE_CXX_FLAGS="-Wno-error=nonnull -Wno-error=maybe-uninitialized"
             python: python3
           - os: macos-latest
             triplet: arm64-osx-release
@@ -130,11 +129,6 @@ jobs:
         run: |
           export CL=-openmp
 
-          # This is due an error in linux:
-          # error: argument 2 null where non-null expected [-Werror=nonnull]
-          # return __builtin_memcmp(__first1, __first2, sizeof(_Tp) * __num);
-          # Remove `${{ matrix.cxxflags }}` when the compilation error solved
-
           cmake . -B build -G Ninja \
               -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
               -DVCPKG_INSTALLED_DIR=$VCPKG_INSTALLATION_ROOT/installed \
@@ -152,8 +146,7 @@ jobs:
               -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
-              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}' \
-              ${{ matrix.cxxflags }}
+              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}'
 
       - name: cmake build
         shell: bash
