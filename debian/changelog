@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~3127.gbpf1a76c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3128.gbpfcd82f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fcd82f4b39e0f6a95ca73060104a960927fec662 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f1a76c0dc645b8e29fceb1c299433e28c998e409 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 20 Aug 2025 20:26:44 +0000
+  [ Frank Dellaert ]
+  * Don't do deprecated in CI
+  * Use new Kernels
+  * Switch tangent vector order and use Kernels
+  * Deprecate old methods
+  * Add Gal3 and SL4 to wrapper
+  * Add Kernel to wrapper, kill deprecated methods
+  * Add docs on Jacobians/Kernels
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 20 Aug 2025 23:58:57 +0000
 
 gtsam (4.1.0-1ubuntu2~3126.gbp2627ae) noble; urgency=medium
 
