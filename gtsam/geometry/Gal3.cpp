@@ -62,7 +62,7 @@ Gal3 Gal3::Create(const Rot3& R, const Point3& r, const Velocity3& v, double t,
                     OptionalJacobian<10, 3> H3, OptionalJacobian<10, 1> H4) {
       if (H1) {
         H1->setZero();
-        H1->block<3, 3>(6, 0) = Matrix3::Identity();
+        H1->block<3, 3>(6, 0) = I_3x3;
       }
       if (H2) {
         H2->setZero();
@@ -89,8 +89,8 @@ Gal3 Gal3::FromPoseVelocityTime(const Pose3& pose, const Velocity3& v, double t,
     const Point3& r = pose.translation();
     if (H1) {
         H1->setZero();
-        H1->block<3, 3>(6, 0) = Matrix3::Identity();
-        H1->block<3, 3>(0, 3) = Matrix3::Identity();
+        H1->block<3, 3>(6, 0) = I_3x3;
+        H1->block<3, 3>(0, 3) = I_3x3;
     }
     if (H2) {
         H2->setZero();
@@ -126,7 +126,7 @@ Gal3::Gal3(const Matrix5& M) {
 const Rot3& Gal3::rotation(OptionalJacobian<3, 10> H) const {
     if (H) {
         H->setZero();
-        H->block<3, 3>(0, 6) = Matrix3::Identity();
+        H->block<3, 3>(0, 6) = I_3x3;
     }
     return R_;
 }
@@ -264,11 +264,11 @@ gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10
     Matrix3 E;
     if (dexp_functor.nearZero) {
          // Small angle approximation for E matrix (from Equation 19, Page 8)
-         E = 0.5 * Matrix3::Identity() + (1.0 / 6.0) * dexp_functor.W + (1.0 / 24.0) * dexp_functor.WW;
+         E = 0.5 * I_3x3 + (1.0 / 6.0) * dexp_functor.W + (1.0 / 24.0) * dexp_functor.WW;
     } else {
          // Closed form for E matrix (from Equation 19, Page 8)
          const double B_E = (1.0 - 2.0 * dexp_functor.B) / (2.0 * dexp_functor.theta2);
-         E = 0.5 * Matrix3::Identity() + dexp_functor.C * dexp_functor.W + B_E * dexp_functor.WW;
+         E = 0.5 * I_3x3 + dexp_functor.C() * dexp_functor.W + B_E * dexp_functor.WW;
     }
 
     const Point3 r_final = Point3(Jl_theta * rho_tan + E * (t_tan_val * nu_tan));
@@ -294,11 +294,11 @@ Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     Matrix3 E;
     if (dexp_functor_log.nearZero) {
          // Small angle approximation for E matrix
-         E = 0.5 * Matrix3::Identity() + (1.0 / 6.0) * dexp_functor_log.W + (1.0 / 24.0) * dexp_functor_log.WW;
+         E = 0.5 * I_3x3 + (1.0 / 6.0) * dexp_functor_log.W + (1.0 / 24.0) * dexp_functor_log.WW;
     } else {
          // Closed form for E matrix (from Equation 19, Page 8)
          const double B_E = (1.0 - 2.0 * dexp_functor_log.B) / (2.0 * dexp_functor_log.theta2);
-         E = 0.5 * Matrix3::Identity() + dexp_functor_log.C * dexp_functor_log.W + B_E * dexp_functor_log.WW;
+         E = 0.5 * I_3x3 + dexp_functor_log.C() * dexp_functor_log.W + B_E * dexp_functor_log.WW;
     }
 
     const Vector3 r_vec = Vector3(g.r_);
@@ -381,7 +381,7 @@ Gal3::Jacobian Gal3::adjointMap(const TangentVector& xi) {
     Gal3::Jacobian ad = Gal3::Jacobian::Zero();
 
     ad.block<3,3>(0,0) = Theta_hat;
-    ad.block<3,3>(0,3) = -t_val * Matrix3::Identity();
+    ad.block<3,3>(0,3) = -t_val * I_3x3;
     ad.block<3,3>(0,6) = Rho_hat;
     ad.block<3,1>(0,9) = nu_vec;
 
