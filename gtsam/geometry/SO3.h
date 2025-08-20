@@ -194,35 +194,33 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Compute the left Jacobian for Exponential map in SO(3)
   Matrix3 leftJacobian() const;
 
-  /// Inverse of right Jacobian
-  /// For |omega|>pi uses rightJacobian().inverse(), as unstable beyond pi!
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use InvJacobian().right()
   Matrix3 rightJacobianInverse() const;
 
-  // Inverse of left Jacobian
-  /// For |omega|>pi uses leftJacobian().inverse(), as unstable beyond pi!
+  /// @deprecated: use InvJacobian().left()
   Matrix3 leftJacobianInverse() const;
 
-  /// Multiplies with rightJacobian(), with optional derivatives
+  /// @deprecated: use Jacobian().applyRight()
   Vector3 applyRightJacobian(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with rightJacobian().inverse(), with optional derivatives
+  /// @deprecated: use InvJacobian().applyRight()
   Vector3 applyRightJacobianInverse(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with leftJacobian(), with optional derivatives
+  /// @deprecated: use Jacobian().applyLeft()
   Vector3 applyLeftJacobian(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with leftJacobianInverse(), with optional derivatives
+  /// @deprecated: use InvJacobian().applyLeft()
   Vector3 applyLeftJacobianInverse(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-  /// @deprecated: use rightJacobian
+  /// @deprecated: use rightJacobian()
   inline Matrix3 dexp() const { return rightJacobian(); }
 
-  /// @deprecated: use rightJacobianInverse
+  /// @deprecated: use InvJacobian().right()
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 #endif
 
