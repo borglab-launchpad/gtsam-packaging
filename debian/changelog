@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~3123.gbp0e425f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3124.gbpa24b3c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a24b3cdfad0b1dc01a2c544978b53f7f83018039 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0e425fcb869dd352713e303ba5ecbc90aa54f0f6 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 18 Aug 2025 23:59:11 +0000
+  [ Frank Dellaert ]
+  * Just Kernel
+  * Jacobians w Kernels
+  * All Kernels
+  * Final edits/tweaks
+  * Switch back to optionals
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 20 Aug 2025 20:20:11 +0000
 
 gtsam (4.1.0-1ubuntu2~3122.gbp677880) noble; urgency=medium
 
