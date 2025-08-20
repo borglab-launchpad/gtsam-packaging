@@ -189,14 +189,13 @@ Kernel DexpFunctor::Gamma() const& { return Kernel{this, 0.5, C(), E(), dC(), dE
 Matrix3 DexpFunctor::rightJacobian() const { return I_3x3 - B * W + C() * WW; }
 Matrix3 DexpFunctor::leftJacobian() const { return I_3x3 + B * W + C() * WW; }
 
-// --- Old Functions ---
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Matrix3 DexpFunctor::rightJacobianInverse() const {
   return InvJacobian().right();
 }
 Matrix3 DexpFunctor::leftJacobianInverse() const {
   return InvJacobian().left();
 }
-
 Vector3 DexpFunctor::applyRightJacobian(const Vector3& v,
                                         OptionalJacobian<3, 3> H1,
                                         OptionalJacobian<3, 3> H2) const {
@@ -217,6 +216,7 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
                                               OptionalJacobian<3, 3> H2) const {
   return InvJacobian().applyLeft(v, H1, H2);
 }
+#endif
 
 }  // namespace so3
 
@@ -289,7 +289,7 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
-  return so3::DexpFunctor(omega).rightJacobianInverse();
+  return so3::DexpFunctor(omega).InvJacobian().right();
 }
 
 template <>
@@ -361,7 +361,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       // see https://github.com/borglab/gtsam/issues/746 for details
-      magnitude = 0.5 - tr_3 * so3::one_12th + tr_3 * tr_3 * so3::one_60th;
+      magnitude = 0.5 - tr_3 * (1.0 / 12.0) + tr_3 * tr_3 * (1.0 / 60.0);
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }

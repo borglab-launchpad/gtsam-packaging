@@ -66,7 +66,7 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   // Calculate exact mean propagation
   Matrix3 w_tangent_H_theta, invH;
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
-      local.applyRightJacobianInverse(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
+      local.InvJacobian().applyRight(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
   const Matrix3 nRb = local.expmap();  // nRb: rotation of body in nav frame
   const Vector3 a_nav = nRb * a_body;
   const double dt22 = 0.5 * dt * dt;

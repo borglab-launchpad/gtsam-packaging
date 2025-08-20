@@ -199,9 +199,27 @@ class Rot2 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SO3.h>
 
 namespace so3 {
+  class Kernel {
+    gtsam::Matrix3 left() const;   // a I + b W + c WW
+    gtsam::Matrix3 right() const;  // a I - b W + c WW
+    gtsam::Vector3 applyLeft(const gtsam::Vector3& v) const;
+    gtsam::Vector3 applyRight(const gtsam::Vector3& v) const;
+    gtsam::Matrix3 frechet(const gtsam::Matrix3& X) const;
+    gtsam::Matrix3 applyFrechet(const gtsam::Vector3& v) const;
+  };
+
+  class InvJKernel {
+    gtsam::so3::Kernel J;  // holds the forward kernel
+    gtsam::Matrix3 left() const;
+    gtsam::Matrix3 right() const;
+    gtsam::Vector3 applyLeft(const gtsam::Vector3& v) const;
+    gtsam::Vector3 applyRight(const gtsam::Vector3& v) const;
+  };
+
   class ExpmapFunctor {
     const double theta2;
     const double theta;
@@ -218,19 +236,24 @@ namespace so3 {
 
   virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
     const gtsam::Vector3 omega;
+
+    DexpFunctor(const gtsam::Vector3& omega);
+    DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
+
+    // Kernels
+    gtsam::so3::Kernel Rodrigues() const;
+    gtsam::so3::Kernel Jacobian() const;
+    gtsam::so3::InvJKernel InvJacobian() const;
+    gtsam::so3::Kernel Gamma() const;
+
+    // access to (lazily evaluated) coefficients
     const double C();  // (1 - A) / theta^2
     const double D();  // (1 - A/2B) / theta2
     const double E();  // Coefficient for Gamma kernel
-    DexpFunctor(const gtsam::Vector3& omega);
-    DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
+
+    // Use kernel if you need to apply
     gtsam::Matrix3 rightJacobian() const;
     gtsam::Matrix3 leftJacobian() const;
-    gtsam::Matrix3 rightJacobianInverse() const;
-    gtsam::Matrix3 leftJacobianInverse() const;
-    gtsam::Vector3 applyRightJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyRightJacobianInverse(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
   };
 }
 
