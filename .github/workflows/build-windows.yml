@@ -7,8 +7,8 @@ on:
       - '**.ipynb' 
       - 'myst.yml'
 
-# Every time you make a push to your PR, it cancel immediately the previous checks, 
-# and start a new one. The other runner will be available more quickly to your PR. 
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -93,6 +93,7 @@ jobs:
           echo "$env:PATH" >> $env:GITHUB_PATH
 
       - name: Install Boost
+        if: matrix.build_type == 'Release'
         shell: powershell
         run: |
           # Snippet from: https://github.com/actions/virtual-environments/issues/2667
@@ -116,13 +117,24 @@ jobs:
         run: |
           export CMAKE_GENERATOR=Ninja 
           cmake -E remove_directory build
-          cmake -B build \
-                -S . \
-                -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-                -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-                -DBOOST_ROOT="${BOOST_ROOT}" \
-                -DBOOST_INCLUDEDIR="${BOOST_ROOT}\boost\include" \
-                -DBOOST_LIBRARYDIR="${BOOST_ROOT}\lib"
+          if [ "${{ matrix.build_type }}" = "Release" ]; then
+            cmake -B build \
+                  -S . \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DBOOST_ROOT="${BOOST_ROOT}" \
+                  -DGTSAM_USE_BOOST_FEATURES=ON \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
+                  -DBOOST_INCLUDEDIR="${BOOST_ROOT}\\boost\\include" \
+                  -DBOOST_LIBRARYDIR="${BOOST_ROOT}\\lib"
+          else
+            cmake -B build \
+                  -S . \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_USE_BOOST_FEATURES=OFF \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          fi
 
       - name: Build
         shell: bash

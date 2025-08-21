@@ -7,8 +7,8 @@ on:
       - '**.ipynb' 
       - 'myst.yml'
 
-# Every time we make a push to the PR, immediately cancel the previous checks,
-# and start a new one. The other runner will be available more quickly to the PR.
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -38,7 +38,6 @@ jobs:
             ubuntu-clang-tbb,
             ubuntu-clang-cayleymap,
             ubuntu-clang-system-libs,
-            ubuntu-no-boost,
             ubuntu-no-unstable,
             ubuntu-build-examples,
           ]
@@ -76,12 +75,6 @@ jobs:
             version: "14"
             flag: system
 
-          - name: ubuntu-no-boost
-            os: ubuntu-22.04
-            compiler: clang
-            version: "14"
-            flag: no_boost
-
           - name: ubuntu-no-unstable
             os: ubuntu-22.04
             compiler: clang
@@ -117,34 +110,9 @@ jobs:
           fi
 
           sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev ninja-build
-
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
-          fi
-
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake ninja
-          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-
-      - name: Install Boost
-        run: |
-          if [ ${{matrix.flag}} != 'no_boost' ]; then
-            if [ ${{runner.os}} == 'Linux' ]; then
-              sudo apt-get -y install libboost-all-dev
-            elif [ ${{runner.os}} == 'macOS' ]; then
-              brew install boost
-            fi
-          fi
+          sudo apt-get install -y clang-${{ matrix.version }} g++-multilib mold
+          echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
+          echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
@@ -184,13 +152,6 @@ jobs:
           sudo apt-get install libmetis-dev
           echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
 
-      - name: Turn off boost
-        if: matrix.flag == 'no_boost'
-        run: |
-          echo "GTSAM_ENABLE_BOOST_SERIALIZATION=OFF" >> $GITHUB_ENV
-          echo "GTSAM_USE_BOOST_FEATURES=OFF" >> $GITHUB_ENV
-          echo "GTSAM will not use BOOST"
-
       - name: Turn off unstable
         if: matrix.flag == 'no_unstable'
         run: |
@@ -221,5 +182,9 @@ jobs:
           swapon --show
 
       - name: Build & Test
+        env:
+          LDFLAGS: "-fuse-ld=mold"
         run: |
+          export CMAKE_EXE_LINKER_FLAGS="$LDFLAGS"
+          export CMAKE_SHARED_LINKER_FLAGS="$LDFLAGS"
           bash .github/scripts/unix.sh -t
