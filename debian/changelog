@@ -1,10 +1,24 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3126.gbp6fa069) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3127.gbp84722d) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @84722dc7abd24262aff4082fd8c78ce2fbc22ebf **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6fa069c457b4c0c65858c2285dd3dbe8404a8061 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Aug 2025 00:03:29 +0000
+  [ Frank Dellaert ]
+  * new config so boost only installs/runs twice
+  * Also skip boost on Windows debug
+  * Add copilot instructions since we're here
+  * Use mold
+  * Add @talregev suggestion
+  * Fix gcc
+  * Cleanup
+  * Fix windows build
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Aug 2025 23:45:12 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3125.gbpf260fb) noble; urgency=medium
 
