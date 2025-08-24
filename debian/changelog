@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~3135.gbpa8c8ec) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3136.gbpcced82) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cced8240ed257b7c5bb05d34b3748a740068d15a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a8c8ec038dceb4c9d27b78995e68841e1b72b820 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 21 Aug 2025 23:49:38 +0000
+  [ Frank Dellaert ]
+  * Fix Boost
+  * Fix badges
+  * Fix boost on windows Documentation Simplify Force MODULE Fix back-slashes Upgrade cmake req Well-documented gemini solution Going in circles... Give gemini a chance yet another try More windows/boost fixes Yet another attempt Another attempt, aided by GPT-5 Try fixing boost on windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 24 Aug 2025 15:44:25 +0000
 
 gtsam (4.1.0-1ubuntu2~3134.gbp2f6e33) noble; urgency=medium
 
