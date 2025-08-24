@@ -129,6 +129,24 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
       throw invalid_argument(
           "Input maps for DiscreteScenario cannot be empty.");
     }
+
+    // Since std::map is sorted, the first element has the smallest key
+    // and the last element has the largest key. We can access the last
+    // element's key efficiently using rbegin().
+    double min_t = poses_.begin()->first;
+    double max_t = poses_.rbegin()->first;
+
+    min_t = min(min_t, angularVelocities_b_.begin()->first);
+    max_t = max(max_t, angularVelocities_b_.rbegin()->first);
+
+    min_t = min(min_t, velocities_n_.begin()->first);
+    max_t = max(max_t, velocities_n_.rbegin()->first);
+
+    min_t = min(min_t, accelerations_n_.begin()->first);
+    max_t = max(max_t, accelerations_n_.rbegin()->first);
+
+    // Calculate and assign the duration.
+    t_ = max_t - min_t;
   }
 
   /**
@@ -138,8 +156,9 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * All timestamps will be normalized so that the first timestamp in the file
    * corresponds to t=0 for the scenario.
    *
-   * Expected CSV format (16 columns):
-   * timestamp,px,py,pz,qw,qx,qy,qz,vx,vy,vz,omegax,omegay,omegaz,ax,ay,az
+   * CSV is expected to contain the following columns:
+   * t,q_w,q_x,q_y,q_z,v_x,v_y,v_z,p_x,p_y,p_z,w_x,w_y,w_z,a_x,a_y,a_z
+   * Other columns will be ignored.
    *
    * @param csv_filepath Path to the CSV file.
    * @return A constructed DiscreteScenario.
@@ -154,6 +173,9 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
   Vector3 velocity_n(double t) const override;
   Vector3 acceleration_n(double t) const override;
   /// @}
+  
+  /// @brief The duration of time between the first timestamp and the last.
+  double duration() const;
 
  private:
   /// Map from timestamp to pose.
@@ -164,6 +186,8 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
   map<double, Vector3> velocities_n_;
   /// Map from timestamp to acceleration in navigation frame.
   map<double, Vector3> accelerations_n_;
+  /// Duration.
+  double t_;
 
   /**
    * @brief Internal helper to interpolate values in a time-stamped map.

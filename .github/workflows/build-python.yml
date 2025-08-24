@@ -30,11 +30,13 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Check modified files
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          predicate-quantifier: "every" # If any changed file matches every filter, proceed with build
           filters: |
             relevant_changes:
               - '!**.md'
