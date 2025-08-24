@@ -115,18 +115,20 @@ jobs:
       - name: Configuration
         shell: bash
         run: |
-          export CMAKE_GENERATOR=Ninja 
+          export CMAKE_GENERATOR=Ninja
+          # Convert Windows backslashes to forward slashes for CMake
+          BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
           cmake -E remove_directory build
           if [ "${{ matrix.build_type }}" = "Release" ]; then
             cmake -B build \
                   -S . \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-                  -DBOOST_ROOT="${BOOST_ROOT}" \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
                   -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
-                  -DBOOST_INCLUDEDIR="${BOOST_ROOT}\\boost\\include" \
-                  -DBOOST_LIBRARYDIR="${BOOST_ROOT}\\lib"
+                  -DBOOST_ROOT="${BOOST_ROOT_UNIX}" \
+                  -DBOOST_INCLUDEDIR="${BOOST_ROOT_UNIX}/include" \
+                  -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib"
           else
             cmake -B build \
                   -S . \
