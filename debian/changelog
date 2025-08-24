@@ -1,10 +1,50 @@
-gtsam (4.1.0-1ubuntu2~3139.gbp9c9185) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3140.gbp457716) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @45771649b4da27a1ded4102154ae54045d805a15 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9c9185d31faeb8ae7ef52aa307d3d04457a202ab **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 24 Aug 2025 15:49:03 +0000
+  [ p-zach ]
+  * Update DiscreteScenario with adaptive FromCSV and calculated duration
+  * Remove monte carlo eval test
+
+  [ Porter Zach ]
+  * Remove duplicate include
+  * Remove unused include
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Just Kernel
+  * Jacobians w Kernels
+  * All Kernels
+  * Final edits/tweaks
+  * Switch back to optionals
+  * Don't do deprecated in CI
+  * Use new Kernels
+  * Switch tangent vector order and use Kernels
+  * Deprecate old methods
+  * Add Gal3 and SL4 to wrapper
+  * Add Kernel to wrapper, kill deprecated methods
+  * Add docs on Jacobians/Kernels
+  * new config so boost only installs/runs twice
+  * Also skip boost on Windows debug
+  * Add copilot instructions since we're here
+  * Use mold
+  * Add @talregev suggestion
+  * Fix gcc
+  * Cleanup
+  * Fix windows build
+  * Fix Boost
+  * Fix badges
+  * Fix boost on windows Documentation Simplify Force MODULE Fix back-slashes Upgrade cmake req Well-documented gemini solution Going in circles... Give gemini a chance yet another try More windows/boost fixes Yet another attempt Another attempt, aided by GPT-5 Try fixing boost on windows
+  * Fix workflow
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 24 Aug 2025 18:21:56 +0000
 
 gtsam (4.1.0-1ubuntu2~3138.gbpa0f36c) noble; urgency=medium
 
