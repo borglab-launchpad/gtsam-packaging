@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3147.gbpe95b5f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3148.gbpdcec54) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @dcec54a775829b83033ed217a71183280110c2f7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e95b5f7e0a500652fa0edd4ad7da655bb3984c2e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 25 Aug 2025 20:36:19 +0000
+  [ Frank Dellaert ]
+  * One new version of FrobeniusBetweenFactor
+  * FrobeniusBetweenFactorNL
+  * Wrapper and tests for SL4
+  * Modernize ConvertNoiseModel
+  * Fix noise handling
+  * Fix model dim
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Aug 2025 02:38:08 +0000
 
 gtsam (4.1.0-1ubuntu2~3146.gbp8f88f7) noble; urgency=medium
 
