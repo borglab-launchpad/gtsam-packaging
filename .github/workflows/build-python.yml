@@ -135,8 +135,7 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew tap ProfFan/robotics
-          brew install cmake ninja
+          brew install ninja
           brew install boost
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
