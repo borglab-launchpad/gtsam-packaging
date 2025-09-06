@@ -1,10 +1,20 @@
-gtsam (4.1.0-1ubuntu2~3151.gbpcb686b) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3152.gbpee49d7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ee49d7f33e2b3f278a0ccc461f8682ba1291671d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cb686bde911a111d0c7a780aeb8e59083391ba8e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Aug 2025 02:42:48 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Update README.md: fix minimum cmake version
+
+  [ Fan Jiang ]
+  * Remove outdated brew tap (was required for boost versions)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 06 Sep 2025 23:22:42 +0000
 
 gtsam (4.1.0-1ubuntu2~3150.gbp1eaa4d) noble; urgency=medium
 
