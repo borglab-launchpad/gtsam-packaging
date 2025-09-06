@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3146.gbp0683d0) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3147.gbp7614c8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7614c8dda6287e097f55cb059439147e92706686 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0683d0e7bf06ccb991e23110dbd93abc77009f86 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 29 Aug 2025 02:42:22 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Update README.md: fix minimum cmake version
+
+  [ Fan Jiang ]
+  * Remove outdated brew tap (was required for boost versions)
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 06 Sep 2025 23:22:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3145.gbpc77bc5) noble; urgency=medium
 
