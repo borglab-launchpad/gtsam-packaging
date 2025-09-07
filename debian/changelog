@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3150.gbpcc2af6) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3151.gbpe9068a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e9068a52c97733aa08331a9b6c91d47a33a1c4e4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cc2af6c08cf4af197c94557ce9f32f61f1f85842 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 06 Sep 2025 23:27:19 +0000
+  [ Tal Regev ]
+  * Remove metis and geographiclib ports from vcpkg ci because they are not in used.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 13:37:21 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3149.gbp348b01) noble; urgency=medium
 
