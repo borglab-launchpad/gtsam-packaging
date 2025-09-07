@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3158.gbp57c9ec) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3159.gbp2ce26f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2ce26f908311ff410c4a33cf1e2bdbc72e90545d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @57c9eccaf70053d28d8a33808980d65ef11160fc **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 17:30:08 +0000
+  [ Frank Dellaert ]
+  * add Gal3 in more places
+  * Extra tests
+  * Add optimization test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 21:37:46 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3157.gbp5ee970) noble; urgency=medium
 
