@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~3163.gbpba796c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3164.gbp038da9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @038da917746399a597c01343b4a841af6c8ca1b4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ba796c7b498bf028fe07dd5132ded149cef8e5d9 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 17:30:36 +0000
+  [ Frank Dellaert ]
+  * add Gal3 in more places
+  * Extra tests
+  * Add optimization test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 21:37:55 +0000
 
 gtsam (4.1.0-1ubuntu2~3162.gbp99198f) noble; urgency=medium
 
