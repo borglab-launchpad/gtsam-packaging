@@ -37,18 +37,12 @@ jobs:
             test_target: test
             binary_cache: /home/runner/.cache/vcpkg/archives
             python: python3
-            # vcpkg compile external metis, while test are configured to use vendored metis.
-            # Need to debug and fix it.
-            ctest_extra_flags: -E "testFindSeparator"
           - os: macos-latest
             triplet: arm64-osx-release
             build_type: Release
             test_target: test
             binary_cache: /Users/runner/.cache/vcpkg/archives
             python: python3
-            # vcpkg compile external metis, while test are configured to use vendored metis.
-            # Need to debug and fix it.
-            ctest_extra_flags: -E "testFindSeparator"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,10 +96,8 @@ jobs:
           boost-thread
           boost-timer
           eigen3
-          metis
           tbb
           pybind11
-          geographiclib
 
       - name: copy files for hash
         shell: bash
@@ -152,7 +144,7 @@ jobs:
               -DGTSAM_BUILD_UNSTABLE=ON \
               -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
               -DGTSAM_USE_SYSTEM_EIGEN=ON \
-              -DGTSAM_USE_SYSTEM_METIS=ON \
+              -DGTSAM_USE_SYSTEM_METIS=OFF \
               -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
