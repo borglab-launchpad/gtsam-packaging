@@ -12,6 +12,7 @@ namespace gtsam {
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -71,6 +72,7 @@ class NonlinearFactorGraph {
                  gtsam::Point2,
                  gtsam::StereoPoint2,
                  gtsam::Point3,
+                 gtsam::Gal3,
                  gtsam::Rot2,
                  gtsam::SO3,
                  gtsam::SO4,
@@ -549,7 +551,7 @@ class ISAM2 {
   gtsam::Values getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
-  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
+  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3, gtsam::Gal3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::SL4, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Cal3f, gtsam::Cal3Bundler, gtsam::imuBias::ConstantBias,
                      gtsam::EssentialMatrix, gtsam::FundamentalMatrix, gtsam::SimpleFundamentalMatrix,
@@ -608,6 +610,7 @@ template <T = {double,
                gtsam::Point2,
                gtsam::StereoPoint2,
                gtsam::Point3,
+               gtsam::Gal3,
                gtsam::Rot2,
                gtsam::SO3,
                gtsam::SO4,
@@ -642,7 +645,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
-               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2,
+               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Gal3,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
                gtsam::PinholeCamera<gtsam::Cal3_S2>,
                gtsam::PinholeCamera<gtsam::Cal3Bundler>,
@@ -659,7 +662,7 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Gal3,
                gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
                gtsam::PinholeCamera<gtsam::Cal3_S2>,
@@ -757,6 +760,7 @@ template <T = {gtsam::Point2,
                gtsam::Rot3,
                gtsam::Pose2,
                gtsam::Pose3,
+               gtsam::Gal3,
                gtsam::SL4,
                gtsam::Similarity2,
                gtsam::Similarity3,
