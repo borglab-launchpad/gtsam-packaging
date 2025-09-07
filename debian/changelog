@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~3159.gbp5ef7c8) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3160.gbp3fe570) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3fe570bf65879d732cbd1cbdffb53ee0eae369a9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @5ef7c8541053990e8eccf470991c88238a6bc6c3 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 13:42:00 +0000
+  [ Frank Dellaert ]
+  * Fix CI
+  * Fox notebook math
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Remove-cell
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 17:25:56 +0000
 
 gtsam (4.1.0-1ubuntu2~3158.gbp70bf8b) noble; urgency=medium
 
