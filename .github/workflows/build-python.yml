@@ -135,8 +135,17 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install ninja
-          brew install boost
+          brew update
+          # Avoid reinstalling cmake when a pinned/local tap version is preinstalled on the runner.
+          if brew list cmake >/dev/null 2>&1; then
+            echo "cmake already installed"
+            cmake --version
+          else
+            brew install cmake
+          fi
+          # Install ninja and boost only if missing
+          brew list ninja >/dev/null 2>&1 || brew install ninja
+          brew list boost >/dev/null 2>&1 || brew install boost
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
