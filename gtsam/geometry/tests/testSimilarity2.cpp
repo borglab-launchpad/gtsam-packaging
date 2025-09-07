@@ -144,6 +144,19 @@ TEST(Similarity2, Identity) {
 }
 
 //******************************************************************************
+TEST(Similarity2, InverseMatrix) {
+  Rot2 R = Rot2::fromDegrees(60);
+  Point2 t(3, -2);
+  double s = 4.0;
+  Similarity2 S(R, t, s);
+
+  Matrix3 S_inv_mat = S.inverse().matrix();
+  Matrix3 S_mat_inv = S.matrix().inverse();
+
+  EXPECT(assert_equal(S_inv_mat, S_mat_inv));
+}
+
+//******************************************************************************
 TEST(Similarity2, TransformFrom_Point2) {
   // Setup
   Rot2 R = Rot2::fromAngle(M_PI / 4); // 45 degrees

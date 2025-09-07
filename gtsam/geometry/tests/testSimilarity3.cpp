@@ -126,6 +126,19 @@ TEST(Similarity3, inverse) {
 }
 
 //******************************************************************************
+TEST(Similarity3, InverseMatrix) {
+  Rot3 R = Rot3::Rodrigues(0.3, 0.2, 0.1);
+  Point3 t(3.5, -8.2, 4.2);
+  double s = 1.5;
+  Similarity3 S(R, t, s);
+
+  Matrix4 S_inv_mat = S.inverse().matrix();
+  Matrix4 S_mat_inv = S.matrix().inverse();
+
+  EXPECT(assert_equal(S_inv_mat, S_mat_inv));
+}
+
+//******************************************************************************
 TEST(Similarity3, Multiplication) {
   Similarity3 test1(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Similarity3 test2(Rot3::Ypr(1, 2, 3).inverse(), Point3(8, 9, 10), 11);

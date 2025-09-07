@@ -304,6 +304,31 @@ TEST(FrobeniusBetweenFactorNLSimilarity2, EvaluateError) {
 }
 
 /* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSimilarity2, Optimization) {
+  using namespace ::sim2;
+  auto factor = FrobeniusBetweenFactorNL<Similarity2>(1, 2, P1.between(P2));
+
+  NonlinearFactorGraph graph;
+  graph.add(factor);
+  graph.add(PriorFactor<Similarity2>(1, P1, noiseModel::Constrained::All(4)));
+
+  Values initial;
+  initial.insert(1, P1);
+  initial.insert(2, P2.retract(Vector4::Constant(0.1)));
+
+  double initial_error = graph.error(initial);
+
+  GaussNewtonParams params;
+  // params.setVerbosity("ERROR");
+  GaussNewtonOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+
+  double final_error = graph.error(result);
+
+  EXPECT(final_error < initial_error);
+}
+
+/* ************************************************************************* */
 namespace sim3 {
   Similarity3 id;
   Similarity3 P1 = Similarity3::Expmap(Vector7(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7));
@@ -416,6 +441,30 @@ TEST(FrobeniusBetweenFactorSL4, EvaluateError) {
   values.insert(1, T1);
   values.insert(2, T2);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSL4, Optimization) {
+  using namespace ::sl4;
+  auto factor = FrobeniusBetweenFactorNL<SL4>(1, 2, T1.between(T2));
+
+  NonlinearFactorGraph graph;
+  graph.add(factor);
+  graph.add(PriorFactor<SL4>(1, T1, noiseModel::Constrained::All(15)));
+
+  Values initial;
+  initial.insert(1, T1);
+  initial.insert(2, T2.retract(Vector15::Constant(0.01)));
+
+  double initial_error = graph.error(initial);
+
+  GaussNewtonParams params;
+  GaussNewtonOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+
+  double final_error = graph.error(result);
+
+  EXPECT(final_error < initial_error);
 }
 
 /* ************************************************************************* */
