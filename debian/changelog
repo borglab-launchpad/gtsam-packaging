@@ -1,10 +1,44 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3162.gbp0644f1) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3163.gbp999224) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @99922489769d915f3861742840474f1bfcfffde9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0644f1990be5bab348b15463fc6ec996a3fbc3e8 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Sep 2025 21:42:23 +0000
+  [ Frank Dellaert ]
+  * Navstate specific filter driven by IMU
+  * Clean up
+  * Example
+  * Allow custom integration
+  * Avoid copy/pasta in test
+  * Wrapping
+  * Example notebook
+  * Example with update
+  * remove proffan/robotics tap
+  * Scale noise by dt
+  * Show stddevs
+  * Test Update
+  * test w Factor Graph "ground truth"
+  * Fix bug in H!
+  * Guidance
+  * Docs
+  * Fix CI
+  * LeftLinearEKF
+  * Unit tests
+  * NavState::AutonomousFlow
+  * Naming convention
+  * Now a LeftLinearEKF
+  * Wrapper and docs
+  * Psi -> Phi
+  * Review comments
+  * ASV example by Derek
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 08 Sep 2025 18:53:57 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3161.gbpfd1a8a) noble; urgency=medium
 
