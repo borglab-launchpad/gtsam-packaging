@@ -1,21 +1,17 @@
-# Invariant Extended Kalman Filtering
-Invariant Extended Kalman Filters (IEKFs) are a special class of Extended Kalman Filters (EKFs) that operate on states that reside on Lie Groups. They are used on a class of systems called group-affine systems where the system dynamics evolve using group composition. This group affine property allows the IEKF to have error dynamics that are **state independent**.
+# EKF Variants
 
-In a standard Extended Kalman Filter (EKF), the system dynamics are linearized around the current state estimate - therefore having state dependent dynamics. If the state estimate has error (which it always does), this linearization accumulates error as well. This characteristic can sometimes lead to poor convergence and poor performance in practice. 
+Kalman Filters are a widely used tool for state estimation in systems with nonlinear dynamics and measurements. Extended Kalman filters (EKFs) extend the classical Kalman Filter by linearizing the system dynamics and measurement models around a current state estimate, enabling their application to a broad range of real-world problems. However, EKFs have limitations, such as sensitivity to linearization errors and the inability to maintain geometric structure when states reside on differentiable manifolds or Lie groups.
 
-This is where the IEKF sees its greatest benefits. Because of this group affine property, the error propagation is always independent of the state. Therefore, this filter will see improved convergence and consistency even with a poor state estimate. This also allows the filter to converge even with a poor initial estimate of the state. 
-
-The Invariant Kalman Filter operates on many Lie Groups commonly used in robotics, inertial navigation, and SLAM such as  **[SO(3)](https://github.com/borglab/gtsam/blob/develop/gtsam/geometry/SO3.h)**, **[SE_2](https://github.com/borglab/gtsam/blob/develop/gtsam/geometry/Pose2.h)**, **[SE_2(3)](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavState.h)**. This list is not inclusive.
-
-
+To address these limitations, we will explore a class hierarchy that goes beyond traditional EKFs. This hierarchy introduces specialized filters, such as the ManifoldEKF, LieGroupEKF, and InvariantEKF, which are designed to handle states on manifolds and Lie groups. These filters leverage the mathematical properties of these spaces to improve consistency, convergence, and robustness in state estimation.
 
 ### Classes
 To introduce the Invariant Kalman Filter to GTSAM, we have created three classes of Extended Kalman Filters in ```navigation```. GTSAM has defined many classes of Lie Groups that may be used with these filters.
 
 - **[ManifoldEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/ManifoldEKF.h)**: Implements an EKF for states that operate on a differentiable manifold.
-- **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Inherits from ```ManifoldEKF`` and implements an EKF for states that operate on a Lie group with state dependent dynamics.
+- **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Inherits from ```ManifoldEKF``` and implements an EKF for states that operate on a Lie group with state dependent dynamics.
 - **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)**: Inherits from ```LieGroupEKF``` and implements EKF for states that operate on a Lie group with group composition (state independent) dynamics.
-
+- **[leftLinearEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/leftLinearEKF.h)**: Inherits from ```LieGroupEKF``` and implements a more general "left linear observer" structure due to Barrau and Bonnabel.
+- **[NavStateImuEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h)**: Specialization of ```leftLinearEKF<NavState>``` that integrates IMU to predict NavState increments; simple API for predict and generic updates. See user guide and tutorial linked below.
 
 Below, the mathematics behind these filters are introduced, and examples of their usage are provided. 
 ## Extended Kalman Filters
@@ -137,10 +133,17 @@ This class is useful for generic extended Kalman filtering on Lie Groups; howeve
 
 ## InvariantEKF
 
-The **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)** further specializes the **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)** for systems that reside on a Lie group with **state independent dynamics**. It inherits the update logic from ```LieGroupEKF```. 
+Invariant Extended Kalman Filters (IEKFs) are a special class of Extended Kalman Filters (EKFs) that operate on states that reside on Lie Groups. They are used on a class of systems called group-affine systems where the system dynamics evolve using group composition. This group affine property allows the IEKF to have error dynamics that are **state independent**.
 
-This class implements the **Left Invariant Extended Kalman Filter** where the prediction methods use group composition. 
-Let $u$ be a tangent control vector. A Lie group increment is given by $U = \exp(u \cdot \Delta t)$ such that
+In a standard Extended Kalman Filter (EKF), the system dynamics are linearized around the current state estimate - therefore having state dependent dynamics. If the state estimate has error (which it always does), this linearization accumulates error as well. This characteristic can sometimes lead to poor convergence and poor performance in practice. 
+
+This is where the IEKF sees its greatest benefits. Because of this group affine property, the error propagation is always independent of the state. Therefore, this filter will see improved convergence and consistency even with a poor state estimate. This also allows the filter to converge even with a poor initial estimate of the state. 
+
+The Invariant Kalman Filter operates on many Lie Groups commonly used in robotics, inertial navigation, and SLAM such as  **[SO(3)](https://github.com/borglab/gtsam/blob/develop/gtsam/geometry/SO3.h)**, **[SE_2](https://github.com/borglab/gtsam/blob/develop/gtsam/geometry/Pose2.h)**, **[SE_2(3)](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavState.h)**. This list is not inclusive.
+
+The **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)** class further specializes the **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)** for systems that reside on a Lie group with **state independent dynamics**. It inherits the update logic from ```LieGroupEKF```. 
+
+This class implements the **Left Invariant Extended Kalman Filter** where the prediction methods use group composition.  Let $u$ be a tangent control vector. A Lie group increment is given by $U = \exp(u \cdot \Delta t)$ such that
 ```math
 \hat{X}_{k|k-1} = \hat{X}_{k-1|k-1}U_k
 ```
@@ -151,12 +154,37 @@ F_k = Ad_{U_{k}}^{-1}
 
 ```InvariantEKF``` implements an overloaded ```predict()``` method. One method calls a Lie group increment $U$ directly, whereas the second overload takes in a tangent control vector $u$ and a time interval $\Delta t$ where $U = \exp(u \cdot \Delta t)$.
 
+## LeftLinearEKF
+The **[LeftLinearEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LeftLinearEKF.h)** class implements a more general prediction model than the `InvariantEKF`. It is based on the paper ["Linear Observed Systems on Groups" by Barrau and Bonnabel](https://www.sciencedirect.com/science/article/pii/S0167691119300805). The dynamics model is given by
+```math
+X_{k+1} = W_k \phi(X_k) U_k
+```
+where $\phi$ is an *automorphism* on the group $G$, and $W_k, U_k \in G$ are group elements. An automorphism is a map $\phi:G \to G$ that preserves the group structure, i.e., $\phi(XY)=\phi(X)\phi(Y)$.
+
+The key insight from the paper is that for this model, the error propagation is *still* linear, with the Jacobian given by
+```math
+F_k = \mathop{Ad}_{U_k^{-1}} \Phi_k
+```
+where $\Phi_k$ is the Jacobian of $\phi_k$ at the identity. The $W_k$ term completely disappears from the error dynamics.
+
+The `LeftLinearEKF` class implements a `predict` method that takes `W`, a functor `phi` that implements the automorphism $\phi$ and its derivative at identity $\Phi$, `U`, and the process noise `Q`.
+
+## NavStateImuEKF: NavState + IMU EKF
+
+The **[NavStateImuEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/doc/NavStateImuEKF.ipynb)** is a left-invariant EKF specialized to GTSAM’s NavState $X=(R,p,v)$ that uses IMU measurements to form a NavState increment and composes it onto the current state.
+
+- Predict: `ekf.predict(omega_b, f_b, dt)` uses continuous-time process noise Q scaled by `dt` and composes the IMU-driven increment. Increments for position and velocity are expressed in the body frame, consistent with GTSAM.
+- Update: Use the standard EKF update with a measurement model `h(X)` or the vector bridge `updateWithVector(prediction, H, z, R)`. For a world-position measurement, the Jacobian in the EKF local coordinates `[δθ, δp_body, δv_body]` is `H = [0, R, 0]`.
+
+More: **[Full tutorial (with plots)](https://github.com/borglab/gtsam/blob/develop/python/gtsam/examples/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
+
 
 # Examples 
-Below are three examples of these filters in action. 
+Below are four examples of these filters in action. 
 1) **[IEKF_SE2Example](https://github.com/borglab/gtsam/blob/develop/examples/IEKF_SE2Example.cpp)**: implements ```InvariantEKF``` on a SE(2) Lie Group with odometry as a Lie group increment and a 2D GPS measurement update.
 2) **[IEKF_NavstateExample](https://github.com/borglab/gtsam/blob/develop/examples/IEKF_NavstateExample.cpp)**: implements ```InvariantEKF``` on a NavState Lie Group with a tangent space increment based on IMU measurements, and a 3D GPS measuremnt update.
 3) **[GEKF_Rot3Example](https://github.com/borglab/gtsam/blob/develop/examples/GEKF_Rot3Example.cpp)**: implements ```LieGroupEKF``` on a Rot3 Lie Group using a state dependent dynamics function and a magnetometer update.
+4) **[NavStateImuExample](https://github.com/borglab/gtsam/blob/develop/examples/NavStateImuExample.cpp)** and the accompanying notebooks: [user guide](gtsam/navigation/doc/NavStateImuEKF.ipynb) and a [full tutorial](python/gtsam/examples/NavStateImuExample.ipynb) demonstrate the NavStateImuEKF.
 
 
 ##  InvariantEKF Example on SE(2) using Lie Group increments
@@ -377,31 +405,48 @@ classDiagram
 
   class ManifoldEKF~M~ {
     <<template M>>
-    #M X_
-    #Covariance P_
-    #int n_
+    +ManifoldEKF(X0: M, P0: Covariance)
+    +const M& state() const
+    +const Covariance& covariance() const
+    +int dimension() const
     +predict(X_next: M, F: Jacobian, Q: Covariance)
-    +update(prediction: Measurement, H: Matrix, z: Measurement, R: Matrix) 
-    +update(h_func: MeasurementFunction, z: Measurement, R: Matrix) 
+    +update(...)
   }
 
   class LieGroupEKF~G~ {
     <<template G>>
-    +predictMean(f: Dynamics, dt: double, A: Jacobian) : G
-    +predict(f: Dynamics, dt: double, Q: Covariance) : void
-    +predictMean(f: Dynamics, u: Control, dt: double, A: Jacobian) : G
-    +predict(f: Dynamics, u: Control, dt: double, Q: Covariance) : void
+    +LieGroupEKF(X0: G, P0: Covariance)
+    +predictMean(f: Dynamics, dt: double, A: Jacobian)
+    +predict(f: Dynamics, dt: double, Q: Covariance)
+    ...
   }
 
   class InvariantEKF~G~ {
     <<template G>>
-    +predict(U: G, Q: Covariance) : void
-    +predict(u: TangentVector, dt: double, Q: Covariance) : void
+    +InvariantEKF(X0: G, P0: Covariance)
+    +predict(U: G, Q: Covariance)
+    +predict(u: TangentVector, dt: double, Q: Covariance)
+  }
+
+  class LeftLinearEKF~G~ {
+    <<template G>>
+    +LeftLinearEKF(X0: G, P0: Covariance)
+    +predict(W: G, phi: Automorphism, U: G, Q: Covariance)
+    +predict(phi: Automorphism, U: G, Q: Covariance)
+    +static Dynamics(...)
+  }
+
+  class NavStateImuEKF {
+    +NavStateImuEKF(X0: NavState, P0: Covariance, params: PreintegrationParams)
+    +static Gravity(n_gravity: Vector3, dt: double): NavState
+    +static IMU(omega_b: Vector3, f_b: Vector3, dt: double): NavState
+    +predict(omega_b: Vector3, f_b: Vector3, dt: double): NavState
   }
 
   ManifoldEKF~M~ <|-- LieGroupEKF~G~
-  LieGroupEKF~G~ <|-- InvariantEKF~G~
-
+  LieGroupEKF~G~ <|-- LeftLinearEKF~G~
+  LeftLinearEKF~G~ <|-- InvariantEKF~G~
+  LeftLinearEKF~G~ <|-- NavStateImuEKF
 ```
 
 

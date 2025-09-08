@@ -8,9 +8,8 @@
  * -------------------------------------------------------------------------- */
 
  /**
-  * @file testInvariantEKF_Pose2.cpp
-  * @brief Unit test for the InvariantEKF using Pose2 state.
-  *        Based on the logic from IEKF_SE2Example.cpp
+  * @file testInvariantEKF.cpp
+  * @brief Unit tests for the InvariantEKF
   * @date April 26, 2025
   * @authors Frank Dellaert (adapted from example by Scott Baker, Matt Kielo)
   */

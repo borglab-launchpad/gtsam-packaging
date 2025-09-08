@@ -266,7 +266,25 @@ public:
   /// @name Dynamics
   /// @{
 
-  /// Integrate forward in time given angular velocity and acceleration in body frame
+  // φ: autonomous flow where velocity acts on position for
+  //   dt (R, p, v) -> p += v·dt.
+  struct AutonomousFlow {
+    double dt;
+
+    // Differential at identity (right-trivialized): Φ = I with ∂p/∂v = dt·I.
+    Jacobian dIdentity() const {
+      Jacobian Phi = I_9x9;
+      Phi.template block<3, 3>(3, 6) = I_3x3 * dt;
+      return Phi;
+    }
+
+    // Apply φ(x) by p += v·dt
+    NavState operator()(const NavState& X) const {
+      return {X.attitude(), X.position() + X.velocity() * dt, X.velocity()};
+    }
+  };
+
+/// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& b_acceleration, const Vector3& b_omega,
                   const double dt, OptionalJacobian<9, 9> F = {},
