@@ -592,4 +592,78 @@ class ScenarioRunner {
   gtsam::Matrix estimateNoiseCovariance(size_t N) const;
 };
 
+// ---------------------------------------------------------------------------
+// EKF classes
+
+#include <gtsam/navigation/ManifoldEKF.h>
+template <M = {gtsam::Unit3, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::NavState, gtsam::Gal3}>
+virtual class ManifoldEKF {
+  // Constructors
+  ManifoldEKF(const M& X0, gtsam::Matrix P0);
+
+  // Accessors
+  M state() const;
+  gtsam::Matrix covariance() const;
+  int dimension() const;
+
+  // Predict with provided next state and Jacobian
+  void predict(const M& X_next, gtsam::Matrix F, gtsam::Matrix Q);
+
+  // Only vector-based measurements are supported in wrapper
+  void updateWithVector(const gtsam::Vector& prediction, const gtsam::Matrix& H,
+                        const gtsam::Vector& z, const gtsam::Matrix& R);
+};
+
+#include <gtsam/navigation/LieGroupEKF.h>
+#include <gtsam/geometry/Gal3.h>
+template <G = {gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::NavState, gtsam::Gal3}>
+virtual class LieGroupEKF : gtsam::ManifoldEKF<G> {
+  // Constructors
+  LieGroupEKF(const G& X0, gtsam::Matrix P0);
+  
+  // Increment-based predict (precomputed increment and Jacobian)
+  void predictWithCompose(const G& U, gtsam::Matrix J_UX, gtsam::Matrix Q);
+};
+
+#include <gtsam/navigation/LeftLinearEKF.h>
+template <G = {gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::NavState, gtsam::Gal3}>
+virtual class LeftLinearEKF : gtsam::LieGroupEKF<G> {
+  // Constructors
+  LeftLinearEKF(const G& X0, gtsam::Matrix P0);
+};
+
+#include <gtsam/navigation/InvariantEKF.h>
+template <G = {gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::NavState, gtsam::Gal3}>
+virtual class InvariantEKF : gtsam::LeftLinearEKF<G> {
+  // Constructors
+  InvariantEKF(const G& X0, gtsam::Matrix P0);
+
+  // Left-invariant predict APIs
+  void predict(const G& U, gtsam::Matrix Q);
+  void predict(const gtsam::Vector& u, double dt, gtsam::Matrix Q);
+};
+
+// Specialized NavState IMU EKF
+#include <gtsam/navigation/NavStateImuEKF.h>
+class NavStateImuEKF : gtsam::LeftLinearEKF<gtsam::NavState> {
+  // Constructors
+  NavStateImuEKF(const gtsam::NavState& X0, gtsam::Matrix P0,
+                 const gtsam::PreintegrationParams* params);
+
+  // Predict using IMU measurements
+  void predict(const gtsam::Vector& omega_b, const gtsam::Vector& f_b, double dt);
+
+  // Accessors
+  gtsam::Matrix processNoise() const;
+  gtsam::Vector gravity() const;
+  const gtsam::PreintegrationParams* params() const;
+
+  // Static methods
+   gtsam::NavState Gravity(const gtsam::Vector& n_gravity, double dt);
+   gtsam::NavState IMU(const gtsam::Vector& omega_b, const gtsam::Vector& f_b, double dt);
+   gtsam::NavState Dynamics(const gtsam::Vector& n_gravity, const gtsam::NavState& X,
+                           const gtsam::Vector& omega_b, const gtsam::Vector& f_b,
+                           double dt);
+};
+
 }

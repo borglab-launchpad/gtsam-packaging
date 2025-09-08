@@ -24,12 +24,13 @@
 
 #pragma once
 
-#include <gtsam/navigation/ManifoldEKF.h> // Include the base class
-#include <gtsam/base/Lie.h> // Include for Lie group traits and operations
+#include <gtsam/base/Lie.h>  // Include for Lie group traits and operations
+#include <gtsam/base/VectorSpace.h>        // Matrix traits
+#include <gtsam/navigation/ManifoldEKF.h>  // Include the base class
 
 #include <Eigen/Dense>
+#include <functional>  // For std::function
 #include <type_traits>
-#include <functional> // For std::function
 
 namespace gtsam {
 
@@ -180,6 +181,39 @@ namespace gtsam {
       return predict([&](const G& X, OptionalJacobian<Dim, Dim> Df) { return f(X, u, Df); }, dt, Q);
     }
 
-  }; // LieGroupEKF
+    /**
+     * Predict using a precomputed group increment U and its Jacobian J_UX.
+     *
+     * Contract:
+     * - Input state X_k on G with covariance P_k in local coordinates
+     * - Precomputed increment U = U(X_k) in G
+     * - Jacobian J_UX = d(u_left)/d(local(X)) at X_k, where u_left = Log(U)
+     * - Process noise Q expressed in the same coordinates as u_left
+     *
+     * Update performed:
+     * - X_{k+1} = X_k ∘ U
+     * - A = Ad_{U^{-1}} + J_UX
+     * - P_{k+1} = A P_k A^T + Q
+     *
+     * Notes:
+     * This API is intended for custom integrators that construct U(X) directly
+     * (e.g., second-order kinematics), which may not be expressible as an Euler
+     * step on the tangent used by predict/predictMean.
+     */
+    void predictWithCompose(const G& U, const Jacobian& J_UX,
+                            const Covariance& Q) {
+      Jacobian A_local;
+      if constexpr (std::is_same_v<G, Matrix>) {
+        const Matrix I_n = Matrix::Identity(this->n_, this->n_);
+        A_local = I_n + J_UX;
+        this->X_ = traits<Matrix>::Retract(this->X_, U);
+      } else {
+        A_local = traits<G>::Inverse(U).AdjointMap() + J_UX;
+        this->X_ = this->X_.compose(U);
+      }
+      this->P_ = A_local * this->P_ * A_local.transpose() + Q;
+    }
+
+  };  // LieGroupEKF
 
 }  // namespace gtsam

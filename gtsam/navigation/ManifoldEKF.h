@@ -247,6 +247,34 @@ namespace gtsam {
       update(prediction, H, z, R);
     }
 
+    /// Convenience bridge for wrappers: vector measurement update calling
+    /// update<Vector>. This overload exists to avoid templates in wrappers. It
+    /// validates sizes and forwards to the templated update with Measurement =
+    /// gtsam::Vector (dynamic size).
+    void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
+                          const gtsam::Vector& z, const Matrix& R) {
+      // Basic dimension checks for dynamic-sized measurement
+      const int m = static_cast<int>(prediction.size());
+      if (static_cast<int>(z.size()) != m) {
+        throw std::invalid_argument(
+            "ManifoldEKF::updateWithVector: prediction and z must have same "
+            "length.");
+      }
+      if (H.rows() != m || H.cols() != n_) {
+        throw std::invalid_argument(
+            "ManifoldEKF::updateWithVector: H must be m x n where m = "
+            "measurement size and n = state dimension.");
+      }
+      if (R.rows() != m || R.cols() != m) {
+        throw std::invalid_argument(
+            "ManifoldEKF::updateWithVector: R must be m x m where m = "
+            "measurement size.");
+      }
+
+      // Forward to templated update with Measurement = Vector
+      this->template update<Vector>(prediction, H, z, R);
+    }
+
   protected:
     M X_;              ///< Manifold state estimate.
     Covariance P_;     ///< Covariance (Eigen::Matrix<double, Dim, Dim>).

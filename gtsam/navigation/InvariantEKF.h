@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <gtsam/navigation/LieGroupEKF.h> // Include the base class
+#include <gtsam/navigation/LeftLinearEKF.h> // Include the base class
 #include <gtsam/base/Lie.h> // For traits (needed for AdjointMap, Expmap)
 
 
@@ -36,20 +36,20 @@ namespace gtsam {
    *
    * @tparam G Lie group type (must satisfy LieGroup concept).
    *
-   * This filter inherits from LieGroupEKF but restricts the prediction interface
+   * This filter inherits from LeftLinearEKF but restricts the prediction interface
    * to only the left-invariant prediction methods:
    * 1. Prediction via group composition: `predict(const G& U, const Covariance& Q)`
    * 2. Prediction via tangent control vector: `predict(const TangentVector& u, double dt, const Covariance& Q)`
    *
-   * The state-dependent prediction methods from LieGroupEKF are hidden.
-   * The update step remains the same as in ManifoldEKF/LieGroupEKF.
+   * The state-dependent prediction methods from LeftLinearEKF are hidden.
+   * The update step remains the same as in ManifoldEKF/LeftLinearEKF.
    * For details on how static and dynamic dimensions are handled, please refer to
    * the `ManifoldEKF` class documentation.
    */
   template <typename G>
-  class InvariantEKF : public LieGroupEKF<G> {
+  class InvariantEKF : public LeftLinearEKF<G> {
   public:
-    using Base = LieGroupEKF<G>; ///< Base class type
+    using Base = LeftLinearEKF<G>; ///< Base class type
     using TangentVector = typename Base::TangentVector; ///< Tangent vector type
     /// Jacobian for group-specific operations like AdjointMap. Eigen::Matrix<double, Dim, Dim>.
     using Jacobian = typename Base::Jacobian;
@@ -58,13 +58,13 @@ namespace gtsam {
 
 
     /**
-     * Constructor: forwards to LieGroupEKF constructor.
+     * Constructor: forwards to LeftLinearEKF constructor.
      * @param X0 Initial state on Lie group G.
      * @param P0 Initial covariance in the tangent space at X0.
      */
     InvariantEKF(const G& X0, const Covariance& P0) : Base(X0, P0) {}
 
-    // We hide state-dependent predict methods from LieGroupEKF by only providing the
+    // We hide state-dependent predict methods from LeftLinearEKF by only providing the
     // invariant predict methods below.
 
     /**
