@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3166.gbpc0e249) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3167.gbpf46ea9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f46ea90fe3becaf240e750d363e89e999fc017fb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c0e2491feb173fff014cf5ef336f67a481006d20 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 08 Sep 2025 18:58:48 +0000
+  [ Frank Dellaert ]
+  * Don't install cmake
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 09 Sep 2025 03:32:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3165.gbpc3934a) noble; urgency=medium
 
