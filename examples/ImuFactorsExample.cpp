@@ -212,10 +212,20 @@ int main(int argc, char* argv[]) {
                       // exactly the same, so keeping this for simplicity.
 
   // All priors have been set up, now iterate through the data file.
-  while (file.good()) {
-    // Parse out first value
-    getline(file, value, ',');
-    int type = stoi(value.c_str());
+  std::string line;
+  int type{1000};
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string value;
+
+    // Read value until comma. Skip to next line on failure to read.
+    if (!std::getline(ss, value, ',')) continue;
+    try {
+      type = std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      std::cerr << "Invalid integer in input: \"" << value << "\"\n";
+      continue;  // Or break, depending on desired behavior
+    }
 
     if (type == 0) {  // IMU measurement
       Vector6 imu;
