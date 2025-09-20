@@ -1,10 +1,24 @@
-gtsam (4.1.0-1ubuntu2~3175.gbp9ffda9) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3176.gbp5d238e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5d238e8b5201040e6fbbdd1d74b74f3598240a4b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9ffda99c93bbfa94f16a17f47aade8e5d23a1d75 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 09 Sep 2025 03:37:35 +0000
+  [ Rafael Spring ]
+  * Update NonlinearOptimizer.ipynb
+  * Update NonlinearOptimizer.ipynb
+  * Update NonlinearOptimizer.ipynb
+
+  [ Jay Farrell ]
+  * edits to successfully compile and build with strict compiler settings
+  * minimal changes to prevent crash at EOF
+  * pragma fix
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 20 Sep 2025 22:55:40 +0000
 
 gtsam (4.1.0-1ubuntu2~3174.gbpbc69fd) noble; urgency=medium
 
