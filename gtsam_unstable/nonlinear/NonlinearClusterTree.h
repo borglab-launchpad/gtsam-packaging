@@ -37,10 +37,17 @@ class NonlinearClusterTree : public ClusterTree<NonlinearFactorGraph> {
     }
 
     static NonlinearCluster* DownCast(const std::shared_ptr<Cluster>& cluster) {
-      auto nonlinearCluster = std::dynamic_pointer_cast<NonlinearCluster>(cluster);
+#if defined(_MSC_VER) && !NDEBUG
+      // This is really gross, but dynamic_pointer_cast/dynamic_cast will not
+      // work on MSVC in Debug mode
+      return static_cast<NonlinearCluster*>(cluster.get());
+#else
+      auto nonlinearCluster =
+          std::dynamic_pointer_cast<NonlinearCluster>(cluster);
       if (!nonlinearCluster)
         throw std::runtime_error("Expected NonlinearCluster");
       return nonlinearCluster.get();
+#endif
     }
 
     // linearize local custer factors straight into hessianFactor, which is returned
