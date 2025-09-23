@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3179.gbpbbb904) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3180.gbpe659fe) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e659fe5b8a5c031dc5900009e3b5290e9e9a81a5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bbb9047c07c2c9ebdd0195403f301462febb12ac **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 20 Sep 2025 23:01:29 +0000
+  [ Gold856 ]
+  * Fix tests that don't pass on Windows
+  * Simplify Windows CI and run all tests
+  * Run all tests on Windows vcpkg CI
+
+  [ Frank Dellaert ]
+  * three new notebooks
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 23 Sep 2025 14:20:51 +0000
 
 gtsam (4.1.0-1ubuntu2~3178.gbpbf0876) noble; urgency=medium
 
