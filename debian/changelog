@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~3195.gbp6ac3c4) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3196.gbp4deaeb) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @4deaeb925faff801103349f10243665315e12e3f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6ac3c4394994b618f8cfeb0f41d6aea1d0b2551e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Sep 2025 21:06:54 +0000
+  [ Frank Dellaert ]
+  * Formatting only
+  * Formatting and WTU dynamics
+  * Colab button
+  * Nameing: IMU -> Imu
+  * Fix wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Sep 2025 23:43:20 +0000
 
 gtsam (4.1.0-1ubuntu2~3194.gbpd88edd) noble; urgency=medium
 
