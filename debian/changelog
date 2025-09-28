@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~3183.gbp034948) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3184.gbp57ac2e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @57ac2e0274667975f3c3c32de0154a1238fcbdee **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @034948f1a1caf93861415bc085faf4598e28837c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 23 Sep 2025 14:28:35 +0000
+  [ Frank Dellaert ]
+  * More notebooks
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Add top-level and Signature notebook
+  * Add some more examples
+  * feat: Isolate non-navigation changes
+
+  [ Tal Regev ]
+  * Fix vcpkg macos
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Sep 2025 12:28:44 +0000
 
 gtsam (4.1.0-1ubuntu2~3182.gbp6cca9a) noble; urgency=medium
 
