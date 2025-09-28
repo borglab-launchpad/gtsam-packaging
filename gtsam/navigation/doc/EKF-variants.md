@@ -439,7 +439,7 @@ classDiagram
   class NavStateImuEKF {
     +NavStateImuEKF(X0: NavState, P0: Covariance, params: PreintegrationParams)
     +static Gravity(n_gravity: Vector3, dt: double): NavState
-    +static IMU(omega_b: Vector3, f_b: Vector3, dt: double): NavState
+    +static Imu(omega_b: Vector3, f_b: Vector3, dt: double): NavState
     +predict(omega_b: Vector3, f_b: Vector3, dt: double): NavState
   }
 

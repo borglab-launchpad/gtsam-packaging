@@ -656,7 +656,7 @@ class NavStateImuEKF : gtsam::LeftLinearEKF<gtsam::NavState> {
 
   // Static methods
   static gtsam::NavState Gravity(const gtsam::Vector& n_gravity, double dt);
-  static gtsam::NavState IMU(const gtsam::Vector& omega_b, const gtsam::Vector& f_b, double dt);
+  static gtsam::NavState Imu(const gtsam::Vector& omega_b, const gtsam::Vector& f_b, double dt);
   static gtsam::NavState Dynamics(const gtsam::Vector& n_gravity, const gtsam::NavState& X,
                                    const gtsam::Vector& omega_b, const gtsam::Vector& f_b,
                                    double dt);

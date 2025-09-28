@@ -100,7 +100,7 @@ TEST(NavStateImuEKF, PredictMatchesExplicitIntegration) {
                    J_l * f_b * dt};      // v_new
 
   // Check against static IMU function:
-  const NavState U_static = NavStateImuEKF::IMU(omega_b, f_b, dt);
+  const NavState U_static = NavStateImuEKF::Imu(omega_b, f_b, dt);
   EXPECT(assert_equal(U, U_static, 1e-9));
 
   // Check against Gal3::Expmap

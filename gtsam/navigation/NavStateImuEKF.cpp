@@ -33,7 +33,7 @@ NavStateImuEKF::NavStateImuEKF(const NavState& X0, const Covariance& P0,
   Q_.template block<3, 3>(6, 6) = p->accelerometerCovariance;
 }
 
-NavState NavStateImuEKF::IMU(const Vector3& omega_b, const Vector3& f_b,
+NavState NavStateImuEKF::Imu(const Vector3& omega_b, const Vector3& f_b,
                              double dt) {
   const Vector3 phi_b = omega_b * dt;
   const so3::DexpFunctor local(phi_b);
@@ -53,7 +53,7 @@ NavState NavStateImuEKF::Dynamics(const Vector3& g_n, const NavState& X,
   // Calculate W, phi, and U
   const NavState W = Gravity(g_n, dt);
   NavState::AutonomousFlow phi{dt};  // Φ: velocity acts on position
-  const NavState U = IMU(omega_b, f_b, dt);
+  const NavState U = Imu(omega_b, f_b, dt);
 
   return Base::Dynamics(W, phi, X, U, A);
 }
@@ -67,7 +67,7 @@ void NavStateImuEKF::predict(const Vector3& omega_b, const Vector3& f_b,
   // Calculate W, phi, and U
   const NavState W = Gravity(params_->n_gravity, dt);
   NavState::AutonomousFlow phi{dt};  // Φ: velocity acts on position
-  const NavState U = IMU(omega_b, f_b, dt);
+  const NavState U = Imu(omega_b, f_b, dt);
 
   // Scale continuous-time process noise to the discrete interval [t, t+dt]
   Covariance Qdt = Q_ * dt;
