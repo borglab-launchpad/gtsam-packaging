@@ -17,6 +17,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -86,25 +87,44 @@ TEST(NavStateImuEKF, DynamicsJacobian) {
 /* ************************************************************************* */
 TEST(NavStateImuEKF, PredictMatchesExplicitIntegration) {
   using namespace nontrivial_navstate_example;
-  double dt = 0.02;
+  double dt = 10;
 
-  // Explicit integration as per Derek's code (from raw inputs)
-  Rot3 dR = Rot3::Expmap(omega_b * dt);
-  Rot3 R_new = R0.compose(dR);  // R_new = R * dR
-  Vector3 a_world = R0 * f_b + params->n_gravity;
-  Vector3 v_new = v0 + a_world * dt;
-  Point3 p_new = p0 + v0 * dt + a_world * (0.5 * dt * dt);
-  NavState X_explicit(R_new, p_new, v_new);
+  // Explicit integration from paper
+  const Vector3 phi_b = omega_b * dt;
+  const so3::DexpFunctor local(phi_b);
+  const Matrix3 J_l = local.Jacobian().left();
+  const Matrix3 N_l = local.Gamma().left();
+
+  const NavState U{Rot3::Expmap(phi_b),  // R_new
+                   N_l * f_b * dt * dt,  // p_new
+                   J_l * f_b * dt};      // v_new
+
+  // Check against static IMU function:
+  const NavState U_static = NavStateImuEKF::IMU(omega_b, f_b, dt);
+  EXPECT(assert_equal(U, U_static, 1e-9));
+
+  // Check against Gal3::Expmap
+  Vector10 xi;
+  xi << omega_b, f_b, Vector3::Zero(), 1.0;
+  const Gal3 T = Gal3::Expmap(xi * dt);
+  const NavState U_gal3{T.rotation(), T.position(), T.velocity()};
+  EXPECT(assert_equal(U_gal3, U, 1e-9));
+
+  // Explicit integration, combined with gravity and v0 * dt boost
+  const Vector3& g_n = params->n_gravity;
+  const Rot3 R_new = R0 * U.attitude();
+  const Vector3 v_new = v0 + g_n * dt + R0 * U.velocity();
+  const Point3 p_new = p0 + g_n * (0.5 * dt * dt) + v0 * dt + R0 * U.position();
+  const NavState X_explicit(R_new, p_new, v_new);
 
   // Increment-based integration should match exactly
   auto params = PreintegrationParams::MakeSharedU(9.81);
   NavStateImuEKF ekf(X0, I_9x9 * 1e-3, params);
-  NavState X_inc =
-      NavStateImuEKF::Dynamics(params->n_gravity, X0, omega_b, f_b, dt);
-  EXPECT(assert_equal(X_explicit, X_inc, 1e-12));
+  NavState X_next = NavStateImuEKF::Dynamics(g_n, X0, omega_b, f_b, dt);
+  EXPECT(assert_equal(X_explicit, X_next, 1e-12));
 }
 
-/* ************************************************************************* */
+/* ***************************************************************************/
 // Check Jacobian for world-position measurement h(X)=position(X).
 TEST(NavStateImuEKF, PositionMeasurementJacobian) {
   using namespace nontrivial_navstate_example;
@@ -215,62 +235,8 @@ TEST(NavStateImuEKF, PositionUpdateSanity) {
 }
 
 /* ************************************************************************* */
-NavState oldNavStateImuDynamics(const NavState& X, const Vector3& omega_b,
-                                const Vector3& f_b, double dt,
-                                const Vector3& n_gravity,
-                                OptionalJacobian<9, 9> H = {}) {
-  // Rotation and velocity
-  const Rot3& R = X.attitude();
-  Matrix3 D_vb_R, D_vb_v, D_gb_R;
-  const Vector3& v_n = X.velocity();  // Has D_v_v = R !
-  const Vector3 v_body =
-      R.unrotate(v_n, H ? &D_vb_R : nullptr, H ? &D_vb_v : nullptr);
-  const Vector3 g_body = R.unrotate(n_gravity, H ? &D_gb_R : nullptr);
-  const Vector3 a_b_total = f_b + g_body;
-
-  // Construct increment directly as group element with body-frame p/v
-  // increments
-  const Rot3 dR = Rot3::Expmap(omega_b * dt);
-  const double dt2 = 0.5 * dt * dt;
-  const Vector3 dp_body = v_body * dt + a_b_total * dt2;
-  const Vector3 dv_body = a_b_total * dt;
-  NavState U(dR, dp_body, dv_body);
-
-  if (H) {
-    Matrix3 dRt = dR.transpose();  // Jacobian of NavState::Create
-    H->setZero();
-    // position:
-    H->template block<3, 3>(3, 0) = dRt * (D_vb_R * dt + D_gb_R * dt2);
-    const Matrix3 D_v_v = R.matrix();  // Jacobian of velocity()
-    H->template block<3, 3>(3, 6) = dRt * D_vb_v * D_v_v * dt;
-    // velocity:
-    H->template block<3, 3>(6, 0) = dRt * D_gb_R * dt;
-  }
-
-  return U;
-}
-
-TEST(NavStateImuEKF, WPhiU_matches_navStateImuDynamics) {
-  using namespace nontrivial_navstate_example;
-
-  const double dt = 1e-2;  // 10 ms
-  const Vector3 n_gravity(0, 0, -9.81);
-
-  // Expected state from oldNavStateImuDynamics
-  Matrix9 D_U_X0, D_X_X0, D_X_U;
-  NavState U = oldNavStateImuDynamics(X0, omega_b, f_b, dt, n_gravity, D_U_X0);
-  NavState X_old = X0.compose(U, D_X_X0, D_X_U);
-
-  // Check New dynamics function
-  Matrix9 A_ekf;
-  NavState X_ekf =
-      NavStateImuEKF::Dynamics(n_gravity, X0, omega_b, f_b, dt, A_ekf);
-
-  CHECK(assert_equal(X_old, X_ekf));
-  CHECK(assert_equal<Matrix>(D_X_X0 + D_X_U * D_U_X0, A_ekf));
-}
-
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
+/* ************************************************************************* */
