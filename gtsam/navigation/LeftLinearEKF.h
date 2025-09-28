@@ -70,7 +70,7 @@ class LeftLinearEKF : public LieGroupEKF<G> {
   template <class Phi, typename = std::enable_if_t<is_automorphism<Phi>::value>>
   static G Dynamics(const G& W, const Phi& phi, const G& X, const G& U,
                     OptionalJacobian<Dim, Dim> A = {}) {
-    return W * Dynamics<Phi>(phi, X, U, A); // A is independent of W
+    return traits<G>::Compose(W, Dynamics<Phi>(phi, X, U, A));
   }
 
   /**
@@ -84,7 +84,7 @@ class LeftLinearEKF : public LieGroupEKF<G> {
       const G U_inv = traits<G>::Inverse(U);
       *A = traits<G>::AdjointMap(U_inv) * phi.dIdentity();
     }
-    return phi(X) * U;
+    return traits<G>::Compose(phi(X), U);
   }
 
   /**
