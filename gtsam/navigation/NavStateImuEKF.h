@@ -44,14 +44,13 @@ class GTSAM_EXPORT NavStateImuEKF : public LeftLinearEKF<NavState> {
                  const std::shared_ptr<PreintegrationParams>& params);
 
   /// Calculate W (gravity-only left composition, world-frame increments)
-  static NavState Gravity(const Vector3& n_gravity, double dt) {
-    return {Rot3(), n_gravity * (0.5 * dt * dt), n_gravity * dt};
+  static NavState Gravity(const Vector3& g_n, double dt) {
+    return {Rot3(), g_n * (0.5 * dt * dt), g_n * dt};
   }
 
   /// Calculate U from raw IMU (no gravity): body-frame increments
-  static NavState IMU(const Vector3& omega_b, const Vector3& f_b, double dt) {
-    return {Rot3::Expmap(omega_b * dt), f_b * (0.5 * dt * dt), f_b * dt};
-  }
+  /// We do an explicit closed-form integration based on SO3(3) kernels
+  static NavState IMU(const Vector3& omega_b, const Vector3& f_b, double dt);
 
   /**
    * @brief Compute the dynamics of the system.
@@ -64,7 +63,7 @@ class GTSAM_EXPORT NavStateImuEKF : public LeftLinearEKF<NavState> {
    * where W, \phi, and U are the gravity, (autonomous) position update, and
    * IMU increment functions, respectively.
    *
-   * @param n_gravity Gravity vector in the navigation frame.
+   * @param g_n Gravity vector in the navigation frame.
    * @param X Current NavState.
    * @param omega_b Body angular velocity measurement (rad/s).
    * @param f_b Body specific force measurement (m/s^2).
@@ -72,7 +71,7 @@ class GTSAM_EXPORT NavStateImuEKF : public LeftLinearEKF<NavState> {
    * @param A Optional Jacobian of the dynamics with respect to the state.
    * @return The next NavState after applying the dynamics.
    */
-  static NavState Dynamics(const Vector3& n_gravity, const NavState& X,
+  static NavState Dynamics(const Vector3& g_n, const NavState& X,
                            const Vector3& omega_b, const Vector3& f_b,
                            double dt, OptionalJacobian<9, 9> A = {});
 
