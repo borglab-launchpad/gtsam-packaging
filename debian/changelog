@@ -1,3 +1,12 @@
+gtsam-no-tbb (4.1.0-1ubuntu2~3188.gbp96e324) jammy; urgency=medium
+
+  ** SNAPSHOT build @96e3241119e0ba6756958d61ae285d2cb2af3dec **
+
+  * updated changelog and patch files for snapshot 4.1.0-1ubuntu2~3187.gbp199ab1
+  * modified changelog for distro focal
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Sep 2025 21:03:33 +0000
+
 gtsam-no-tbb (4.1.0-1ubuntu2~3187.gbp199ab1) focal; urgency=medium
 
   ** SNAPSHOT build @199ab1101528c6e0b07ba7aec5b63c2c6adfe953 **
