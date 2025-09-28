@@ -20,9 +20,6 @@ project:
       - file: ./gtsam/inference/inference.md
         children:
         - pattern: ./gtsam/inference/doc/*
-      - file: ./gtsam/hybrid/hybrid.md
-        children:
-        - pattern: ./gtsam/hybrid/doc/*
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
@@ -35,6 +32,12 @@ project:
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*
+      - file: ./gtsam/discrete/discrete.md
+        children:
+        - pattern: ./gtsam/discrete/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
     - file: ./doc/examples.md
       children: 
       - pattern: ./python/gtsam/examples/*.ipynb
