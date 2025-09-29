@@ -1,10 +1,87 @@
-gtsam (4.1.0-1ubuntu2~3199.gbp6f56dd) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3200.gbp5f953c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5f953c71433e14f9098e99c8db60c1fdf69250ca **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6f56dd28c334373377747ad9e07db50bdab233e2 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 28 Sep 2025 23:47:51 +0000
+  [ scottiyio ]
+  * Add Gal3ImuEKF.cpp and Gal3ImuEKF.h features
+  * Edit Gal3.h to include AutonomousFlow
+  * Add tests for Gal3ImuEKF.cpp
+  * Add a null automorphism test
+  * Remove automorphism from Gal3, and put null automorphism into Gal3ImuEKF.cpp
+  * Change some signs, fix time on G, W, add some notes in doxygen
+  * Minor layout changes
+  * Resolve tests for new format of Gal3ImuEKF
+  * Add Gal3 IMU EKF to python header
+  * Add Gal3 to scenarioRunner
+  * Gal3 IMU Example - rederived from NavState
+  * Remove specific source files from gtsam_srcs
+  * Add Gal3ImuASVExample.ipynb to gtsam
+
+  [ Frank Dellaert ]
+  * Undo changes to Gal3
+  * Exact IMU
+  * Use traits<G>::Compose
+  * Allow for a W on the left
+  * Use InvariantEKF
+  * Fix linking issue
+  * Re-ran notebooks
+  * Fix script for older bash versions
+  * Guard false positive on gcc13
+  * Run tests that do not require boost
+  * Apply suggestion from @Copilot
+  * Add static
+  * Fix more CI
+  * New definition of Gravity
+  * Make Scenario test work - revert Gravity - no time-keeping
+  * Run all notebooks
+  * Fix comment
+  * t_k now part of the state
+  * Compensating gravity
+  * Simplified code matches math
+  * Fix comments
+  * Use g_n
+  * Add mode
+  * Add mode to wrapper
+  * Closed form NavState IMU
+
+  [ Jay Farrell ]
+  * edits to successfully compile and build with strict compiler settings
+  * minimal changes to prevent crash at EOF
+  * pragma fix
+
+  [ Frank Dellaert ]
+  * three new notebooks
+
+  [ Gold856 ]
+  * Fix tests that don't pass on Windows
+  * Simplify Windows CI and run all tests
+  * Run all tests on Windows vcpkg CI
+
+  [ Frank Dellaert ]
+  * More notebooks
+  * Add top-level and Signature notebook
+  * Add some more examples
+  * Stray change
+
+  [ Tal Regev ]
+  * Fix vcpkg macos
+
+  [ Frank Dellaert ]
+  * Naming convention: IMU -> Imu
+  * Fix Colab buttons
+  * Formatting
+  * Three extra lines
+  * Fix inheritance
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 29 Sep 2025 02:12:49 +0000
 
 gtsam (4.1.0-1ubuntu2~3198.gbp549ccc) noble; urgency=medium
 
