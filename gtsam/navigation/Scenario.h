@@ -18,6 +18,7 @@
 #pragma once
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/dllexport.h>
 
@@ -46,6 +47,7 @@ class GTSAM_EXPORT Scenario {
 
   Rot3 rotation(double t) const;
   NavState navState(double t) const;
+  Gal3 gal3(double t) const;
 
   Vector3 velocity_b(double t) const;
 

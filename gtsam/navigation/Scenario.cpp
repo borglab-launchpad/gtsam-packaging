@@ -35,6 +35,9 @@ Rot3 Scenario::rotation(double t) const {
 NavState Scenario::navState(double t) const { 
   return NavState(pose(t), velocity_n(t));
 }
+Gal3 Scenario::gal3(double t) const {
+  return Gal3::FromPoseVelocityTime(pose(t), velocity_n(t), t);
+}
 
 Vector3 Scenario::velocity_b(double t) const {
   const Rot3 nRb = rotation(t);
