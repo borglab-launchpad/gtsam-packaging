@@ -33,6 +33,7 @@ jobs:
           macos-13-xcode-14.2,
           macos-14-xcode-15.4,
           macos-14-xcode-15.4-boost,
+          macos-14-xcode-15.4-geographiclib,
         ]
 
         build_type: [Debug, Release]
@@ -53,8 +54,15 @@ jobs:
             compiler: xcode
             version: "15.4"
 
+          - name: macos-14-xcode-15.4-geographiclib
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
         exclude:
           - name: macos-14-xcode-15.4-boost
+            build_type: Debug
+          - name: macos-14-xcode-15.4-geographiclib
             build_type: Debug
 
     steps:
@@ -75,6 +83,12 @@ jobs:
           brew upgrade boost --quiet || brew install boost --quiet
           echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
           echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
+
+      - name: Install GeographicLib
+        if: contains(matrix.name, 'geographiclib') && matrix.build_type == 'Release'
+        run: |
+          brew upgrade geographiclib --quiet || brew install geographiclib --quiet
+          echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
 
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t
