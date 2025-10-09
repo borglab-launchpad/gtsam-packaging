@@ -37,6 +37,7 @@ jobs:
             ubuntu-24.04-gcc-14,
             ubuntu-24.04-clang-16,
             ubuntu-24.04-clang-16-boost,
+            ubuntu-24.04-clang-16-geographiclib,
           ]
 
         build_type: [Debug, Release]
@@ -66,8 +67,16 @@ jobs:
             os: ubuntu-24.04
             compiler: clang
             version: "16"
+
+          - name: ubuntu-24.04-clang-16-geographiclib
+            os: ubuntu-24.04
+            compiler: clang
+            version: "16"
+
         exclude:
           - name: ubuntu-24.04-clang-16-boost
+            build_type: Debug
+          - name: ubuntu-24.04-clang-16-geographiclib
             build_type: Debug
 
     steps:
@@ -107,6 +116,12 @@ jobs:
           sudo apt-get -y install libboost-all-dev
           echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
           echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
+
+      - name: Install GeographicLib (Conditional)
+        if: contains(matrix.name, 'geographiclib') && matrix.build_type == 'Release'
+        run: |
+          sudo apt-get -y install libgeographiclib-dev
+          echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
 
       - name: Build and Test
         run: |
