@@ -1,10 +1,33 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3202.gbp919635) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3203.gbpc756ee) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c756ee16cc8bd8fc9acfcbcf2f736ea9bdc9f672 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @919635bdda8a89c0f73ad2e35e317259655da524 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 03 Oct 2025 17:12:18 +0000
+  [ nebudev14 ]
+  * Get rid of Geographiclib from 3rd party folder entirely
+  * Rearrange geographiclib finding process, only build specific unit tests if lib is found
+  * Fix navigation unit tests, test new CMAKE structure
+
+  [ Warren Yun ]
+  * Undo formatter artifacts
+  * Update workflows for optional GeographicLib installation testing
+  * Pass geographiclib arg into unix.sh build
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ nebudev14 ]
+  * Add back removed conditional for navigation test serialization
+  * Add correct geographiclib build name on apt
+
+  [ Warren Yun ]
+  * Update macos CI, fix geographiclib version checking
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Oct 2025 19:59:29 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3201.gbp382485) noble; urgency=medium
 
