@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3211.gbpb2c64f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3212.gbpe913ab) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e913ab1e61eb90c307d460339625428e667c9cc0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b2c64f45b51a2e5d40a267ce565993cad44e51a0 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 09 Oct 2025 20:02:42 +0000
+  [ Tal Regev ]
+  * Add GeographicLib to vcpkg
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Oct 2025 05:49:25 +0000
 
 gtsam (4.1.0-1ubuntu2~3210.gbp88573e) noble; urgency=medium
 
