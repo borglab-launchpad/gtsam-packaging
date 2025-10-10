@@ -25,9 +25,6 @@ jobs:
             test_target: RUN_TESTS
             binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
             python: python
-            # Exclude test_sumProduct and test_sumProduct_chain from pytest on windows.
-            # These tests should be fixed for windows.
-            pytest_extra_flags: -k "not test_sumProduct"
           - os: ubuntu-latest
             triplet: x64-linux-release
             build_type: Release
