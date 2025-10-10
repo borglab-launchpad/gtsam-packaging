@@ -1,10 +1,28 @@
-gtsam (4.1.0-1ubuntu2~3219.gbp7b3614) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3220.gbpda9b26) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @da9b26d26ce657794567a09be4b838909bb2ecc6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7b36145b89933cd38262e85b6293a0b4eeb44261 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Oct 2025 10:47:41 +0000
+  [ Gold856 ]
+  * Clean up caches on closed PRs
+  * Don't duplicate caches
+  * Add option to disable precompiled headers
+  * Use sccache for Windows release builds
+
+  [ Fan Jiang ]
+  * Squashed 'wrap/' changes from 66087700e..24fc897f5
+
+  [ scottiyio ]
+  * Add a test for centripetal
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Oct 2025 11:14:42 +0000
 
 gtsam (4.1.0-1ubuntu2~3218.gbp38e6b9) noble; urgency=medium
 
