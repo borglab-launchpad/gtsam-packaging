@@ -261,3 +261,88 @@ or
 when importing GTSAM using the python wrapper.
 
 
+## Compile gtsam with vcpkg. (For linux/wsl)
+Install python dependencies + ninja + build essential in linux:   
+```
+sudo apt update
+sudo apt-get install autoconf automake autoconf-archive ninja-build build-essential -y
+```
+
+On your home dir near gtsam dir:   
+Setup vcpkg   
+```bash
+git clone https://github.com/microsoft/vcpkg
+cd vcpkg
+./bootstrap-vcpkg.sh
+```
+
+vcpkg install dependencies   
+on vcpkg dir:   
+```bash
+./vcpkg x-set-installed         \
+          boost-assign          \
+          boost-bimap           \
+          boost-chrono          \
+          boost-date-time       \
+          boost-filesystem      \
+          boost-format          \
+          boost-graph           \
+          boost-math            \
+          boost-program-options \
+          boost-regex           \
+          boost-serialization   \
+          boost-system          \
+          boost-thread          \
+          boost-timer           \
+          tbb                   \
+          pybind11
+```
+
+Setup python dependencies   
+Go to your gtsam folder `cd gtsam`:   
+```bash
+../vcpkg/installed/x64-linux/tools/python3/python3 -m ensurepip --upgrade
+../vcpkg/installed/x64-linux/tools/python3/python3 -m pip install -r python/dev_requirements.txt
+```
+
+Cmake config:   
+In gtsam folder   
+```bash
+cmake . -B build -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=../scripts/buildsystems/vcpkg.cmake \
+    -DVCPKG_INSTALLED_DIR=../installed \
+    -DVCPKG_TARGET_TRIPLET=x64-linux \
+    -DVCPKG_HOST_TRIPLET=x64-linux \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+    -DGTSAM_ROT3_EXPMAP=ON \
+    -DGTSAM_POSE3_EXPMAP=ON \
+    -DGTSAM_BUILD_PYTHON=ON \
+    -DGTSAM_BUILD_TESTS=ON \
+    -DGTSAM_BUILD_UNSTABLE=ON \
+    -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+    -DGTSAM_USE_SYSTEM_EIGEN=OFF \
+    -DGTSAM_USE_SYSTEM_METIS=OFF \
+    -DGTSAM_USE_SYSTEM_PYBIND=ON \
+    -DGTSAM_SUPPORT_NESTED_DISSECTION=ON
+```
+
+cmake compile:   
+In gtsam folder:   
+```bash
+cmake --build build
+```
+
+Run python tests:   
+```
+VCPKG_INSTALLATION_ROOT=<abs path to vcpkg root dir>
+export PATH="$PATH:$VCPKG_INSTALLATION_ROOT/installed/x64-linux/bin"
+cmake --build build --target python-install
+cmake --build build --target python-test
+cmake --build build --target python-test-unstable
+```
+
+Run gtsam tests:   
+```bash
+cmake --build build --target check
+```
