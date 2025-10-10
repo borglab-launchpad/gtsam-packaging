@@ -1,10 +1,43 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3210.gbpb0748d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3211.gbpda6c4e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @da6c4e0d4404b3ae36e2f9aa547ee8c919020250 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b0748dfb137621b16ed3e04b90f519d2f858b639 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Oct 2025 05:52:15 +0000
+  [ Frank Dellaert ]
+  * NonlinearLikelihood
+  * likelihood
+  * Robust as well
+  * PriorFactor refactor
+  * Switch to old behavior
+  * Formatting
+  * NonlinearDensity v1
+  * error overload
+  * Proper negLogConstant
+  * Values version
+  * Fusion
+  * FuseGaussians
+  * getGaussian et al
+  * retractMean vastly simplifies
+  * Refactored fusion
+  * Address chatgpt review
+  * Notebooks
+  * Optionals
+  * Figure sanity
+  * Away with samples in Section 3
+  * Review comments
+  * More sane constructors
+  * Rename classes
+  * Only Gaussian models allowed
+  * Fix wrapper
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 10 Oct 2025 10:44:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3209.gbp172357) noble; urgency=medium
 
