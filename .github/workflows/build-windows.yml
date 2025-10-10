@@ -6,6 +6,9 @@ on:
       - '**.md'
       - '**.ipynb' 
       - 'myst.yml'
+  push:
+    # Runs on pushes targeting the develop branch 
+    branches: [develop]
 
 # Cancels any in-progress workflow runs for the same PR when a new push is made,
 # allowing the runner to become available more quickly for the latest changes.
@@ -25,6 +28,7 @@ jobs:
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
+      SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
@@ -93,6 +97,10 @@ jobs:
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
+      - name: Install sccache
+        if: matrix.build_type == 'Release'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Configuration
         shell: bash
         run: |
@@ -106,9 +114,12 @@ jobs:
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
                   -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
+                  -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
                   -DBOOST_ROOT="${BOOST_ROOT_UNIX}" \
                   -DBOOST_INCLUDEDIR="${BOOST_ROOT_UNIX}/include" \
-                  -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib"
+                  -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib" \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           else
             cmake -B build \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
