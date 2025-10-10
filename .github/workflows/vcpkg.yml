@@ -45,6 +45,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Restore cache dependencies
+        id: cache-restore
         uses: actions/cache/restore@v3
         with:
           path: ${{ matrix.binary_cache }}
@@ -57,6 +58,18 @@ jobs:
         with:
           arch: x64
           toolset: 14.40
+
+      - name: Install sccache
+        if: runner.os == 'Windows'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Use sccache
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "SCCACHE_GHA_ENABLED=ON" >> "$GITHUB_ENV"
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
 
       - name: cl version
         if: runner.os == 'Windows'
@@ -123,6 +136,8 @@ jobs:
           done
 
       - name: Save cache dependencies
+        # Don't save if it's the exact same
+        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}', matrix.os, hashFiles('vcpkg-info/*'))
         uses: actions/cache/save@v4
         with:
           path: ${{ matrix.binary_cache }}
@@ -147,6 +162,7 @@ jobs:
               -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
               -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+              -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
               -DGTSAM_ROT3_EXPMAP=ON \
               -DGTSAM_POSE3_EXPMAP=ON \
               -DGTSAM_BUILD_PYTHON=ON \
