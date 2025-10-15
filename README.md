@@ -1,4 +1,6 @@
 # GTSAM: Georgia Tech Smoothing and Mapping Library
+[![C++ API](https://img.shields.io/badge/API-C%2B%2B-blue.svg)](https://gtsam.org/doxygen/)
+[![Docs](https://img.shields.io/badge/Docs-Python%20%7C%20C%2B%2B-green.svg)](https://borglab.github.io/gtsam/)
 
 **Important Note**
 
@@ -14,6 +16,7 @@ Networks as the underlying computing paradigm rather than sparse
 matrices.
 
 
+
 <!-- Main CI Badges (develop branch) -->
 | CI Status | Platform | Compiler |
 |:----------|:---------|:---------|
@@ -22,6 +25,17 @@ matrices.
 | [![Build Wheels for Develop](https://github.com/borglab/gtsam/actions/workflows/build-cibw.yml/badge.svg?branch=develop)](https://github.com/borglab/gtsam/actions/workflows/build-cibw.yml?query=branch%3Adevelop) | See [pypi files](https://pypi.org/project/gtsam-develop/#files); no Windows| - |
 
 On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
+
+
+## Documentation
+
+- **C++ API Docs:** [https://gtsam.org/doxygen/](https://gtsam.org/doxygen/)
+- **Python API Docs:** [https://borglab.github.io/gtsam/](https://borglab.github.io/gtsam/)
+<!-- TODO: Perhaps include links to source code as well? But the wrappers doesn't really help too much understanding the source code. 
+C++: https://github.com/borglab/gtsam/tree/develop/gtsam
+Matlab wrapper: https://github.com/borglab/gtsam/blob/develop/matlab/README.md
+Python wrapper https://github.com/borglab/gtsam/blob/develop/python/README.md
+-->
 
 
 ## Quickstart
