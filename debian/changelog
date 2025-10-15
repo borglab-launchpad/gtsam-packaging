@@ -1,10 +1,35 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3238.gbp9824fe) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3239.gbpbb490e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bb490e98349dde6462b75908e1b955ff4dfde0f4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9824fe9d560c6ea17708a63d771115af08353378 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 17:08:47 +0000
+  [ gsuveer ]
+  * Dockerfile for Ubuntu+clang
+  * Dockerfile for Ubuntu+gcc
+  * script to push Docker images to docker hub
+  * README.md
+  * build-linux workflow uses docker images
+  * Added support for clang 9/14 + installed eigen & metis in docer image
+  * build-special.yml CI workflow with docker
+  * revert swap creation
+  * formatting dockerfiles
+  * remove g++ multilib
+  * Move CI container Dockerfiles to github.com/borglab/docker-images
+  * Set GeographicLib Environment
+  * Removed login step since images are public
+  * removed all installs inside build and test script
+  * added newline
+  * build linux runs actions inside containers
+  * linux special actions run in containers
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 17:47:11 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3237.gbpb360cb) noble; urgency=medium
 
