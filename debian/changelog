@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3234.gbp590c1d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3235.gbpc6abd5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c6abd53709529b1c01496699a23a65a1ef9011bc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @590c1db4df5cfc8da65a094c7261afb90a4e2f46 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 07:50:24 +0000
+  [ Zheng Robert Jia ]
+  * Added easier references to Python and C++ docs
+  * Update docs description
+  * Update C++ API docs, and general explanation doc
+
+  [ Frank Dellaert ]
+  * Add test back in
+  * Full python example
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 17:05:50 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3233.gbpdcb3c4) noble; urgency=medium
 
