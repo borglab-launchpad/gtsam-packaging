@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3235.gbp59214c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3236.gbpbd8e2a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @bd8e2a0f59684557bfc80742712f16e72247c962 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @59214caf87ad1c51cdf77c933bbbb83d41e005c2 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 14 Oct 2025 23:39:16 +0000
+  [ Varun Agrawal ]
+  * Cast Eigen::Matrix dimension type to int
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * increase swap space in linux for vcpkg CI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 07:47:34 +0000
 
 gtsam (4.1.0-1ubuntu2~3234.gbp9b29f2) noble; urgency=medium
 
