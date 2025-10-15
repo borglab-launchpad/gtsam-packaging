@@ -2,7 +2,7 @@ name: vcpkg
 on:
   pull_request:
   push:
-    # Runs on pushes targeting the develop branch 
+    # Runs on pushes targeting the develop branch
     branches: [develop]
 
 # Cancels any in-progress workflow runs for the same PR when a new push is made,
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:      
+        include:
           - os: windows-latest
             triplet: x64-windows-release
             build_type: Release
@@ -145,6 +145,12 @@ jobs:
         run: |
           $VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m ensurepip --upgrade
           $VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m pip install -r python/dev_requirements.txt
+
+      - name: Set Swap Space (Linux)
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 6
 
       - name: cmake config
         if: success()
