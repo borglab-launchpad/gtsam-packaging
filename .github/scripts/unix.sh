@@ -8,32 +8,12 @@
 set -e   # Make sure any error makes the script to return an error code
 set -x   # echo
 
-# install TBB with _debug.so files
-function install_tbb()
-{
-  echo install_tbb  
-  if [ "$(uname)" == "Linux" ]; then
-    sudo apt-get -y install libtbb-dev
-
-  elif [ "$(uname)" == "Darwin" ]; then
-    brew install tbb
-  fi
-}
 
 # common tasks before either build or test
 function configure()
 {
   # delete old build
   rm -rf build
-
-  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
-    install_tbb
-  fi
-
-  if [ ! -z "$GCC_VERSION" ]; then
-    export CC=gcc-$GCC_VERSION
-    export CXX=g++-$GCC_VERSION
-  fi
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
