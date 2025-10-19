@@ -1,10 +1,34 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3246.gbp38c09c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3247.gbped167e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ed167ed7c265e31f941e1f9899120c631f41a47a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @38c09cd0da56c4f54853cdfe44108d47d2a93731 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Oct 2025 17:43:41 +0000
+  [ Rohan Bansal ]
+  * translated Fisheye, HMM examples
+  * update checklist for already translated files
+  * translated createSFMExampleData
+  * added discretebayesnetexample
+  * removed lengthy writeBal
+  * translate more
+  * update readme checklist based on files
+  * convert to python notebooks, delete bad example
+  * add stress test
+  * fixes
+  * fix removed files
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Rohan Bansal ]
+  * prep for notebook processing file
+  * standardized all notebooks in python examples directory
+  * standardized all notebooks
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Oct 2025 19:48:16 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3245.gbpfec594) noble; urgency=medium
 
