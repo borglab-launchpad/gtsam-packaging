@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3242.gbpb1816c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3243.gbpb3602a) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b3602a9184104e54f4503fc1597401eeaaad90c6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b1816c3ae6afe3b7d7d080cc2a83fe25b5d29f34 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 15 Oct 2025 17:50:08 +0000
+  [ Gold856 ]
+  * Revert "add cross platform extern marking to cephes.h"
+  * Export all cephes symbols The header is broken. I prefer to do this rather than maintain a duplicate header
+  * Remove C math function declarations
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Oct 2025 17:40:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3241.gbp06c852) noble; urgency=medium
 
