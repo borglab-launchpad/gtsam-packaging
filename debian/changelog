@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3250.gbp009f3a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3251.gbp962e77) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @962e779621dce450f349e3a6fbe759ce0720ea56 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @009f3a26c09c07e143409a6fed43523df3d67b54 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Oct 2025 19:51:14 +0000
+  [ Gold856 ]
+  * Enable and propagate /permissive- on MSVC
+  * Modernize install instructions to include CMake + Ninja Include /permissive- notice and fix up a few other things
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 19 Oct 2025 20:40:39 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3249.gbpb2411d) noble; urgency=medium
 
