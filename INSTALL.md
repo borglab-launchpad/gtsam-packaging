@@ -8,17 +8,16 @@ In the root library folder execute:
 $ mkdir build
 $ cd build
 $ cmake ..
-$ make check # (optional, runs unit tests)
-$ make install
+$ cmake --build . --target check # (optional, runs unit tests)
+$ cmake --build . --target install
 ```
 
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+    - BOOST version 1.70 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
 
-    - Cmake version 3.0 or higher
-    - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
+    - CMake version 3.10 or higher
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
@@ -62,8 +61,8 @@ execute commands as follows for an out-of-source build:
   $ mkdir build
   $ cd build
   $ cmake ..
-  $ make check (optional, runs unit tests)
-  $ make install
+  $ cmake --build . --target check # (optional, runs unit tests)
+  $ cmake --build . --target install
   ```
 
   This will build the library and unit tests, run all of the unit tests,
@@ -82,13 +81,38 @@ For this reason we recommend Boost>=1.65, and recommend installing it through al
 
 # Windows Installation
 
-This section details how to build a GTSAM `.sln` file using Visual Studio.
+There are two ways to build GTSAM on Windows: the traditional way with Visual Studio and the modern way with CMake + Ninja. The CMake + Ninja way is preferred because the Ninja generator is much faster than Visual Studio.
+
+
+**Important**: Regardless of how you build, GTSAM requires compiling with `/permissive-` and for all projects to also compile with `/permissive-` (due to lots of code being in headers) and sets the list of public compiler flags accordingly. If your project does not currently build with `/permissive-`, make sure it does and fix whatever is needed to make it work. Failure to compile with `/permissive-` can cause various runtime or build errors.
 
 ### Prerequisites
 
-- Visual Studio with C++ CMake tools for Windows
+- Visual Studio with Desktop development with C++
+  - You need MSVC and the Windows SDK to build GTSAM.
+  - This also includes the C++ CMake tools for Windows component, which includes Ninja and CMake.
   - CMake >= 3.21 is required for Visual Studio installation because custom templates used in the build were added in 3.21. Use `cmake --version` in the VS Developer Command Prompt to ensure you meet this requirement.
 - All the other pre-requisites listed above.
+
+## Building with CMake and Ninja
+
+This section details how to use CMake with the Ninja generator. You must be in a Developer shell for this to work.
+
+In the root library folder execute:
+
+```powershell
+$ mkdir build
+$ cd build
+$ cmake .. -G Ninja
+$ cmake --build . --target check # (optional, runs unit tests)
+$ cmake --build . --target install
+```
+
+Note: if you are used to using the Visual Studio generators, you do not need to pass --config here for Ninja. This is because the Visual Studio generator is a multi-config generator, so you need --config to select the build type. Ninja is not a multi-config generator, so you just need to set CMAKE_BUILD_TYPE when configuring and it will use that build type to compile. If you want the multi-config behavior, try using `-G Ninja Multi-Config`.
+
+## Building with Visual Studio
+
+This section details how to build a GTSAM `.sln` file using Visual Studio.
 
 ### Steps
 
@@ -102,9 +126,9 @@ This section details how to build a GTSAM `.sln` file using Visual Studio.
   - You can optionally create a new configuration for a `Release` build.
   - Set the necessary CMake variables for your use case. If you are not using Boost, uncheck `GTSAM_ENABLE_BOOST_SERIALIZATION` and `GTSAM_USE_BOOST_FEATURES`. 
   - Click on `Show advanced settings`.
-  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 16 2019 Win64`.
+  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 17 2022 Win64`.
   - Save the settings (Ctrl + S).
-4. Saving the CMake settings should automatically generate the cache. Otherwise, click on `Project -> Generate Cache`. This will generate the CMake build files (as seen in the Output window).
+4. Saving the CMake settings should automatically generate the cache. Otherwise, click on `Project -> Configure Cache`. This will generate the CMake build files (as seen in the Output window).
   - If generating the cache yields `CMake Error ... (ADD_CUSTOM_COMMAND)` errors, you have an old CMake. Verify that your CMake is >= 3.21. If Visual Studio says that it is but you're still getting the error, install the latest CMake (tested with 3.31.4) and point to its executable in `CMakeSettings > Advanced settings > CMake executable`.
 5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
 
