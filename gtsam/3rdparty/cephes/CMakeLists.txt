@@ -17,7 +17,7 @@ set(CEPHES_HEADER_FILES
     cephes/mconf.h
     cephes/polevl.h
     cephes/sf_error.h
-    dllexport.h)
+   )
 
 # Add header files
 install(FILES ${CEPHES_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes)
