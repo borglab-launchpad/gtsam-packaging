@@ -20,6 +20,12 @@
  * refer to the aforementioned paper.
  */
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 15
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Event.h>
