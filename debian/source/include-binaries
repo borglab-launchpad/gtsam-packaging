@@ -8,3 +8,4 @@ doc/ImuFactor.pdf
 doc/PreintegratedIMUJacobians.pdf
 doc/Hybrid.pdf
 ../../../dev/null
+doc/images/state_action_cond_prob.png
