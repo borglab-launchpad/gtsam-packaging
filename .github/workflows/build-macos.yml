@@ -68,6 +68,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Prepare Homebrew (robust)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_INSTALL_FROM_API=1
+          export HOMEBREW_CURL_RETRIES=5
+      
+          brew update-reset -q || true
+          brew tap --repair || true
+          brew analytics off || true
+      
+          # (optional) Show outdated without failing the job
+          brew outdated || true
 
       - name: Install Dependencies
         run: |
