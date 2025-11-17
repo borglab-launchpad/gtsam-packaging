@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~3275.gbp0f346a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3276.gbpa30851) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a30851432f587d180224e2a1a90ba39677c2202d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0f346a51f7f9b4920c942150d1310931f0696580 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 04 Nov 2025 05:06:02 +0000
+  [ Robert-Jia00129 ]
+  * added quickstart tutorial
+  * move quickstart file to gtsamexamples. link to robotics book at the beginning of book
+  * added -standard cells- at the beginning of notebook
+
+  [ Frank Dellaert ]
+  * Made some small additions
+
+  [ Robert-Jia00129 ]
+  * updated probability table image
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Zheng Robert Jia ]
+  * Enhance Homebrew setup in build-macos.yml
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Nov 2025 21:04:14 +0000
 
 gtsam (4.1.0-1ubuntu2~3274.gbp0726c7) noble; urgency=medium
 
