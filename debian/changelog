@@ -1,10 +1,27 @@
-gtsam (4.1.0-1ubuntu2~3279.gbp41c390) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3280.gbp52169c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @52169c76bd01d14999d16e65224084e7184e6d9b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @41c3908dfe61e5270da59d1fa897c2fb43d6bcba **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Nov 2025 21:07:11 +0000
+  [ scottiyio ]
+  * Add notes to NavState::coriolis
+  * Add notes to NavState::coriolis
+  * - Used doublecross() jacobians - Remove excess white space
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ scottiyio ]
+  * Simplifed code by removing R() from the code. Resolved some extra declarations.
+
+  [ Frank Dellaert ]
+  * Update version to 4.3a1
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Nov 2025 23:58:32 +0000
 
 gtsam (4.1.0-1ubuntu2~3278.gbp2e0d26) noble; urgency=medium
 
