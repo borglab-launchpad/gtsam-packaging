@@ -1,10 +1,27 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3274.gbp36a56e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3275.gbp3f6d74) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3f6d7443c8f7dd707cf9c525fd1e5e8a8ad7eb31 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @36a56efbe0cf84fe3b021e0270ef83947c2b3d39 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 17 Nov 2025 21:06:57 +0000
+  [ scottiyio ]
+  * Add notes to NavState::coriolis
+  * Add notes to NavState::coriolis
+  * - Used doublecross() jacobians - Remove excess white space
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ scottiyio ]
+  * Simplifed code by removing R() from the code. Resolved some extra declarations.
+
+  [ Frank Dellaert ]
+  * Update version to 4.3a1
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 18 Nov 2025 23:58:36 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3273.gbp8f1e93) noble; urgency=medium
 
