@@ -371,7 +371,7 @@ TEST(NavState, Coriolis3) {
   double dt = 2.0, dt2 = dt * dt;
   Vector3 n_omega(0.0, 0.0, 1.0), n_t(1.0, 0.0, 0.0), n_v(0.0, 1.0, 0.0);
   Vector3 n_aCorr1 = -2.0 * n_omega.cross(n_v),
-          n_aCorr2 = -n_omega.cross(n_omega.cross(n_t));
+          n_aCorr2 = -doubleCross(n_omega, n_t);
   Rot3 nRb = Rot3(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0),
        bRn = nRb.inverse();
 
@@ -401,6 +401,24 @@ TEST(NavState, Coriolis3) {
   EXPECT(assert_equal(b_dV2e, b_dV2a));
 
 }
+
+TEST(NavState, Coriolis4) {
+  /** Consider a navigation frame with zero angular velocity.
+   * We expect that the coriolis correction does nothing and the Jacobian is zero.
+   */
+  const Vector3 omega(0.0, 0.0, 0.0);
+
+  const Vector9 expected_correction = Vector9::Zero();
+  const Matrix9 expected_H = Matrix9::Zero();
+  Matrix9 actual_H;
+
+  const Vector9 actual_correction =
+        kState1.coriolis(dt, omega, true, actual_H);
+
+  EXPECT(assert_equal(expected_correction, actual_correction));
+  EXPECT(assert_equal(expected_H, actual_H));
+}
+
 
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
