@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3282.gbp84b271) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3283.gbpecf772) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ecf7727bb1316423b2d0cab2c447438a1b893de2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @84b271f5a27cbb3ddc257f03de3a75eb2b63fb02 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Nov 2025 05:09:55 +0000
+  [ Frank Dellaert ]
+  * Remove macOS 13 from CI workflows and update macOS runners
+  * Add macOS 15 builds to Python and macOS CI workflows
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Nov 2025 22:44:55 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3281.gbp95658e) noble; urgency=medium
 
