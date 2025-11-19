@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3283.gbp777284) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3284.gbp034f0c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @034f0c5a39c6b829b549ef11506fbc14dd2529b7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @777284378c850ba4dd52ac6599458c57a417893a **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Nov 2025 00:01:29 +0000
+  [ Fan Jiang ]
+  * Fix macOS 26 Xcode compilation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Nov 2025 05:07:03 +0000
 
 gtsam (4.1.0-1ubuntu2~3282.gbp3dca56) noble; urgency=medium
 
