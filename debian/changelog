@@ -1,10 +1,23 @@
-gtsam (4.1.0-1ubuntu2~3291.gbp6e6ea6) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3292.gbp1957e3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @1957e39aafb39bda3b155bce4a819411e703a90f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6e6ea695d121a7844ba5a7bf9ac5b13b4c54e146 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 19 Nov 2025 22:47:53 +0000
+  [ Ethan J. Musser ]
+  * Remove absolute paths in configuration installs
+
+  [ Varun Agrawal ]
+  * set larger swap space for both Linux and macOS
+  * don't increase swap on macOS for python build
+  * undo swap space until I can figure out why it is causing issues in the CI
+  * remove additional absolute path specifications
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 22 Nov 2025 18:55:52 +0000
 
 gtsam (4.1.0-1ubuntu2~3290.gbpf6f8bf) noble; urgency=medium
 
