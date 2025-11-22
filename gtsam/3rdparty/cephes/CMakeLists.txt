@@ -108,8 +108,7 @@ if(WIN32)
 endif()
 
 if(APPLE)
-  set_target_properties(cephes-gtsam PROPERTIES INSTALL_NAME_DIR
-                                                "${CMAKE_INSTALL_PREFIX}/lib")
+  set_target_properties(cephes-gtsam PROPERTIES INSTALL_NAME_DIR "lib")
 endif()
 
 install(

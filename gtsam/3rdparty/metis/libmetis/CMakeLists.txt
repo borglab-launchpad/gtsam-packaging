@@ -16,8 +16,7 @@ endif()
 
 if (APPLE)
 		set_target_properties(metis-gtsam PROPERTIES
-			INSTALL_NAME_DIR
-			"${CMAKE_INSTALL_PREFIX}/lib")
+			INSTALL_NAME_DIR "lib")
  endif()
 
 install(TARGETS metis-gtsam EXPORT GTSAM-exports

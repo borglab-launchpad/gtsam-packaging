@@ -20,7 +20,7 @@ endif()
 
 if (APPLE AND GTSAM_SHARED_LIB)
     # Set the default install directory on macOS
-    set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+    set(CMAKE_INSTALL_NAME_DIR "lib")
 endif()
 
 ###############################################################################
