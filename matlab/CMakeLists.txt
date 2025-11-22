@@ -23,7 +23,7 @@ set(GTSAM_TOOLBOX_INSTALL_PATH
       "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/gtsam_toolbox"
 )
 if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
-  set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/gtsam_toolbox")
+  set(GTSAM_TOOLBOX_INSTALL_PATH "gtsam_toolbox")
 endif()
 
 set(WRAP_MEX_BUILD_STATIC_MODULE ${GTSAM_MEX_BUILD_STATIC_MODULE})
