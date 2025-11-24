@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3295.gbpa858e7) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3296.gbp3e07af) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3e07af941fc074230304ae16c0929874f7a63b53 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a858e70b92383dfc967634526355e2658de2211b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 22 Nov 2025 18:58:37 +0000
+  [ Varun Agrawal ]
+  * Fix CMake complaining about boost
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * undo cmake changes to vendored libraries
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 24 Nov 2025 02:32:10 +0000
 
 gtsam (4.1.0-1ubuntu2~3294.gbp43df98) noble; urgency=medium
 
