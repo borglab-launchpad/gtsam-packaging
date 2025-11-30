@@ -1,10 +1,62 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3294.gbp7a32f5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3295.gbpb47840) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b47840c212e0ad87b0f67e832d93f45faa68f65d **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7a32f5f1a2a70e9f8de1b9603eac05e5c0427510 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 24 Nov 2025 02:34:57 +0000
+  [ p-zach ]
+  * Hybrid docs initial
+  * HybridSmoother
+  * HBayesTree, HValues
+  * Wraps & unfinished notebooks
+  * myst.yml and folder summary
+
+  [ Frank Dellaert ]
+  * Re-order to my taste
+  * Implement restrict
+  * Wrap restrict and errorTree in base class
+  * Try setting swap dynamically
+  * Standardize args and wrap more
+  * Fix 2 notebooks
+  * Add operator and validate HGF notebook
+  * Fix Bayes tree dot
+  * All factor graphs
+  * HybridGaussianConditional done
+  * HybridBayesNet and HybridBayesTree done
+  * iSAM variants and smoother
+  * Elimination intermediates
+  * Fix BayesTree dot tests
+
+  [ Varun Agrawal ]
+  * use py::print for wrapper based PrintDiscreteValues function
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Varun Agrawal ]
+  * add namespaxce to return types in linear.i and symbolic.i
+  * make omega in DexpFunctor non-const
+  * fix geometry.i
+  * minor cleanup in inference.i
+  * fix declarations for templated type ConcentratedGaussian
+  * alias for BetweenFactorSL4s in dataset.h
+  * Fix slam.i interface for Matlab
+  * add CMAKE_INSTALL_PREFIX for Matlab wrapper
+  * Squashed 'wrap/' changes from 24fc897f5..60b680f71
+  * set swap space using pre-existing action
+  * minor updates
+  * fix unit tests
+  * wrapper fixes
+  * refactor HybridGaussianFactor::restrict
+  * remove setting swap until linux container has sudo installed
+  * Squashed 'wrap/' changes from 60b680f71..17404733e
+  * upgrade package versions
+  * undo namespace change
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 30 Nov 2025 01:28:51 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3293.gbp1ffb11) noble; urgency=medium
 
