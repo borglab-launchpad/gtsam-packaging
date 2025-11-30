@@ -69,7 +69,10 @@ namespace gtsam {
       throw std::invalid_argument(
           "the root of Bayes tree has not been initialized!");
     os << "digraph G{\n";
-    for (const sharedClique& root : roots_) dot(os, root, keyFormatter);
+    for (const sharedClique& root : roots_) { 
+      size_t key = root->conditional()->firstFrontalKey();
+      dot(os, root, keyFormatter, key);
+    }
     os << "}";
     std::flush(os);
   }
@@ -95,8 +98,8 @@ namespace gtsam {
   template <class CLIQUE>
   void BayesTree<CLIQUE>::dot(std::ostream& s, sharedClique clique,
                               const KeyFormatter& keyFormatter,
-                              int parentnum) const {
-    static int num = 0;
+                              size_t parentnum) const {
+    size_t num = clique->conditional()->firstFrontalKey();
     bool first = true;
     std::stringstream out;
     out << num;
@@ -122,11 +125,9 @@ namespace gtsam {
     }
     parent += "\"];\n";
     s << parent;
-    parentnum = num;
 
     for (sharedClique c : clique->children) {
-      num++;
-      dot(s, c, keyFormatter, parentnum);
+      dot(s, c, keyFormatter, num);
     }
   }
 

@@ -684,7 +684,7 @@ virtual class GaussianBayesTree {
                                 gtsam::DefaultKeyFormatter);
   size_t size() const;
   bool empty() const;
-  const GaussianBayesTree::Roots& roots() const;
+  const gtsam::GaussianBayesTree::Roots& roots() const;
   const gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
   size_t numCachedSeparatorMarginals() const;
 

@@ -710,7 +710,7 @@ template <T = {double,
                gtsam::Pose3,
                gtsam::Similarity2,
                gtsam::Similarity3}>
-class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
+virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   ConcentratedGaussian();
   // Constructors mirroring header (origin terminology)
   ConcentratedGaussian(gtsam::Key key, const T& origin, const gtsam::noiseModel::Gaussian::shared_ptr& noiseModel);
@@ -726,10 +726,10 @@ class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   double evaluate(const T& x) const;
   double evaluate(const gtsam::Values& values) const;
   // Chart transport / reset operations
-  ConcentratedGaussian reset() const;
-  ConcentratedGaussian transportTo(const T& x_hat) const;
+  This reset() const;
+  This transportTo(const T& x_hat) const;
   // Fusion operator
-  ConcentratedGaussian operator*(const ConcentratedGaussian& other) const;
+  This operator*(const This& other) const;
 };
 
 #include <gtsam/nonlinear/NonlinearEquality.h>

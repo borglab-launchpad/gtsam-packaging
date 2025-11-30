@@ -117,8 +117,8 @@ double HybridNonlinearFactor::error(
 }
 
 /* *******************************************************************************/
-double HybridNonlinearFactor::error(const HybridValues& values) const {
-  return error(values.nonlinear(), values.discrete());
+double HybridNonlinearFactor::error(const HybridValues& hybridValues) const {
+  return error(hybridValues.nonlinear(), hybridValues.discrete());
 }
 
 /* *******************************************************************************/
@@ -138,6 +138,7 @@ void HybridNonlinearFactor::print(const std::string& s,
     auto [factor, val] = v;
     if (factor) {
       RedirectCout rd;
+      std::cout << "(val=" << val << ") ";
       factor->print("", keyFormatter);
       return rd.str();
     } else {

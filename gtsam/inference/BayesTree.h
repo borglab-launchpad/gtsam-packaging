@@ -249,7 +249,7 @@ namespace gtsam {
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
     void dot(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
-             int parentnum = 0) const;
+             size_t parentnum = 0) const;
 
     /** Gather data on a single clique */
     void getCliqueData(sharedClique clique, BayesTreeCliqueData* stats) const;

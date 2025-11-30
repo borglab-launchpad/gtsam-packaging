@@ -221,11 +221,11 @@ namespace so3 {
   };
 
   class ExpmapFunctor {
-    const double theta2;
-    const double theta;
-    const Matrix3 W;
-    const Matrix3 WW;
-    const bool nearZero;
+    double theta2;
+    double theta;
+    gtsam::Matrix3 W;
+    gtsam::Matrix3 WW;
+    bool nearZero;
     double A;  // A = sin(theta) / theta
     double B;  // B = (1 - cos(theta))
     ExpmapFunctor(const gtsam::Vector3& omega);
@@ -235,7 +235,7 @@ namespace so3 {
   };
 
   virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
-    const gtsam::Vector3 omega;
+    gtsam::Vector3 omega;
 
     DexpFunctor(const gtsam::Vector3& omega);
     DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
@@ -291,8 +291,6 @@ class SO3 {
   static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
   gtsam::SO3 expmap(gtsam::Vector3 v);
   gtsam::Vector3 logmap(const gtsam::SO3& g);
-  static gtsam::Matrix3 Hat(const gtsam::Vector3& xi);
-  static gtsam::Vector3 Vee(const gtsam::Matrix3& xi);
 
   // Matrix Lie Group
   gtsam::Vector vec() const;
