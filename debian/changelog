@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3302.gbpce8547) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3303.gbpa6c159) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a6c15901acd56cb1ce6a438c7327c6c4b97cc5d2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ce8547d0426c67b9273e66a848236add22777b8c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 30 Nov 2025 01:58:37 +0000
+  [ Fan Jiang ]
+  * Split the NoiseModelFactorN to individual header
+  * Change NoiseModelFactorN to be an alias to NoiseModelFactorT
+  * Apply suggestion from @Copilot
+  * Add tparam documentation to the class
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 30 Nov 2025 03:04:58 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3301.gbp7fc8b8) noble; urgency=medium
 
