@@ -20,6 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #ifdef _WIN32
 #define BETWEENFACTOR_VISIBILITY

@@ -21,6 +21,7 @@
 #include <gtsam/inference/EdgeKey.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <cstdint>
 
