@@ -120,15 +120,20 @@ class Ordering {
   Ordering(const std::vector<size_t>& keys);
 
   template <
-      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
-                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
-                      
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
+                      gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph,
+                      gtsam::GaussianFactorGraph,
+                      gtsam::HybridGaussianFactorGraph}>
   static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
   static gtsam::Ordering Colamd(const gtsam::VariableIndex& variableIndex);
 
   template <
-      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
-                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
+                      gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph,
+                      gtsam::GaussianFactorGraph,
+                      gtsam::HybridGaussianFactorGraph}>
   static gtsam::Ordering ColamdConstrainedLast(
       const FACTOR_GRAPH& graph, const gtsam::KeyVector& constrainLast,
       bool forceOrder = false);

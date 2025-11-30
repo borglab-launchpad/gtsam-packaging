@@ -165,8 +165,8 @@ protected:
 /// Math extends Ethan theme of elegant I + aW + bWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
-  const Vector3 omega;  ///< The rotation vector.
-  bool nearPi{false};   ///< Flag indicating if theta is near pi.
+  Vector3 omega;       ///< The rotation vector.
+  bool nearPi{false};  ///< Flag indicating if theta is near pi.
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);

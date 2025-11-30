@@ -4,13 +4,14 @@
 
 namespace gtsam {
 
-#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/Gal3.h>
+// Following header defines PinholeCamera{Cal3_S2|Cal3DS2|Cal3Bundler|Cal3Fisheye|Cal3Unified}
+#include <gtsam/geometry/SimpleCamera.h>
 
 // ######
 
@@ -154,9 +155,6 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-// Following header defines PinholeCamera{Cal3_S2|Cal3DS2|Cal3Bundler|Cal3Fisheye|Cal3Unified}
-#include <gtsam/geometry/SimpleCamera.h>
-
 #include <gtsam/slam/SmartFactorBase.h>
 
 // Currently not wrapping SphericalCamera, since measurement type is not Point2 but Unit3
@@ -170,8 +168,8 @@ virtual class SmartFactorBase : gtsam::NonlinearFactor {
   void add(const gtsam::Point2& measured, gtsam::Key key);
   void add(const gtsam::Point2Vector& measurements, const gtsam::KeyVector& cameraKeys);
   size_t dim() const;
-  const std::vector<gtsam::Point2>& measured() const;
-  std::vector<CAMERA> cameras(const gtsam::Values& values) const;
+  const gtsam::Point2Vector& measured() const;
+  gtsam::CameraSet<CAMERA> cameras(const gtsam::Values& values) const;
 
   void print(const std::string& s = "", const gtsam::KeyFormatter& keyFormatter =
     gtsam::DefaultKeyFormatter) const;
@@ -219,27 +217,27 @@ virtual class SmartProjectionFactor : gtsam::SmartFactorBase<CAMERA> {
   gtsam::TriangulationResult triangulateSafe(const gtsam::CameraSet<CAMERA>& cameras) const;
   bool triangulateForLinearize(const gtsam::CameraSet<CAMERA>& cameras) const;
 
-  gtsam::HessianFactor createHessianFactor(
+  gtsam::HessianFactor* createHessianFactor(
       const gtsam::CameraSet<CAMERA>& cameras, const double lambda = 0.0,
       bool diagonalDamping = false) const;
-  gtsam::JacobianFactor createJacobianQFactor(
+  gtsam::JacobianFactor* createJacobianQFactor(
       const gtsam::CameraSet<CAMERA>& cameras, double lambda) const;
-  gtsam::JacobianFactor createJacobianQFactor(
+  gtsam::JacobianFactor* createJacobianQFactor(
       const gtsam::Values& values, double lambda) const;
-  gtsam::JacobianFactor createJacobianSVDFactor(
+  gtsam::JacobianFactor* createJacobianSVDFactor(
       const gtsam::CameraSet<CAMERA>& cameras, double lambda) const;
-  gtsam::HessianFactor linearizeToHessian(
+  gtsam::HessianFactor* linearizeToHessian(
       const gtsam::Values& values, double lambda = 0.0) const;
-  gtsam::JacobianFactor linearizeToJacobian(
+  gtsam::JacobianFactor* linearizeToJacobian(
       const gtsam::Values& values, double lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearizeDamped(const gtsam::CameraSet<CAMERA>& cameras,
+  gtsam::GaussianFactor* linearizeDamped(const gtsam::CameraSet<CAMERA>& cameras,
       const double lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearizeDamped(const gtsam::Values& values,
+  gtsam::GaussianFactor* linearizeDamped(const gtsam::Values& values,
       const double lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearize(
+  gtsam::GaussianFactor* linearize(
       const gtsam::Values& values) const;
 
   bool triangulateAndComputeE(gtsam::Matrix& E, const gtsam::CameraSet<CAMERA>& cameras) const;
@@ -312,7 +310,7 @@ virtual class SmartProjectionRigFactor : gtsam::SmartProjectionFactor<CAMERA> {
            const gtsam::FastVector<size_t>& cameraIds = gtsam::FastVector<size_t>());
 
   const gtsam::KeyVector& nonUniqueKeys() const;
-  const gtsam::CameraSet<CAMERA>& cameraRig() const;
+  const gtsam::CameraSet<CAMERA>* cameraRig() const;
   const gtsam::FastVector<size_t>& cameraIds() const;
 };
 
@@ -367,6 +365,7 @@ class RotateFactor : gtsam::NoiseModelFactor {
 
   gtsam::Vector evaluateError(const gtsam::Rot3& R) const;
 };
+
 class RotateDirectionsFactor : gtsam::NoiseModelFactor {
   RotateDirectionsFactor(gtsam::Key key, const gtsam::Unit3& i_p, const gtsam::Unit3& c_z,
     const gtsam::noiseModel::Base* model);
@@ -391,6 +390,7 @@ class OrientedPlane3Factor : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(
       const gtsam::Pose3& pose, const gtsam::OrientedPlane3& plane) const;
 };
+
 class OrientedPlane3DirectionPrior : gtsam::NoiseModelFactor {
   OrientedPlane3DirectionPrior();
   OrientedPlane3DirectionPrior(gtsam::Key key, const gtsam::Vector& z,
