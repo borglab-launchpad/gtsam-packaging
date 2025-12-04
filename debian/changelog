@@ -1,4 +1,4 @@
-gtsam (4.1.0-1ubuntu2~3312.gbp34bb54) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3312.gbp34bb54) focal; urgency=medium
 
   ** SNAPSHOT build @34bb547df2f778e930b5daaa89563af5c42d643b **
 
