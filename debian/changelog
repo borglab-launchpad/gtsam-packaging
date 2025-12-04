@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3306.gbpd84458) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3307.gbp575074) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @575074e20e60dc1815bf1563341cffbaa5a6e1b6 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @d844582f23b673f2c74537a2323a591f326c6b9e **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 30 Nov 2025 03:07:56 +0000
+  [ Your Name ]
+  * add export
+  * add example: SmartStereoProjectionPoseFactorExample.py
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 04 Dec 2025 05:39:15 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3305.gbp7a46dd) noble; urgency=medium
 
