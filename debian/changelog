@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~3315.gbp270b5c) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3316.gbp5c1f2c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5c1f2c3cb81918750b410d2d29dd480dc08dca95 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @270b5c156947826f8ec7a812dc49edcf85dacd87 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 04 Dec 2025 05:42:13 +0000
+  [ Frank Dellaert ]
+  * Fix traits issue
+  * Use most basic predict
+  * Refactor LieGroupEKF with expm
+  * adjoints
+  * New test and some details
+  * Clarify -ad term
+  * Switch to Continuous time Q if dt is given
+  * Remove confusing alias
+  * Review comments [skip ci]
+  * Wrapper and notebook
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Dec 2025 22:45:00 +0000
 
 gtsam (4.1.0-1ubuntu2~3314.gbpa494cf) noble; urgency=medium
 
