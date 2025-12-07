@@ -639,6 +639,7 @@ virtual class InvariantEKF : gtsam::LeftLinearEKF<G> {
 
   // Left-invariant predict APIs
   void predict(const G& U, gtsam::Matrix Q);
+  void predict(const G& W, const G& U, const gtsam::Matrix& Q);
   void predict(const gtsam::Vector& u, double dt, gtsam::Matrix Q);
 };
 

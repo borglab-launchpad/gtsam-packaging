@@ -396,6 +396,14 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /** Calculate Adjoint map */
     Matrix3 AdjointMap() const { return matrix(); }
 
+    /// Matrix representation of the Lie-algebra adjoint operator ad_xi on so(3).
+    static Matrix3 adjointMap(const Vector3& xi);
+
+    /// Apply the Lie-algebra adjoint map to y with optional derivatives.
+    static Vector3 adjoint(const Vector3& xi, const Vector3& y,
+                           OptionalJacobian<3, 3> Hxi = {},
+                           OptionalJacobian<3, 3> Hy = {});
+
     // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
     struct GTSAM_EXPORT ChartAtOrigin {
       static Rot3 Retract(const Vector3& v, ChartJacobian H = {});
@@ -599,4 +607,3 @@ template <>
 struct traits<const Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
   
 }  // namespace gtsam
-
