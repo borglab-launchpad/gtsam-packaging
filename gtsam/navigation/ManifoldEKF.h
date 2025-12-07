@@ -116,6 +116,8 @@ class ManifoldEKF {
   /**
    * Basic predict step: Updates state and covariance given the predicted
    * next state and the state transition Jacobian F.
+   * This overload expects a **discrete-time** process covariance Q already
+   * scaled for the step being applied.
    *   X_{k+1} = X_next
    *   P_{k+1} = F P_k F^T + Q
    * where F = d(local(X_{k+1})) / d(local(X_k)) is the Jacobian of the

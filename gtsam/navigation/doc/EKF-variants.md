@@ -112,6 +112,8 @@ The **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigati
 
 This class implements two overloaded functions ```predictMean()``` and ```predict()```. The ```predictMean()``` computes the next state estimate and state transition Jacobian $A$, whereas ```predict()``` takes in that state estimate and computes the covariance estimate. 
 
+**Process noise convention.** When a predict overload does **not** take a `dt` argument (e.g., `predict(U, Q)`), the filter expects `Q` to be a *discrete* covariance already scaled for the step being applied. When the overload **does** take `dt` (e.g., `predict(f, dt, Q)` or `predict(u, dt, Q)`), `Q` is interpreted as a *continuous-time* covariance `Q_c`; the implementation multiplies by `dt` internally to obtain the discrete covariance `Q_c dt`.
+
 In ```predictMean()``` the motion model $f$ is passed into the function; then, the tangent space increment is given by
 
 ```math
@@ -276,7 +278,8 @@ and the IEKF is created using
 
 For this example, assume constant process and observation covariances. Then,
 ```cpp
-  Matrix9 Q = Matrix9::Identity() * 0.01;
+  // Continuous-time process noise (scaled by dt inside predict)
+  Matrix9 Qc = Matrix9::Identity() * 0.01;
   Matrix3 R = Matrix3::Identity() * 0.5;
 ```
 
@@ -303,7 +306,7 @@ Since control vector inputs $u$ are used, a time interval $\Delta t$ is also nee
 #### Running the EKF
 The prediction stage is called using
 ```cpp
- ekf.predict(dynamics(imu1), dt, Q);
+ ekf.predict(dynamics(imu1), dt, Qc);
 ```
 
 and the update stage is called using
@@ -378,13 +381,14 @@ and the LieGroup EKF is created using
 For this example,assume constant process and observation covariances. A time interval $\Delta t$ is needed for the tangent space increment; then
 ```cpp
   double dt = 0.1;
-  Matrix3 Q = Matrix3::Identity() * 0.01;
+  // Continuous-time process noise (scaled by dt inside predict).
+  Matrix3 Qc = Matrix3::Identity() * 0.1;
   Matrix3 Rm = Matrix3::Identity() * 0.05;
 ```
 #### Running the EKF
 The prediction stage is called using
 ```cpp
-  ekf.predict(dynamicsSO3, dt, Q);
+  ekf.predict(dynamicsSO3, dt, Qc);
 ```
 The magnetometer measurement $z$ is found by taking a body frame measurement of the world vector; then, 
 ```cpp
@@ -448,10 +452,6 @@ classDiagram
   LeftLinearEKF~G~ <|-- InvariantEKF~G~
   LeftLinearEKF~G~ <|-- NavStateImuEKF
 ```
-
-
-
-
 
 
 

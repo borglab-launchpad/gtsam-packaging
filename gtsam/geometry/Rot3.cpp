@@ -246,6 +246,19 @@ Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
 }
 
 /* ************************************************************************* */
+Matrix3 Rot3::adjointMap(const Vector3& xi) { return Hat(xi); }
+
+/* ************************************************************************* */
+Vector3 Rot3::adjoint(const Vector3& xi, const Vector3& y,
+                      OptionalJacobian<3, 3> Hxi,
+                      OptionalJacobian<3, 3> Hy) {
+  const Matrix3 ad_xi = adjointMap(xi);
+  if (Hxi) *Hxi = -Hat(y);
+  if (Hy) *Hy = ad_xi;
+  return ad_xi * y;
+}
+
+/* ************************************************************************* */
 pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
   const double x = -atan2(-A(2, 1), A(2, 2));
   const auto Qx = Rot3::Rx(-x).matrix();
@@ -319,4 +332,3 @@ Rot3 Rot3::slerp(double t, const Rot3& other) const {
 /* ************************************************************************* */
 
 } // namespace gtsam
-
