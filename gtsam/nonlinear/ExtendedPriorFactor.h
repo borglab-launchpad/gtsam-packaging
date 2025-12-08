@@ -76,7 +76,7 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
       : Base(model, key), origin_(origin), mean_(mean) {
     if (mean.size() != static_cast<Eigen::Index>(model->dim()))
       throw std::invalid_argument(
-          "ConcentratedGaussian: mean dimension does not match noise model");
+          "ExtendedPriorFactor: mean dimension does not match noise model");
   }
 
   /// Constructor with covariance matrix (zero mean in tangent space)
@@ -93,7 +93,7 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
     if (mean.size() != covariance.rows() ||
         covariance.rows() != covariance.cols())
       throw std::invalid_argument(
-          "ConcentratedGaussian: mean and covariance dimensions do not match");
+          "ExtendedPriorFactor: mean and covariance dimensions do not match");
   }
 
   /// @}
