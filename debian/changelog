@@ -1,10 +1,23 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3314.gbp2cd69c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3315.gbpd85015) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d850158e089d33e357661a36f2036d9626ee73fb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2cd69c2b60227c0daf13e127943546350b30a25a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 07 Dec 2025 22:47:41 +0000
+  [ Frank Dellaert ]
+  * Clean up product
+  * Fix error msg.
+  * Added PowerLieGroup
+  * Use size_t
+  * Made groups Testable
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 08 Dec 2025 01:32:32 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3313.gbp80c3a0) noble; urgency=medium
 
