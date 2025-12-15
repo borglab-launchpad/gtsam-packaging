@@ -194,6 +194,11 @@ VectorValues Marginals::optimize() const {
 }
 
 /* ************************************************************************* */
+void Marginals::deleteCachedShortcuts() {
+  bayesTree_.deleteCachedShortcuts();
+}
+
+/* ************************************************************************* */
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "Joint marginal on keys ";
   bool first = true;
