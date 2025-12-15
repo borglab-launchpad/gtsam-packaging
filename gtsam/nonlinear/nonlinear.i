@@ -169,6 +169,7 @@ class Marginals {
       const gtsam::KeyVector& variables) const;
   gtsam::JointMarginal jointMarginalInformation(
       const gtsam::KeyVector& variables) const;
+  void deleteCachedShortcuts();
 };
 
 class JointMarginal {

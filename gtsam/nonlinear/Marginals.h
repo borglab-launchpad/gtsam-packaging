@@ -119,6 +119,9 @@ public:
   /** Compute the joint marginal information of several variables */
   JointMarginal jointMarginalInformation(const KeyVector& variables) const;
 
+  /** Delete cached Bayes tree shortcuts created while computing marginals */
+  void deleteCachedShortcuts();
+
   /** Optimize the bayes tree */
   VectorValues optimize() const;
 
