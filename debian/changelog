@@ -1,10 +1,98 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3322.gbpebb9e4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3323.gbp230d8b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @230d8bf75b22fff542dafd2e2ed28f5fa581b6b2 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ebb9e47a3d096adf4cb3f04906ed3aae1fb36a7c **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 15 Dec 2025 16:27:05 +0000
+  [ jenniferoum ]
+  * Template EqF on Group and Manifold
+  * Address EqF template comments, add compile time check for functions require for template, change EqF to take in initial state, use traits for group
+  * Remove abc_eqf_lib from EquivariantFilter.h
+  * Set up EqF to  inherit from LieGroupEKF
+  * Move Eqf files and add unit test for ABC.h
+  * Fix AbcEqF include paths
+  * Add filter test
+  * Fix naming conventions, add prediction test
+
+  [ Rohan Bansal ]
+  * addressed input/inputtype disparity, small-n
+
+  [ jenniferoum ]
+  * Generalize phi state transition matrix, code cleanup
+
+  [ Rohan Bansal ]
+  * constructed parameters of update in base class, updated predict step
+  * Squashed commit
+
+  [ Frank Dellaert ]
+  * Cleanup - abc namespace - use gtsam::diag - format files
+  * InputData gone, Measurement in Example only
+  * Spelling/formatting
+  * Inlined definitions
+  * Fix traits issue
+  * Define Group via MatrixLieGroup
+  * Clean up product
+  * Added PowerLieGroup
+  * Add test for AdjointMap
+  * Use size_t
+  * Made groups Testable
+  * Define Calibrations as power group
+  * Define Group as product
+  * Move everything back into Geometry
+  * Dphi0_ not needed
+  * Manifold traits
+  * StateAction functor
+  * InputAction functor
+  * OutputAction functor
+  * Lift functor
+  * Template output on OutputAction
+  * Use most basic predict
+  * update takes applied OutputAction
+  * Format
+  * Pure SO(3) test
+  * Changed to Unit3 example
+  * innovation refactor and fancy comments
+  * Check transitionMatrix as expm
+  * Use LieGroupEKF::predict, stateTransitionMatrix no longer needed!
+  * Now receive partially applied functors
+  * Refactor EqF using GroupActions Switch to Continuous time Q if dt is given Use fixed matrices in example Explicit API Numerical derivatives and Refactored output actions Dynamics A works! Initial Standalone attempt Check dynamics derivative Simplify and check Lift derivative Fix derivatives of action Fixed shadowing bug! Add one-liner docs Test helpers Get rid of jacobianAtIdentity Always start at identity Lift shadow and equivariance tests Check dynamics on manifold No more factory methods InducedVectorField Use GroupAction in EqF GroupAction (WIP) Starting to auto-derive Jacobians Rename to Symmetry Unit3 cross product
+  * Use expm and K=2 for transition matrix. Brings example back to its original results.
+  * Reduce requirements on actions
+  * No more bespoke InputOrbit
+  * No more bespoke OutputOrbit
+  * Cleanup redundant types
+  * Add regression for bespoke matrices
+  * Fix CI issue
+  * Refactor EqF as a ManifoldEKF
+  * Calculate I_ in constructor
+  * Made Jacobian aliases public Should fix Windows CI
+  * Fix export/namespaces on windows
+  * Use exponential map
+  * Revert to retract for Matrix
+  * Allow orbits/diffeomorphism if no Jacoboan
+  * Simplify/doc aBC
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * errorCovariance
+  * just typedef Group
+  * Simplify update
+  * Fix temporary issue
+  * Apply outputMatrixD
+  * Add docs
+  * Innovation sign change
+  * Clean up
+  * Bring API in line with ManifoldEKF
+  * Adapt abc to new API
+  * Fix syntax issue.
+  * Add docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 21 Dec 2025 18:08:29 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3321.gbpefbdfa) noble; urgency=medium
 
