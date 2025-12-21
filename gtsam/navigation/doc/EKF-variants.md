@@ -11,7 +11,7 @@ To introduce the Invariant Kalman Filter to GTSAM, we have created three classes
 - **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Inherits from ```ManifoldEKF``` and implements an EKF for states that operate on a Lie group with state dependent dynamics.
 - **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)**: Inherits from ```LieGroupEKF``` and implements EKF for states that operate on a Lie group with group composition (state independent) dynamics.
 - **[leftLinearEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/leftLinearEKF.h)**: Inherits from ```LieGroupEKF``` and implements a more general "left linear observer" structure due to Barrau and Bonnabel.
-- **[NavStateImuEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h)**: Specialization of ```leftLinearEKF<NavState>``` that integrates IMU to predict NavState increments; simple API for predict and generic updates. See user guide and tutorial linked below.
+- **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)**: Inherits from ```ManifoldEKF``` and implements the Equivariant Filter (EqF) for state estimation on Lie groups using a symmetry principle.
 
 Below, the mathematics behind these filters are introduced, and examples of their usage are provided. 
 ## Extended Kalman Filters
@@ -180,6 +180,31 @@ The **[NavStateImuEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navig
 
 More: **[Full tutorial (with plots)](https://github.com/borglab/gtsam/blob/develop/python/gtsam/examples/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
 
+## EquivariantFilter
+The **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)** class implements the Equivariant Filter (EqF) for state estimation on Lie groups. It estimates a Lie group state $g \in G$ and a manifold state $\xi \in M$, using a symmetry principle where the error dynamics are autonomous in a specific frame. This class inherits from ```ManifoldEKF```.
+
+### EqF Predict Stage
+The prediction step involves lifting the manifold dynamics to the group using a lift $\Lambda(\xi, u)$.
+```math
+\hat{g}_{k|k-1} = \hat{g}_{k-1|k-1} \cdot \exp(\Lambda(\hat{\xi}_{k-1|k-1}, u_k) \Delta t)
+```
+The state on the manifold is then recovered via the group action $\phi$:
+```math
+\hat{\xi}_{k|k-1} = \phi(\hat{g}_{k|k-1}, \xi_{\text{ref}})
+```
+
+### EqF Update Stage
+The update step applies a correction in the tangent space of the manifold, which is then lifted to the group using the innovation lift matrix $(D\phi_0)^+$.
+```math
+\delta \xi_k = K_k y_k
+```
+```math
+\delta x_k = (D\phi_0)^+ \delta \xi_k
+```
+The group estimate is updated using group composition:
+```math
+\hat{g}_{k|k} = \exp(\delta x_k) \cdot \hat{g}_{k|k-1}
+```
 
 # Examples 
 Below are four examples of these filters in action. 
@@ -187,6 +212,7 @@ Below are four examples of these filters in action.
 2) **[IEKF_NavstateExample](https://github.com/borglab/gtsam/blob/develop/examples/IEKF_NavstateExample.cpp)**: implements ```InvariantEKF``` on a NavState Lie Group with a tangent space increment based on IMU measurements, and a 3D GPS measuremnt update.
 3) **[GEKF_Rot3Example](https://github.com/borglab/gtsam/blob/develop/examples/GEKF_Rot3Example.cpp)**: implements ```LieGroupEKF``` on a Rot3 Lie Group using a state dependent dynamics function and a magnetometer update.
 4) **[NavStateImuExample](https://github.com/borglab/gtsam/blob/develop/examples/NavStateImuExample.cpp)** and the accompanying notebooks: [user guide](gtsam/navigation/doc/NavStateImuEKF.ipynb) and a [full tutorial](python/gtsam/examples/NavStateImuExample.ipynb) demonstrate the NavStateImuEKF.
+5) **[testEquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/tests/testEquivariantFilter.cpp)**: implements ```EquivariantFilter``` on a SO(3) attitude-only system. A more complex **[ABC example](https://github.com/borglab/gtsam/blob/develop/examples/AbcEquivariantFilterExample.cpp)** is also available.
 
 
 ##  InvariantEKF Example on SE(2) using Lie Group increments
@@ -399,6 +425,26 @@ and the EKF is updated using the magnetometer measurement by
 ekf.update(h_mag, z, Rm);
 ```
 
+## EquivariantFilter Example on SO(3)
+The **[testEquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/tests/testEquivariantFilter.cpp)** demonstrates the use of an Equivariant Filter for attitude estimation on $S^2$.
+
+#### Defining the Symmetry
+The right group action $\phi_\eta(Q) = Q^T \eta$ is used to relate the group element $Q \in SO(3)$ to the direction $\eta \in S^2$.
+
+#### Defining the Measurement Function
+The predicted measurement is a scaled version of the estimated direction:
+```cpp
+Vector3 h(const Unit3& eta_hat, OptionalJacobian<3, 2> H = {}) {
+  if (H) *H = c_m * eta_hat.basis();
+  return c_m * eta_hat.point3();
+}
+```
+
+#### Running the EKF
+The filter is propagated using a lift $\Lambda$ and updated using:
+```cpp
+ekf.update(h, z, R);
+```
 
 # Class Diagram
 The relationship between these classes are visualized below. 
@@ -440,17 +486,17 @@ classDiagram
     +static Dynamics(...)
   }
 
-  class NavStateImuEKF {
-    +NavStateImuEKF(X0: NavState, P0: Covariance, params: PreintegrationParams)
-    +static Gravity(n_gravity: Vector3, dt: double): NavState
-    +static Imu(omega_b: Vector3, f_b: Vector3, dt: double): NavState
-    +predict(omega_b: Vector3, f_b: Vector3, dt: double): NavState
+  class EquivariantFilter~M, Symmetry~ {
+    <<template M, Symmetry>>
+    +EquivariantFilter(xi_ref: M, Sigma: Covariance, X0: G)
+    +predict(...)
+    +update(...)
   }
 
   ManifoldEKF~M~ <|-- LieGroupEKF~G~
+  ManifoldEKF~M~ <|-- EquivariantFilter~M, Symmetry~
   LieGroupEKF~G~ <|-- LeftLinearEKF~G~
   LeftLinearEKF~G~ <|-- InvariantEKF~G~
-  LeftLinearEKF~G~ <|-- NavStateImuEKF
 ```
 
 

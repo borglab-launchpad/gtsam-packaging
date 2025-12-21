@@ -144,13 +144,12 @@ class ProductLieGroup : public std::pair<G, H> {
   /// @name Lie Group Operations
   /// @{
 
- protected:
+ public:
   /// Jacobian types for internal use
   using Jacobian = Eigen::Matrix<double, static_cast<int>(dimension), static_cast<int>(dimension)>;
   using Jacobian1 = Eigen::Matrix<double, static_cast<int>(dimension1), static_cast<int>(dimension1)>;
   using Jacobian2 = Eigen::Matrix<double, static_cast<int>(dimension2), static_cast<int>(dimension2)>;
 
- public:
   /// Compose with Jacobians
   ProductLieGroup compose(const ProductLieGroup& other, ChartJacobian H1,
                           ChartJacobian H2 = {}) const {
@@ -400,12 +399,11 @@ class PowerLieGroup : public std::array<G, N> {
   /// @name Lie Group Operations
   /// @{
 
- protected:
+ public:
   /// Jacobian types for internal use
   typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
   typedef Eigen::Matrix<double, baseDimension, baseDimension> BaseJacobian;
 
- public:
   /// Compose with Jacobians
   PowerLieGroup compose(const PowerLieGroup& other, ChartJacobian H1,
                         ChartJacobian H2 = {}) const {
@@ -554,7 +552,7 @@ struct traits<ProductLieGroup<G, H>>
     : internal::LieGroup<ProductLieGroup<G, H>> {};
 
 /// Traits specialization for PowerLieGroup
-template <typename G, int N>
+template <typename G, size_t N>
 struct traits<PowerLieGroup<G, N>> : internal::LieGroup<PowerLieGroup<G, N>> {};
 
 }  // namespace gtsam

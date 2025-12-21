@@ -47,6 +47,9 @@ namespace gtsam {
  * For details on how static and dynamic dimensions are handled, please refer to
  * the `ManifoldEKF` class documentation.
  *
+ * Update API: inherited from ManifoldEKF (`update(prediction, H, z, R)`,
+ * `update(h, z, R)`, and `updateWithVector`).
+ *
  * Noise convention:
  * - Overloads **without** `dt` (e.g., `predict(X_next, F, Q)` inherited from
  *   ManifoldEKF) expect `Q` to be a *discrete* covariance already scaled for
@@ -112,6 +115,7 @@ class LieGroupEKF : public ManifoldEKF<G> {
    * Compute the discrete-time transition matrix Φ corresponding to a
    * continuous-time linearization (Df) over time dt.
    *
+   * @tparam K Truncation order for expm (K=1 for first-order).
    * @param xi Tangent increment (used only for Lie groups).
    * @param Df Jacobian of dynamics w.r.t. local coordinates.
    * @param dt Time step.
@@ -293,7 +297,7 @@ class LieGroupEKF : public ManifoldEKF<G> {
                           const Covariance& Q) {
     Jacobian A_local;
     if constexpr (std::is_same_v<G, Matrix>) {
-      const Matrix I_n = Matrix::Identity(this->n_, this->n_);
+      const Matrix& I_n = this->I_;
       A_local = I_n + J_UX;
       this->X_ = traits<Matrix>::Retract(this->X_, U);
     } else {
@@ -302,6 +306,9 @@ class LieGroupEKF : public ManifoldEKF<G> {
     }
     this->P_ = A_local * this->P_ * A_local.transpose() + Q;
   }
+
+  /// Update overloads follow ManifoldEKF.
+  using Base::update;
 
 };  // LieGroupEKF
 
