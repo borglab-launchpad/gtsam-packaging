@@ -4,6 +4,7 @@
 *.pyc
 *.DS_Store
 *.swp
+*:Zone.Identifier
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt
 /examples/Data/pose2example-rewritten.txt
 /examples/Data/pose3example-rewritten.txt
@@ -26,3 +27,6 @@ xcode/
 _build
 GEMINI.md
 doc/#*.lyx#
+/cmake-build-debug/
+.venv/
+conductor/

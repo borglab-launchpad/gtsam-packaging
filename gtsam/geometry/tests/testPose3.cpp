@@ -890,7 +890,7 @@ TEST(Pose3, ExpmapDerivative) {
 }
 
 //******************************************************************************
-namespace test_cases {
+namespace pose3_test_cases {
   static const std::vector<Vector3> small{ {0, 0, 0},                                 //
                              {1e-5, 0, 0}, {0, 1e-5, 0}, {0, 0, 1e-5},  //,
                              {1e-4, 0, 0}, {0, 1e-4, 0}, {0, 0, 1e-4} };
@@ -899,13 +899,13 @@ namespace test_cases {
   auto omegas = [](bool nearZero) -> const std::vector<Vector3>&{ return nearZero ? small : large; };
   static const std::vector<Vector3> vs{ {1, 0, 0},    {0, 1, 0}, {0, 0, 1},
                           {.4, .3, .2}, {4, 5, 6}, {-10, -20, 30} };
-}  // namespace test_cases
+}  // namespace pose3_test_cases
 
 //******************************************************************************
 TEST(Pose3, ExpmapDerivatives) {
   for (bool nearZero : {true, false}) {
-    for (const Vector3& w : test_cases::omegas(nearZero)) {
-      for (Vector3 v : test_cases::vs) {
+    for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+      for (Vector3 v : pose3_test_cases::vs) {
         const Vector6 xi = (Vector6() << w, v).finished();
         const Matrix6 expectedH =
             numericalDerivative21<Pose3, Vector6, OptionalJacobian<6, 6> >(
@@ -922,8 +922,8 @@ TEST(Pose3, ExpmapDerivatives) {
 // Check logmap for all small values, as we don't want wrapping.
 TEST(Pose3, Logmap) {
   static constexpr bool nearZero = true;
-  for (const Vector3& w : test_cases::omegas(nearZero)) {
-    for (Vector3 v : test_cases::vs) {
+  for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+    for (Vector3 v : pose3_test_cases::vs) {
       const Vector6 xi = (Vector6() << w, v).finished();
       Pose3 pose = Pose3::Expmap(xi);
       EXPECT(assert_equal(xi, Pose3::Logmap(pose)));
@@ -935,8 +935,8 @@ TEST(Pose3, Logmap) {
 // Check logmap derivatives for all values
 TEST(Pose3, LogmapDerivatives) {
   for (bool nearZero : {true, false}) {
-    for (const Vector3& w : test_cases::omegas(nearZero)) {
-      for (Vector3 v : test_cases::vs) {
+    for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+      for (Vector3 v : pose3_test_cases::vs) {
         const Vector6 xi = (Vector6() << w, v).finished();
         Pose3 pose = Pose3::Expmap(xi);
         const Matrix6 expectedH =
