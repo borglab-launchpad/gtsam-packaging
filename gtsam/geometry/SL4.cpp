@@ -7,7 +7,10 @@
 #include <gtsam/geometry/SL4.h>
 
 // To use exp(), log()
+#include <cmath>
+#include <limits>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/SVD>
 
 using namespace std;
 
@@ -65,19 +68,39 @@ Eigen::Matrix<double, 15, 16> setAlgtoVecMatrix() {
 // ALG_TO_VEC * VEC_TO_ALG is equals to I_15x15
 const Eigen::Matrix<double, 16, 15> VEC_TO_ALG = setVecToAlgMatrix();
 const Eigen::Matrix<double, 15, 16> ALG_TO_VEC = setAlgtoVecMatrix();
+
 }  // namespace
 namespace gtsam {
 
 SL4::SL4(const Matrix44& pose) {
-  double det = pose.determinant();
-  if (det <= 0.0) {
-    throw std::runtime_error(
-        "Matrix determinant must be positive for SL(4) normalization. Got det "
-        "= " +
-        std::to_string(det));
+  // Compute SVD: pose = U * S * V^T
+  const Eigen::JacobiSVD<Matrix44> svd(pose, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+  Matrix44 U = svd.matrixU();
+  const Matrix44 V = svd.matrixV();
+  const Vector4 S = svd.singularValues();
+
+  // Handle Orientation (Negative Determinant / Reflection)
+  const double detUV = (U * V.transpose()).determinant();
+  
+  if (detUV < 0.0) {
+    U.col(3) = -U.col(3);
   }
 
-  T_ = pose / std::pow(det, 1.0 / 4.0);
+  // Reconstruct the matrix with corrected orientation
+  const Matrix44 M_corrected = U * S.asDiagonal() * V.transpose();
+  const double current_det_mag = S.prod();
+  
+   // Check for Singularity
+  if (current_det_mag <= std::numeric_limits<double>::epsilon() || !std::isfinite(current_det_mag)) {
+    throw std::runtime_error(
+        "SL4 Constructor: Input matrix is singular or invalid. " 
+        "SVD singular values product = " + std::to_string(current_det_mag));
+  }
+
+  // Normalize: T = M / det^(1/4)
+  const double scale = std::pow(current_det_mag, 0.25);
+  T_ = M_corrected / scale;
 }
 
 /* ************************************************************************* */
@@ -89,9 +112,18 @@ bool SL4::equals(const SL4& sl4, double tol) const {
 }
 /* ************************************************************************* */
 SL4 SL4::ChartAtOrigin::Retract(const Vector15& v, ChartJacobian H) {
-  SL4 retracted(I_4x4 + Hat(v));
   if (H) throw std::runtime_error("SL4::Retract: Jacobian not implemented.");
-  return retracted;
+
+  const Matrix44 candidate = I_4x4 + Hat(v);
+  const double det = candidate.determinant();
+
+  // Use fast first-order retraction when it stays inside SL(4); fall back to
+  // the true exponential map otherwise to avoid invalid determinants.
+  if (det > 0.0 && std::isfinite(det)) {
+    return SL4(candidate);
+  }
+
+  return Expmap(v);
 }
 
 /* ************************************************************************* */
@@ -114,11 +146,17 @@ SL4 SL4::Expmap(const Vector& xi, SL4Jacobian H) {
 
   // NOTE(hlim):
   // The cost of the computation is approximately 20n^3 for matrices of size n.
-  // The number 20 depends weakly on the norm of the matrix.
-  // See
+  // The number 20 depends weakly on the norm of the matrix. See
   // https://eigen.tuxfamily.org/dox/unsupported/group__MatrixFunctions__Module.html
 
-  return SL4(A.exp());
+  // For SL(4), the Lie algebra consists of trace-zero 4x4 matrices.
+  // The exponential of a trace-zero matrix should have determinant 1 by the property:
+  // det(exp(A)) = exp(trace(A)) = exp(0) = 1.
+  // However, for large tangent vectors, numerical errors in the matrix exponential
+  // can cause the determinant to drift from 1. The constructor handles normalization.
+  
+  Matrix44 expA = A.exp();
+  return SL4(expA);
 }
 
 /* ************************************************************************* */

@@ -35,6 +35,12 @@ static const Vector15 xi2 =
      0.12, 0.11, 0.15, 0.13, 0.14)
         .finished();
 
+// define xi_large - moderately large values to test numerical stability
+// while remaining within the feasible range for matrix exponential
+static const Vector15 xi_large =
+    (Vector15() << 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
+     1.5, 1.6, 1.7, 1.8, 1.9)
+        .finished();
 // Create a SL4
 const Matrix4 T_matrix =
     (Matrix4() << 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1).finished();
@@ -60,6 +66,21 @@ TEST(SL4, Identity) {
 TEST(SL4, Expmap) {
   SL4 expected(SL4::Expmap(xi0));
   EXPECT(assert_equal(expected, SL4::Expmap(xi0), 1e-8));
+  
+  // Verify that the result has determinant 1
+  Matrix4 T = expected.matrix();
+  double det = T.determinant();
+  EXPECT_DOUBLES_EQUAL(1.0, det, 1e-8);
+}
+
+/* ************************************************************************* */
+TEST(SL4, ExpmapLargeTangent) {
+  // Test with large tangent vector - the numerical stability fix should handle this
+  SL4 result = SL4::Expmap(xi_large);
+  // Verify determinant is 1
+  Matrix4 T = result.matrix();
+  double det = T.determinant();
+  EXPECT_DOUBLES_EQUAL(1.0, det, 1e-6);  // Looser tolerance for large inputs
 }
 
 /* ************************************************************************* */
@@ -74,6 +95,22 @@ TEST(SL4, Retract) {
   SL4 actual = SL4::Retract(xi);
   SL4 expected(I_4x4 + SL4::Hat(xi));
   EXPECT(assert_equal(expected, actual, 1e-8));
+  
+  // Verify that the result has determinant 1
+  Matrix4 T = actual.matrix();
+  double det = T.determinant();
+  EXPECT_DOUBLES_EQUAL(1.0, det, 1e-8);
+}
+
+/* ************************************************************************* */
+TEST(SL4, RetractLargeTangent) {
+  // Test with large tangent vector - the retraction will fall back to Expmap
+  // for large inputs that produce invalid first-order approximations.
+  SL4 result = SL4::Retract(xi_large);
+  // Verify determinant is 1
+  Matrix4 T = result.matrix();
+  double det = T.determinant();
+  EXPECT_DOUBLES_EQUAL(1.0, det, 1e-6);  // Looser tolerance for large inputs
 }
 
 /* ************************************************************************* */

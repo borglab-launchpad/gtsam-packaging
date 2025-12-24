@@ -95,6 +95,7 @@ jobs:
       - name: Install Boost
         if: contains(matrix.name, 'boost') && matrix.build_type == 'Release'
         run: |
+          brew update
           brew upgrade boost --quiet || brew install boost --quiet
           echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
           echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
