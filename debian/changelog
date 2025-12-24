@@ -1,10 +1,51 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3326.gbp8c68d8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3327.gbpf43da0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f43da0b59aeb5622a8badd1df21c1a7354b40801 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8c68d8fb78d3d335f4380308c145ac531ec78333 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 21 Dec 2025 18:11:26 +0000
+  [ Frank Dellaert ]
+  * Codex fix to determinant issue
+  * Revised strategy for large exponentials
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Fix mathematical issues in SL4 determinant handling
+
+  [ copilot-swe-agent[bot] ]
+  * Add brew update before boost installation in Mac CI
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Remove try-catch from large tangent tests to properly test numeric behavior
+
+  [ copilot-swe-agent[bot] ]
+  * Use moderately large tangent vector values that are numerically feasible
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Fix SL4 determinant normalization for large tangent vectors
+
+  [ copilot-swe-agent[bot] ]
+  * Simplify Expmap by consistently using constructor for normalization
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Yiran Luo ]
+  * add SVD logic to handle normalization in case of negative det
+  * make variables const
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 24 Dec 2025 22:55:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3325.gbp4263af) noble; urgency=medium
 
