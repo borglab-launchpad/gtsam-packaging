@@ -18,6 +18,7 @@
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 
 namespace gtsam {

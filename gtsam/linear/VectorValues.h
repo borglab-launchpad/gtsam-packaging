@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/linear/Scatter.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>

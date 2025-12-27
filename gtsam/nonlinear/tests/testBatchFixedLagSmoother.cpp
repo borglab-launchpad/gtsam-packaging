@@ -20,7 +20,6 @@
 #include <gtsam/nonlinear/BatchFixedLagSmoother.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

@@ -24,7 +24,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/linearExceptions.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 #if GTSAM_USE_BOOST_FEATURES
 #include <gtsam/base/timing.h>

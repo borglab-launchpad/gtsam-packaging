@@ -21,6 +21,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/VariableIndex.h>
 #include <gtsam/constrained/NonlinearEqualityConstraint.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
