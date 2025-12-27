@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3330.gbpbe87de) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3331.gbpa882ed) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a882edd2b7337c7695706e785718fe0655c15eb4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @be87deca605d19e614861db4be8c599891ab7466 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 24 Dec 2025 22:58:30 +0000
+  [ Frank Dellaert ]
+  * clean up and add print method
+  * remove header bloat
+  * Remove header bloat
+
+  [ dellaert@gmail.com ]
+  * Deal with non-determinism.
+
+  [ Frank Dellaert ]
+  * Also windows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Dec 2025 03:16:14 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3329.gbp31de3b) noble; urgency=medium
 
