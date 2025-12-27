@@ -18,7 +18,6 @@
 #include <tests/smallExample.h>
 
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

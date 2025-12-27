@@ -20,7 +20,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

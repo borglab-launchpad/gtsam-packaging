@@ -24,7 +24,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>

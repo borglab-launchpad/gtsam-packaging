@@ -19,7 +19,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/kruskal.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

@@ -24,6 +24,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/timing.h>
 
 #include <list>
 #include <memory>

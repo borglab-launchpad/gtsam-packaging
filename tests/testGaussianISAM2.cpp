@@ -18,7 +18,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>

@@ -23,6 +23,7 @@
 #include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <cassert>

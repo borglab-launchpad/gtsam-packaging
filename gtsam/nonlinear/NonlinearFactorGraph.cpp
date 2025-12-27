@@ -25,7 +25,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
