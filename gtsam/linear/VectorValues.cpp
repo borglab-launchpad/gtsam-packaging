@@ -128,6 +128,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  VectorValues& VectorValues::insert(const Vector& values,
+                                     const KeyVector& keys, const Dims& dims) {
+    DenseIndex offset = 0;
+    for (Key key : keys) {
+      const size_t dim = dims.at(key);
+      insert(key, values.segment(offset, dim));
+      offset += dim;
+    }
+    return *this;
+  }
+
+  /* ************************************************************************ */
   void VectorValues::setZero()
   {
     for(auto& [key, value] : *this) {
