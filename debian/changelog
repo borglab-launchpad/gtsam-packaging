@@ -1,10 +1,31 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3338.gbpeb90aa) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3339.gbpaaba33) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @aaba33a8f6c1ce83ac9be4d771eaff68823e7d1f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @eb90aa2ab7537ea353d1c8621a303fc596cd2e3f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 Dec 2025 03:14:50 +0000
+  [ Frank Dellaert ]
+  * Bottom-up super-nodal
+  * Use TBB
+  * Modularize
+  * Add SFM benchmark
+  * docs + reporting
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Review comments
+  * Get rid of CliqueTraversalNode
+  * Public parent, children, dims
+  * Cleanup more
+  * Simplify TBB
+  * PostOrderForestParallel
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 Dec 2025 16:43:26 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3337.gbp79f746) noble; urgency=medium
 
