@@ -1,10 +1,30 @@
-gtsam (4.1.0-1ubuntu2~3339.gbpcaee54) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3340.gbp2f4dac) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2f4dac705be1dbf4515becfdb064daf2c01d8a89 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @caee546264fb692b80a263a46f63bb7ffb72bc6a **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 27 Dec 2025 03:19:14 +0000
+  [ Frank Dellaert ]
+  * Gemini proto feat(linear): Finalize MultifrontalSolver implementation and clean up feat(linear): Finalize MultifrontalSolver with benchmarks (Phase 5) feat(linear): Implement in-place back-substitution (Phase 4) feat(linear): Implement imperative multifrontal elimination (Phase 3) feat(linear): Implement iterative value loading (Phase 2) test(linear): Add balanced_smoother test case to MultifrontalSolver tests feat(linear): Implement MultifrontalSolver structure and initialization (Phase 1)
+  * MultifrontalClique Tighten Clique API Clique compilation unit calculateSeparatorKeys Lazy separatorKeys print methods Make Clique more classy Add streaming
+  * Speed up Remove printing Move timing to timing folder Scratch space Contiguous R and VectorValues method Use blockView Solve with SMB
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Address code review comments: documentation and naming conventions
+
+  [ copilot-swe-agent[bot] ]
+  * Revert some variable names per review feedback
+  * Cache VectorValues pointers
+  * Document/refine
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 31 Dec 2025 03:11:50 +0000
 
 gtsam (4.1.0-1ubuntu2~3338.gbpc48634) noble; urgency=medium
 
