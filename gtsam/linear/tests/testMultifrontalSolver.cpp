@@ -40,6 +40,7 @@ const GaussianFactorGraph chain = {
     std::make_shared<JacobianFactor>(x4, I_1x1, (Vector(1) << 1.).finished(),
                                      chainNoise)};
 const Ordering chainOrdering{x2, x1, x3, x4};
+
 }  // namespace
 
 /* ************************************************************************* */
@@ -58,8 +59,8 @@ TEST(MultifrontalSolver, Constructor) {
   EXPECT_LONGS_EQUAL(x4, root->frontals()[1]);
 
   // Root should have 1 child {x2, x1}
-  EXPECT_LONGS_EQUAL(1, root->children().size());
-  auto childClique = root->children()[0];
+  EXPECT_LONGS_EQUAL(1, root->children.size());
+  auto childClique = root->children[0];
 
   // Verify matrices in leaf (childClique)
   EXPECT_LONGS_EQUAL(4, childClique->sbm().nBlocks());
@@ -96,7 +97,7 @@ TEST(MultifrontalSolver, Load) {
 
   // Verify values in childClique
   auto root = solver.roots()[0];
-  auto childClique = root->children()[0];
+  auto childClique = root->children[0];
 
   // Block 0 (x2) should now be 2.0
   Matrix A0 = childClique->Ab()(0);
@@ -106,16 +107,25 @@ TEST(MultifrontalSolver, Load) {
 /* ************************************************************************* */
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering);
-  solver.eliminate();
+  solver.eliminateInPlace();
 
   // Solve
-  const VectorValues& actual = solver.solve();
+  const VectorValues& actual = solver.updateSolution();
 
   // Reference elimination and solve
   GaussianBayesTree expectedBT = *chain.eliminateMultifrontal(chainOrdering);
   VectorValues expected = expectedBT.optimize();
 
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(MultifrontalSolver, MergeDimCap) {
+  MultifrontalSolver solverNoMerge(chain, chainOrdering, 0);
+  EXPECT_LONGS_EQUAL(2, solverNoMerge.cliqueCount());
+
+  MultifrontalSolver solverMerge(chain, chainOrdering, 1000);
+  EXPECT_LONGS_EQUAL(1, solverMerge.cliqueCount());
 }
 
 /* ************************************************************************* */
@@ -143,7 +153,7 @@ TEST(MultifrontalSolver, BalancedSmoother) {
       [&](MultifrontalSolver::CliquePtr c) {
         for (Key k : c->frontals())
           if (k == X(1)) cX1 = c;
-        for (auto child : c->children()) findX1(child);
+        for (auto child : c->children) findX1(child);
       };
   findX1(root);
 
@@ -151,8 +161,8 @@ TEST(MultifrontalSolver, BalancedSmoother) {
   EXPECT_LONGS_EQUAL(3, cX1->sbm().nBlocks());
 
   // Eliminate and solve
-  solver.eliminate();
-  const VectorValues& actual = solver.solve();
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
 
   GaussianBayesTree expectedBT = *smoother.eliminateMultifrontal(ordering);
   VectorValues expected = expectedBT.optimize();
@@ -160,8 +170,8 @@ TEST(MultifrontalSolver, BalancedSmoother) {
 
   // Eliminate and solve after loading new values
   solver.load(smoother);
-  solver.eliminate();
-  const VectorValues& actual2 = solver.solve();
+  solver.eliminateInPlace();
+  const VectorValues& actual2 = solver.updateSolution();
   EXPECT(assert_equal(expected, actual2, 1e-9));
 }
 
