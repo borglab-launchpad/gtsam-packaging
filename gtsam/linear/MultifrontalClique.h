@@ -54,30 +54,28 @@ class IndexedSymbolicFactor : public SymbolicFactor {
 class GTSAM_EXPORT MultifrontalClique {
  public:
   using shared_ptr = std::shared_ptr<MultifrontalClique>;
+  using Children = std::vector<shared_ptr>;
+
+  std::weak_ptr<MultifrontalClique> parent;  ///< Parent clique.
+  Children children;        ///< Child cliques used for traversal.
+  size_t frontalDim = 0;    ///< Frontal dimension.
+  size_t separatorDim = 0;  ///< Separator dimension.
 
   /// Construct a clique from a symbolic junction tree node.
   /// @param cluster The symbolic junction tree node.
-  explicit MultifrontalClique(const SymbolicJunctionTree::sharedNode& cluster);
+  /// @param parent Weak pointer to the parent clique.
+  explicit MultifrontalClique(const SymbolicJunctionTree::sharedNode& cluster,
+                              const std::weak_ptr<MultifrontalClique>& parent);
 
   /// @name Setup (non-const)
   /// @{
-
-  /// Set the parent clique.
-  /// @param parent Weak pointer to the parent clique.
-  void setParent(const std::weak_ptr<MultifrontalClique>& parent);
 
   /// Add a child clique.
   /// @param child Shared pointer to the child clique.
   void addChild(const shared_ptr& child);
 
-  /// Compute parent indices for all children after separators are finalized.
-  void assignParentIndicesForChildren();
-
-  /// Cache pointers to frontal and separator update vectors.
-  void cacheValuePointers(VectorValues* delta);
-
-  /// Calculate separator keys from children's frontals.
-  void calculateSeparatorKeys();
+  /// Compute separator keys, cache dimensions, and cache value pointers.
+  void finalize(const std::map<Key, size_t>& dims, VectorValues* solution);
 
   /// Pre-allocate matrices for this clique.
   /// @param blockDims Block dimensions (excluding RHS).
@@ -100,14 +98,10 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Get the separator keys for this clique.
   const KeyVector& separatorKeys() const;
 
-  /// Get the children of this clique.
-  const std::vector<shared_ptr>& children() const;
-
-  /// Get the parent of this clique.
-  const std::weak_ptr<MultifrontalClique>& parent() const;
-
-  /// Get the primary key of this clique (first frontal).
-  Key key() const;
+  /// Get the cached problem size for traversal scheduling.
+  int problemSize() const {
+    return static_cast<int>(frontalDim + separatorDim);
+  }
 
   /// Get the number of factors in this clique.
   size_t factorCount() const;
@@ -120,7 +114,6 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Get the symmetric block matrix (const).
   const SymmetricBlockMatrix& sbm() const { return sbm_; }
-
 
   /**
    * Compute block dimensions from variable dimensions (excluding RHS).
@@ -160,21 +153,16 @@ class GTSAM_EXPORT MultifrontalClique {
    * Eliminate this clique and propagate its separator contribution upward.
    *
    * Computes the local normal equations (SBM) from the stacked Jacobian (Ab),
-   * performs partial Cholesky on the frontal blocks, and then updates the
-   * parent's SBM using only the separator view (plus RHS) of this clique.
-   * Requires parent indices to be precomputed.
+   * incorporates child separator contributions, and performs partial Cholesky
+   * on the frontal blocks. Requires parent indices to be precomputed.
    */
-  void eliminate();
+  void eliminateInPlace();
 
   /**
-   * Update this clique using a child's contribution.
-   * @param separator Child clique's SBM restricted to its separator blocks,
-   * with the RHS block appended as the last block.
-   * @param indices Mapping from the child's separator blocks into this
-   * parent's SBM block indices (RHS is implicit).
+   * Apply this clique's separator contribution into the parent clique.
+   * @param parent Parent clique to update.
    */
-  void updateWith(const SymmetricBlockMatrix& separator,
-                  const std::vector<size_t>& indices);
+  void updateParent(MultifrontalClique& parent) const;
 
   /**
    * Solve for this clique's frontal variables and write them back to the
@@ -183,17 +171,19 @@ class GTSAM_EXPORT MultifrontalClique {
    * Uses block back-substitution using the upper triangular-part of the
    * Cholesky-stored SBM, solving the triangular system for the frontal blocks.
    */
-  void solve() const;
+  void updateSolution() const;
   /// @}
 
  private:
+  /// Calculate separator keys from children's frontals.
+  void calculateSeparatorKeys();
+
+  /// Cache pointers to frontal and separator update vectors.
+  void cacheSolutionPointers(VectorValues* delta);
+
   void setParentIndices(const std::vector<size_t>& indices) {
     parentIndices_ = indices;
   }
-  Key key_;
-  std::weak_ptr<MultifrontalClique> parent_;
-  std::vector<shared_ptr> children_;
-
   VerticalBlockMatrix Ab_;
   mutable SymmetricBlockMatrix sbm_;
   mutable Vector rhsScratch_;
