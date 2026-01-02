@@ -153,7 +153,7 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Compose with Jacobians
   ProductLieGroup compose(const ProductLieGroup& other, ChartJacobian H1,
                           ChartJacobian H2 = {}) const {
-    Jacobian1 D_g_first;
+    Jacobian1 D_g_first = Jacobian1::Zero();
     Jacobian2 D_h_second;
     G g = traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : 0);
     H h = traits<H>::Compose(this->second, other.second, H1 ? &D_h_second : 0);
