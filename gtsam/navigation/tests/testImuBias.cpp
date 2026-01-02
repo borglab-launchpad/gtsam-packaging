@@ -44,6 +44,7 @@ TEST(ImuBias, Constructor) {
 
   // Copy Constructor
   Bias bias3(bias2);
+  (void)bias3;
 }
 
 /* ************************************************************************* */
