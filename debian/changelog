@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3346.gbp14147d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3347.gbpc3c644) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c3c644b0da1a542cb69d60fdffa135529e042699 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @14147d0b64873b62bcf209dfdfa3ba7ab210a0e4 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 02 Jan 2026 05:07:52 +0000
+  [ Frank Dellaert ]
+  * Deprecate NonlinearEquality1
+  * Be more precise on doxygen
+  * Fix covariances for constrained variables
+  * Example
+  * Fix python unit tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Jan 2026 02:32:43 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3345.gbpabce11) noble; urgency=medium
 
