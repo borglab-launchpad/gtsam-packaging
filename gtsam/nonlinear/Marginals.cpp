@@ -131,7 +131,15 @@ Matrix Marginals::marginalInformation(Key variable) const {
 
 /* ************************************************************************* */
 Matrix Marginals::marginalCovariance(Key variable) const {
-  return marginalInformation(variable).inverse();
+  Matrix info = marginalInformation(variable);
+
+  // Deterministic constraints (e.g., NonlinearEquality) produce infinite
+  // information for the constrained variable. Treat those as zero covariance
+  // rather than attempting to invert an infinite matrix.
+  if (!info.allFinite())
+    return Matrix::Zero(info.rows(), info.cols());
+
+  return info.inverse();
 }
 
 /* ************************************************************************* */

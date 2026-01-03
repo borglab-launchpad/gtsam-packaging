@@ -341,12 +341,16 @@ double Diagonal::logDetR() const {
 /* ************************************************************************* */
 
 namespace internal {
-// switch precisions and invsigmas to finite value
-// TODO: why?? And, why not just ask s==0.0 below ?
+// Keep invsigmas finite for constrained entries while preserving infinite
+// precision so downstream information matrices reflect determinism.
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
+  static const double kInfinity = std::numeric_limits<double>::infinity();
   for (Vector::Index i = 0; i < sigmas.size(); ++i)
     if (!std::isfinite(1. / sigmas[i])) {
-      precisions[i] = 0.0;
+      // Preserve the infinite precision so downstream information matrices
+      // reflect deterministic constraints. We still zero invsigmas to avoid
+      // scaling constraint rows during whitening.
+      precisions[i] = kInfinity;
       invsigmas[i] = 0.0;
     }
 }
@@ -455,6 +459,40 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
   for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
     if (!constrained(i)) // if constrained, leave row of H as is
       H.row(i) *= invsigmas_(i);
+}
+
+/* ************************************************************************* */
+Matrix Constrained::informationFromA(const Matrix& A) const {
+  const double kZeroTol = 1e-12;
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  Matrix info = Matrix::Zero(A.cols(), A.cols());
+  assert(static_cast<DenseIndex>(precisions_.size()) == A.rows());
+  // Accumulate row-wise contributions so constrained rows can mark infinite entries.
+  for (DenseIndex row = 0; row < A.rows(); ++row) {
+    const double precision = precisions_(row);
+    if (precision == 0.0) {
+      continue;
+    }
+    const auto a = A.row(row);
+    if (std::isinf(precision)) {
+      // Constrained rows force infinite information wherever they have support.
+      for (DenseIndex i = 0; i < a.cols(); ++i) {
+        if (std::abs(a(i)) <= kZeroTol) {
+          continue;
+        }
+        for (DenseIndex j = 0; j < a.cols(); ++j) {
+          if (std::abs(a(j)) <= kZeroTol) {
+            continue;
+          }
+          info(i, j) = kInfinity;
+        }
+      }
+    } else {
+      // Finite precisions reduce to the standard weighted outer product.
+      info.noalias() += precision * a.transpose() * a;
+    }
+  }
+  return info;
 }
 
 /* ************************************************************************* */

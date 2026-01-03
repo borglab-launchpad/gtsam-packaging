@@ -515,9 +515,13 @@ double JacobianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 Matrix JacobianFactor::augmentedInformation() const {
   if (model_) {
-    Matrix AbWhitened = Ab_.full();
-    model_->WhitenInPlace(AbWhitened);
-    return AbWhitened.transpose() * AbWhitened;
+    Matrix Ab = Ab_.full();
+    if (model_->isConstrained()) {
+      auto constrained = std::static_pointer_cast<noiseModel::Constrained>(model_);
+      return constrained->informationFromA(Ab);
+    }
+    model_->WhitenInPlace(Ab);
+    return Ab.transpose() * Ab;
   } else {
     return Ab_.full().transpose() * Ab_.full();
   }
@@ -526,9 +530,13 @@ Matrix JacobianFactor::augmentedInformation() const {
 /* ************************************************************************* */
 Matrix JacobianFactor::information() const {
   if (model_) {
-    Matrix AWhitened = this->getA();
-    model_->WhitenInPlace(AWhitened);
-    return AWhitened.transpose() * AWhitened;
+    Matrix A = this->getA();
+    if (model_->isConstrained()) {
+      auto constrained = std::static_pointer_cast<noiseModel::Constrained>(model_);
+      return constrained->informationFromA(A);
+    }
+    model_->WhitenInPlace(A);
+    return A.transpose() * A;
   } else {
     return this->getA().transpose() * this->getA();
   }
