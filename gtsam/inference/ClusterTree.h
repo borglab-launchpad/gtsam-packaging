@@ -10,6 +10,7 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -95,6 +96,11 @@ class ClusterTree {
 
     /// Return a vector with nrFrontal keys for each child
     std::vector<size_t> nrFrontalsOfChildren() const;
+
+    using KeySetMap = FastMap<const Cluster*, KeySet>;
+
+    /// Return the separator keys (subtree keys minus frontals), optionally cached.
+    KeySet separatorKeys(KeySetMap* cache = nullptr) const;
 
     /// Merge in given cluster
     void merge(const std::shared_ptr<Cluster>& cluster);

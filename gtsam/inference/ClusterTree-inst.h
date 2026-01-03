@@ -42,6 +42,34 @@ std::vector<size_t> ClusterTree<GRAPH>::Cluster::nrFrontalsOfChildren() const {
 
 /* ************************************************************************* */
 template <class GRAPH>
+KeySet ClusterTree<GRAPH>::Cluster::separatorKeys(KeySetMap* cache) const {
+  if (cache) {
+    auto it = cache->find(this);
+    if (it != cache->end()) return it->second;
+  }
+
+  KeySet keys;
+  for (const auto& factor : factors) {
+    if (!factor) continue;
+    keys.insert(factor->begin(), factor->end());
+  }
+  for (const auto& child : children) {
+    KeySet childSeparators = child->separatorKeys(cache);
+    keys.insert(childSeparators.begin(), childSeparators.end());
+  }
+  for (Key key : orderedFrontalKeys) {
+    keys.erase(key);
+  }
+
+  if (cache) {
+    auto result = cache->emplace(this, std::move(keys));
+    return result.first->second;
+  }
+  return keys;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
 void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster) {
   // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
   orderedFrontalKeys.insert(orderedFrontalKeys.end(), cluster->orderedFrontalKeys.rbegin(),

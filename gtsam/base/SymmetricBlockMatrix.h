@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <array>
+#include <vector>
 
 namespace boost {
 namespace serialization {
@@ -244,6 +245,11 @@ namespace gtsam {
         block_(J, I).noalias() += xpr.transpose();
       }
     }
+
+    /// Update this matrix with blocks from another block matrix using a mapping.
+    /// Entries with index -1 are skipped.
+    void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
+                                const std::vector<DenseIndex>& blockIndices);
 
     /// @}
     /// @name Accessing the full matrix.
