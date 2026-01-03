@@ -1,10 +1,40 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3350.gbp52b45c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3351.gbpa4863b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a4863ba4fc128f869a4361019261183f8c542638 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @52b45cd2831b6d4273335f609f80dcf6ebcba938 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Jan 2026 02:35:41 +0000
+  [ Frank Dellaert ]
+  * updateFromMappedBlocks
+  * Fix fillAb to respect noise models
+  * Use updateFromMappedBlocks
+  * Handle linearized NonlinearEqualities
+  * Mark fixed frontals in finalize
+  * Get rid of cluster_, separatorKeys_
+  * refactor for clarity
+  * compute BayesTree/Marginals
+  * Document solve
+  * Better docs
+  * Review
+  * Shift weight to constructor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix covariance for constraints
+  * return rows added
+  * More honest comparison
+  * Add separatorKeys method
+  * Use separatorKeys
+  * Allow for skipping blocks
+  * Much better handling of constraints
+  * Fix debug path
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Jan 2026 21:04:27 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3349.gbpd0a450) noble; urgency=medium
 
