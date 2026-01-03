@@ -26,10 +26,12 @@
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 namespace gtsam {
 
+class GaussianBayesTree;
 class MultifrontalClique;
 
 /**
@@ -47,10 +49,11 @@ class GTSAM_EXPORT MultifrontalSolver {
   using Node = MultifrontalClique;
 
  private:
-  std::vector<CliquePtr> roots_;    ///< Roots of the elimination tree.
-  std::vector<CliquePtr> cliques_;  ///< All cliques in the solver.
-  std::map<Key, size_t> dims_;      ///< Map from variable key to dimension.
-  mutable VectorValues solution_;  ///< Cached solution vector.
+  std::vector<CliquePtr> roots_;       ///< Roots of the elimination tree.
+  std::vector<CliquePtr> cliques_;     ///< All cliques in the solver.
+  std::map<Key, size_t> dims_;         ///< Map from variable key to dimension.
+  mutable VectorValues solution_;      ///< Cached solution vector.
+  std::unordered_set<Key> fixedKeys_;  ///< Keys fixed by constrained factors.
 
  public:
   /**
@@ -80,6 +83,14 @@ class GTSAM_EXPORT MultifrontalSolver {
    * This operates in-place on the pre-allocated matrices.
    */
   void eliminateInPlace();
+
+  /**
+   * Compute a Bayes tree from the in-place Cholesky factorization.
+   * Requires eliminateInPlace() to have been called beforehand.
+   * @return A GaussianBayesTree representing the eliminated factor graph
+   * encoded by the current multifrontal factorization.
+   */
+  GaussianBayesTree computeBayesTree() const;
 
   /**
    * Solve for the update vector.

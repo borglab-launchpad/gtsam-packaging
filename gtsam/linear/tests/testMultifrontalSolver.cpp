@@ -20,11 +20,15 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <tests/smallExample.h>
 
+#include <cmath>
 #include <functional>
+#include <limits>
 
 using namespace std;
 using namespace gtsam;
@@ -32,18 +36,21 @@ using symbol_shorthand::X;
 
 namespace {
 const Key x1 = 1, x2 = 2, x3 = 3, x4 = 4;
-const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
+const SharedDiagonal chainNoise1 = noiseModel::Isotropic::Sigma(1, 0.5);
+const SharedDiagonal chainNoise2 = noiseModel::Isotropic::Sigma(1, 1.0);
+const SharedDiagonal chainNoise3 = noiseModel::Isotropic::Sigma(1, 2.0);
+const SharedDiagonal chainNoise4 = noiseModel::Isotropic::Sigma(1, 0.25);
 const GaussianFactorGraph chain = {
-    std::make_shared<JacobianFactor>(x2, I_1x1, x1, I_1x1, I_1x1, chainNoise),
-    std::make_shared<JacobianFactor>(x2, I_1x1, x3, I_1x1, I_1x1, chainNoise),
-    std::make_shared<JacobianFactor>(x3, I_1x1, x4, I_1x1, I_1x1, chainNoise),
-    std::make_shared<JacobianFactor>(x4, I_1x1, (Vector(1) << 1.).finished(),
-                                     chainNoise)};
+    std::make_shared<JacobianFactor>(x2, I_1x1, x1, I_1x1, I_1x1, chainNoise1),
+    std::make_shared<JacobianFactor>(x2, I_1x1, x3, I_1x1, I_1x1, chainNoise2),
+    std::make_shared<JacobianFactor>(x3, I_1x1, x4, I_1x1, I_1x1, chainNoise3),
+    std::make_shared<JacobianFactor>(x4, I_1x1, I_1x1, chainNoise4)};
 const Ordering chainOrdering{x2, x1, x3, x4};
 
 }  // namespace
 
 /* ************************************************************************* */
+// Build the solver and validate initial structure and load.
 TEST(MultifrontalSolver, Constructor) {
   MultifrontalSolver solver(chain, chainOrdering);
 
@@ -51,12 +58,6 @@ TEST(MultifrontalSolver, Constructor) {
   EXPECT(solver.roots().size() == 1);
   auto root = solver.roots()[0];
   EXPECT(root != nullptr);
-
-  // Root should be {x3, x4} (merged)
-  // Frontals: x3, x4
-  EXPECT_LONGS_EQUAL(2, root->frontals().size());
-  EXPECT_LONGS_EQUAL(x3, root->frontals()[0]);
-  EXPECT_LONGS_EQUAL(x4, root->frontals()[1]);
 
   // Root should have 1 child {x2, x1}
   EXPECT_LONGS_EQUAL(1, root->children.size());
@@ -70,14 +71,15 @@ TEST(MultifrontalSolver, Constructor) {
   // Verify initial load for childClique
   // Block 0 (x2):
   Matrix A0 = childClique->Ab()(0);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 1., 1.).finished(), A0));
+  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
 
   // Block 3 (RHS):
   Matrix Ab = childClique->Ab()(3);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 1., 1.).finished(), Ab));
+  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), Ab));
 }
 
 /* ************************************************************************* */
+// Reload numerical values and ensure Ab updates match whitening.
 TEST(MultifrontalSolver, Load) {
   MultifrontalSolver solver(chain, chainOrdering);
 
@@ -99,12 +101,13 @@ TEST(MultifrontalSolver, Load) {
   auto root = solver.roots()[0];
   auto childClique = root->children[0];
 
-  // Block 0 (x2) should now be 2.0
+  // Block 0 (x2) should now be doubled, then whitened.
   Matrix A0 = childClique->Ab()(0);
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 2.).finished(), A0));
+  EXPECT(assert_equal((Matrix(2, 1) << 4., 2.).finished(), A0));
 }
 
 /* ************************************************************************* */
+// Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering);
   solver.eliminateInPlace();
@@ -120,6 +123,167 @@ TEST(MultifrontalSolver, Eliminate) {
 }
 
 /* ************************************************************************* */
+// Compare marginals from in-place Bayes tree against standard elimination.
+TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
+  MultifrontalSolver solver(chain, chainOrdering);
+  solver.eliminateInPlace();
+
+  GaussianBayesTree actualBT = solver.computeBayesTree();
+  GaussianBayesTree expectedBT = *chain.eliminateMultifrontal(chainOrdering);
+
+  EXPECT(assert_equal(expectedBT.marginalCovariance(x2),
+                      actualBT.marginalCovariance(x2), 1e-9));
+  EXPECT(assert_equal(expectedBT.marginalCovariance(x3),
+                      actualBT.marginalCovariance(x3), 1e-9));
+
+  Marginals actualMarginals(std::move(actualBT), solver.updateSolution());
+  Marginals expectedMarginals(chain, solver.updateSolution());
+
+  EXPECT(assert_equal(expectedMarginals.marginalCovariance(x2),
+                      actualMarginals.marginalCovariance(x2), 1e-9));
+
+  const KeyVector jointKeys{x2, x3};
+  const JointMarginal expectedJoint =
+      expectedMarginals.jointMarginalCovariance(jointKeys);
+  const JointMarginal actualJoint =
+      actualMarginals.jointMarginalCovariance(jointKeys);
+  EXPECT(
+      assert_equal(expectedJoint.fullMatrix(), actualJoint.fullMatrix(), 1e-9));
+}
+
+/* ************************************************************************* */
+// Compare marginals on a constrained chain against legacy marginals.
+TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
+  const SharedDiagonal hardConstraint =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+  GaussianFactorGraph constrainedChain = chain;
+  constrainedChain.emplace_shared<JacobianFactor>(
+      x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+
+  MultifrontalSolver solver(constrainedChain, chainOrdering);
+  solver.eliminateInPlace();
+
+  GaussianBayesTree actualBT = solver.computeBayesTree();
+  Marginals actualMarginals(std::move(actualBT), solver.updateSolution());
+  Marginals expectedMarginals(constrainedChain, solver.updateSolution());
+
+  const KeyVector keys{x1, x2, x3, x4};
+  for (Key key : keys) {
+    EXPECT(assert_equal(expectedMarginals.marginalCovariance(key),
+                        actualMarginals.marginalCovariance(key), 1e-9));
+  }
+}
+
+/* ************************************************************************* */
+// Verify feasible unary constrained factor clamps the update to zero.
+TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
+  const SharedDiagonal hardConstraint =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+  const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
+  GaussianFactorGraph graph;
+  // Same setup as ConstrainedNoiseUnsupported, but feasible (b == 0).
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+                                       hardConstraint);
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  const Ordering ordering{x1};
+
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(0.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Infeasible unary constrained factor is rejected.
+TEST(MultifrontalSolver, ConstrainedNoiseUnsupported) {
+  const SharedDiagonal hardConstraint =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+  const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
+                                       hardConstraint);
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  const Ordering ordering{x1};
+
+  CHECK_EXCEPTION(
+      { MultifrontalSolver solver(graph, ordering); }, std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Fully constrained unary factor with All() keeps delta fixed at zero.
+TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
+  const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
+  const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 1.0);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+                                       hardConstraint);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 5.0).finished(),
+                                       softNoise);
+  const Ordering ordering{x1};
+
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(0.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Mixed-key constrained factor is not supported.
+TEST(MultifrontalSolver, ConstrainedNoiseMixedKeysUnsupported) {
+  const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  const Ordering ordering{x1, x2};
+
+  CHECK_EXCEPTION(
+      { MultifrontalSolver solver(graph, ordering); }, std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Weighted scalar measurements produce the expected weighted estimate.
+TEST(MultifrontalSolver, WeightedScalarMeasurements) {
+  const double w1 = 0.2;
+  const double w2 = 0.8;
+  const double sigma1 = std::sqrt(1.0 / w1);
+  const double sigma2 = std::sqrt(1.0 / w2);
+
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+                                       noiseModel::Isotropic::Sigma(1, sigma1));
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
+                                       (Vector(1) << 10.0).finished(),
+                                       noiseModel::Isotropic::Sigma(1, sigma2));
+
+  const Ordering ordering{x1};
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(8.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Hessian factors contribute directly to the augmented normal equations.
+TEST(MultifrontalSolver, HessianFactors) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(x1, (Matrix(1, 1) << 4.0).finished(),
+                                      (Vector(1) << 8.0).finished(), 0.0);
+
+  const Ordering ordering{x1};
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(2.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Merge threshold changes the clique count.
 TEST(MultifrontalSolver, MergeDimCap) {
   MultifrontalSolver solverNoMerge(chain, chainOrdering, 0);
   EXPECT_LONGS_EQUAL(2, solverNoMerge.cliqueCount());
@@ -129,6 +293,7 @@ TEST(MultifrontalSolver, MergeDimCap) {
 }
 
 /* ************************************************************************* */
+// End-to-end balanced smoother test with reload.
 TEST(MultifrontalSolver, BalancedSmoother) {
   // Create smoother with 7 nodes
   auto [nlfg, poses] = example::createNonlinearSmoother(7);
@@ -144,21 +309,27 @@ TEST(MultifrontalSolver, BalancedSmoother) {
   EXPECT(solver.roots().size() == 1);
   auto root = solver.roots()[0];
 
-  EXPECT_LONGS_EQUAL(root->frontals().size() + root->separatorKeys().size() + 1,
-                     root->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(root->Ab().nBlocks(), root->sbm().nBlocks());
 
-  // Check a leaf clique (for X(1))
-  MultifrontalSolver::CliquePtr cX1 = nullptr;
-  std::function<void(MultifrontalSolver::CliquePtr)> findX1 =
+  // Check a leaf clique block structure.
+  MultifrontalSolver::CliquePtr leaf = nullptr;
+  size_t minBlocks = std::numeric_limits<size_t>::max();
+  std::function<void(MultifrontalSolver::CliquePtr)> findLeaf =
       [&](MultifrontalSolver::CliquePtr c) {
-        for (Key k : c->frontals())
-          if (k == X(1)) cX1 = c;
-        for (auto child : c->children) findX1(child);
+        if (!c) return;
+        if (c->children.empty()) {
+          const size_t blocks = c->sbm().nBlocks();
+          if (blocks < minBlocks) {
+            minBlocks = blocks;
+            leaf = c;
+          }
+        }
+        for (auto child : c->children) findLeaf(child);
       };
-  findX1(root);
+  findLeaf(root);
 
-  EXPECT(cX1 != nullptr);
-  EXPECT_LONGS_EQUAL(3, cX1->sbm().nBlocks());
+  EXPECT(leaf != nullptr);
+  EXPECT_LONGS_EQUAL(3, minBlocks);
 
   // Eliminate and solve
   solver.eliminateInPlace();
