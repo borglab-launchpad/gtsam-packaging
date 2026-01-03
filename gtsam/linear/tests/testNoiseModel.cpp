@@ -23,6 +23,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <cmath>
 #include <iostream>
 #include <limits>
 
@@ -129,9 +130,9 @@ TEST(NoiseModel, equals)
 ///* ************************************************************************* */
 //TEST(NoiseModel, ConstrainedSmart )
 //{
-//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
-//  Diagonal::shared_ptr n1 = std::dynamic_pointer_cast<Diagonal>(nonconstrained);
-//  Constrained::shared_ptr n2 = std::dynamic_pointer_cast<Constrained>(nonconstrained);
+//  Gaussian::shared_ptr unconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
+//  Diagonal::shared_ptr n1 = std::dynamic_pointer_cast<Diagonal>(unconstrained);
+//  Constrained::shared_ptr n2 = std::dynamic_pointer_cast<Constrained>(unconstrained);
 //  EXPECT(n1);
 //  EXPECT(!n2);
 //
@@ -148,6 +149,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   Constrained::shared_ptr actual;
   size_t d = 3;
   double m = 100.0;
+  const double kInfinity = std::numeric_limits<double>::infinity();
   Vector3 sigmas(kSigma, 0.0, 0.0);
   Vector3 mu(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
@@ -155,7 +157,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   EXPECT(assert_equal(Vector::Constant(d, 1000.0), actual->mu()));
   EXPECT(assert_equal(Vector::Constant(d, 0), actual->sigmas()));
   EXPECT(assert_equal(Vector::Constant(d, 0), actual->invsigmas())); // Actually zero as dummy value
-  EXPECT(assert_equal(Vector::Constant(d, 0), actual->precisions())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, kInfinity), actual->precisions())); // Infinite precision for hard constraints
 
   actual = Constrained::All(d, m);
   EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
@@ -199,6 +201,34 @@ TEST(NoiseModel, ConstrainedAll )
   DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->loss(i->squaredMahalanobisDistance(infeasible)),1e-9);
   DOUBLES_EQUAL(0.0, i->squaredMahalanobisDistance(feasible), 1e-9);
   DOUBLES_EQUAL(0.0, i->loss(0.0),1e-9);
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, ConstrainedInformationFromA) {
+  // Use one constrained row and one finite-precision row.
+  Vector2 sigmas(0.0, 2.0);
+  Constrained::shared_ptr model = Constrained::MixedSigmas(sigmas);
+
+  Matrix A(2, 2);
+  A << 1.0, 0.0, 0.0, 2.0;
+
+  Matrix info = model->informationFromA(A);
+
+  EXPECT(std::isinf(info(0, 0)));
+  DOUBLES_EQUAL(0.0, info(0, 1), 1e-12);
+  DOUBLES_EQUAL(0.0, info(1, 0), 1e-12);
+  DOUBLES_EQUAL(1.0, info(1, 1), 1e-12);
+
+  // Constrained row with support in multiple columns should mark cross-terms.
+  Matrix A_dense(2, 2);
+  A_dense << 1.0, 1.0, 0.0, 2.0;
+
+  Matrix info_dense = model->informationFromA(A_dense);
+
+  EXPECT(std::isinf(info_dense(0, 0)));
+  EXPECT(std::isinf(info_dense(0, 1)));
+  EXPECT(std::isinf(info_dense(1, 0)));
+  EXPECT(std::isinf(info_dense(1, 1)));
 }
 
 /* ************************************************************************* */

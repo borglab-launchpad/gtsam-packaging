@@ -157,6 +157,7 @@ class TestPose3(GtsamTestCase):
         actual = Pose3.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
+    @unittest.skipUnless(hasattr(gtsam.Pose3, "serialize"), "Serialization not enabled")
     def test_serialization(self):
         """Test if serialization is working normally"""
         expected = Pose3(Rot3.Ypr(0.0, 1.0, 0.0), Point3(1, 1, 0))
