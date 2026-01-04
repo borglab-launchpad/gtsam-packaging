@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3354.gbp648672) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3355.gbp0cbd0c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0cbd0ce5b54da43f45661c98257ac08571d921fe **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @648672b53c0905f17b25442ed810c60d67d13b18 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 03 Jan 2026 21:07:24 +0000
+  [ Frank Dellaert ]
+  * Switch blockIndex_ to vector
+  * Avoid 3 identical sumDims
+  * Pass sep keys as set without converting
+  * Do solve in parallel
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix BAL parsing on Mac
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 04 Jan 2026 19:02:41 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3353.gbp7d48d2) noble; urgency=medium
 
