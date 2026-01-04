@@ -132,7 +132,8 @@ int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   //  params.setLinearSolverType("SEQUENTIAL_CHOLESKY");
-  //  params.setVerbosityLM("SUMMARY");
+   params.setVerbosityLM("SUMMARY");
+   params.setRelativeErrorTol(0.01); // 1% relative error tol
 
   if (gUseSchur) {
     // Create Schur-complement ordering
