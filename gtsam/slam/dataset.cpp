@@ -46,6 +46,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <stdexcept>
 #include <string>
 
@@ -131,6 +132,7 @@ static void parseLines(const std::string &filename, Parser<T> parse) {
   std::ifstream is(filename.c_str());
   if (!is)
     throw std::invalid_argument("parse: can not find file " + filename);
+  is.imbue(std::locale::classic());
   std::string tag;
   while (is >> tag) {
     parse(is, tag); // ignore return value
