@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3362.gbp74719d) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3363.gbpb3f600) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b3f60058598863a5c51b4d79dbf5de69ae85dd28 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @74719da6b06de34c24fa7da689f3078961acbc67 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 06 Jan 2026 03:39:58 +0000
+  [ Fan Jiang ]
+  * JacobianFactor now compute the error more efficiently by first assembling the X vector
+  * Address comments
+  * Fix typo
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 06 Jan 2026 18:58:52 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3361.gbpf142e6) noble; urgency=medium
 
