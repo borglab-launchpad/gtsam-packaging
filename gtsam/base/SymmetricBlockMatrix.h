@@ -234,6 +234,19 @@ namespace gtsam {
       }
     }
 
+    /// Add a vector to the diagonal entries of block I.
+    void addToDiagonalBlock(DenseIndex I, const Vector& deltaDiag) {
+      auto dest = block_(I, I);
+      assert(dest.rows() == deltaDiag.size());
+      dest.diagonal().array() += deltaDiag.array();
+    }
+
+    /// Add lambda * I to the diagonal block I.
+    void addScaledIdentity(DenseIndex I, double lambda) {
+      auto dest = block_(I, I);
+      dest.diagonal().array() += lambda;
+    }
+
     /// Update an off diagonal block.
     /// NOTE(emmett): This assumes noalias().
     template <typename XprType>
@@ -250,6 +263,12 @@ namespace gtsam {
     /// Entries with index -1 are skipped.
     void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
                                 const std::vector<DenseIndex>& blockIndices);
+
+    /// Update this matrix with blockwise outer products from a vertical block matrix.
+    /// Adds S_i^T S_j into block (I,J), using a block mapping; entries with index -1 are skipped.
+    /// The range to use is controlled by other.firstBlock().
+    void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
+                                      const std::vector<DenseIndex>& blockIndices);
 
     /// @}
     /// @name Accessing the full matrix.
@@ -316,6 +335,9 @@ namespace gtsam {
      * and adjust block_start so now *this refers to it.
      */
     VerticalBlockMatrix split(DenseIndex nFrontals);
+
+    /// I n-place version of split.
+    void split(DenseIndex nFrontals, VerticalBlockMatrix* RSd);
 
   protected:
 

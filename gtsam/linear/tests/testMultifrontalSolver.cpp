@@ -50,9 +50,10 @@ const Ordering chainOrdering{x2, x1, x3, x4};
 }  // namespace
 
 /* ************************************************************************* */
-// Build the solver and validate initial structure and load.
+// Build the solver and validate initial structure and explicit load.
 TEST(MultifrontalSolver, Constructor) {
   MultifrontalSolver solver(chain, chainOrdering);
+  solver.load(chain);
 
   // Verify roots
   EXPECT(solver.roots().size() == 1);
@@ -76,6 +77,33 @@ TEST(MultifrontalSolver, Constructor) {
   // Block 3 (RHS):
   Matrix Ab = childClique->Ab()(3);  // 2x1
   EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), Ab));
+}
+
+/* ************************************************************************* */
+// Build the solver from precomputed data and validate structure and load.
+TEST(MultifrontalSolver, ConstructorPrecomputed) {
+  auto data = MultifrontalSolver::Precompute(chain, chainOrdering);
+  MultifrontalSolver solver(std::move(data), chainOrdering);
+  solver.load(chain);
+
+  // Verify roots
+  EXPECT(solver.roots().size() == 1);
+  auto root = solver.roots()[0];
+  EXPECT(root != nullptr);
+
+  // Root should have 1 child {x2, x1}
+  EXPECT_LONGS_EQUAL(1, root->children.size());
+  auto childClique = root->children[0];
+
+  // Verify matrices in leaf (childClique)
+  CHECK(childClique->useQR() == false);
+  EXPECT_LONGS_EQUAL(4, childClique->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(2, childClique->Ab().rows());
+  EXPECT_LONGS_EQUAL(4, childClique->Ab().nBlocks());
+
+  // Verify load for childClique
+  Matrix A0 = childClique->Ab()(0);
+  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
 }
 
 /* ************************************************************************* */
@@ -110,6 +138,7 @@ TEST(MultifrontalSolver, Load) {
 // Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering);
+  solver.load(chain);
   solver.eliminateInPlace();
 
   // Solve
@@ -123,9 +152,24 @@ TEST(MultifrontalSolver, Eliminate) {
 }
 
 /* ************************************************************************* */
+// Load + eliminate in one traversal matches standard elimination.
+TEST(MultifrontalSolver, EliminateWithLoad) {
+  MultifrontalSolver solver(chain, chainOrdering);
+  solver.eliminateInPlace(chain);
+
+  const VectorValues& actual = solver.updateSolution();
+
+  GaussianBayesTree expectedBT = *chain.eliminateMultifrontal(chainOrdering);
+  VectorValues expected = expectedBT.optimize();
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
 // Compare marginals from in-place Bayes tree against standard elimination.
 TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
   MultifrontalSolver solver(chain, chainOrdering);
+  solver.load(chain);
   solver.eliminateInPlace();
 
   GaussianBayesTree actualBT = solver.computeBayesTree();
@@ -161,6 +205,7 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
       x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
 
   MultifrontalSolver solver(constrainedChain, chainOrdering);
+  solver.load(constrainedChain);
   solver.eliminateInPlace();
 
   GaussianBayesTree actualBT = solver.computeBayesTree();
@@ -189,6 +234,7 @@ TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering);
+  solver.load(graph);
   solver.eliminateInPlace();
   const VectorValues& actual = solver.updateSolution();
 
@@ -225,6 +271,7 @@ TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering);
+  solver.load(graph);
   solver.eliminateInPlace();
   const VectorValues& actual = solver.updateSolution();
 
@@ -261,6 +308,7 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
 
   const Ordering ordering{x1};
   MultifrontalSolver solver(graph, ordering);
+  solver.load(graph);
   solver.eliminateInPlace();
   const VectorValues& actual = solver.updateSolution();
 
@@ -276,6 +324,7 @@ TEST(MultifrontalSolver, HessianFactors) {
 
   const Ordering ordering{x1};
   MultifrontalSolver solver(graph, ordering);
+  solver.load(graph);
   solver.eliminateInPlace();
   const VectorValues& actual = solver.updateSolution();
 
@@ -304,6 +353,7 @@ TEST(MultifrontalSolver, BalancedSmoother) {
   const Ordering ordering{X(1), X(3), X(5), X(7), X(2), X(6), X(4)};
 
   MultifrontalSolver solver(smoother, ordering);
+  solver.load(smoother);
 
   // Verify roots
   EXPECT(solver.roots().size() == 1);

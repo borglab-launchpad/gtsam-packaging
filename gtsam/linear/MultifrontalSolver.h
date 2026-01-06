@@ -22,6 +22,7 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include <iosfwd>
 #include <map>
@@ -43,22 +44,31 @@ class MultifrontalClique;
  */
 class GTSAM_EXPORT MultifrontalSolver {
  public:
+  struct PrecomputedData {
+    std::map<Key, size_t> dims;         ///< Map from variable key to dimension.
+    std::unordered_set<Key> fixedKeys;  ///< Keys fixed by constrained factors.
+    SymbolicJunctionTree junctionTree;  ///< Precomputed symbolic junction tree.
+  };
+
   /// Shared pointer to a MultifrontalClique.
   using CliquePtr = std::shared_ptr<MultifrontalClique>;
   /// Node type for tree traversal utilities.
   using Node = MultifrontalClique;
 
- private:
+ protected:
   std::vector<CliquePtr> roots_;       ///< Roots of the elimination tree.
   std::vector<CliquePtr> cliques_;     ///< All cliques in the solver.
   std::map<Key, size_t> dims_;         ///< Map from variable key to dimension.
   mutable VectorValues solution_;      ///< Cached solution vector.
   std::unordered_set<Key> fixedKeys_;  ///< Keys fixed by constrained factors.
+  bool loaded_ = false;                ///< Whether load() has been called.
+  bool eliminated_ = false;            ///< Whether eliminateInPlace() ran.
 
  public:
   /**
    * Construct the solver from a factor graph and an ordering.
    * This builds the symbolic junction tree and pre-allocates all matrices.
+   * Call load() before eliminating to populate numerical values.
    * @param graph The factor graph to solve.
    * @param ordering The variable ordering to use for elimination.
    * @param mergeDimCap Merge a child if its frontal dimension plus the
@@ -69,6 +79,24 @@ class GTSAM_EXPORT MultifrontalSolver {
   MultifrontalSolver(const GaussianFactorGraph& graph, const Ordering& ordering,
                      size_t mergeDimCap = 0,
                      std::ostream* reportStream = nullptr);
+
+  /**
+   * Construct the solver from precomputed symbolic data.
+   * Call load() before eliminating to populate numerical values.
+   * @param data Precomputed symbolic structure and sizing data.
+   * @param ordering The variable ordering to use for seeding solution storage.
+   * @param mergeDimCap Merge a child if its frontal dimension plus the
+   * parent's total dimension is below this threshold (0 disables merging).
+   * @param reportStream Optional stream to report clique structure stats
+   * (frontals, separators, total dims, and children).
+   */
+  MultifrontalSolver(PrecomputedData data, const Ordering& ordering,
+                     size_t mergeDimCap = 0,
+                     std::ostream* reportStream = nullptr);
+
+  /// Precompute symbolic structure and sizing data from a factor graph.
+  static PrecomputedData Precompute(const GaussianFactorGraph& graph,
+                                    const Ordering& ordering);
 
   /**
    * Load new numerical values from the factor graph.
@@ -83,6 +111,12 @@ class GTSAM_EXPORT MultifrontalSolver {
    * This operates in-place on the pre-allocated matrices.
    */
   void eliminateInPlace();
+
+  /**
+   * Load and eliminate the graph in a single traversal.
+   * This calls fillAb() and eliminateInPlace() per clique in post-order.
+   */
+  void eliminateInPlace(const GaussianFactorGraph& graph);
 
   /**
    * Compute a Bayes tree from the in-place Cholesky factorization.

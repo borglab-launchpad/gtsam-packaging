@@ -123,6 +123,16 @@ inline Ordering createSchurOrdering(const SfmData& db,
   return ordering;
 }
 
+inline std::vector<std::pair<string, Ordering>> createOrderings(
+    const SfmData& db, const GaussianFactorGraph& linear) {
+  return {
+      {"Burn", createSchurOrdering(db, false)},
+      {"Metis", Ordering::Metis(linear)},
+      {"Schur", createSchurOrdering(db, false)},
+      {"Colamd", Ordering::Colamd(linear)},
+  };
+}
+
 // Create ordering and optimize
 int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
              const Values& initial, bool separateCalibration = false) {
@@ -132,8 +142,8 @@ int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   //  params.setLinearSolverType("SEQUENTIAL_CHOLESKY");
-   params.setVerbosityLM("SUMMARY");
-   params.setRelativeErrorTol(0.01); // 1% relative error tol
+  params.setVerbosityLM("SUMMARY");
+  params.setRelativeErrorTol(0.01);  // 1% relative error tol
 
   if (gUseSchur) {
     // Create Schur-complement ordering
