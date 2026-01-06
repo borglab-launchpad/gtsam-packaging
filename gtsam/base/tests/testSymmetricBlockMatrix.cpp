@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
 
 using namespace std;
 using namespace gtsam;
@@ -185,6 +186,29 @@ TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks)
   doubled.updateFromMappedBlocks(testBlockMatrix, mapping);
   EXPECT(assert_equal(2.0 * Matrix(expected.selfadjointView()),
                       Matrix(doubled.selfadjointView())));
+}
+
+/* ************************************************************************* */
+// Update via blockwise outer products from a VerticalBlockMatrix view.
+TEST(SymmetricBlockMatrix, UpdateFromOuterProductBlocks)
+{
+  const std::vector<size_t> vbmDims{2, 1};
+  VerticalBlockMatrix vbm(vbmDims, 4, true);
+  vbm.matrix() = (Matrix(4, 4) <<
+    1, 2, 3, 4,
+    5, 6, 7, 8,
+    9, 10, 11, 12,
+    13, 14, 15, 16).finished();
+
+  const std::vector<size_t> destDims{1};
+  SymmetricBlockMatrix actual(destDims, true);
+  actual.setZero();
+  const std::vector<DenseIndex> mapping{0, 1};
+  const Matrix S = vbm.range(1, 3);
+  const Matrix expected = S.transpose() * S;
+  vbm.firstBlock() = 1;
+  actual.updateFromOuterProductBlocks(vbm, mapping);
+  EXPECT(assert_equal(expected, Matrix(actual.selfadjointView())));
 }
 
 /* ************************************************************************* */
