@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3358.gbp3231a9) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3359.gbp259ce3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @259ce3aece5b8f431fa39dd0bef7f5614a800e8e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @3231a9f2d8787418dd6668235a1267f778fed74a **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 04 Jan 2026 19:05:40 +0000
+  [ Frank Dellaert ]
+  * Constructor with PrecomputedData
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Check load occurred
+  * In solver, different problem-size threshold
+  * eliminated_ flag
+  * Store RSd_ to avoid trashing cache.
+  * QR mode if n>2*m
+  * Fused path
+  * Review comments
+  * UpdateFromOuterProductBlocks
+  * Use UpdateFromOuterProductBlocks
+  * In-place split
+  * No more mallocs in QR path
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 06 Jan 2026 03:37:00 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3357.gbp2a643a) noble; urgency=medium
 
