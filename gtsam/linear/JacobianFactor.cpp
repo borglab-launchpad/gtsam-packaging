@@ -491,10 +491,17 @@ bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
-  Vector e = -getb();
-  for (size_t pos = 0; pos < size(); ++pos)
-    e += Ab_(pos) * c[keys_[pos]];
-  return e;
+  const DenseIndex totalDim = c.totalDim(keys_);
+  Vector w(totalDim + 1);
+  c.fillVector(keys_, w);
+  w(totalDim) = -1.0;
+  // Fast path when the active view is the full matrix (no row/column offsets).
+  if (Ab_.firstBlock() == 0 && Ab_.rowStart() == 0 &&
+      Ab_.rowEnd() == Ab_.matrix().rows()) {
+    return Ab_.matrix() * w;
+  }
+  // Fallback that respects firstBlock/rowStart/rowEnd for subviews.
+  return Ab_.full() * w;
 }
 
 /* ************************************************************************* */

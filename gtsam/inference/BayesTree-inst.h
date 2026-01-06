@@ -269,8 +269,35 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   bool BayesTree<CLIQUE>::equals(const BayesTree<CLIQUE>& other, double tol) const {
-    return size()==other.size() &&
-      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), &check_sharedCliques<CLIQUE>);
+    // Compare number of cliques first.
+    if (size() != other.size())
+      return false;
+
+    // Compare number of variables (nodes index size).
+    if (nodes_.size() != other.nodes_.size())
+      return false;
+
+    // Compare cliques by key so equality does not depend on the
+    // iteration order of the underlying ConcurrentMap.
+    for (const auto& kv : nodes_) {
+      const Key key = kv.first;
+      const sharedClique& clique = kv.second;
+
+      auto it = other.nodes_.find(key);
+      if (it == other.nodes_.end())
+        return false;
+
+      const sharedClique& otherClique = it->second;
+
+      if (!clique && !otherClique)
+        continue;
+      if (!clique || !otherClique)
+        return false;
+      if (!clique->equals(*otherClique, tol))
+        return false;
+    }
+
+    return true;
   }
 
   /* ************************************************************************* */

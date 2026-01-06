@@ -305,23 +305,36 @@ namespace gtsam {
     const Vector x =
         frontalValues.vector(KeyVector(beginFrontals(), endFrontals()));
 
-    // Copy the augmented Jacobian matrix:
-    auto newAb = Ab_;
-
-    // Restrict view to parent blocks
-    newAb.firstBlock() += nrFrontals_;
-
-    // Update right-hand-side (last column)
-    auto last = newAb.matrix().cols() - 1;
+    // Compute updated right-hand side: d - R * x
     const auto RR = R().triangularView<Eigen::Upper>();
-    newAb.matrix().col(last) -= RR * x;
+    const Vector rhs = d() - RR * x;
+
+    // Collect parent dimensions
+    FastVector<DenseIndex> parentDims;
+    parentDims.reserve(nrParents());
+    for (auto it = beginParents(); it != endParents(); ++it) {
+      parentDims.push_back(getDim(it));
+    }
+
+    // Build a VerticalBlockMatrix containing only parent blocks and RHS.
+    const DenseIndex m = rows();
+    VerticalBlockMatrix newAb(parentDims, m, true);
+
+    // Copy parent blocks (S matrices).
+    DenseIndex blockIndex = 0;
+    for (auto it = beginParents(); it != endParents(); ++it, ++blockIndex) {
+      newAb(blockIndex) = S(it);
+    }
+
+    // Set the RHS block.
+    const DenseIndex lastBlock = newAb.nBlocks() - 1;
+    newAb(lastBlock).col(0) = rhs;
 
     // The keys now do not include the frontal keys:
     KeyVector newKeys;
     newKeys.reserve(nrParents());
     for (auto&& key : parents()) newKeys.push_back(key);
 
-    // Hopefully second newAb copy below is optimized out...
     return std::make_shared<JacobianFactor>(newKeys, newAb, model_);
   }
 
