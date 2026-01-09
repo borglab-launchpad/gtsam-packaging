@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3366.gbpa6a757) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3367.gbpb0baa5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b0baa56ff87222eddf8a379ee5351b57dc15cf33 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a6a757527d90ce25dc08d8e935eefdead6dc4c38 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 06 Jan 2026 19:01:49 +0000
+  [ Akshay Krishnan ]
+  * transformTo and the jacobians for pushforward
+  * this works!
+  * slightly better transformFrom
+  * move getters to cpp
+  * more simplification
+  * review comments - one more simplification
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jan 2026 21:23:58 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3365.gbp8ff7ab) noble; urgency=medium
 
