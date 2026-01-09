@@ -81,6 +81,39 @@ TEST(Similarity3, Getters) {
 }
 
 /* ************************************************************************* */
+// Check translation and its pushforward
+TEST(Similarity3, translation) {
+  Matrix37 actualH;
+  EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T1.translation(&actualH), 1e-8));
+
+  std::function<Point3(const Similarity3&)> f = [](const Similarity3& T) { return T.translation(); };
+  Matrix37 numericalH = numericalDerivative11<Point3, Similarity3>(f, T1);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
+// Check scale and its pushforward
+TEST(Similarity3, scale) {
+  Matrix17 actualH;
+  EXPECT_DOUBLES_EQUAL(10.0, T5.scale(&actualH), 1e-8);
+
+  std::function<double(const Similarity3&)> f = [](const Similarity3& T) { return T.scale(); };
+  Matrix17 numericalH = numericalDerivative11<double, Similarity3>(f, T5);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
+// Check rotation and its pushforward
+TEST(Similarity3, rotation) {
+  Matrix37 actualH;
+  EXPECT(assert_equal(Rot3::Rodrigues(0.3, 0.2, 0.1), T2.rotation(&actualH), 1e-8));
+
+  std::function<Rot3(const Similarity3&)> f = [](const Similarity3& T) { return T.rotation(); };
+  Matrix37 numericalH = numericalDerivative11<Rot3, Similarity3>(f, T2);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(Similarity3, HatAndVee) {
   // Create a few test vectors
   Vector7 v1(1, 2, 3, 4, 5, 6, 7);
@@ -274,7 +307,7 @@ TEST(Similarity3, GroupAction) {
 
   Point3 q(1, 2, 3);
   for (const auto& T : { T1, T2, T3, T4, T5, T6 }) {
-    Point3 q(1, 0, 0);
+    // Point3 q(1, 2, 3);
     Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
     Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
     Matrix actualH1, actualH2;
@@ -307,6 +340,29 @@ TEST(Similarity3, GroupActionPose3) {
   // objects now live in the world frame, instead of in the egovehicle frame
   EXPECT(assert_equal(expected_wTo1, wSe.transformFrom(eTo1)));
   EXPECT(assert_equal(expected_wTo2, wSe.transformFrom(eTo2)));
+
+  Similarity3 wSe2(Rot3::RzRyRx(60 * degree, 50 * degree, 30 * degree), Point3(2, 3, 5), 2.0);
+  std::function<Pose3(const Similarity3&, const Pose3&)>
+      f = [](const Similarity3& S, const Pose3& T){ return S.transformFrom(T); };
+
+  {
+    Matrix H1 = numericalDerivative21<Pose3, Similarity3, Pose3>(f, wSe2, eTo1);
+    Matrix H2 = numericalDerivative22<Pose3, Similarity3, Pose3>(f, wSe2, eTo1);
+    Matrix actualH1, actualH2;
+    wSe2.transformFrom(eTo1, actualH1, actualH2);
+    EXPECT(assert_equal(H1, actualH1));
+    EXPECT(assert_equal(H2, actualH2));
+  }
+
+  {
+    Pose3 eTo(Rot3::RzRyRx(20 * degree, -15 * degree, 10 * degree), Point3(1, 2, 3));
+    Matrix H1 = numericalDerivative21<Pose3, Similarity3, Pose3>(f, wSe2, eTo);
+    Matrix H2 = numericalDerivative22<Pose3, Similarity3, Pose3>(f, wSe2, eTo);
+    Matrix actualH1, actualH2;
+    wSe2.transformFrom(eTo, actualH1, actualH2);
+    EXPECT(assert_equal(H1, actualH1));
+    EXPECT(assert_equal(H2, actualH2));
+  }
 }
 
 // Test left group action compatibility.
