@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3370.gbp4efd8c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3371.gbp6dd3c2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6dd3c2facadf68febd7eb0ead40d95baa25ec996 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4efd8cde25992a5e0723ae7f882658b0bfd21014 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Jan 2026 21:26:56 +0000
+  [ Frank Dellaert ]
+  * Initial, chain-rule based implementation
+  * Simplification
+  * Verify pose() Jacobian has no effect
+  * Wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 11 Jan 2026 19:07:44 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3369.gbp4a06d6) noble; urgency=medium
 
