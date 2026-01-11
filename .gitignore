@@ -30,3 +30,4 @@ doc/#*.lyx#
 /cmake-build-debug/
 .venv/
 conductor/
+.ccache/

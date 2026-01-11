@@ -16,13 +16,12 @@
  * @date   December 2025
  */
 
-#include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/base/types.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/config.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
@@ -38,6 +37,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 namespace gtsam {
 
@@ -92,8 +92,11 @@ std::unordered_set<Key> collectFixedKeys(const GaussianFactorGraph& graph) {
   std::unordered_set<Key> fixedKeys;
   for (const auto& factor : graph) {
     if (!factor) continue;
-    auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(factor);
-    if (!jacobianFactor) continue;
+    if (!factor->isJacobian()) {
+      throw std::runtime_error(
+          "MultifrontalSolver: only JacobianFactor inputs are supported.");
+    }
+    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(factor);
     auto model = jacobianFactor->get_model();
     if (!model || !model->isConstrained()) continue;
     // Only accept fully constrained unary factors with zero residuals.
@@ -121,17 +124,13 @@ std::map<Key, size_t> computeDims(const GaussianFactorGraph& graph) {
   std::map<Key, size_t> dims;
   for (const auto& factor : graph) {
     if (!factor) continue;
-    if (auto jacobianFactor =
-            std::dynamic_pointer_cast<JacobianFactor>(factor)) {
-      for (auto it = jacobianFactor->begin(); it != jacobianFactor->end();
-           ++it) {
-        dims[*it] = jacobianFactor->getDim(it);
-      }
-    } else if (auto hessianFactor =
-                   std::dynamic_pointer_cast<HessianFactor>(factor)) {
-      for (auto it = hessianFactor->begin(); it != hessianFactor->end(); ++it) {
-        dims[*it] = hessianFactor->getDim(it);
-      }
+    if (!factor->isJacobian()) {
+      throw std::runtime_error(
+          "MultifrontalSolver: only JacobianFactor inputs are supported.");
+    }
+    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(factor);
+    for (auto it = jacobianFactor->begin(); it != jacobianFactor->end(); ++it) {
+      dims[*it] = jacobianFactor->getDim(it);
     }
   }
   return dims;
@@ -139,11 +138,12 @@ std::map<Key, size_t> computeDims(const GaussianFactorGraph& graph) {
 
 size_t factorRowCount(const GaussianFactorGraph& graph, size_t index) {
   if (index >= graph.size() || !graph[index]) return 0;
-  if (auto jacobianFactor =
-          std::dynamic_pointer_cast<JacobianFactor>(graph[index])) {
-    return jacobianFactor->rows();
+  if (!graph[index]->isJacobian()) {
+    throw std::runtime_error(
+        "MultifrontalSolver: only JacobianFactor inputs are supported.");
   }
-  return 0;
+  auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(graph[index]);
+  return jacobianFactor->rows();
 }
 
 // Build SymbolicFactorGraph from GaussianFactorGraph
@@ -193,6 +193,100 @@ size_t totalDimForSymbolicCluster(
          separatorDimForSymbolicCluster(cluster, dims, cache);
 }
 
+struct LeafInfo {
+  SymbolicJunctionTree::sharedNode child;
+  size_t totalDim = 0;
+  size_t index = 0;
+};
+
+struct LeafGroup {
+  std::vector<LeafInfo> leaves;
+  size_t firstIndex = 0;
+};
+
+struct LeafBatch {
+  SymbolicJunctionTree::Cluster::Children leaves;
+  size_t firstIndex = 0;
+};
+
+std::vector<LeafGroup> collectLeafGroups(
+    const SymbolicJunctionTree::sharedNode& cluster,
+    const std::map<Key, size_t>& dims,
+    SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
+  // Group leaf children by identical separators, keeping first-seen order.
+  FastMap<KeySet, size_t> groupIndexBySeparator;
+  std::vector<LeafGroup> groups;
+
+  for (size_t i = 0; i < cluster->children.size(); ++i) {
+    const auto& child = cluster->children[i];
+    if (!child || !child->children.empty()) continue;
+
+    child->separatorKeys(separatorCache);
+    const KeySet& separatorKeys = separatorCache->at(child.get());
+    auto it = groupIndexBySeparator.find(separatorKeys);
+    size_t groupIndex = 0;
+    if (it == groupIndexBySeparator.end()) {
+      groupIndex = groups.size();
+      groupIndexBySeparator.emplace(separatorKeys, groupIndex);
+      groups.push_back(LeafGroup{{}, i});
+    } else {
+      groupIndex = it->second;
+    }
+
+    const size_t totalDim =
+        totalDimForSymbolicCluster(child, dims, separatorCache);
+    groups[groupIndex].leaves.push_back({child, totalDim, i});
+  }
+
+  return groups;
+}
+
+std::vector<LeafBatch> buildLeafBatches(const std::vector<LeafGroup>& groups,
+                                        size_t leafMergeDimCap) {
+  // Pack each group into batches capped by total dimension.
+  std::vector<LeafBatch> batches;
+  for (const auto& group : groups) {
+    size_t currentTotalDim = 0;
+    LeafBatch batch;
+    batch.firstIndex = group.firstIndex;
+    for (const auto& leaf : group.leaves) {
+      if (!batch.leaves.empty() &&
+          currentTotalDim + leaf.totalDim > leafMergeDimCap) {
+        batches.push_back(batch);
+        batch.leaves.clear();
+        currentTotalDim = 0;
+        batch.firstIndex = leaf.index;
+      }
+      if (batch.leaves.empty()) {
+        batch.firstIndex = leaf.index;
+      }
+      batch.leaves.push_back(leaf.child);
+      currentTotalDim += leaf.totalDim;
+    }
+    if (!batch.leaves.empty()) {
+      batches.push_back(batch);
+    }
+  }
+
+  std::sort(batches.begin(), batches.end(),
+            [](const LeafBatch& a, const LeafBatch& b) {
+              return a.firstIndex < b.firstIndex;
+            });
+  return batches;
+}
+
+bool mergeLeafBatches(const SymbolicJunctionTree::sharedNode& cluster,
+                      const std::vector<LeafBatch>& batches) {
+  // Merge each batch of siblings into a super-leaf in-place.
+  bool anyMerged = false;
+  for (const auto& batch : batches) {
+    if (batch.leaves.size() <= 1) continue;
+    cluster->mergeChildrenSiblings(batch.leaves);
+    anyMerged = true;
+  }
+  return anyMerged;
+}
+
 void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
                              const std::map<Key, size_t>& dims,
                              SymbolicJunctionTree::Cluster::KeySetMap* cache,
@@ -205,6 +299,49 @@ void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
   for (const auto& child : cluster->children) {
     accumulateSymbolicStats(child, dims, cache, stats);
   }
+}
+
+/**
+ * @brief Recursively groups leaf children into super-leaves capped by total
+ * dimension.
+ *
+ * This function traverses the symbolic junction tree rooted at the given
+ * cluster node. For each cluster, it gathers direct leaf children (i.e.,
+ * children with no further descendants) and groups those with identical
+ * separators into new super-leaves until the running total dimension reaches
+ * the specified leafMergeDimCap, then starts a new group.
+ *
+ * The merging process works as follows:
+ * - Recursively process all children clusters first.
+ * - Identify all direct leaf children of the current cluster and collect their
+ * total dimensions (separator + frontal) and separator keys.
+ * - Group leaf children by identical separator keys, preserving first-seen
+ * order for each separator.
+ * - Build super-leaves by accumulating leaf children until the total dimension
+ * hits the cap, then start a new super-leaf.
+ * - Replace leaf children with the new super-leaves (non-leaf children keep
+ * their relative order and grouped leaves appear at the first leaf location
+ * for that separator).
+ *
+ * @param cluster         The current symbolic junction tree node (cluster) to
+ * process.
+ * @param dims            A map from variable keys to their dimensions.
+ * @param leafMergeDimCap The maximum allowed dimension for a merged cluster.
+ */
+void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
+                       const std::map<Key, size_t>& dims,
+                       size_t leafMergeDimCap) {
+  if (!cluster || cluster->children.empty()) return;
+  for (const auto& child : cluster->children) {
+    mergeLeafChildren(child, dims, leafMergeDimCap);
+  }
+
+  SymbolicJunctionTree::Cluster::KeySetMap separatorCache;
+  const std::vector<LeafGroup> groups =
+      collectLeafGroups(cluster, dims, &separatorCache);
+  const std::vector<LeafBatch> batches =
+      buildLeafBatches(groups, leafMergeDimCap);
+  if (!mergeLeafBatches(cluster, batches)) return;
 }
 
 // Bottom-up merge of child clusters whose merged total dimension stays below
@@ -302,21 +439,35 @@ struct CliqueBuilder {
   }
 };
 
+size_t resolveThreadCount(size_t requested) {
+  if (requested != 0) return requested;
+  unsigned int hardwareThreads = std::thread::hardware_concurrency();
+  if (hardwareThreads == 0) hardwareThreads = 1;
+  size_t threads = (hardwareThreads * 3) / 4;
+  return threads == 0 ? 1 : threads;
+}
+
 }  // namespace
 
 /* ************************************************************************* */
 MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
                                        const Ordering& ordering,
-                                       size_t mergeDimCap,
-                                       std::ostream* reportStream)
-    : MultifrontalSolver(Precompute(graph, ordering), ordering, mergeDimCap,
-                         reportStream) {}
+                                       const Parameters& params)
+    : MultifrontalSolver(Precompute(graph, ordering), ordering, params) {}
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
+                                       const Ordering& ordering)
+    : MultifrontalSolver(graph, ordering, Parameters{}) {}
 
 /* ************************************************************************* */
 MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
                                        const Ordering& ordering,
-                                       size_t mergeDimCap,
-                                       std::ostream* reportStream) {
+                                       const Parameters& params)
+    : ForestTraversal<MultifrontalSolver, MultifrontalClique>(
+          resolveThreadCount(params.numThreads)),
+      params_(params),
+      numThreads_(resolveThreadCount(params.numThreads)) {
   dims_ = std::move(data.dims);
   fixedKeys_ = std::move(data.fixedKeys);
 
@@ -332,15 +483,24 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
 
   // Report the symbolic structure before any merge.
   reportStructure(data.junctionTree, dims_, "Symbolic cluster structure",
-                  reportStream);
+                  params_.reportStream);
+
+  // If applicable, merge leaf children by a separate cap first.
+  if (params_.leafMergeDimCap > 0) {
+    for (const auto& rootCluster : data.junctionTree.roots()) {
+      mergeLeafChildren(rootCluster, dims_, params_.leafMergeDimCap);
+    }
+    reportStructure(data.junctionTree, dims_,
+                    "Clique structure after leaf merge", params_.reportStream);
+  }
 
   // If applicable, merge small child cliques bottom-up.
-  if (mergeDimCap > 0) {
+  if (params_.mergeDimCap > 0) {
     for (const auto& rootCluster : data.junctionTree.roots()) {
-      mergeSmallClusters(rootCluster, dims_, mergeDimCap);
+      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
     }
     reportStructure(data.junctionTree, dims_, "Clique structure after merge",
-                    reportStream);
+                    params_.reportStream);
   }
 
   // Build the actual MultifrontalClique structure.
@@ -355,6 +515,11 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
 
   // Caller is responsible for loading numerical values via load().
 }
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
+                                       const Ordering& ordering)
+    : MultifrontalSolver(std::move(data), ordering, Parameters{}) {}
 
 /* ************************************************************************* */
 MultifrontalSolver::PrecomputedData MultifrontalSolver::Precompute(
@@ -395,26 +560,20 @@ void MultifrontalSolver::eliminateInPlace() {
         "eliminating.");
   }
   eliminated_ = false;
-  // Parallel elimination uses PostOrderForestParallel, which will be
-  // multi-threaded if GTSAM was compiled with TBB.
-  TbbOpenMPMixedScope threadLimiter;
-  auto visitorPost = [](const CliquePtr& node) {
-    if (node) node->eliminateInPlace();
-  };
-  treeTraversal::PostOrderForestParallel(*this, visitorPost, 10);
+  runBottomUp([](MultifrontalClique& node) { node.eliminateInPlace(); },
+              params_.eliminationParallelThreshold);
   eliminated_ = true;
 }
 
 /* ************************************************************************* */
 void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
   // Combine load + eliminate in one post-order traversal to improve locality.
-  TbbOpenMPMixedScope threadLimiter;
-  auto visitorPost = [&graph](const CliquePtr& node) {
-    if (!node) return;
-    node->fillAb(graph);
-    node->eliminateInPlace();
-  };
-  treeTraversal::PostOrderForestParallel(*this, visitorPost, 10);
+  runBottomUp(
+      [&graph](MultifrontalClique& node) {
+        node.fillAb(graph);
+        node.eliminateInPlace();
+      },
+      params_.eliminationParallelThreshold);
   loaded_ = true;
   eliminated_ = true;
 }
@@ -462,28 +621,10 @@ GaussianBayesTree MultifrontalSolver::computeBayesTree() const {
 }
 
 /* ************************************************************************* */
-const VectorValues& MultifrontalSolver::updateSolution() const {
+const VectorValues& MultifrontalSolver::updateSolution() {
   assert(loaded_ && eliminated_);
-  // Parallel solve uses treeTraversal::DepthFirstForestParallel (Pre-order /
-  // Top-Down).
-  TbbOpenMPMixedScope threadLimiter;
-  int rootData = 0;
-  auto visitorPre = [](const CliquePtr& node, int&) {
-    if (node) node->updateSolution();
-    return 0;
-  };
-  auto visitorPost = [](const CliquePtr&, int) {};
-
-  // Threshold chosen to balance task overhead vs parallelism. Small cliques
-  // (like points in SFM) are better handled sequentially within larger tasks
-  // to minimize scheduling overhead and maximize cache locality.
-  constexpr int kSolutionParallelThreshold = 4096;
-
-  // Cast to non-const because treeTraversal expects a non-const reference,
-  // even though we are only calling const methods on the nodes.
-  treeTraversal::DepthFirstForestParallel(
-      const_cast<MultifrontalSolver&>(*this), rootData, visitorPre, visitorPost,
-      kSolutionParallelThreshold);
+  runTopDown([](MultifrontalClique& node) { node.updateSolution(); },
+             params_.solutionParallelThreshold);
 
   for (Key key : fixedKeys_) {
     solution_.at(key).setZero();

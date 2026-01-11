@@ -198,6 +198,9 @@ namespace gtsam {
           std::make_shared<JacobianFactor>(*this));
     }
 
+    /// Identify JacobianFactor-based types.
+    bool isJacobian() const override { return true; }
+
     // Implementing Testable interface
     void print(const std::string& s = "",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
@@ -483,5 +486,4 @@ BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
 #endif
 
 #include <gtsam/linear/JacobianFactor-inl.h>
-
 

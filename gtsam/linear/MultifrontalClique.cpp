@@ -18,7 +18,6 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 
@@ -207,45 +206,27 @@ size_t MultifrontalClique::addJacobianFactor(
   return rows;
 }
 
-void MultifrontalClique::addHessianFactor(const HessianFactor& hessianFactor) {
-  const SymmetricBlockMatrix& info = hessianFactor.info();
-  const DenseIndex factorBlocks = static_cast<DenseIndex>(hessianFactor.size());
-  const DenseIndex rhsBlock = static_cast<DenseIndex>(sbm_.nBlocks() - 1);
-
-  std::vector<DenseIndex> blockIndices(factorBlocks + 1, -1);
-  DenseIndex slot = 0;
-  for (auto it = hessianFactor.begin(); it != hessianFactor.end();
-       ++it, ++slot) {
-    const Key key = *it;
-    if (fixedKeys_ && fixedKeys_->count(key)) continue;
-    blockIndices[slot] = blockIndex(key);
-  }
-  blockIndices[factorBlocks] = rhsBlock;
-
-  sbm_.updateFromMappedBlocks(info, blockIndices);
-}
-
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   assert(validateFactorKeys(graph, factorIndices_, orderedKeys_, fixedKeys_));
 
-  hessianFactors_.clear();
   size_t rowOffset = 0;
   for (size_t index : factorIndices_) {
     assert(index < graph.size());
     const GaussianFactor::shared_ptr& gf = graph[index];
     if (!gf) continue;
-    if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
-      rowOffset += addJacobianFactor(*jacobianFactor, rowOffset);
-    } else if (auto hessianFactor =
-                   std::dynamic_pointer_cast<HessianFactor>(gf)) {
-      hessianFactors_.push_back(hessianFactor);
+    if (!gf->isJacobian()) {
+      throw std::runtime_error(
+          "MultifrontalClique::fillAb: only JacobianFactor inputs are "
+          "supported.");
     }
+    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(gf);
+    rowOffset += addJacobianFactor(*jacobianFactor, rowOffset);
   }
 
-  // Lock in QR only for leaf cliques with no Hessian factors.
+  // Lock in QR only for leaf cliques.
   const bool isLeaf = children.empty();
   const bool useQR =
-      isLeaf && hessianFactors_.empty() && (frontalDim > 0) &&
+      isLeaf && (frontalDim > 0) &&
       (frontalDim + separatorDim > kQrAspectRatio * frontalDim) &&
       (Ab_.matrix().rows() >= static_cast<DenseIndex>(frontalDim));
   solveMode_ = useQR ? SolveMode::QrLeaf : SolveMode::Cholesky;
@@ -261,10 +242,6 @@ void MultifrontalClique::prepareForElimination() {
   if (useQR()) return;
   assert(sbm_.nBlocks() > 0);
   sbm_.setZero();
-  for (const auto& hf : hessianFactors_) {
-    addHessianFactor(*hf);
-  }
-
   if (Ab_.matrix().rows() > 0) {
     sbm_.selfadjointView().rankUpdate(Ab_.matrix().transpose());
   }

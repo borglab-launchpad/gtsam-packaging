@@ -67,7 +67,7 @@ jobs:
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
           [
-            ubuntu-22.04-gcc-9,
+            ubuntu-22.04-gcc-11,
             ubuntu-22.04-clang-11,
             macos-14-xcode-15.4,
             macos-15-xcode-16,
@@ -77,10 +77,10 @@ jobs:
         build_type: [Release]
         python_version: [3]
         include:
-          - name: ubuntu-22.04-gcc-9
+          - name: ubuntu-22.04-gcc-11
             os: ubuntu-22.04
             compiler: gcc
-            version: "9"
+            version: "11"
 
           - name: ubuntu-22.04-clang-11
             os: ubuntu-22.04

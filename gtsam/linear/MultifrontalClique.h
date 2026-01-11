@@ -108,7 +108,9 @@ class GTSAM_EXPORT MultifrontalClique {
   void finalize(std::vector<ChildInfo> children);
 
   /// Load factor values into the pre-allocated Ab matrix.
-  /// @param graph The factor graph with updated values.
+  /// @param graph The factor graph with updated values (structure must match
+  ///              the graph used to build this clique, apart from updated
+  ///              numerical values). Only JacobianFactor inputs are supported.
   void fillAb(const GaussianFactorGraph& graph);
 
   /// Zero out sbm, re-add Hessians, accumulate Jacobians and children.
@@ -230,9 +232,6 @@ class GTSAM_EXPORT MultifrontalClique {
    */
   size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);
 
-  /// Add a Hessian factor's contributions into the sbm_ matrix.
-  void addHessianFactor(const HessianFactor& factor);
-
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
   }
@@ -249,7 +248,6 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Load-time state.
   VerticalBlockMatrix Ab_;
-  std::vector<HessianFactor::shared_ptr> hessianFactors_;  ///< Hessian factors.
   SolveMode solveMode_ = SolveMode::Cholesky;
 
   // Elimination-time state.
