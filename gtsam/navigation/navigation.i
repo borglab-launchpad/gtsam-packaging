@@ -58,6 +58,14 @@ class NavState {
   gtsam::Vector velocity() const;
   gtsam::Pose3 pose() const;
 
+  // Standard Interface
+  double range(const gtsam::Point3& point) const;
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
+  gtsam::Unit3 bearing(const gtsam::Point3& point) const;
+  gtsam::Unit3 bearing(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                       Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
+
   // Manifold
   gtsam::NavState retract(const gtsam::Vector& v) const;
   gtsam::Vector localCoordinates(const gtsam::NavState& g) const;

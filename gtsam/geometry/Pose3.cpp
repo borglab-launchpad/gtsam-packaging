@@ -455,56 +455,77 @@ Matrix Pose3::transformTo(const Matrix& points) const {
 /* ************************************************************************* */
 double Pose3::range(const Point3& point, OptionalJacobian<1, 6> Hself,
                     OptionalJacobian<1, 3> Hpoint) const {
-  Matrix36 D_local_pose;
-  Matrix3 D_local_point;
-  Point3 local = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
-  if (!Hself && !Hpoint) {
-    return local.norm();
-  } else {
-    Matrix13 D_r_local;
-    const double r = norm3(local, D_r_local);
-    if (Hself) *Hself = D_r_local * D_local_pose;
-    if (Hpoint) *Hpoint = D_r_local * D_local_point;
-    return r;
+  const Vector3 delta = point - t_;
+  if (!Hself && !Hpoint) return delta.norm();
+
+  Matrix13 D_r_point;
+  const double r = norm3(delta, D_r_point);
+
+  if (Hpoint) *Hpoint = D_r_point;
+  if (Hself) {
+    // Range is rotation-invariant: ||R^T(p-t)|| = ||p-t||, so d(range)/d(rotation) = 0.
+    Hself->leftCols<3>().setZero();
+    // Translation coordinates are in the body frame: dt_world = R * dt_body.
+    Hself->rightCols<3>() = -D_r_point * R_.matrix();
   }
+  return r;
 }
 
 /* ************************************************************************* */
 double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> Hself,
                     OptionalJacobian<1, 6> Hpose) const {
-  Matrix36 D_point_pose;
-  Matrix13 D_local_point;
-  Point3 point = pose.translation(Hpose ? &D_point_pose : 0);
-  double r = range(point, Hself, Hpose ? &D_local_point : 0);
-  if (Hpose) *Hpose = D_local_point * D_point_pose;
+  const Vector3 delta = pose.t_ - t_;
+  if (!Hself && !Hpose) return delta.norm();
+
+  Matrix13 D_r_point;
+  const double r = norm3(delta, D_r_point);
+
+  if (Hself) {
+    // Range depends only on translation: ||t2-t1||.
+    Hself->leftCols<3>().setZero();
+    // Translation coordinates are in the body frame: dt_world = R * dt_body.
+    Hself->rightCols<3>() = -D_r_point * R_.matrix();
+  }
+
+  if (Hpose) {
+    Hpose->leftCols<3>().setZero();
+    // Translation coordinates are in the body frame: dt_world = R * dt_body.
+    Hpose->rightCols<3>() = D_r_point * pose.R_.matrix();
+  }
+
   return r;
 }
 
 /* ************************************************************************* */
 Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> Hself,
                      OptionalJacobian<2, 3> Hpoint) const {
-  Matrix36 D_local_pose;
-  Matrix3 D_local_point;
-  Point3 at = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
-  if (!Hself && !Hpoint) {
-    return Unit3(at);
-  } else {
-    Matrix23 D_b_local;
-    Unit3 b = Unit3::FromPoint3(at, D_b_local);
-    if (Hself) *Hself = D_b_local * D_local_pose;
-    if (Hpoint) *Hpoint = D_b_local * D_local_point;
-    return b;
+  const Matrix3 Rt = R_.transpose();
+  const Point3 local(Rt * (point - t_));
+
+  if (!Hself && !Hpoint) return Unit3(local);
+
+  Matrix23 D_b_local;
+  const Unit3 b = Unit3::FromPoint3(local, D_b_local);
+  if (Hself) {
+    Hself->leftCols<3>() = D_b_local * skewSymmetric(local.x(), local.y(), local.z());
+    Hself->rightCols<3>() = -D_b_local;
   }
+  if (Hpoint) {
+    *Hpoint = D_b_local * Rt;
+  }
+  return b;
 }
 
 /* ************************************************************************* */
 Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
   OptionalJacobian<2, 6> Hpose) const {
-  Matrix36 D_point_pose;
-  Matrix23 D_local_point;
-  Point3 point = pose.translation(Hpose ? &D_point_pose : 0);
-  Unit3 b = bearing(point, Hself, Hpose ? &D_local_point : 0);
-  if (Hpose) *Hpose = D_local_point * D_point_pose;
+  Matrix23 D_bearing_point;
+  const Point3 point = pose.translation();
+  const Unit3 b = bearing(point, Hself, Hpose ? &D_bearing_point : 0);
+  if (Hpose) {
+    Hpose->leftCols<3>().setZero();
+    Hpose->rightCols<3>() = D_bearing_point * pose.rotation().matrix();
+  }
   return b;
 }
 

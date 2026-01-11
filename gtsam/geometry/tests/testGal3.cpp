@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h> // Included for kTestPose definition
+#include <gtsam/geometry/Unit3.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <vector>
@@ -43,6 +44,12 @@ const Velocity3 kTestVel(0.5, 0.6, -0.7);
 const double kTestTime = 1.5;
 const Pose3 kTestPose(kTestRot, kTestPos);
 const Gal3 kTestGal3(kTestRot, kTestPos, kTestVel, kTestTime);
+
+// Some shared test values - pulled from equivalent tests in Pose3
+static const Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4, -4);
+static const Gal3 x1(Rot3(), Point3::Zero(), Velocity3(0.4, 0.5, 0.6), 0.0),
+    x2(Rot3::Ypr(0.0, 0.0, 0.0), l2, Velocity3(0.4, 0.5, 0.6), 0.0),
+    x3(Rot3::Ypr(M_PI / 4.0, 0.0, 0.0), l2, Velocity3(0.4, 0.5, 0.6), 0.0);
 
 
 /* ************************************************************************* */
@@ -103,6 +110,56 @@ TEST(Gal3, ComponentAccessorsValue) {
     EXPECT(assert_equal(kTestPos, kTestGal3.r(), kTol));
     EXPECT(assert_equal(kTestVel, kTestGal3.v(), kTol));
     EXPECT_DOUBLES_EQUAL(kTestTime, kTestGal3.t(), kTol);
+}
+
+/* ************************************************************************* */
+double range_proxy(const Gal3& gal3, const Point3& point) {
+  return gal3.range(point);
+}
+TEST(Gal3, RangeToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  // Establish range is indeed 1.
+  EXPECT_DOUBLES_EQUAL(1.0, x1.range(l1), 1e-9);
+
+  // Establish range is indeed sqrt(2).
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), x1.range(l2), 1e-9);
+
+  // Another pair
+  double actual23 = x2.range(l3, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), actual23, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x2, l3);
+  expectedH2 = numericalDerivative22(range_proxy, x2, l3);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  // Another test
+  double actual34 = x3.range(l4, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(5.0, actual34, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x3, l4);
+  expectedH2 = numericalDerivative22(range_proxy, x3, l4);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+/* ************************************************************************* */
+Unit3 bearing_proxy(const Gal3& gal3, const Point3& point) {
+  return gal3.bearing(point);
+}
+TEST(Gal3, BearingToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  EXPECT(assert_equal(Unit3(1, 0, 0), x1.bearing(l1, actualH1, actualH2), 1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
+  expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */
