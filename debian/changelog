@@ -1,10 +1,52 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3374.gbp6c9598) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3375.gbp2c95e0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2c95e042d884cf0bbb03adc6a5f829322ad255bb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6c959800c3cbda2b0e096847bdc8e17780b3b713 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 11 Jan 2026 19:10:41 +0000
+  [ Frank Dellaert ]
+  * Priority-based task scheduler
+  * Forest Mixin
+  * Allow for children/roots fields
+  * Per-thread queues, stealing, help-then-wait
+  * Fix small issues from 5.2 review
+  * Mixin -> ForestTraversal.h
+  * Move TBB path to ForestTraversal
+  * Reduce complexity
+  * Reorder and document
+  * move runTraversal to State
+  * isJacobian
+  * Use Mixin + Parameters
+  * Clean up leaf merging
+  * Leaf merging
+  * HessianFactors no longer supported Choose numThreads to not saturate Time big chain
+  * remove TBB path
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Fix comment styles, add GTSAM_EXPORT macros, and improve parameter names
+
+  [ copilot-swe-agent[bot] ]
+  * Restore GTSAM_CONCEPT_ASSERT in FastSet.h and remove incorrect GTSAM_EXPORT from templates
+
+  [ copilot-swe-agent[bot] ]
+  * Remove GTSAM_CONCEPT_ASSERT and revert to /// for single-line comments
+  * TaskScheduler
+  * Split schedulers
+  * moveable work items
+  * moveable work items
+  * Fix test issue
+  * gcc 11 is default on 22.04
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 11 Jan 2026 20:05:01 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3373.gbpe00897) noble; urgency=medium
 
