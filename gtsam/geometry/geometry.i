@@ -675,6 +675,12 @@ class Pose3 {
   double range(const gtsam::Pose3& pose);
   double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
                Eigen::Ref<Eigen::MatrixXd> Hpose);
+  gtsam::Unit3 bearing(const gtsam::Point3& point);
+  gtsam::Unit3 bearing(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                       Eigen::Ref<Eigen::MatrixXd> Hpoint);
+  gtsam::Unit3 bearing(const gtsam::Pose3& pose);
+  gtsam::Unit3 bearing(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+                       Eigen::Ref<Eigen::MatrixXd> Hpose);
 
   // enabling serialization functionality
   void serialize() const;
@@ -1506,6 +1512,12 @@ class Gal3 {
   gtsam::Gal3 compose(const gtsam::Gal3& other) const;
   gtsam::Gal3 between(const gtsam::Gal3& other) const;
   gtsam::Event act(const gtsam::Event& e) const;
+  double range(const gtsam::Point3& point) const;
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
+  gtsam::Unit3 bearing(const gtsam::Point3& point) const;
+  gtsam::Unit3 bearing(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                       Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
 
   // Operator Overloads
   gtsam::Gal3 operator*(const gtsam::Gal3& other) const;

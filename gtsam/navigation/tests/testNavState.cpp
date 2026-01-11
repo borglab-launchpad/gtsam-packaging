@@ -24,6 +24,7 @@
 #include <gtsam/base/testLie.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <cmath>
 
 using namespace std::placeholders;
 using namespace std;
@@ -51,6 +52,13 @@ static const NavState T(R, P2, V2);
 static const NavState T2(Rot3::Rodrigues(0.3, 0.2, 0.1), P2, V2);
 static const NavState T3(Rot3::Rodrigues(-90, 0, 0), Point3(5, 6, 7),
                          Point3(1, 2, 3));
+
+// Some shared test values - pulled from equivalent tests in Pose3
+static const Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4, -4);
+static const Velocity3 kTestVelocity(0.4, 0.5, 0.6);
+static const NavState x1(Rot3(), Point3::Zero(), kTestVelocity),
+    x2(Rot3::Ypr(0.0, 0.0, 0.0), l2, kTestVelocity),
+    x3(Rot3::Ypr(M_PI / 4.0, 0.0, 0.0), l2, kTestVelocity);
 
 //******************************************************************************
 TEST(NavState, Concept) {
@@ -122,6 +130,22 @@ TEST( NavState, Velocity) {
       std::bind(&NavState::velocity, std::placeholders::_1, nullptr),
       kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
+}
+
+/* ************************************************************************* */
+TEST(NavState, PoseJacobian) {
+  // NavState::pose() should be a pure projection onto the (R,t) components.
+  std::function<Pose3(const NavState&)> f = [](const NavState& s) {
+    return s.pose();
+  };
+
+  const Matrix69 actualH = numericalDerivative11<Pose3, NavState>(f, kState1);
+
+  Matrix69 expectedH = Matrix69::Zero();
+  expectedH.block<3, 3>(0, 0) = I_3x3;
+  expectedH.block<3, 3>(3, 3) = I_3x3;
+
+  EXPECT(assert_equal(expectedH, actualH, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -812,6 +836,56 @@ TEST(NavState, AutonomousFlow) {
   // Check analytical derivative against numerical derivative
   auto analyticalPhi = phi.dIdentity();
   CHECK(assert_equal(numericalPhi, analyticalPhi, 1e-9));
+}
+
+/* ************************************************************************* */
+double range_proxy(const NavState& navState, const Point3& point) {
+  return navState.range(point);
+}
+TEST(NavState, RangeToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  // Establish range is indeed 1.
+  EXPECT_DOUBLES_EQUAL(1.0, x1.range(l1), 1e-9);
+
+  // Establish range is indeed sqrt(2).
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), x1.range(l2), 1e-9);
+
+  // Another pair
+  double actual23 = x2.range(l3, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), actual23, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x2, l3);
+  expectedH2 = numericalDerivative22(range_proxy, x2, l3);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  // Another test
+  double actual34 = x3.range(l4, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(5.0, actual34, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x3, l4);
+  expectedH2 = numericalDerivative22(range_proxy, x3, l4);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+/* ************************************************************************* */
+Unit3 bearing_proxy(const NavState& navState, const Point3& point) {
+  return navState.bearing(point);
+}
+TEST(NavState, BearingToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  EXPECT(assert_equal(Unit3(1, 0, 0), x1.bearing(l1, actualH1, actualH2), 1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
+  expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */

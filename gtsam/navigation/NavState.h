@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Manifold.h>
@@ -98,6 +99,22 @@ public:
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }
+
+  /**
+   * Calculate range to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return range (double)
+   */
+  double range(const Point3& point, OptionalJacobian<1, 9> Hself = {},
+               OptionalJacobian<1, 3> Hpoint = {}) const;
+
+  /**
+   * Calculate bearing to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 9> Hself = {},
+                OptionalJacobian<2, 3> Hpoint = {}) const;
 
   /// @}
   /// @name Derived quantities
@@ -325,5 +342,12 @@ struct traits<NavState> : public internal::MatrixLieGroup<NavState, 5> {};
 
 template <>
 struct traits<const NavState> : public internal::MatrixLieGroup<NavState, 5> {};
+
+// bearing and range traits, used in RangeFactor and BearingFactor
+template <>
+struct Bearing<NavState, Point3> : HasBearing<NavState, Point3, Unit3> {};
+
+template <>
+struct Range<NavState, Point3> : HasRange<NavState, Point3, double> {};
 
 } // namespace gtsam
