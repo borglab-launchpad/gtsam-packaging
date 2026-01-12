@@ -1,10 +1,17 @@
-gtsam (4.1.0-1ubuntu2~3391.gbp0d7c7a) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3392.gbp98b4ef) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @98b4ef873e59bb111e718cc69011904d937ec36c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0d7c7a0229abf10871a5365d083081137601fbc9 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 05:00:10 +0000
+  [ Varun Agrawal ]
+  * Minimize the number of workflows
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 15:12:36 +0000
 
 gtsam (4.1.0-1ubuntu2~3390.gbpfe8c6e) noble; urgency=medium
 
