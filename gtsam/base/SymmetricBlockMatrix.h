@@ -270,6 +270,12 @@ namespace gtsam {
     void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
                                       const std::vector<DenseIndex>& blockIndices);
 
+    /// Add the upper-triangular part of another symmetric block matrix.
+    void addUpperTriangular(const SymmetricBlockMatrix& other) {
+      assert(nBlocks() == other.nBlocks());
+      full().triangularView<Eigen::Upper>() += other.full();
+    }
+
     /// @}
     /// @name Accessing the full matrix.
     /// @{

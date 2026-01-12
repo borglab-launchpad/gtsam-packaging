@@ -62,15 +62,19 @@ TEST(PriorityScheduler, VoidPriorityOrderingSingleWorker) {
   scheduler.waitForAllTasks();
   EXPECT_LONGS_EQUAL(3, executionOrder.size());
   // With a single worker, tasks are not preempted: the first scheduled task may
-  // start running before later (higher-priority) tasks are submitted. Once all
-  // tasks are enqueued, remaining work should respect priority order.
+  // start running before later (higher-priority) tasks are submitted. Also,
+  // since the third task is submitted last, the worker may run the first two
+  // tasks before the third is enqueued.
   const bool strictPriority =
       (executionOrder.at(0) == 1 && executionOrder.at(1) == 3 &&
        executionOrder.at(2) == 5);
   const bool firstTaskRanImmediately =
       (executionOrder.at(0) == 5 && executionOrder.at(1) == 1 &&
        executionOrder.at(2) == 3);
-  EXPECT(strictPriority || firstTaskRanImmediately);
+  const bool thirdTaskEnqueuedLate =
+      (executionOrder.at(0) == 1 && executionOrder.at(1) == 5 &&
+       executionOrder.at(2) == 3);
+  EXPECT(strictPriority || firstTaskRanImmediately || thirdTaskEnqueuedLate);
 }
 
 /* ************************************************************************* */

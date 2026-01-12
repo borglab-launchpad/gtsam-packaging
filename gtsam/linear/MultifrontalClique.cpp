@@ -17,14 +17,22 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/config.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
+
+#ifdef GTSAM_USE_TBB
+#include <tbb/blocked_range.h>
+#include <tbb/enumerable_thread_specific.h>
+#include <tbb/parallel_for.h>
+#endif
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 namespace gtsam {
 
@@ -75,6 +83,20 @@ bool validateFactorKeys(const GaussianFactorGraph& graph,
   return true;
 }
 #endif
+
+size_t hardwareThreads() {
+  static const size_t kHardwareThreads = [] {
+    size_t n = std::thread::hardware_concurrency();
+    return n == 0 ? size_t{1} : n;
+  }();
+  return kHardwareThreads;
+}
+
+SymmetricBlockMatrix makeZeroLocalSbm(const std::vector<size_t>& blockDims) {
+  SymmetricBlockMatrix local(blockDims, true);
+  local.setZero();
+  return local;
+}
 
 }  // namespace
 
@@ -246,9 +268,20 @@ void MultifrontalClique::prepareForElimination() {
     sbm_.selfadjointView().rankUpdate(Ab_.matrix().transpose());
   }
 
-  for (const auto& child : children) {
-    if (!child) continue;
-    child->updateParent(*this);
+  // Heuristic: avoid parallel overhead on small cliques.
+  const size_t minChildren =
+      std::max<size_t>(1024, 4 * static_cast<size_t>(sbm_.rows()));
+  const size_t numChildren = children.size();
+  if (numChildren < minChildren) {  // Typical for chains: many small cliques.
+    gatherUpdatesSequential();
+  } else {
+    // Cap by available work.
+    // Parallel path (TBB if available, else std::thread).
+    const size_t numThreads = std::min(hardwareThreads(), numChildren);
+    if (numThreads <= 1)
+      gatherUpdatesSequential();
+    else
+      gatherUpdatesParallel(numThreads);
   }
 }
 
@@ -289,23 +322,88 @@ void MultifrontalClique::eliminateInPlace() {
   factorize();
 }
 
-void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
+void MultifrontalClique::updateParentSbm(
+    SymmetricBlockMatrix& parentSbm) const {
   if (useQR()) {
     // Accumulate separator (and RHS) normal equations (S^T S) into the parent.
-    assert(RSdReady_);
-    assert(RSd_.firstBlock() == 0);
-    assert(parent.sbm_.nBlocks() > 0);
+    assert(RSdReady_ && RSd_.firstBlock() == 0);
     const DenseIndex nfBlocks = static_cast<DenseIndex>(numFrontals());
     RSd_.firstBlock() = nfBlocks;
-    parent.sbm_.updateFromOuterProductBlocks(RSd_, parentIndices_);
+    parentSbm.updateFromOuterProductBlocks(RSd_, parentIndices_);
     RSd_.firstBlock() = 0;
   } else {
     // Accumulate the S^T S part from this clique's SBM into the parent.
     assert(sbm_.nBlocks() > 0 && sbm_.blockStart() == 0);
     sbm_.blockStart() = numFrontals();
-    parent.sbm_.updateFromMappedBlocks(sbm_, parentIndices_);
+    parentSbm.updateFromMappedBlocks(sbm_, parentIndices_);
     sbm_.blockStart() = 0;
   }
+}
+
+void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
+  updateParentSbm(parent.sbm_);
+}
+
+void MultifrontalClique::gatherUpdatesSequential() {
+  for (const auto& child : children) {
+    assert(child);
+    child->updateParentSbm(sbm_);
+  }
+}
+
+void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
+#ifdef GTSAM_USE_TBB
+  (void)numThreads;  // TBB controls the effective worker count.
+  tbb::enumerable_thread_specific<SymmetricBlockMatrix> locals([this]() {
+    return makeZeroLocalSbm(blockDims_);
+  });  // Per-thread accumulators.
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, children.size()),
+      [&](const tbb::blocked_range<size_t>& range) {
+        auto& local = locals.local();  // Thread-local SBM.
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+          const auto& child = children[i];
+          assert(child);
+          child->updateParentSbm(
+              local);  // No locking: each thread writes its own SBM.
+        }
+      });
+  locals.combine_each([this](const SymmetricBlockMatrix& local) {
+    sbm_.addUpperTriangular(
+        local);  // Merge per-thread partial SBMs into this clique SBM.
+  });
+#else
+  std::vector<SymmetricBlockMatrix> locals;
+  locals.reserve(numThreads);  // Fixed-size per-thread accumulators.
+  for (size_t i = 0; i < numThreads; ++i) {
+    locals.push_back(makeZeroLocalSbm(blockDims_));
+  }
+  std::vector<std::thread> threads;
+  threads.reserve(numThreads);
+  const size_t chunk =
+      (children.size() + numThreads - 1) / numThreads;  // Static partitioning.
+  for (size_t t = 0; t < numThreads; ++t) {
+    const size_t start = t * chunk;
+    const size_t end = std::min(start + chunk, children.size());
+    if (start >= end) break;
+    threads.emplace_back([this, start, end, &locals, t]() {
+      auto& local = locals[t];
+      for (size_t i = start; i < end; ++i) {
+        const auto& child = children[i];
+        assert(child);
+        child->updateParentSbm(
+            local);  // No locking: each thread writes its own SBM.
+      }
+    });
+  }
+  for (auto& thread : threads) {
+    thread.join();  // Ensure all locals are complete before merge.
+  }
+  for (const auto& local : locals) {
+    sbm_.addUpperTriangular(
+        local);  // Merge per-thread partial SBMs into this clique SBM.
+  }
+#endif
 }
 
 std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
