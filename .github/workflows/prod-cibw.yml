@@ -1,7 +1,7 @@
 # This workflow builds the Python wheels using cibuildwheel and uploads them to TestPyPI.
 # It can be triggered on push to the develop branch or manually via Github Actions.
 
-name: Build Wheels for Release
+name: Build Python Wheels for Release
 
 on:
   release:

@@ -4,13 +4,6 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
-  push:
-    branches:
-      - develop
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb'
-      - 'myst.yml'
   pull_request:
     paths-ignore:
       - '**.md'
@@ -24,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Check paths to changed files to see if any are non-ignored.
+  # Check paths of changed files to see if any are non-ignored.
   check-paths:
     runs-on: ubuntu-latest
     outputs:

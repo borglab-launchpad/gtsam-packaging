@@ -3,10 +3,9 @@ name: Linux CI
 on:
   pull_request:
     paths-ignore:
-      - "**.md"
-      - "**.ipynb"
-      - "myst.yml"
-      
+      - '**.md'
+      - '**.ipynb'
+      - 'myst.yml'
 
 # Cancels any in-progress workflow runs for the same PR when a new push is made,
 # allowing the runner to become available more quickly for the latest changes.
