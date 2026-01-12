@@ -1,10 +1,22 @@
-gtsam (4.1.0-1ubuntu2~3387.gbp286601) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3388.gbp7c5db0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7c5db031510bb2cfd336fed05b07dac723d9fe41 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @286601893befbdc76fe6a979e878bd8079cbde4b **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 01:46:42 +0000
+  [ Varun Agrawal ]
+  * add parentheses around conditions separated by || since GCC complains
+  * Simplify NonlinearEquality factors
+  * Fix doxygen comment syntax
+  * Make CMake section header printing more legible
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 04:57:12 +0000
 
 gtsam (4.1.0-1ubuntu2~3386.gbpb2edf3) noble; urgency=medium
 
