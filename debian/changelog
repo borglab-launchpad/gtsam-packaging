@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3378.gbp9dd3fe) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3379.gbpfdffed) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @fdffed50c1b9a63a735235ba8ad7e842011897bb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9dd3fe4ee2ad5eca3c8109baa784e85fea515f96 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 11 Jan 2026 20:07:58 +0000
+  [ Frank Dellaert ]
+  * parallelize parent updates
+  * threading
+  * Heuristic on when to go parallel
+  * Clean up
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix Docker docs
+  * Fix test and address review comments
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 01:43:45 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3377.gbp441c3e) noble; urgency=medium
 
