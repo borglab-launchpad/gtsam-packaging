@@ -4,11 +4,8 @@ on:
   pull_request:
     paths-ignore:
       - '**.md'
-      - '**.ipynb' 
+      - '**.ipynb'
       - 'myst.yml'
-  push:
-    # Runs on pushes targeting the develop branch 
-    branches: [develop]
 
 # Cancels any in-progress workflow runs for the same PR when a new push is made,
 # allowing the runner to become available more quickly for the latest changes.
