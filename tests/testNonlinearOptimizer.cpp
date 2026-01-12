@@ -629,7 +629,7 @@ TEST( NonlinearOptimizer, iterationHook_CG )
 
 
 /* ************************************************************************* */
-//// Minimal traits example
+/// Minimal traits example
 struct MyType : public Vector3 {
   using Vector3::Vector3;
 };

@@ -182,7 +182,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// Positive pitch is up (increasing aircraft altitude).See ypr
     static Rot3 Pitch(double t) { return Ry(t); }
 
-    //// Positive roll is to right (increasing yaw in aircraft).
+    /// Positive roll is to right (increasing yaw in aircraft).
     static Rot3 Roll (double t) { return Rx(t); }
 
     /**
