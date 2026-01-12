@@ -1,10 +1,19 @@
-gtsam (4.1.0-1ubuntu2~3395.gbp92fc5f) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3396.gbp3e3ad3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @3e3ad35eddffd791818e9ac394f4c59a020e09eb **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @92fc5fcc3592eb9b58bf15ab8a76d83e95ade353 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 15:15:34 +0000
+  [ Frank Dellaert ]
+  * Allow for an external rng
+  * Define and use perturb template
+  * Document and add perturbPose3
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 23:38:47 +0000
 
 gtsam (4.1.0-1ubuntu2~3394.gbp24dfb6) noble; urgency=medium
 
