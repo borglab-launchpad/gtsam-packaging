@@ -212,7 +212,7 @@ namespace gtsam {
     /// HybridValues simply extracts the \class VectorValues and calls error.
     using GaussianFactor::error;
 
-    //// 0.5*(A*x-b)'*D*(A*x-b).
+    /// 0.5*(A*x-b)'*D*(A*x-b).
     double error(const VectorValues& c) const override; 
 
     /** Return the augmented information matrix represented by this GaussianFactor.

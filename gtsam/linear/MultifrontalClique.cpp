@@ -254,8 +254,8 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   solveMode_ = useQR ? SolveMode::QrLeaf : SolveMode::Cholesky;
   RSdReady_ = false;
   assert((useQR && RSd_.matrix().rows() ==
-                       static_cast<DenseIndex>(Ab_.matrix().rows()) ||
-          RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
+                       static_cast<DenseIndex>(Ab_.matrix().rows())) ||
+         (RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
   allocateSbm();
 }
 

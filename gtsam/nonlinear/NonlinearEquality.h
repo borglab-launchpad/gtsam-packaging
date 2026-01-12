@@ -45,7 +45,7 @@ template<class VALUE>
 class NonlinearEquality: public NonlinearEqualityConstraint {
 
  public:
-  typedef VALUE T;
+  using T = VALUE;
 
  private:
 
@@ -64,6 +64,9 @@ class NonlinearEquality: public NonlinearEqualityConstraint {
   // typedef to base class
   using Base = NonlinearEqualityConstraint;
 
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
+
  public:
 
   /// Function that compares two values.
@@ -71,11 +74,9 @@ class NonlinearEquality: public NonlinearEqualityConstraint {
   CompareFunction compare_;
 
   /// Default constructor - only for serialization
-  NonlinearEquality() {
-  }
+  NonlinearEquality() {}
 
-  ~NonlinearEquality() override {
-  }
+  ~NonlinearEquality() override {}
 
   /// @name Standard Constructors
   /// @{
@@ -102,9 +103,7 @@ class NonlinearEquality: public NonlinearEqualityConstraint {
       compare_(_compare) {
   }
 
-  Key key() const {
-    return keys().front();
-  }
+  Key key() const { return keys().front(); }
 
   /// @}
   /// @name Testable
@@ -222,7 +221,7 @@ struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
 template<class VALUE>
 class NonlinearEquality1: public NonlinearEqualityConstraint {
  public:
-  typedef VALUE X;
+  typedef VALUE T;
 
  protected:
   typedef NonlinearEqualityConstraint Base;
@@ -232,10 +231,10 @@ class NonlinearEquality1: public NonlinearEqualityConstraint {
   NonlinearEquality1() {
   }
 
-  X value_; /// fixed value for variable
+  T value_; /// fixed value for variable
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-  GTSAM_CONCEPT_TESTABLE_TYPE(X)
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
  public:
 
@@ -247,8 +246,8 @@ class NonlinearEquality1: public NonlinearEqualityConstraint {
    * @param key the key for the unknown variable to be constrained
    * @param mu a parameter which really turns this into a strong prior
    */
-  NonlinearEquality1(const X& value, Key key, double mu = 1000.0)
-      : Base(noiseModel::Constrained::All(traits<X>::GetDimension(value),
+  NonlinearEquality1(const T& value, Key key, double mu = 1000.0)
+      : Base(noiseModel::Constrained::All(traits<T>::GetDimension(value),
                                           std::abs(mu)),
              KeyVector{key}),
         value_(value) {}
@@ -265,15 +264,15 @@ class NonlinearEquality1: public NonlinearEqualityConstraint {
   Key key() const { return keys().front(); }
 
   /// g(x) with optional derivative
-  Vector evaluateError(const X& x1, OptionalMatrixType H = nullptr) const {
+  Vector evaluateError(const T& x1, OptionalMatrixType H = nullptr) const {
     if (H)
-      (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
+      (*H) = Matrix::Identity(traits<T>::GetDimension(x1),traits<T>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
-    return traits<X>::Local(value_,x1);
+    return traits<T>::Local(value_,x1);
   }
 
   Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
-    X x1 = x.at<X>(key());
+    T x1 = x.at<T>(key());
     if (H) {
       return evaluateError(x1, &(H->front()));
     } else {
@@ -287,7 +286,7 @@ class NonlinearEquality1: public NonlinearEqualityConstraint {
     std::cout << s << ": NonlinearEquality1(" << keyFormatter(this->key())
               << ")," << "\n";
     this->noiseModel_->print();
-    traits<X>::Print(value_, "Value");
+    traits<T>::Print(value_, "Value");
   }
 
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
@@ -326,13 +325,13 @@ class NonlinearEquality2 : public NonlinearEqualityConstraint {
   typedef NonlinearEquality2<T> This;
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
   /// Default constructor to allow for serialization
   NonlinearEquality2() {}
 
  public:
   typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
-
 
   /**
    * Constructor
@@ -343,6 +342,7 @@ class NonlinearEquality2 : public NonlinearEqualityConstraint {
   NonlinearEquality2(Key key1, Key key2, double mu = 1e4)
       : Base(noiseModel::Constrained::All(traits<T>::dimension, std::abs(mu)),
              KeyVector{key1, key2}) {}
+
   ~NonlinearEquality2() override {}
 
   /// @return a deep copy of this factor

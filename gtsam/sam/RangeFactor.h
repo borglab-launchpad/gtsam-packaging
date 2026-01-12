@@ -109,7 +109,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
 
  public:
-  //// Default constructor
+  /// Default constructor
   RangeFactorWithTransform() {}
 
   RangeFactorWithTransform(Key key1, Key key2, T measured,
