@@ -17,7 +17,7 @@ from gtsam.utils.test_case import GtsamTestCase
 import gtsam
 
 
-class TestUtilites(GtsamTestCase):
+class TestUtilities(GtsamTestCase):
     """Test various GTSAM utilities."""
 
     def test_createKeyList(self):
@@ -142,7 +142,7 @@ class TestUtilites(GtsamTestCase):
         values = gtsam.Values()
         values.insert(0, gtsam.Pose3())
         values.insert(1, gtsam.Point2(1, 1))
-        gtsam.utilities.perturbPoint2(values, 1.0)
+        gtsam.utilities.perturbPoint2(values, 1.0, 42)
         self.assertTrue(
             not np.allclose(values.atPoint2(1), gtsam.Point2(1, 1)))
 
@@ -151,7 +151,7 @@ class TestUtilites(GtsamTestCase):
         values = gtsam.Values()
         values.insert(0, gtsam.Pose2())
         values.insert(1, gtsam.Point2(1, 1))
-        gtsam.utilities.perturbPose2(values, 1, 1)
+        gtsam.utilities.perturbPose2(values, 1, 1, 42)
         self.assertTrue(values.atPose2(0) != gtsam.Pose2())
 
     def test_perturbPoint3(self):
@@ -160,8 +160,17 @@ class TestUtilites(GtsamTestCase):
         point3 = gtsam.Point3(0, 0, 0)
         values.insert(0, gtsam.Pose2())
         values.insert(1, point3)
-        gtsam.utilities.perturbPoint3(values, 1)
+        gtsam.utilities.perturbPoint3(values, 1, 42)
         self.assertTrue(not np.allclose(values.atPoint3(1), point3))
+
+    def test_perturbPose3(self):
+        """Test perturbPose3."""
+        values = gtsam.Values()
+        pose3 = gtsam.Pose3()
+        values.insert(0, pose3)
+        values.insert(1, gtsam.Point2(1, 1))
+        gtsam.utilities.perturbPose3(values, 1, 1, 42)
+        self.assertTrue(not values.atPose3(0).equals(pose3, 1e-9))
 
     def test_insertBackprojections(self):
         """Test insertBackprojections."""

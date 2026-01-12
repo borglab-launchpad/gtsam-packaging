@@ -178,6 +178,8 @@ void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
+void perturbPose3(gtsam::Values& values, double sigmaT, double sigmaR,
+                  int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
                            const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
                            gtsam::Vector J, gtsam::Matrix Z, double depth);
