@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3382.gbpbff9ab) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3383.gbpb72de0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b72de0319d135e058981eb2e4aa5d2e42d77d42b **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bff9ab798537af953b241c8db8918c92ccf11261 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 01:46:30 +0000
+  [ Varun Agrawal ]
+  * add parentheses around conditions separated by || since GCC complains
+  * Simplify NonlinearEquality factors
+  * Fix doxygen comment syntax
+  * Make CMake section header printing more legible
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 04:57:06 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3381.gbpd54ca1) noble; urgency=medium
 
