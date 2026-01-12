@@ -210,6 +210,15 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
+  /// Update a parent SBM with this clique's separator contribution.
+  void updateParentSbm(SymmetricBlockMatrix& parentSbm) const;
+
+  /// Accumulate children separator updates into this clique's SBM (single-threaded).
+  void gatherUpdatesSequential();
+
+  /// Accumulate children separator updates into this clique's SBM (multi-threaded).
+  void gatherUpdatesParallel(size_t numThreads);
+
   /// Compute block dimensions from variable dimensions (excluding RHS).
   std::vector<size_t> blockDims(const KeyDimMap& dims,
                                 const KeyVector& frontals,
