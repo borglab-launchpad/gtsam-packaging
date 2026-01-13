@@ -114,6 +114,20 @@ virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
+#include <gtsam/sfm/UnaryMeasurement.h>
+template <T>
+class UnaryMeasurement {
+  UnaryMeasurement(gtsam::Key key, const T& measured,
+                   const gtsam::noiseModel::Base* model);
+  gtsam::Key key() const;
+  T measured() const;
+  gtsam::noiseModel::Base* noiseModel() const;
+};
+
+typedef gtsam::UnaryMeasurement<gtsam::Pose3> UnaryMeasurementPose3;
+typedef gtsam::UnaryMeasurement<gtsam::Rot3> UnaryMeasurementRot3;
+typedef gtsam::UnaryMeasurement<gtsam::Point3> UnaryMeasurementPoint3;
+
 #include <gtsam/sfm/BinaryMeasurement.h>
 template <T>
 class BinaryMeasurement {
@@ -151,6 +165,23 @@ class BinaryMeasurementsRot3 {
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Rot3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
+};
+
+#include <gtsam/sfm/TrajectoryAlignerSim3.h>
+class TrajectoryAlignerSim3 {
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all);
+
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+      const std::vector<gtsam::Similarity3>& bSa_all);
+
+  gtsam::Values solve() const;
+  gtsam::Marginals marginalize(
+    const gtsam::Values& solution, 
+    const gtsam::Ordering::OrderingType ordering_type = gtsam::Ordering::COLAMD) const;
 };
 
 #include <gtsam/slam/dataset.h>
