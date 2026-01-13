@@ -1,10 +1,37 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3394.gbp1131fd) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3395.gbp5ae4db) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5ae4dbb81c0ad81396cef1acac3153b4eb823da0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1131fd2045ae78c6865620fddc80d841c49d10b2 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 12 Jan 2026 23:41:41 +0000
+  [ Akshay Krishnan ]
+  * trajectory aligner class and unit tests
+  * Apply suggestion from @Copilot
+
+  [ copilot-swe-agent[bot] ]
+  * Initial plan
+
+  [ copilot-swe-agent[bot] ]
+  * Address review comments: fix style, add documentation, remove unused code
+  * change to bSa
+  * unary measurement docs
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Akshay Krishnan ]
+  * address review comments
+  * use perturbPose3
+  * fix wrapper
+  * python tests
+  * fix default arg
+  * add marginals with a test
+  * add docs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Jan 2026 17:20:31 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3393.gbp949070) noble; urgency=medium
 
