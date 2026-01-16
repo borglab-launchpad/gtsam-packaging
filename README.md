@@ -4,7 +4,7 @@
 
 **Important Note**
 
-**As of January 2023, the `develop` branch is officially in "Pre 4.3" mode. We envision several API-breaking changes as we switch to C++17 and away from boost.**
+**The `develop` branch is officially in "Pre 4.3" mode. We envision several API-breaking changes as we switch to C++17 and away from boost.**
 
 In addition, features deprecated in 4.2 will be removed. Please use the stable [4.2 release](https://github.com/borglab/gtsam/releases/tag/4.2) if you need those features. However, most are easily converted and can be tracked down (in 4.2) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V42`.
 
@@ -151,7 +151,7 @@ Read about important [GTSAM-Concepts](doc/GTSAM-Concepts.md) here. A primer on G
 which support (superfast) automatic differentiation,
 can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 
-See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions.
+See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions. Our CI/CD process is detailed in [workflows.md](doc/workflows.md).
 
 GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`LICENSE.BSD`](LICENSE.BSD) files.
 
