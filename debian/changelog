@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3398.gbpf280de) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3399.gbp7badd7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7badd7ea18c93e7cb1a5b28e5ca34813bc38aa05 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f280dec14d831ccd9b0958f3af4b11756f776a6b **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Jan 2026 17:23:29 +0000
+  [ dellaert@gmail.com ]
+  * Restore vcpkg builds in PRs
+  * Restore main readme
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 Jan 2026 04:53:32 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3397.gbp55f8c0) noble; urgency=medium
 
