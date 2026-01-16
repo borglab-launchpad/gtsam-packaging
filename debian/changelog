@@ -1,10 +1,18 @@
-gtsam (4.1.0-1ubuntu2~3403.gbpee0db1) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3404.gbpf4d2a4) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f4d2a4d546b82dbbc5873dc4586673466fca4558 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ee0db1092a55ed41858a1a5e2bc329b6e124f703 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 13 Jan 2026 17:23:19 +0000
+  [ dellaert@gmail.com ]
+  * Restore vcpkg builds in PRs
+  * Restore main readme
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 Jan 2026 04:53:26 +0000
 
 gtsam (4.1.0-1ubuntu2~3402.gbpd8ed70) noble; urgency=medium
 
