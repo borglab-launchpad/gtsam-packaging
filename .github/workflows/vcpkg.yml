@@ -1,5 +1,6 @@
 name: vcpkg
 on:
+  pull_request:
   push:
     # Runs on pushes targeting the develop branch
     branches: [develop]
