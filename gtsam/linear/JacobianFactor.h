@@ -129,15 +129,45 @@ namespace gtsam {
     JacobianFactor(Key i1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
+    /** Construct unary factor from fixed-size Eigen matrices. */
+    template <int M, int N1,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
+
     /** Construct binary factor */
     JacobianFactor(Key i1, const Matrix& A1,
         Key i2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
+    /** Construct binary factor from fixed-size Eigen matrices. */
+    template <int M, int N1, int N2,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic &&
+                                           N2 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        Key i2, const Eigen::Matrix<double, M, N2>& A2,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
+
     /** Construct ternary factor */
     JacobianFactor(Key i1, const Matrix& A1, Key i2,
         const Matrix& A2, Key i3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
+
+    /** Construct ternary factor from fixed-size Eigen matrices. */
+    template <int M, int N1, int N2, int N3,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic &&
+                                           N2 != Eigen::Dynamic &&
+                                           N3 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        Key i2, const Eigen::Matrix<double, M, N2>& A2,
+        Key i3, const Eigen::Matrix<double, M, N3>& A3,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct an n-ary factor
      * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
@@ -486,4 +516,3 @@ BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
 #endif
 
 #include <gtsam/linear/JacobianFactor-inl.h>
-

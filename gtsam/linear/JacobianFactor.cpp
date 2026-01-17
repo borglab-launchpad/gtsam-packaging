@@ -30,6 +30,7 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
+#include <array>
 #include <cmath>
 #include <cassert>
 #include <sstream>
@@ -41,7 +42,6 @@ namespace gtsam {
 
 // Typedefs used in constructors below.
 using Dims = std::vector<Key>;
-using Pairs = std::vector<std::pair<Key, Matrix>>;
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor() :
@@ -69,21 +69,58 @@ JacobianFactor::JacobianFactor(const Vector& b_in) :
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(Key i1, const Matrix& A1, const Vector& b,
-    const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}}, b, model);
+                               const SharedDiagonal& model)
+    : Base(std::array<Key, 1>{{i1}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+
+  const std::array<size_t, 1> dims = {static_cast<size_t>(A1.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
-    const Matrix& A2, const Vector& b, const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}}, b, model);
+                               const Matrix& A2, const Vector& b,
+                               const SharedDiagonal& model)
+    : Base(std::array<Key, 2>{{i1, i2}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+  if (A2.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A2.rows());
+
+  const std::array<size_t, 2> dims = {static_cast<size_t>(A1.cols()),
+                                      static_cast<size_t>(A2.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  Ab_(1) = A2;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
-    const Matrix& A2, Key i3, const Matrix& A3, const Vector& b,
-    const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}, {i3, A3}}, b, model);
+                               const Matrix& A2, Key i3, const Matrix& A3,
+                               const Vector& b, const SharedDiagonal& model)
+    : Base(std::array<Key, 3>{{i1, i2, i3}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+  if (A2.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A2.rows());
+  if (A3.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A3.rows());
+
+  const std::array<size_t, 3> dims = {static_cast<size_t>(A1.cols()),
+                                      static_cast<size_t>(A2.cols()),
+                                      static_cast<size_t>(A3.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  Ab_(1) = A2;
+  Ab_(2) = A3;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */

@@ -152,6 +152,13 @@ namespace gtsam {
     template <typename ValueType>
     const ValueType at(Key j) const;
 
+    /** Retrieve a variable by key \c j without copying.
+     * This is a fast path that assumes the stored type matches ValueType;
+     * in debug builds it asserts on mismatch.
+     */
+    template <typename ValueType>
+    const ValueType& atRef(Key j) const;
+
     /// version for double
     double atDouble(size_t key) const { return at<double>(key);}
 
