@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3402.gbpbcf0cd) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3403.gbpabd638) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @abd63830dacd71daafcec9b4d0efcb00b5fbae47 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @bcf0cdeb8c04f45f8ca728399838547897840647 **
 
   * modified changelog for distro noble
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 16 Jan 2026 04:56:18 +0000
+  [ Tzvi Strauss ]
+  * perf: parallelize NonlinearFactorGraph::error computation.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 Jan 2026 17:37:05 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3401.gbp3609f3) noble; urgency=medium
 
