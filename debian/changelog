@@ -1,10 +1,20 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3406.gbp946816) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3407.gbp43fc31) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @43fc312fe79304766432bab2afc65b99d7bc31fe **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @94681654832d7ee3ee679829debf0bbce30a3f50 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 Jan 2026 17:40:03 +0000
+  [ Frank Dellaert ]
+  * Fixed-size constructors
+  * Fast Value accessor
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 17 Jan 2026 19:18:54 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3405.gbp9d35a4) noble; urgency=medium
 
