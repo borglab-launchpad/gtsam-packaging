@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3414.gbpae25b5) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3415.gbpd2cf36) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d2cf36e64491f476c29fc9941caecadf7714562f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @ae25b56c9fb8724233284ebf91fb1178efccd1b0 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Jan 2026 16:15:45 +0000
+  [ Frank Dellaert ]
+  * Remove std in header
+  * Create Unit noise model by default
+  * work around dimension mismatch
+  * New noiseModel methods
+  * Restrict KarcherMean templating
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Fix python unit test
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Jan 2026 19:03:33 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3413.gbpd9e87e) noble; urgency=medium
 
