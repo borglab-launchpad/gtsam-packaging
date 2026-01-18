@@ -256,6 +256,30 @@ TEST(JacobianFactor, error)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, deltaError)
+{
+  JacobianFactor factor(simple::terms, simple::b, simple::noise);
+
+  VectorValues values;
+  values.insert(5, Vector::Constant(3, 1.0));
+  values.insert(10, Vector::Constant(3, 0.5));
+  values.insert(15, Vector::Constant(3, 1.0/3.0));
+
+  VectorValues zero = VectorValues::Zero(values);
+  double expectedOld = factor.error(zero);
+  double expectedNew = factor.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = factor.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, matrices_NULL)
 {
   // Make sure everything works with nullptr noise model

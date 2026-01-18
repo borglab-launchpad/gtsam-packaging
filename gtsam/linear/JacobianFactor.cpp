@@ -557,6 +557,20 @@ double JacobianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
+double JacobianFactor::deltaError(const VectorValues& c, double* oldError,
+                                  double* newError) const {
+  const Vector e = unweighted_error(c);
+  const Vector b = getb();
+  double oldValue =
+      model_ ? 0.5 * model_->squaredMahalanobisDistance(b) : 0.5 * b.dot(b);
+  double newValue =
+      model_ ? 0.5 * model_->squaredMahalanobisDistance(e) : 0.5 * e.dot(e);
+  if (oldError) *oldError = oldValue;
+  if (newError) *newError = newValue;
+  return oldValue - newValue;
+}
+
+/* ************************************************************************* */
 Matrix JacobianFactor::augmentedInformation() const {
   if (model_) {
     Matrix Ab = Ab_.full();

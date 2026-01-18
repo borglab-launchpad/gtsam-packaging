@@ -166,13 +166,14 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 
     // Compute the old linearized error as it is not the same
     // as the nonlinear error when robust noise models are used.
-    double oldLinearizedError = linear.error(VectorValues::Zero(delta));
-    double newlinearizedError = linear.error(delta);
+    double oldLinearizedError = 0.0;
+    double newLinearizedError = 0.0;
+    double linearizedCostChange =
+        linear.deltaError(delta, &oldLinearizedError, &newLinearizedError);
 
     // cost change in the linearized system (old - new)
-    double linearizedCostChange = oldLinearizedError - newlinearizedError;
     if (verbose)
-      cout << "newlinearizedError = " << newlinearizedError
+      cout << "newLinearizedError = " << newLinearizedError
            << "  linearizedCostChange = " << linearizedCostChange << endl;
 
     if (linearizedCostChange >= 0) {  // step is valid

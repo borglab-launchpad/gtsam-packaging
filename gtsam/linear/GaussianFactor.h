@@ -79,6 +79,13 @@ namespace gtsam {
     virtual double error(const VectorValues& c) const;
 
     /**
+     * Compute the change in error from zero to c. Optionally return the old
+     * and new errors for reuse by callers.
+     */
+    virtual double deltaError(const VectorValues& c, double* oldError = nullptr,
+                              double* newError = nullptr) const;
+
+    /**
      * The Factor::error simply extracts the \class VectorValues from the
      * \class HybridValues and calculates the error.
      */

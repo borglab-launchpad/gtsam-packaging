@@ -114,6 +114,30 @@ TEST(HessianFactor, Constructor1)
 }
 
 /* ************************************************************************* */
+TEST(HessianFactor, deltaError)
+{
+  Matrix G = (Matrix(2,2) << 3.0, 5.0, 5.0, 6.0).finished();
+  Vector g = Vector2(-8.0, -9.0);
+  double f = 10.0;
+  HessianFactor factor(0, G, g, f);
+
+  VectorValues values{{0, Vector2(1.5, 2.5)}};
+  VectorValues zero = VectorValues::Zero(values);
+
+  double expectedOld = factor.error(zero);
+  double expectedNew = factor.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = factor.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
+}
+
+/* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
 {
   Vector mu = Vector2(1.0,2.0);
