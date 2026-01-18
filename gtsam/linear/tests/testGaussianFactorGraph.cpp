@@ -322,6 +322,28 @@ static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
 }
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, deltaError) {
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+
+  VectorValues values{{0, Vector2(0.1, -0.2)},
+                      {1, Vector2(1.0, 0.5)},
+                      {2, Vector2(-0.3, 0.8)}};
+  VectorValues zero = VectorValues::Zero(values);
+
+  double expectedOld = gfg.error(zero);
+  double expectedNew = gfg.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = gfg.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
+}
+
+/* ************************************************************************* */
 TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 

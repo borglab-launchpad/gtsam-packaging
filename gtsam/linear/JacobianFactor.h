@@ -245,6 +245,13 @@ namespace gtsam {
     /// 0.5*(A*x-b)'*D*(A*x-b).
     double error(const VectorValues& c) const override; 
 
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
+
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
      * additional column holding the information vector, and an additional row

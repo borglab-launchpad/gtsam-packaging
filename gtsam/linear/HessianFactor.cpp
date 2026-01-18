@@ -335,14 +335,24 @@ double HessianFactor::error(const VectorValues& c) const {
   if (empty()) {
     return 0.5 * f;
   }
-  double xtg = 0, xGx = 0;
   // extract the relevant subset of the VectorValues
   // NOTE may not be as efficient
   const Vector x = c.vector(keys());
-  xtg = x.dot(linearTerm().col(0));
+  const double xtg = x.dot(linearTerm().col(0));
   auto AtA = informationView();
-  xGx = x.transpose() * AtA * x;
+  const double xGx = x.transpose() * AtA * x;
   return 0.5 * (f - 2.0 * xtg + xGx);
+}
+
+/* ************************************************************************* */
+double HessianFactor::deltaError(const VectorValues& c, double* oldError,
+                                 double* newError) const {
+  const double f = constantTerm();
+  const double oldValue = 0.5 * f;
+  double newValue = error(c);
+  if (oldError) *oldError = oldValue;
+  if (newError) *newError = newValue;
+  return oldValue - newValue;
 }
 
 /* ************************************************************************* */

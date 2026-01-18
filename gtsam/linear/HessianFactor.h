@@ -203,6 +203,13 @@ namespace gtsam {
      */
     double error(const VectorValues& c) const override;
 
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
+
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      * @param variable An iterator pointing to the slot in this factor.  You can
