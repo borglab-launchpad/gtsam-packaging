@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/LossFunctions.h>
@@ -32,6 +33,7 @@
 #endif
 
 #include <optional>
+#include <type_traits>
 
 namespace gtsam {
 
@@ -152,6 +154,20 @@ namespace gtsam {
     };
 
     //---------------------------------------------------------------------------------------
+    /**
+     * Return true if the model dimension matches the manifold dimension.
+     */
+    template <class T>
+    inline bool matchesDimension(const Base& model, const T& measured) {
+      static_assert(IsManifold<T>::value,
+                    "noiseModel::matchesDimension requires a manifold type.");
+      if constexpr (traits<T>::dimension == Eigen::Dynamic) {
+        return model.dim() ==
+               static_cast<size_t>(traits<T>::GetDimension(measured));
+      } else {
+        return model.dim() == static_cast<size_t>(traits<T>::dimension);
+      }
+    }
 
     /**
      * Gaussian implements the mathematical model
@@ -636,6 +652,23 @@ namespace gtsam {
        */
       static shared_ptr Create(size_t dim) {
         return shared_ptr(new Unit(dim));
+      }
+
+      /**
+       * Create a unit covariance noise model for a measurement type.
+       * Reuse a cached instance for fixed-size types.
+       */
+      template <class T, std::enable_if_t<!std::is_integral_v<T>, int> = 0>
+      static shared_ptr Create(const T& measured) {
+        static_assert(IsManifold<T>::value,
+                      "noiseModel::Unit::Create requires a manifold type.");
+        if constexpr (traits<T>::dimension == Eigen::Dynamic) {
+          return Create(static_cast<size_t>(traits<T>::GetDimension(measured)));
+        } else {
+          static const shared_ptr kDefault =
+              Create(static_cast<size_t>(traits<T>::dimension));
+          return kDefault;
+        }
       }
 
       /// true if a unit noise model, saves slow/clumsy dynamic casting

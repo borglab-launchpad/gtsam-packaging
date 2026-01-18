@@ -19,7 +19,9 @@
 
 
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/geometry/Point2.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -104,6 +106,37 @@ TEST(NoiseModel, Unit)
   Vector v = Vector3(5.0,10.0,15.0);
   Gaussian::shared_ptr u(Unit::Create(3));
   EXPECT(assert_equal(v,u->whiten(v)));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, UnitCreateMeasured)
+{
+  Matrix22 fixed = Matrix22::Identity();
+  auto fixedModel = Unit::Create(fixed);
+  EXPECT_LONGS_EQUAL(4, fixedModel->dim());
+  EXPECT(fixedModel == Unit::Create(fixed));
+
+  Matrix dynamic(2, 3);
+  dynamic.setZero();
+  EXPECT_LONGS_EQUAL(6, Unit::Create(dynamic)->dim());
+
+  EXPECT_LONGS_EQUAL(2, Unit::Create(Point2(1.0, 2.0))->dim());
+  EXPECT_LONGS_EQUAL(1, Unit::Create(1.0)->dim());
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, MatchesDimension)
+{
+  Matrix22 fixed = Matrix22::Identity();
+  EXPECT(matchesDimension(*Unit::Create(4), fixed));
+  EXPECT(!matchesDimension(*Unit::Create(3), fixed));
+
+  Matrix dynamic(2, 3);
+  dynamic.setZero();
+  EXPECT(matchesDimension(*Unit::Create(6), dynamic));
+
+  EXPECT(matchesDimension(*Unit::Create(2), Point2(1.0, 2.0)));
+  EXPECT(matchesDimension(*Unit::Create(1), 1.0));
 }
 
 /* ************************************************************************* */

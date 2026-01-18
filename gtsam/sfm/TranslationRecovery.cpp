@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/base/DSFMap.h>
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
@@ -38,8 +39,9 @@
 using namespace gtsam;
 using namespace std;
 
+namespace {
 // In Wrappers we have no access to this so have a default ready.
-static std::mt19937 kPRNG(42);
+std::mt19937 kPRNG(42);
 
 // Some relative translations may be zero. We treat nodes that have a zero
 // relativeTranslation as a single node.
@@ -96,6 +98,23 @@ Values addSameTranslationNodes(const Values &result,
   return final_result;
 }
 
+// A hacky noise conversion function because we really should be optimizing for
+// Unit3s rather than Point3s, in which case the noise model can be whatever it
+// wants. Unfortunately, we are given Unit3 measurements and Point3 unknowns,
+// which is a mismatch in this class' setup.
+using noiseModel::Isotropic;
+Isotropic::shared_ptr convertNoiseModel(
+    const SharedNoiseModel &unit3NoiseModel) {
+  if (auto isotropic = std::dynamic_pointer_cast<Isotropic>(unit3NoiseModel)) {
+    return noiseModel::Isotropic::Sigma(3, isotropic->sigma());
+  } else {
+    throw std::runtime_error(
+        "TranslationRecovery::convertNoiseModel: only isotropic noise model "
+        "supported.");
+  }
+}
+}  // namespace
+
 NonlinearFactorGraph TranslationRecovery::buildGraph(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const {
   NonlinearFactorGraph graph;
@@ -103,13 +122,13 @@ NonlinearFactorGraph TranslationRecovery::buildGraph(
   // Add translation factors for input translation directions.
   uint64_t i = 0;
   for (auto edge : relativeTranslations) {
+    auto model = convertNoiseModel(edge.noiseModel());
     if (use_bilinear_translation_factor_) {
       graph.emplace_shared<BilinearAngleTranslationFactor>(
-          edge.key1(), edge.key2(), Symbol('S', i), edge.measured(),
-          edge.noiseModel());
+          edge.key1(), edge.key2(), Symbol('S', i), edge.measured(), model);
     } else {
-      graph.emplace_shared<TranslationFactor>(
-          edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
+      graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
+                                              edge.measured(), model);
     }
     i++;
   }
@@ -124,13 +143,12 @@ void TranslationRecovery::addPrior(
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations.begin();
   if (edge == relativeTranslations.end()) return;
-  graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
-                                             priorNoiseModel);
+  graph->addPrior<Point3>(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
 
   // Add a scale prior only if no other between factors were added.
   if (betweenTranslations.empty()) {
-    graph->emplace_shared<PriorFactor<Point3>>(
-        edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+    auto model = convertNoiseModel(edge->noiseModel());
+    graph->addPrior<Point3>(edge->key2(), scale * edge->measured(), model);
     return;
   }
 
@@ -184,8 +202,8 @@ Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const Values &initialValues) const {
-  return initializeRandomly(relativeTranslations, betweenTranslations,
-                            &kPRNG, initialValues);
+  return initializeRandomly(relativeTranslations, betweenTranslations, &kPRNG,
+                            initialValues);
 }
 
 Values TranslationRecovery::run(
@@ -229,11 +247,9 @@ Values TranslationRecovery::run(
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
     const Values &poses, const vector<KeyPair> &edges) {
-  auto edgeNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
+  auto edgeNoiseModel = noiseModel::Isotropic::Sigma(2, 0.01);
   TranslationEdges relativeTranslations;
-  for (auto edge : edges) {
-    Key a, b;
-    tie(a, b) = edge;
+  for (const auto& [a, b] : edges) {
     const Pose3 wTa = poses.at<Pose3>(a), wTb = poses.at<Pose3>(b);
     const Point3 Ta = wTa.translation(), Tb = wTb.translation();
     const Unit3 w_aZb(Tb - Ta);
