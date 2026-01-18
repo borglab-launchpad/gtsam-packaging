@@ -34,19 +34,20 @@ namespace gtsam {
 /**
  * @brief Unary measurement represents a measurement on a single key in a graph.
  */
-template <class T> class UnaryMeasurement : public Factor {
+template <class T>
+class UnaryMeasurement : public Factor {
   // Check that T type is testable
   GTSAM_CONCEPT_ASSERT(IsTestable<T>);
 
-public:
+ public:
   // shorthand for a smart pointer to a measurement
   using shared_ptr = std::shared_ptr<UnaryMeasurement>;
 
-private:
-  T measured_;                  ///< The measurement
-  SharedNoiseModel noiseModel_; ///< Noise model
+ private:
+  T measured_;                   ///< The measurement
+  SharedNoiseModel noiseModel_;  ///< Noise model
 
-public:
+ public:
   /**
    * @brief Constructs a unary measurement with a key, value, and noise model.
    * @param key The key of the measurement.
@@ -55,7 +56,19 @@ public:
    */
   UnaryMeasurement(Key key, const T &measured,
                    const SharedNoiseModel &model = nullptr)
-      : Factor(std::vector<Key>({key})), measured_(measured), noiseModel_(model) {}
+      : Factor(std::vector<Key>({key})),
+        measured_(measured),
+        noiseModel_(model) {
+    if (model) {
+      if (!noiseModel::matchesDimension(*model, measured)) {
+        throw std::runtime_error(
+            "UnaryMeasurement: Noise model dimension does not match "
+            "measurement dimension.");
+      }
+    } else {
+      noiseModel_ = noiseModel::Unit::Create(measured);
+    }
+  }
 
   /// @name Standard Interface
   /// @{
@@ -73,7 +86,7 @@ public:
 
   // Prints the measurement.
   void print(const std::string &s, const KeyFormatter &keyFormatter =
-                                        DefaultKeyFormatter) const override {
+                                       DefaultKeyFormatter) const override {
     std::cout << s << "UnaryMeasurement(" << keyFormatter(this->key()) << ")\n";
     traits<T>::Print(measured_, "  measured: ");
     if (noiseModel_)
@@ -93,4 +106,4 @@ public:
   }
   /// @}
 };
-} // namespace gtsam
+}  // namespace gtsam
