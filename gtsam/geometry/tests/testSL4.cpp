@@ -13,6 +13,9 @@
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/SL4.h>
 
+#include <cmath>
+#include <vector>
+
 using namespace std;
 using namespace gtsam;
 
@@ -169,6 +172,93 @@ TEST(SL4, HatVeeAreInverses) {
   Matrix4 hat = SL4::Hat(xi0);
   Vector xi_recovered = SL4::Vee(hat);
   EXPECT(assert_equal(xi0, xi_recovered, 1e-8));
+}
+
+/* ************************************************************************* */
+TEST(SL4, HatTraceIsZero) {
+  Vector15 eta =
+      (Vector15() << 0.31, -0.22, 0.14, -0.09, 0.27, -0.18, 0.05, -0.12, 0.08,
+       0.11, -0.06, 0.02, 0.07, -0.04, 0.13)
+          .finished();
+  Matrix4 A = SL4::Hat(eta);
+  EXPECT_DOUBLES_EQUAL(0.0, A.trace(), 1e-12);
+}
+
+/* ************************************************************************* */
+TEST(SL4, HatVeeRoundTrip) {
+  Vector15 eta =
+      (Vector15() << -0.25, 0.19, -0.11, 0.07, -0.03, 0.29, -0.17, 0.09, 0.21,
+       -0.13, 0.04, -0.06, 0.15, -0.08, 0.02)
+          .finished();
+  Vector eta_recovered = SL4::Vee(SL4::Hat(eta));
+  EXPECT(assert_equal(eta, eta_recovered, 1e-12));
+}
+
+/* ************************************************************************* */
+TEST(SL4, HatBasisIsOrthonormal) {
+  std::vector<Matrix4> generators;
+  generators.reserve(15);
+
+  for (int k = 0; k < 15; ++k) {
+    Vector15 e = Vector15::Zero();
+    e(k) = 1.0;
+    generators.push_back(SL4::Hat(e));
+  }
+
+  for (int i = 0; i < 15; ++i) {
+    for (int j = 0; j < 15; ++j) {
+      const double inner =
+          (generators[i].array() * generators[j].array()).sum();
+      const double expected = (i == j) ? 1.0 : 0.0;
+      EXPECT_DOUBLES_EQUAL(expected, inner, 1e-12);
+    }
+  }
+}
+
+/* ************************************************************************* */
+TEST(SL4, HatMatchesOrthonormalDefinition) {
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  const double inv_sqrt6 = 1.0 / std::sqrt(6.0);
+  const double inv_sqrt12 = 1.0 / std::sqrt(12.0);
+
+  const Vector15 eta = xi0;
+  Matrix4 expected = Matrix4::Zero();
+
+  expected(0, 1) += inv_sqrt2 * eta(0);
+  expected(1, 0) -= inv_sqrt2 * eta(0);
+  expected(0, 2) += inv_sqrt2 * eta(1);
+  expected(2, 0) -= inv_sqrt2 * eta(1);
+  expected(0, 3) += inv_sqrt2 * eta(2);
+  expected(3, 0) -= inv_sqrt2 * eta(2);
+  expected(1, 2) += inv_sqrt2 * eta(3);
+  expected(2, 1) -= inv_sqrt2 * eta(3);
+  expected(1, 3) += inv_sqrt2 * eta(4);
+  expected(3, 1) -= inv_sqrt2 * eta(4);
+  expected(2, 3) += inv_sqrt2 * eta(5);
+  expected(3, 2) -= inv_sqrt2 * eta(5);
+
+  expected(0, 1) += inv_sqrt2 * eta(6);
+  expected(1, 0) += inv_sqrt2 * eta(6);
+  expected(0, 2) += inv_sqrt2 * eta(7);
+  expected(2, 0) += inv_sqrt2 * eta(7);
+  expected(0, 3) += inv_sqrt2 * eta(8);
+  expected(3, 0) += inv_sqrt2 * eta(8);
+  expected(1, 2) += inv_sqrt2 * eta(9);
+  expected(2, 1) += inv_sqrt2 * eta(9);
+  expected(1, 3) += inv_sqrt2 * eta(10);
+  expected(3, 1) += inv_sqrt2 * eta(10);
+  expected(2, 3) += inv_sqrt2 * eta(11);
+  expected(3, 2) += inv_sqrt2 * eta(11);
+
+  const double a = inv_sqrt2 * eta(12);
+  const double b = inv_sqrt6 * eta(13);
+  const double c = inv_sqrt12 * eta(14);
+  expected(0, 0) = a + b + c;
+  expected(1, 1) = -a + b + c;
+  expected(2, 2) = -2.0 * b + c;
+  expected(3, 3) = -3.0 * c;
+
+  EXPECT(assert_equal(expected, SL4::Hat(eta), 1e-12));
 }
 
 /* ************************************************************************* */
