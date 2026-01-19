@@ -32,9 +32,8 @@ T FindKarcherMeanImpl(const std::vector<T, ALLOC>& rotations) {
   // No closed form solution.
   NonlinearFactorGraph graph;
   static const Key kKey(0);
-  auto model = noiseModel::Unit::Create(static_cast<size_t>(T::dimension));
   for (const auto& R : rotations) {
-    graph.addPrior<T>(kKey, R, model);
+    graph.addPrior<T>(kKey, R, noiseModel::Unit::Create(R));
   }
   Values initial;
   initial.insert<T>(kKey, T());

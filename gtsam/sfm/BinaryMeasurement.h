@@ -51,17 +51,7 @@ class BinaryMeasurement : public Factor {
                     const SharedNoiseModel &model = nullptr)
       : Factor(std::vector<Key>({key1, key2})),
         measured_(measured),
-        noiseModel_(model) {
-    if (model) {
-      if (!noiseModel::matchesDimension(*model, measured)) {
-        throw std::runtime_error(
-            "BinaryMeasurement: Noise model dimension does not match "
-            "measurement dimension.");
-      }
-    } else {
-      noiseModel_ = noiseModel::Unit::Create(measured);
-    }
-  }
+        noiseModel_(noiseModel::validOrDefault(measured, model)) {}
 
   /// @name Standard Interface
   /// @{

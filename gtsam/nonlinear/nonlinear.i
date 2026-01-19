@@ -625,7 +625,7 @@ template <T = {double,
                gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(gtsam::Key key, const T& prior,
-              const gtsam::noiseModel::Base* noiseModel);
+              const gtsam::noiseModel::Base* noiseModel = nullptr);
   T prior() const;
 
   // enabling serialization functionality

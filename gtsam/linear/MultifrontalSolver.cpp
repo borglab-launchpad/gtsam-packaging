@@ -104,7 +104,7 @@ std::unordered_set<Key> collectFixedKeys(const GaussianFactorGraph& graph) {
       throw std::runtime_error(
           "MultifrontalSolver: only unary constrained factors are supported.");
     }
-    const Vector sigmas = model->sigmas();
+    const Vector& sigmas = model->sigmasRef();
     if (!(sigmas.array().abs() <= kConstraintSigmaTol).all()) {
       throw std::runtime_error(
           "MultifrontalSolver: only fully constrained factors are supported.");

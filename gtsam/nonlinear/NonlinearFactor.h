@@ -239,6 +239,8 @@ public:
 
   /** get the dimension of the factor (number of rows on linearization) */
   size_t dim() const override {
+    if (!noiseModel_)
+      throw std::runtime_error("NoiseModelFactor::dim(): no noise model set");
     return noiseModel_->dim();
   }
 
