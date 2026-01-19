@@ -1,10 +1,26 @@
-gtsam (4.1.0-1ubuntu2~3423.gbp1552cb) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3424.gbp7a88be) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7a88beae92506276bba97322a032961377337652 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @1552cbf57de43265132ef8a0a74bdb089e7a324f **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Jan 2026 19:06:41 +0000
+  [ Frank Dellaert ]
+  * Improve whitening performance
+  * Add test coverage (AI)
+  * New `sigmasRef` method
+  * cache rowOffsets + tests
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Default Unit Models for all nonlinear factors
+  * Fix all nonlinear models
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 Jan 2026 05:54:38 +0000
 
 gtsam (4.1.0-1ubuntu2~3422.gbp516bc0) noble; urgency=medium
 
