@@ -72,7 +72,8 @@ namespace gtsam {
     /** Constructor */
     BetweenFactor(Key key1, Key key2, const VALUE& measured,
         const SharedNoiseModel& model = nullptr) :
-      Base(model, key1, key2), measured_(measured) {
+      Base(noiseModel::validOrDefault(measured, model), key1, key2),
+      measured_(measured) {
     }
 
     /// @}

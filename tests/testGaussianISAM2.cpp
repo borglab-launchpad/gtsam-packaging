@@ -1000,7 +1000,7 @@ class FixActiveFactor : public NoiseModelFactorN<Vector2> {
 
 public:
   FixActiveFactor(const gtsam::Key& key, const bool active)
-      : Base(nullptr, key), is_active_(active) {}
+      : Base(noiseModel::Unit::Create(2), key), is_active_(active) {}
 
   virtual bool active(const gtsam::Values &values) const override {
     return is_active_;

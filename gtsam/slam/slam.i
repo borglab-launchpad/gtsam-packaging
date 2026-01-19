@@ -21,7 +21,7 @@ template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2,
                gtsam::Similarity2, gtsam::Similarity3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
-                const gtsam::noiseModel::Base* noiseModel);
+                const gtsam::noiseModel::Base* noiseModel = nullptr);
   T measured() const;
 
   // enabling serialization functionality
@@ -604,7 +604,7 @@ template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
                gtsam::Gal3, gtsam::SL4}>
 class FrobeniusPrior : gtsam::NoiseModelFactor {
   FrobeniusPrior(gtsam::Key j, const gtsam::Matrix& M,
-    const gtsam::noiseModel::Base* model);
+    const gtsam::noiseModel::Base* model = nullptr);
 
     gtsam::Vector evaluateError(const T& g) const;
 };

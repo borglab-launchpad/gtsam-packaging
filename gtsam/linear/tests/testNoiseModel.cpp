@@ -511,6 +511,94 @@ TEST(NoiseModel, WhitenInPlace)
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, InPlaceVectorOperations)
+{
+  SharedGaussian gaussian = Gaussian::SqrtInformation(R, false);
+  Vector v = Vector3(5.0, 10.0, 15.0);
+  Vector expected = gaussian->unwhiten(v);
+  Vector actual = v;
+  gaussian->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedDiagonal diagonal = Diagonal::Sigmas(kSigmas, false);
+  v = Vector3(10.0, 20.0, 30.0);
+  expected = diagonal->whiten(v);
+  actual = v;
+  diagonal->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = diagonal->unwhiten(v);
+  actual = v;
+  diagonal->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedIsotropic isotropic = Isotropic::Sigma(3, kSigma, false);
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = isotropic->unwhiten(v);
+  actual = v;
+  isotropic->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedConstrained constrained =
+      Constrained::MixedSigmas(Vector3(kSigma, 0.0, kSigma));
+  v = Vector3(2.0, 3.0, 4.0);
+  expected = constrained->whiten(v);
+  actual = v;
+  constrained->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+  EXPECT_DOUBLES_EQUAL(v(1), actual(1), 1e-12);
+
+  SharedNoiseModel robust = Robust::Create(mEstimator::Huber::Create(1.345),
+                                           diagonal);
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = robust->whiten(v);
+  actual = v;
+  robust->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, InPlaceVectorBlockOperations)
+{
+  SharedGaussian gaussian = Gaussian::SqrtInformation(R, false);
+  SharedDiagonal diagonal = Diagonal::Sigmas(kSigmas, false);
+  SharedIsotropic isotropic = Isotropic::Sigma(3, kSigma, false);
+  SharedConstrained constrained =
+      Constrained::MixedSigmas(Vector3(kSigma, 0.0, kSigma));
+
+  Vector v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block(v, 1, 0, 3, 1);
+  Vector expected = diagonal->whiten(Vector(block));
+  diagonal->whitenInPlace(block);
+  EXPECT(assert_equal(expected, Vector(block)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_unwhiten(v, 1, 0, 3, 1);
+  expected = diagonal->unwhiten(Vector(block_unwhiten));
+  diagonal->unwhitenInPlace(block_unwhiten);
+  EXPECT(assert_equal(expected, Vector(block_unwhiten)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_constrained(v, 1, 0, 3, 1);
+  expected = constrained->whiten(Vector(block_constrained));
+  constrained->whitenInPlace(block_constrained);
+  EXPECT(assert_equal(expected, Vector(block_constrained)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_iso(v, 1, 0, 3, 1);
+  expected = isotropic->unwhiten(Vector(block_iso));
+  isotropic->unwhitenInPlace(block_iso);
+  EXPECT(assert_equal(expected, Vector(block_iso)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_gauss(v, 1, 0, 3, 1);
+  expected = gaussian->unwhiten(Vector(block_gauss));
+  gaussian->unwhitenInPlace(block_gauss);
+  EXPECT(assert_equal(expected, Vector(block_gauss)));
+}
+
+/* ************************************************************************* */
 
 /*
  * These tests are responsible for testing the weight functions for the m-estimators in GTSAM.

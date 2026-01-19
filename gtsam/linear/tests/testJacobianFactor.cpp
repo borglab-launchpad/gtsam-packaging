@@ -233,6 +233,110 @@ TEST( JacobianFactor, construct_from_graph)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_no_model)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+
+  auto factor1 = std::make_shared<JacobianFactor>(keyX, A11, b1);
+  auto factor2 = std::make_shared<JacobianFactor>(keyY, A22, b2);
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b);
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(assert_equal(expected, actual));
+  EXPECT(!actual.get_model());
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_mixed_models)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+  Vector2 sigmas1(0.2, 0.3);
+
+  auto factor1 = std::make_shared<JacobianFactor>(
+      keyX, A11, b1, noiseModel::Diagonal::Sigmas(sigmas1));
+  auto factor2 = std::make_shared<JacobianFactor>(keyY, A22, b2);
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+  Vector sigmas(4);
+  sigmas << sigmas1, Vector2(1.0, 1.0);
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b,
+                          noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_constrained)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+  Vector2 sigmas1(0.0, 1.0);
+  Vector2 sigmas2(2.0, 3.0);
+
+  auto factor1 = std::make_shared<JacobianFactor>(
+      keyX, A11, b1, noiseModel::Constrained::MixedSigmas(sigmas1));
+  auto factor2 = std::make_shared<JacobianFactor>(
+      keyY, A22, b2, noiseModel::Diagonal::Sigmas(sigmas2));
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+  Vector sigmas(4);
+  sigmas << sigmas1, sigmas2;
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b,
+                          noiseModel::Constrained::MixedSigmas(sigmas));
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(actual.isConstrained());
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, error)
 {
   JacobianFactor factor(simple::terms, simple::b, simple::noise);

@@ -170,6 +170,14 @@ Vector Gaussian::unwhiten(const Vector& v) const {
   return backSubstituteUpper(thisR(), v);
 }
 
+void Gaussian::unwhitenInPlace(Vector& v) const {
+  thisR().triangularView<Eigen::Upper>().solveInPlace(v);
+}
+
+void Gaussian::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  thisR().triangularView<Eigen::Upper>().solveInPlace(v);
+}
+
 /* ************************************************************************* */
 Matrix Gaussian::Whiten(const Matrix& H) const {
   return thisR() * H;
@@ -319,6 +327,14 @@ Vector Diagonal::unwhiten(const Vector& v) const {
   return v.cwiseProduct(sigmas_);
 }
 
+void Diagonal::whitenInPlace(Vector& v) const {
+  v.array() *= invsigmas_.array();
+}
+
+void Diagonal::unwhitenInPlace(Vector& v) const {
+  v.array() *= sigmas_.array();
+}
+
 Matrix Diagonal::Whiten(const Matrix& H) const {
   return vector_scale(invsigmas(), H);
 }
@@ -329,6 +345,14 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
+}
+
+void Diagonal::whitenInPlace(Eigen::Block<Vector>& v) const {
+  v.array() *= invsigmas_.array();
+}
+
+void Diagonal::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  v.array() *= sigmas_.array();
 }
 
 /* *******************************************************************************/
@@ -401,6 +425,26 @@ Vector Constrained::whiten(const Vector& v) const {
     c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
   }
   return c;
+}
+
+void Constrained::whitenInPlace(Vector& v) const {
+  const size_t n = v.size();
+  for (size_t i = 0; i < n; ++i) {
+    const double si = sigmas_(i);
+    if (si != 0.0) {
+      v(i) /= si;
+    }
+  }
+}
+
+void Constrained::whitenInPlace(Eigen::Block<Vector>& v) const {
+  const DenseIndex n = v.rows();
+  for (DenseIndex i = 0; i < n; ++i) {
+    const double si = sigmas_(static_cast<size_t>(i));
+    if (si != 0.0) {
+      v(i, 0) /= si;
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -700,6 +744,16 @@ void Isotropic::whitenInPlace(Vector& v) const {
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::unwhitenInPlace(Vector& v) const {
+  v *= sigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  v *= sigma_;
 }
 
 /* *******************************************************************************/

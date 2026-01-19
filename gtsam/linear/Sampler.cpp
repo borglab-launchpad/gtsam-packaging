@@ -79,7 +79,7 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
 /* ************************************************************************* */
 Vector Sampler::sample() const {
   assert(model_.get());
-  const Vector& sigmas = model_->sigmas();
+  const Vector& sigmas = model_->sigmasRef();
   return sampleDiagonal(sigmas);
 }
 

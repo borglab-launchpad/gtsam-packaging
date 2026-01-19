@@ -244,7 +244,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues GaussianConditional::solveOtherRHS(
-    const VectorValues& parents, const VectorValues& rhs) const {
+      const VectorValues& parents, const VectorValues& rhs) const {
     // Concatenate all vector values that correspond to parent variables
     Vector xS = parents.vector(KeyVector(beginParents(), endParents()));
 
@@ -253,17 +253,18 @@ namespace gtsam {
     xS = rhsR - S() * xS;
 
     // Solve Matrix
-    Vector soln = R().triangularView<Eigen::Upper>().solve(xS);
+    Vector solution = R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas
-    if (model_)
-      soln.array() *= model_->sigmas().array();
+    if (model_) solution.array() *= model_->sigmasRef().array();
 
     // Insert solution into a VectorValues
     VectorValues result;
     DenseIndex vectorPosition = 0;
-    for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+    for (const_iterator frontal = beginFrontals(); frontal != endFrontals();
+         ++frontal) {
+      result.emplace(*frontal,
+                     solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -283,7 +284,7 @@ namespace gtsam {
 
     // Scale by sigmas
     if (model_)
-      frontalVec.array() *= model_->sigmas().array();
+      frontalVec.array() *= model_->sigmasRef().array();
 
     // Write frontal solution into a VectorValues
     DenseIndex vectorPosition = 0;
@@ -367,8 +368,11 @@ namespace gtsam {
 
     // The vector of sigma values for sampling.
     // If no model, initialize sigmas to 1, else to model sigmas
-    const Vector& sigmas = (!model_) ? Vector::Ones(rows()) : model_->sigmas();
-    solution[key] += Sampler::sampleDiagonal(sigmas, rng);
+    if (model_) {
+      solution[key] += Sampler::sampleDiagonal(model_->sigmasRef(), rng);
+    } else {
+      solution[key] += Sampler::sampleDiagonal(Vector::Ones(rows()), rng);
+    }
     return solution;
   }
 

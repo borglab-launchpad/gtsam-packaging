@@ -637,13 +637,29 @@ struct MyType : public Vector3 {
 namespace gtsam {
 template <>
 struct traits<MyType> {
+  typedef manifold_tag structure_category;
+  inline constexpr static auto dimension = 3;
+  typedef MyType ManifoldType;
+  typedef Vector3 TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
   static bool Equals(const MyType& a, const MyType& b, double tol) {
     return (a - b).array().abs().maxCoeff() < tol;
   }
   static void Print(const MyType&, const string&) {}
-  static int GetDimension(const MyType&) { return 3; }
-  static MyType Retract(const MyType& a, const Vector3& b) { return a + b; }
-  static Vector3 Local(const MyType& a, const MyType& b) { return b - a; }
+  static int GetDimension(const MyType&) { return dimension; }
+  static MyType Retract(const MyType& a, const TangentVector& v,
+                        ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
+    if (H1) *H1 = Matrix3::Identity();
+    if (H2) *H2 = Matrix3::Identity();
+    return MyType(a + v);
+  }
+  static TangentVector Local(const MyType& a, const MyType& b,
+                             ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
+    if (H1) *H1 = -Matrix3::Identity();
+    if (H2) *H2 = Matrix3::Identity();
+    return b - a;
+  }
 };
 }
 

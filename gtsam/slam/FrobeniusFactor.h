@@ -63,7 +63,10 @@ GTSAM_EXPORT SharedNoiseModel ConvertNoiseModel(const SharedNoiseModel& model,
  */
 template <class T, size_t Dim>
 inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
-  if (!model || model->dim() == Dim) {
+  if (!model) {
+    return ConvertNoiseModel(noiseModel::Unit::Create(T()), Dim);
+  }
+  if (model->dim() == Dim) {
     return model;
   }
   if (model->dim() != T::dimension) {
