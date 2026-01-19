@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtState.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -92,7 +93,7 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
   if (params_.verbosityLM >= LevenbergMarquardtParams::DAMPED)
     std::cout << "building damped system with lambda " << currentState->lambda << std::endl;
 
-  if (params_.diagonalDamping)
+  if (params_.dampingParams.diagonalDamping)
     return currentState->buildDampedSystem(linear, sqrtHessianDiagonal);
   else
     return currentState->buildDampedSystem(linear);
@@ -137,8 +138,6 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   if (verbose)
     cout << "trying lambda = " << currentState->lambda << endl;
 
-  // Build damped system for this lambda (adds prior factors that make it like gradient descent)
-  auto dampedSystem = buildDampedSystem(linear, sqrtHessianDiagonal);
 
   // Try solving
   double modelFidelity = 0.0;
@@ -151,9 +150,19 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 
   bool systemSolvedSuccessfully;
   try {
-    // ============ Solve is where most computation happens !! =================
-    delta = solve(dampedSystem, params_);
+    // ============ This is where most computation happens !! =================
+    if (nonlinearMultifrontalSolver_) {
+      nonlinearMultifrontalSolver_->eliminateInPlace(currentState->lambda);
+      delta = nonlinearMultifrontalSolver_->updateSolution();
+    } else {
+      // Build damped system for this lambda (adds prior factors that make it
+      // like gradient descent)
+      GaussianFactorGraph dampedSystem =
+          buildDampedSystem(linear, sqrtHessianDiagonal);
+      delta = solve(dampedSystem, params_);
+    }
     systemSolvedSuccessfully = true;
+    // ========================================================================
   } catch (const IndeterminantLinearSystemException&) {
     systemSolvedSuccessfully = false;
   }
@@ -168,8 +177,14 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     // as the nonlinear error when robust noise models are used.
     double oldLinearizedError = 0.0;
     double newLinearizedError = 0.0;
-    double linearizedCostChange =
-        linear.deltaError(delta, &oldLinearizedError, &newLinearizedError);
+    double linearizedCostChange = 0.0;
+    if (nonlinearMultifrontalSolver_) {
+      linearizedCostChange = nonlinearMultifrontalSolver_->deltaError(
+          &oldLinearizedError, &newLinearizedError);
+    } else {
+      linearizedCostChange =
+          linear.deltaError(delta, &oldLinearizedError, &newLinearizedError);
+    }
 
     // cost change in the linearized system (old - new)
     if (verbose)
@@ -280,6 +295,12 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
+  const bool useMultifrontal =
+      ensureMultifrontalSolver(params_, currentState->values);
+  if (useMultifrontal) {
+    nonlinearMultifrontalSolver_->load(*linear);
+  }
+
   if(currentState->totalNumberInnerIterations==0) { // write initial error
     writeLogFile(currentState->error);
 
@@ -291,10 +312,12 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
 
   // Only calculate diagonal of Hessian (expensive) once per outer iteration, if we need it
   VectorValues sqrtHessianDiagonal;
-  if (params_.diagonalDamping) {
+  if (params_.dampingParams.diagonalDamping && !useMultifrontal) {
     sqrtHessianDiagonal = linear->hessianDiagonal();
     for (auto& [key, value] : sqrtHessianDiagonal) {
-      value = value.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
+      value = value.cwiseMax(params_.dampingParams.minDiagonal)
+                  .cwiseMin(params_.dampingParams.maxDiagonal)
+                  .cwiseSqrt();
     }
   }
 
@@ -308,4 +331,3 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
 }
 
 } /* namespace gtsam */
-

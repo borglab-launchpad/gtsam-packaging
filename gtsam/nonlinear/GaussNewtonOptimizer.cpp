@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -49,9 +50,15 @@ GaussianFactorGraph::shared_ptr GaussNewtonOptimizer::iterate() {
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_->values);
   gttoc(GaussNewtonOptimizer_Linearize);
 
-  // Solve Factor Graph
   gttic(GaussNewtonOptimizer_Solve);
-  const VectorValues delta = solve(*linear, params_);
+  VectorValues delta;
+  if (ensureMultifrontalSolver(params_, state_->values)) {
+    nonlinearMultifrontalSolver_->load(*linear);
+    nonlinearMultifrontalSolver_->eliminateInPlace();
+    delta = nonlinearMultifrontalSolver_->updateSolution();
+  } else {
+    delta = solve(*linear, params_);
+  }
   gttoc(GaussNewtonOptimizer_Solve);
 
   // Maybe show output

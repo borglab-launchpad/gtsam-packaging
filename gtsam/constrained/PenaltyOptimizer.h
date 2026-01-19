@@ -35,10 +35,13 @@ class GTSAM_EXPORT PenaltyOptimizerParams : public ConstrainedOptimizerParams {
   double muEqIncreaseRate = 2;  // increase rate of penalty parameter
   double muIneqIncreaseRate = 2;
   InequalityPenaltyFunction::shared_ptr ineqConstraintPenaltyFunction = nullptr;
-  LevenbergMarquardtParams lm_params;
+  LevenbergMarquardtParams lmParams;
 
   /** Constructor. */
-  PenaltyOptimizerParams() : Base() {}
+  PenaltyOptimizerParams() : Base() {
+    lmParams.linearSolverType =
+        LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  }
 };
 
 /// Details for each iteration.
@@ -50,7 +53,7 @@ class GTSAM_EXPORT PenaltyOptimizerState : public ConstrainedOptimizerState {
 
   double muEq = 0.0;
   double muIneq = 0.0;
-  size_t unconstrainedIterationss = 0;
+  size_t unconstrainedIterations = 0;
 
   using Base::Base;
 };

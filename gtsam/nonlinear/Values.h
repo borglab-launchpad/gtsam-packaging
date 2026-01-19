@@ -78,6 +78,9 @@ namespace gtsam {
     // The member to store the values, see just above
     KeyValueMap values_;
 
+    // Friend access for efficient in-place updates.
+    friend class NonlinearMultifrontalSolver;
+
   public:
 
     /// A shared_ptr to this class

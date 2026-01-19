@@ -38,6 +38,9 @@ class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
   /** Destructor. */
   virtual ~NonlinearEqualityConstraint() {}
 
+  /// Whether this constraint should be treated as a hard constraint.
+  virtual bool isHardConstraint() const { return true; }
+
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

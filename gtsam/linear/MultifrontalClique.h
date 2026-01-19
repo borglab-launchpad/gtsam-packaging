@@ -24,12 +24,15 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/LMDampingParams.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -84,15 +87,17 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t frontalDim = 0;    ///< Frontal dimension.
   size_t separatorDim = 0;  ///< Separator dimension.
 
-  /// Construct a clique from factor indices and cache static structure.
-  /// @param factorIndices Indices of factors associated with this clique.
-  /// @param parent Weak pointer to the parent clique.
-  /// @param frontals Frontal keys for this clique.
-  /// @param separatorKeys Separator keys for this clique.
-  /// @param dims Key->dimension map.
-  /// @param vbmRows Number of rows needed for the vertical block matrix.
-  /// @param solution Solution storage for cached pointers.
-  /// @param fixedKeys Keys fixed to zero by constraints (may be null).
+  /**
+   * Construct a clique from factor indices and cache static structure.
+   * @param factorIndices Indices of factors associated with this clique.
+   * @param parent Weak pointer to the parent clique.
+   * @param frontals Frontal keys for this clique.
+   * @param separatorKeys Separator keys for this clique.
+   * @param dims Key->dimension map.
+   * @param vbmRows Number of rows needed for the vertical block matrix.
+   * @param solution Solution storage for cached pointers.
+   * @param fixedKeys Keys fixed to zero by constraints (may be null).
+   */
   explicit MultifrontalClique(std::vector<size_t> factorIndices,
                               const std::weak_ptr<MultifrontalClique>& parent,
                               const KeyVector& frontals,
@@ -104,16 +109,24 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @name Setup (non-const)
   /// @{
 
-  /// Cache the children list and compute parent indices.
-  void finalize(std::vector<ChildInfo> children);
+  /**
+   * Cache the children list, compute parent indices, and lock in QR usage.
+   * @param children Child cliques plus separator metadata.
+   * @param params Parameters controlling QR mode and thresholds.
+   */
+  void finalize(std::vector<ChildInfo> children,
+                const MultifrontalParameters& params);
 
-  /// Load factor values into the pre-allocated Ab matrix.
-  /// @param graph The factor graph with updated values (structure must match
-  ///              the graph used to build this clique, apart from updated
-  ///              numerical values). Only JacobianFactor inputs are supported.
+  /**
+   * Load factor values into the pre-allocated Ab matrix.
+   * @param graph The factor graph with updated values (structure must match
+   *              the graph used to build this clique, apart from updated
+   *              numerical values). Only JacobianFactor inputs are supported.
+   */
   void fillAb(const GaussianFactorGraph& graph);
 
-  /// Zero out sbm, re-add Hessians, accumulate Jacobians and children.
+  /// Zero out the info matrix, re-add Hessians, accumulate Jacobians and
+  /// children.
   void prepareForElimination();
 
   /// Perform Cholesky factorization on the frontal block.
@@ -134,6 +147,23 @@ class GTSAM_EXPORT MultifrontalClique {
   void addDiagonalDamping(double lambda, double minDiagonal,
                           double maxDiagonal);
 
+  /**
+   * Add diagonal damping to the frontal block using an externally provided
+   * Hessian diagonal `diag(J^T J)` keyed by variable.
+   *
+   * This matches the legacy LM diagonal damping definition based on the
+   * diagonal of the original linearized system rather than the post-Schur
+   * clique information matrix.
+   *
+   * @param lambda Damping factor
+   * @param hessianDiagonal Map from key to diagonal vector (dimension-matched).
+   * @param minDiagonal Minimum diagonal value
+   * @param maxDiagonal Maximum diagonal value
+   */
+  void addExactDiagonalDamping(double lambda,
+                               const VectorValues& hessianDiagonal,
+                               double minDiagonal, double maxDiagonal);
+
   /// @}
 
   /// @name Read-only methods
@@ -147,14 +177,17 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Return the number of frontal keys in this clique.
   size_t numFrontals() const { return frontalPtrs_.size(); }
 
+  /// Return keys ordered by block index (frontals followed by separators).
+  const KeyVector& orderedKeys() const { return orderedKeys_; }
+
   /// Build a GaussianConditional from the in-place factorization.
   std::shared_ptr<GaussianConditional> conditional() const;
 
   /// Get the vertical block matrix Ab.
   const VerticalBlockMatrix& Ab() const { return Ab_; }
 
-  /// Get the symmetric block matrix (const).
-  const SymmetricBlockMatrix& sbm() const { return sbm_; }
+  /// Get the information matrix (const).
+  const SymmetricBlockMatrix& info() const { return info_; }
 
   /// Check if this clique is using QR elimination.
   bool useQR() const { return solveMode_ == SolveMode::QrLeaf; }
@@ -173,28 +206,42 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @{
 
   /**
-   * Eliminate this clique and propagate its separator contribution upward.
+   * Eliminate in-place, invalidating Ab_, and updating RSd_ and info_.
    *
-   * Computes the local normal equations (SBM) from the stacked Jacobian (Ab),
-   * incorporates child separator contributions, and performs partial Cholesky
-   * on the frontal blocks. Requires parent indices to be precomputed.
+   * Computes the local information matrix from the stacked Jacobian (Ab),
+   * incorporates child separator contributions, and performs partial QR or
+   * Cholesky on the frontal blocks.
    */
   void eliminateInPlace();
 
   /**
-   * Apply this clique's separator contribution into the parent clique.
-   * @param parent Parent clique to update.
+   * Version of eliminate that applies damping before eliminate.
+   *
+   * @param lambda Optional damping value; non-positive disables damping.
+   * @param dampingParams Parameters controlling LM-style damping.
+   * @param exactHessianDiagonal `diag(J^T J)` values for diagonal damping.
    */
-  void updateParent(MultifrontalClique& parent) const;
+  void eliminateInPlace(double lambda, const LMDampingParams& dampingParams,
+                        const VectorValues& exactHessianDiagonal);
 
   /**
    * Solve for this clique's frontal variables and write them back to the
    * cached solution vectors.
    *
    * Uses block back-substitution using the upper triangular-part of the
-   * Cholesky-stored SBM, solving the triangular system for the frontal blocks.
+   * Cholesky-stored information matrix, solving the triangular system for the
+   * frontal blocks.
    */
-  void updateSolution() const;
+  void updateSolution();
+
+  /// Access the last old error computed during updateSolution().
+  double lastOldError() const { return lastOldError_; }
+
+  /// Access the last new error computed during updateSolution().
+  double lastNewError() const { return lastNewError_; }
+
+  /// Return the constant error term for this clique (nonzero for roots).
+  double constantTermError() const;
   /// @}
 
   friend std::ostream& operator<<(std::ostream& os,
@@ -210,13 +257,16 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
-  /// Update a parent SBM with this clique's separator contribution.
-  void updateParentSbm(SymmetricBlockMatrix& parentSbm) const;
+  /// Update a parent information matrix with this clique's separator
+  /// contribution.
+  void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
-  /// Accumulate children separator updates into this clique's SBM (single-threaded).
+  /// Accumulate children separator updates into this clique's info matrix
+  /// (single-threaded).
   void gatherUpdatesSequential();
 
-  /// Accumulate children separator updates into this clique's SBM (multi-threaded).
+  /// Accumulate children separator updates into this clique's info matrix
+  /// (multi-threaded).
   void gatherUpdatesParallel(size_t numThreads);
 
   /// Compute block dimensions from variable dimensions (excluding RHS).
@@ -224,16 +274,13 @@ class GTSAM_EXPORT MultifrontalClique {
                                 const KeyVector& frontals,
                                 const KeySet& separatorKeys) const;
 
-  /**
-   * Pre-allocate matrices for this clique.
-   * @param blockDims Block dimensions (excluding RHS).
-   * @param totalNumRows Number of rows for the vertical block matrix.
-   */
-  void initializeMatrices(const std::vector<size_t>& blockDims,
-                          size_t totalNumRows);
+  /// Apply damping for QR elimination by writing into extra Ab_ rows.
+  void applyDampingQR(double lambda, const LMDampingParams& dampingParams,
+                      const VectorValues& exactHessianDiagonal);
 
-  /// Allocate the symmetric block matrix if needed.
-  void allocateSbm();
+  /// Apply damping for Cholesky elimination by adding to the info_ matrix.
+  void applyDampingCholesky(double lambda, const LMDampingParams& dampingParams,
+                            const VectorValues& exactHessianDiagonal);
 
   /**
    * Add a Jacobian factor's contributions into the Ab matrix.
@@ -244,32 +291,38 @@ class GTSAM_EXPORT MultifrontalClique {
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
   }
-  // Build-time metadata.
+
+  // Construction-time metadata (set once in the constructor).
   std::vector<size_t> factorIndices_;
   KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
-  std::vector<size_t> blockDims_;
+  std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
+  std::vector<const Vector*> separatorPtrs_;  ///< Solution separator.
+  std::vector<size_t> blockDims_;  ///< Cached block dimensions (excluding RHS).
+  size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
+
+  // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
       parentIndices_;  ///< Parent block indices for separators + RHS.
-  std::vector<Vector*> frontalPtrs_;  ///< Pointers into solution frontals.
-  std::vector<const Vector*>
-      separatorPtrs_;  ///< Pointers into solution separator.
-
-  // Load-time state.
-  VerticalBlockMatrix Ab_;
   SolveMode solveMode_ = SolveMode::Cholesky;
 
-  // Elimination-time state.
-  mutable SymmetricBlockMatrix sbm_;
+  // Finalize-time allocations.
+  VerticalBlockMatrix Ab_;
+  
+  // mutable as temporarily updateParentInfo
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
-  mutable bool RSdReady_ = false;
+  mutable SymmetricBlockMatrix info_;
+
+  // Elimination-time state.
+  bool RSdReady_ = false;
 
   // Solve-time scratch space.
-  mutable Vector rhsScratch_;  ///< Cached RHS workspace for back-substitution.
-  mutable Vector
-      separatorScratch_;  ///< Cached separator stack for back-substitution.
+  Vector rhsScratch_;        ///< Cached RHS workspace for back-substitution.
+  Vector separatorScratch_;  ///< Cached separator stack for back-substitution.
 
-  static constexpr double kQrAspectRatio = 2.0;
+  // Solve-time cached error contributions.
+  double lastOldError_ = 0.0;
+  double lastNewError_ = 0.0;
 };
 
 std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique);

@@ -140,6 +140,9 @@ class NonlinearEquality: public NonlinearEqualityConstraint {
     }
   }
 
+  /// Whether this constraint should be treated as hard.
+  bool isHardConstraint() const override { return !allow_error_; }
+
   /// Error function
   Vector evaluateError(const T& xj, OptionalMatrixType H = nullptr) const {
     const size_t nj = traits<T>::GetDimension(feasible_);

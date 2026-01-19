@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file  testAugmentedLagrangianOptimizr.cpp
- * @brief Test augmented Lagrangian method optimzier for equality constrained
+ * @file  testAugmentedLagrangianOptimizer.cpp
+ * @brief Test augmented Lagrangian method optimizer for equality constrained
  * optimization.
  * @author: Yetong Zhang
  */

@@ -19,6 +19,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -27,6 +28,12 @@ using namespace std;
 using namespace gtsam;
 
 static const double tol = 1e-5;
+
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
 
 SharedDiagonal soft_model2 = noiseModel::Unit::Create(2);
 SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
@@ -151,7 +158,9 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
   Values initValues;
   initValues.insert(x1, start_pt);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params = makeLmParams();
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   Values expected;
   expected.insert(x1, goal_pt);
   CHECK(assert_equal(expected, actual, tol));
@@ -172,7 +181,9 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
   Values initValues;
   initValues.insert(key, start_pt);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params = makeLmParams();
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   Values expected;
   expected.insert(key, goal_pt);
   CHECK(assert_equal(expected, actual, tol));
@@ -273,4 +284,3 @@ TEST( testBoundingConstraint, avoid_demo) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

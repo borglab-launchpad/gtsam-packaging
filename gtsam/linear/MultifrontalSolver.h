@@ -22,12 +22,15 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -35,6 +38,25 @@ namespace gtsam {
 
 class GaussianBayesTree;
 class MultifrontalClique;
+
+/**
+ * Exception for unsupported use of the new multifrontal solver.
+ * Includes guidance for using the legacy solver instead.
+ */
+class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
+ public:
+  explicit MultifrontalSolverNotSupported(const std::string& reason)
+      : std::runtime_error(BuildMessage(reason)) {}
+
+ private:
+  static std::string BuildMessage(const std::string& reason) {
+    std::string message = "MultifrontalSolver not supported: " + reason + ". ";
+    message +=
+        "Enable GTSAM_ALLOW_DEPRECATED_SINCE_V43 to default to the legacy "
+        "solver, or set linearSolverType = MULTIFRONTAL_CHOLESKY.";
+    return message;
+  }
+};
 
 /**
  * Imperative-style multifrontal solver for Gaussian factor graphs.
@@ -58,14 +80,7 @@ class GTSAM_EXPORT MultifrontalSolver
     : public ForestTraversal<MultifrontalSolver, MultifrontalClique> {
  public:
   /// Tuning parameters for traversal and reporting.
-  struct Parameters {
-    size_t leafMergeDimCap = 256;           ///< Leaf-merge cap (0 disables).
-    size_t mergeDimCap = 32;                ///< Merge threshold (0 disables).
-    std::ostream* reportStream = nullptr;   ///< Optional structure reporting.
-    int eliminationParallelThreshold = 10;  ///< Post-order task threshold.
-    int solutionParallelThreshold = 4096;   ///< Pre-order task threshold.
-    size_t numThreads = 0;  ///< Worker count (0 uses 0.75 * hw threads).
-  };
+  using Parameters = MultifrontalParameters;
 
   struct PrecomputedData {
     std::map<Key, size_t> dims;         ///< Map from variable key to dimension.
@@ -87,7 +102,9 @@ class GTSAM_EXPORT MultifrontalSolver
   bool loaded_ = false;                ///< Whether load() has been called.
   bool eliminated_ = false;            ///< Whether eliminateInPlace() ran.
   Parameters params_;                  ///< Tunable solver parameters.
-  size_t numThreads_ = 0;              ///< Resolved thread count for traversal.
+  double lastOldError_ = 0.0;          ///< Cached old linearized error.
+  double lastNewError_ = 0.0;          ///< Cached new linearized error.
+  bool hasDeltaError_ = false;         ///< Whether updateSolution computed it.
 
  public:
   /**
@@ -100,11 +117,7 @@ class GTSAM_EXPORT MultifrontalSolver
    * @param params Tunable parameters for traversal and reporting.
    */
   MultifrontalSolver(const GaussianFactorGraph& graph, const Ordering& ordering,
-                     const Parameters& params);
-
-  /// Construct the solver with default parameters.
-  MultifrontalSolver(const GaussianFactorGraph& graph,
-                     const Ordering& ordering);
+                     const Parameters& params = Parameters{});
 
   /**
    * Construct the solver from precomputed symbolic data.
@@ -114,10 +127,7 @@ class GTSAM_EXPORT MultifrontalSolver
    * @param params Tunable parameters for traversal and reporting.
    */
   MultifrontalSolver(PrecomputedData data, const Ordering& ordering,
-                     const Parameters& params);
-
-  /// Construct the solver with default parameters.
-  MultifrontalSolver(PrecomputedData data, const Ordering& ordering);
+                     const Parameters& params = Parameters{});
 
   /// Precompute symbolic structure and sizing data from a factor graph.
   /// Only JacobianFactor inputs are supported.
@@ -160,6 +170,13 @@ class GTSAM_EXPORT MultifrontalSolver
    * @return Reference to the internally cached solution vector.
    */
   const VectorValues& updateSolution();
+
+  /**
+   * Return the linearized delta error from the last updateSolution() call.
+   * Optionally returns the old and new linearized errors.
+   */
+  double deltaError(double* oldError = nullptr,
+                    double* newError = nullptr) const;
 
   /// Accessor for the roots of the elimination tree.
   const std::vector<CliquePtr>& roots() const { return roots_; }

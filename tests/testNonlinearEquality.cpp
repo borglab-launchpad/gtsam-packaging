@@ -20,6 +20,7 @@
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/inference/Symbol.h>
@@ -201,7 +202,9 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
   init.insert(key1, initPose);
 
   // optimize
-  Values result = LevenbergMarquardtOptimizer(graph, init).optimize();
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  Values result = LevenbergMarquardtOptimizer(graph, init, params).optimize();
 
   // verify
   Values expected;
@@ -230,7 +233,9 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
   graph.emplace_shared<PosePrior>(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // optimize
-  Values actual = LevenbergMarquardtOptimizer(graph, init).optimize();
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  Values actual = LevenbergMarquardtOptimizer(graph, init, params).optimize();
 
   // verify
   Values expected;
@@ -312,7 +317,10 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
   EXPECT(constraint->active(expected));
   EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   EXPECT(assert_equal(expected, actual, tol));
 }
 
@@ -394,7 +402,10 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
   initValues.insert(key1, Point2(0,0));
   initValues.insert(key2, badPt);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   Values expected;
   expected.insert(key1, truth_pt1);
   expected.insert(key2, truth_pt2);
@@ -432,8 +443,10 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
   initialEstimate.insert(l1, Point2(1.0, 6.0)); // ground truth
   initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
   Values actual =
-      LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
+      LevenbergMarquardtOptimizer(graph, initialEstimate, params).optimize();
 
   Values expected;
   expected.insert(x1, pt_x1);
