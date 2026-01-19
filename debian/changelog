@@ -1,10 +1,21 @@
-gtsam (4.1.0-1ubuntu2~3427.gbp8de017) UNRELEASED; urgency=medium
+gtsam (4.1.0-1ubuntu2~3428.gbpd01c50) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d01c50a969b797e1bea3739ec9c3a3197fcf4ac4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8de01711a4734feed6df9da3057d8483aed80363 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 Jan 2026 05:57:36 +0000
+  [ Yiran Luo ]
+  * switch Hat/Vee to orthonormal sl(4) basis and update adjoint/tests
+  * refactor Hat/Vee to use SO4 helpers and symmetric split
+  * add more documentation
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 Jan 2026 11:48:06 +0000
 
 gtsam (4.1.0-1ubuntu2~3426.gbpeb8e7a) noble; urgency=medium
 
