@@ -1,10 +1,28 @@
-gtsam-no-tbb (4.1.0-1ubuntu2~3426.gbp548539) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.1.0-1ubuntu2~3427.gbpb55f31) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b55f312ed59983481aa12f7429c9350c1f7a6204 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @54853933c4e38de07897bab19d524b8c63397407 **
 
   * modified changelog for distro noble
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 Jan 2026 11:51:07 +0000
+  [ Frank Dellaert ]
+  * GTSAM changes
+  * sbm_ -> info_, damping
+  * New Nonlinear MF Solver
+  * Use new Solver in optimizers
+  * Solver deltaError
+  * Review Comments
+
+  [ Borglab Builder ]
+  * commit of final snapshot version number update
+
+  [ Frank Dellaert ]
+  * Throw informative exception
+  * Fix all tests
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 19 Jan 2026 18:04:20 +0000
 
 gtsam-no-tbb (4.1.0-1ubuntu2~3425.gbp20ec53) noble; urgency=medium
 
