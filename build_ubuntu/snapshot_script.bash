@@ -1,11 +1,11 @@
 #!/bin/bash
-
 #
 # 2020 Bernd Pfrommer bernd.pfrommer@gmail.com
 #
 # script for automated snapshot builds for GTSAM using
 # git-build-package (gbp)
 
+set -o errexit   # Exit immediately if a command exits with a non-zero status
 
 usage() {
     echo "script to create gtsam snapshots using git buildpackage (gbp)"
