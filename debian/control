@@ -9,8 +9,11 @@ Build-Depends: cmake,
     libeigen3-dev,
     libtbb-dev,
     libcpputest-dev,
-    libgeographic-dev,
-    libmetis-dev
+    libmetis-dev,
+    libspectra-dev,
+    pybind11-dev,
+    libsuitesparse-dev,
+    libccolamd3
 Standards-Version: 4.5.0
 Homepage: https://github.com/borglab/gtsam
 
@@ -26,9 +29,7 @@ Depends: libgtsam4 (= ${binary:Version}), ${misc:Depends},
     libboost-date-time-dev,
     libboost-timer-dev,
     libboost-chrono-dev,
-    libboost-regex-dev,
-    libeigen3-dev,
-    libmetis-dev
+    libboost-regex-dev
 Description: GTSAM library header and config files
  A collection of C++ classes related to SLAM
  .
