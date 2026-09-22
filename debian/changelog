@@ -1,8 +1,8 @@
-gtsam (4.3.0-0ubuntu2) kinetic; urgency=medium
+gtsam (4.3.0-0ubuntu3) jammy; urgency=medium
 
   * added dependencies on spectra, pybind11, libsuitesparse-dev, libccolamd3. Removed libgeographic
 
- -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Tue, 22 Sep 2026 19:42:56 -0400
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Tue, 22 Sep 2026 19:56:35 -0400
 
 gtsam (4.3.0-0ubuntu0) focal; urgency=medium
 
