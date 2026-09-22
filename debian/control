@@ -1,0 +1,66 @@
+Source: gtsam
+Section: libs
+Priority: optional
+Maintainer: Frank Dellaert <frank@cc.gatech.edu>
+Uploaders: Bernd Pfrommer <bernd.pfrommer@gmail.com>
+Build-Depends: cmake,
+    debhelper (>=9),
+    libboost-all-dev (>= 1.58),
+    libeigen3-dev,
+    libtbb-dev,
+    libcpputest-dev,
+    libgeographic-dev,
+    libmetis-dev
+Standards-Version: 4.5.0
+Homepage: https://github.com/borglab/gtsam
+
+Package: libgtsam-dev
+Section: libdevel
+Architecture: any
+Depends: libgtsam4 (= ${binary:Version}), ${misc:Depends},
+    libboost-serialization-dev,
+    libboost-system-dev,
+    libboost-filesystem-dev,
+    libboost-thread-dev,
+    libboost-program-options-dev,
+    libboost-date-time-dev,
+    libboost-timer-dev,
+    libboost-chrono-dev,
+    libboost-regex-dev,
+    libeigen3-dev,
+    libmetis-dev
+Description: GTSAM library header and config files
+ A collection of C++ classes related to SLAM
+ .
+ This package contains the development files.
+
+
+Package: libgtsam4
+Section: libs
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: GTSAM Georgia Tech Smoothing and Mapping Library
+ A collection of C++ classes related to SLAM
+
+
+Package: libgtsam-unstable4
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtsam4 (= ${binary:Version})
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: Unstable parts of the GTSAM Georgia Tech Smoothing and Mapping Library
+ A collection of C++ classes related to SLAM
+ .
+ This package contains the unstable parts of it
+
+Package: libgtsam-unstable-dev
+Architecture: any
+Section: libdevel
+Depends: libgtsam-unstable4 (= ${binary:Version}), ${misc:Depends},
+    libgtsam-dev (= ${binary:Version})
+Description: GTSAM unstable library header and config files
+ A collection of unstable C++ classes related to SLAM
+ .
+ This package contains the development files.

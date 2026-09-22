@@ -1,0 +1,3 @@
+usr/include/gtsam_unstable/* usr/include/gtsam_unstable/
+usr/lib/*/libgtsam_unstable.so
+usr/lib/cmake/GTSAM_UNSTABLE
