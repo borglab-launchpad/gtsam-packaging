@@ -10,7 +10,9 @@ Build-Depends: cmake,
     libtbb-dev,
     libcpputest-dev,
     libmetis-dev,
-    pybind11-dev
+    pybind11-dev,
+    libspectra-dev,
+    libsuitesparse-dev
 Standards-Version: 4.5.0
 Homepage: https://github.com/borglab/gtsam
 
