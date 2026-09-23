@@ -1,3 +1,9 @@
+gtsam (4.3.0-0ubuntu9) jammy; urgency=medium
+
+  * removed dependency on libccolamd3: covered by dependency on libsuitesparse-dev
+
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Wed, 23 Sep 2026 09:01:04 -0400
+
 gtsam (4.3.0-0ubuntu8) resolute; urgency=medium
 
   * re-introduce lost packaging of libcephes-gtsam
