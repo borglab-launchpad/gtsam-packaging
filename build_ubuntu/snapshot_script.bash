@@ -67,6 +67,7 @@ if [ -z ${vendor+x} ] || [ -z ${ppa+x} ] || [ -z ${snapshot_base+x} ] || [ -z ${
 fi
 
 packaging_branch=${vendor}/${debian_branch}
+export DEBEMAIL=$email
 
 echo "--------------------------------------"
 echo "snapshot base version: $snapshot_base"
