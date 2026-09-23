@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2020 Bernd Pfrommer bernd.pfrommer@gmail.com
+# 2026 Bernd Pfrommer bernd.pfrommer@gmail.com
 #
 # script for automated snapshot builds for GTSAM using
 # git-build-package (gbp)
