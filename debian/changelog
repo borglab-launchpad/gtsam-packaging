@@ -1,8 +1,8 @@
-gtsam (4.3.0-0ubuntu7) noble; urgency=medium
+gtsam (4.3.0-0ubuntu8) resolute; urgency=medium
 
   * re-introduce lost packaging of libcephes-gtsam
 
- -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Wed, 23 Sep 2026 08:23:26 -0400
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Wed, 23 Sep 2026 08:25:16 -0400
 
 gtsam (4.3.0-0ubuntu5) resolute; urgency=medium
 
