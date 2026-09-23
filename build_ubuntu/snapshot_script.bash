@@ -160,7 +160,7 @@ git commit -a -m "updated changelog and patch files for snapshot $snap"
 #
 # loop over distros so we can bump the version number for each one
 #
-for distro in focal jammy noble
+for distro in noble resolute
 do
     # remove any old build files
     rm -f ../${flavor}_*.dsc ../${flavor}_*.build ../${flavor}_*.buildinfo ../${flavor}_*.changes ../*.upload
@@ -178,7 +178,9 @@ do
 
     # upload to ubuntu ppa server for building
     pushd ..
-    dput "$ppa" ${flavor}_*_source.changes
+    echo "---- pushing to ppa: -----------"
+    ls -la ${flavor}_*_source.changes
+    dput -P "$ppa" ${flavor}_*_source.changes
     popd
     
     # now update the changelog to capture the new commits. This will
