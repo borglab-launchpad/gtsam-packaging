@@ -85,6 +85,11 @@ echo '----- directory: --------'
 pwd
 ls -la
 
+# this is the user under which the commits will be reported
+git config --global user.email $email
+git config --global user.name  "$user_name"
+git config --global `pwd`
+
 # set upstream (where the developers commit to)
 git remote add upstream $upstream
 # fetch the upstream development branch
