@@ -24,7 +24,7 @@ jobs:
       - name: import gpg key
         uses: crazy-max/ghaction-import-gpg@v7
         with:
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: check out github repo
         uses: actions/checkout@v7
         with:
@@ -41,7 +41,7 @@ jobs:
       - name: import gpg key
         uses: crazy-max/ghaction-import-gpg@v7
         with:
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: check out github repo
         uses: actions/checkout@v7
         with:
