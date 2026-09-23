@@ -1,3 +1,10 @@
+gtsam (4.3.0-0ubuntu12) jammy; urgency=medium
+
+  * reverted back to using system libsuitesparse
+  * temporarily revert to using built-in libsuitesparse and spectra
+
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Wed, 23 Sep 2026 11:10:03 -0400
+
 gtsam (4.3.0-0ubuntu10) jammy; urgency=medium
 
   * removed dependency on libccolamd3: covered by dependency on libsuitesparse-dev
