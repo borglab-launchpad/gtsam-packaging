@@ -180,6 +180,7 @@ do
     pushd ..
     echo "---- pushing to ppa: -----------"
     ls -la ${flavor}_*_source.changes
+    find .
     dput -c ./gtsam-packaging/build_ubuntu/dput.cf "$ppa" ${flavor}_*_source.changes
     popd
     
