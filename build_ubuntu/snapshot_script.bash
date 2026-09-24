@@ -85,6 +85,9 @@ gpg --list-secret-keys
 echo '----- directory: --------'
 pwd
 ls -la
+# copy dput config file away so it doesn't disappear when snapshot branch is checked out
+
+cp ./build_ubuntu/dput.cf ..
 
 # this is the user under which the commits will be reported
 git config --global user.email $email
@@ -179,9 +182,8 @@ do
     # upload to ubuntu ppa server for building
     pushd ..
     echo "---- pushing to ppa: -----------"
-    ls -la ${flavor}_*_source.changes
-    find .
-    dput -c ./gtsam-packaging/build_ubuntu/dput.cf "$ppa" ${flavor}_*_source.changes
+    find . -maxdepth 3
+    dput -c ./dput.cf "$ppa" ${flavor}_*_source.changes
     popd
     
     # now update the changelog to capture the new commits. This will
