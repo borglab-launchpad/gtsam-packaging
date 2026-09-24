@@ -1,0 +1,299 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Borglab Builder <borglab.launchpad@gmail.com>
+Date: Sep, 24 2026 16:35:08 +0000
+Subject: [PATCH] <short summary of the patch>
+
+TODO: Put a short summary on the line above and replace this paragraph
+with a longer explanation of this change. Complete the meta-information
+with other relevant fields (see below for details). To make it easier, the
+information below has been extracted from the changelog. Adjust it or drop
+it.
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout https://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: (upstream|backport|vendor|other), (<patch-url>|commit:<commit-id>)
+Bug: <upstream-bugtracker-url>
+Bug-<Vendor>: <vendor-bugtracker-url>
+Forwarded: (no|not-needed|<patch-forwarded-url>)
+Applied-Upstream: <version>, (<commit-url>|commit:<commid-id>)
+Reviewed-By: <name and email of someone who approved/reviewed the patch>
+
+--- gtsam-4.3.0.orig/CMakeLists.txt
++++ gtsam-4.3.0/CMakeLists.txt
+@@ -6,20 +6,20 @@ endif()
+ # Set the version number for the library
+ set (GTSAM_VERSION_MAJOR 4)
+ set (GTSAM_VERSION_MINOR 3)
+-set (GTSAM_VERSION_PATCH 0)
++set (GTSAM_VERSION_PATCH 1)
+ set (GTSAM_PRERELEASE_VERSION "")
+ math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
+ 
+ # Set the version string for the library. 
+ #
+ # If the environment variable DEVELOP is set, then the version string will be
+-# "MAJOR.MINORprerelease.devTIMESTAMP". TIMESTAMP is another environment variable that should be set to the current
++# "MAJOR.MINOR.PATCHprerelease.devTIMESTAMP". TIMESTAMP is another environment variable that should be set to the current
+ # datetime. See build-cibw.yaml for example usage.
+ #
+ # If the prerelease version is empty, then the version string will be "MAJOR.MINOR.PATCH". Otherwise, the version
+ # string will be "MAJOR.MINORprerelease".
+ if (DEFINED ENV{DEVELOP})
+-    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}${GTSAM_PRERELEASE_VERSION}.dev$ENV{TIMESTAMP}")
++    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}${GTSAM_PRERELEASE_VERSION}.dev$ENV{TIMESTAMP}")
+     set (SETUP_NAME "gtsam-develop")
+ elseif ("${GTSAM_PRERELEASE_VERSION}" STREQUAL "")
+     set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
+--- gtsam-4.3.0.orig/README.md
++++ gtsam-4.3.0/README.md
+@@ -117,13 +117,15 @@ We provide support for [MATLAB](matlab/R
+ If you are using GTSAM for academic work, please use the following citation:
+ 
+ ```bibtex
+-@software{gtsam,
+-  author    = {Frank Dellaert and GTSAM Contributors},
+-  title     = {GTSAM},
+-  year      = {2022},
+-  publisher = {Zenodo},
+-  doi       = {10.5281/zenodo.5794541},
+-  url       = {https://doi.org/10.5281/zenodo.5794541}
++@software{Dellaert26zenodo_GTSAM_4_3,
++  author       = {Dellaert, Frank and GTSAM Contributors},
++  title        = {GTSAM 4.3.0},
++  month        = sep,
++  year         = 2026,
++  publisher    = {Zenodo},
++  version      = {4.3.0},
++  doi          = {10.5281/zenodo.22866773},
++  url          = {https://doi.org/10.5281/zenodo.22866773},
+ }
+ ```
+ 
+--- gtsam-4.3.0.orig/gtsam/geometry/Unit3.cpp
++++ gtsam-4.3.0/gtsam/geometry/Unit3.cpp
+@@ -279,33 +279,35 @@ double Unit3::distance(const Unit3& q, O
+ }
+ 
+ /* ************************************************************************* */
+-Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
+-  // Compute the 3D xi_hat vector
+-  const Vector3 xi_hat = basis() * v;
+-  const double theta = xi_hat.norm();
+-  const double c = std::cos(theta);
++Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2, 2> H) const {
++  const Matrix32& B = basis();
++  const Vector3 tangent = B * v;
++  // The tangent basis is orthonormal, so ||B v|| = ||v||.
++  const double thetaSquared = v.squaredNorm();
++  const double theta = std::sqrt(thetaSquared);
++  const double cosine = std::cos(theta);
++  // Taylor series avoid division by zero and cancellation near zero.
++  const bool nearZero = thetaSquared < 1e-8;
++  const double sinc =
++      nearZero ? 1.0 + thetaSquared * (-1.0 / 6.0 + thetaSquared / 120.0)
++               : std::sin(theta) / theta;
+ 
+-  // Treat case of very small v differently.
+   Matrix23 H_from_point;
+-  if (theta < std::numeric_limits<double>::epsilon()) {
+-    const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat,
+-                                                 H? &H_from_point : nullptr);
+-    if (H) { // Jacobian
+-      *H = H_from_point *
+-          (-p_ * xi_hat.transpose() + Matrix33::Identity()) * basis();
+-    }
+-    return exp_p_xi_hat;
++  const Unit3 result = Unit3::FromPoint3(cosine * p_ + sinc * tangent,
++                                         H ? &H_from_point : nullptr);
++  if (H) {
++    // (cos(theta) - sinc(theta)) / theta^2 tends to -1/3 at zero.
++    const double radialScale =
++        nearZero
++            ? -1.0 / 3.0 + thetaSquared * (1.0 / 30.0 - thetaSquared / 840.0)
++            : (cosine - sinc) / thetaSquared;
++    // Differentiate directly in the 2D tangent coordinates, using B^T B = I.
++    const Vector3 radial = -sinc * p_ + radialScale * tangent;
++    Matrix32 derivative = sinc * B;
++    derivative += radial * v.transpose();
++    *H = H_from_point * derivative;
+   }
+-
+-  const double st = std::sin(theta) / theta;
+-  const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat * st,
+-                                               H? &H_from_point : nullptr);
+-  if (H) { // Jacobian
+-    *H = H_from_point *
+-        (p_ * -st * xi_hat.transpose() + st * Matrix33::Identity() +
+-        xi_hat * ((c - st) / std::pow(theta, 2)) * xi_hat.transpose()) * basis();
+-  }
+-  return exp_p_xi_hat;
++  return result;
+ }
+ 
+ /* ************************************************************************* */
+--- gtsam-4.3.0.orig/gtsam/geometry/tests/testUnit3.cpp
++++ gtsam-4.3.0/gtsam/geometry/tests/testUnit3.cpp
+@@ -421,21 +421,26 @@ TEST(Unit3, Retract) {
+ }
+ 
+ //*******************************************************************************
+-TEST (Unit3, JacobianRetract) {
+-  Matrix22 H;
+-  Unit3 p;
+-  auto f = std::bind(&Unit3::retract, p, std::placeholders::_1, nullptr);
+-  {
+-    Vector2 v(-0.2, 0.1);
+-    p.retract(v, H);
+-    Matrix H_expected_numerical = numericalDerivative11(f, v);
+-    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
+-  }
+-  {
+-    Vector2 v(0, 0);
+-    p.retract(v, H);
+-    Matrix H_expected_numerical = numericalDerivative11(f, v);
+-    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
++// Checks the value and Jacobian at zero, across the Taylor cutoff, and at
++// large steps.
++TEST(Unit3, JacobianRetract) {
++  const Vector2 direction = Vector2{-2.0, 1.0}.normalized();
++  for (const Unit3& p : {Unit3(), Unit3(2, -3, 1), Unit3(-1, 4, -2)}) {
++    const auto retract = [&p](const Vector2& v) { return p.retract(v); };
++    for (double radius : {0.0, 1e-16, 1e-12, 1e-8, 1e-6, 0.5e-4,
++                          1e-4, 2e-4, 0.1, 1.0, M_PI, 4.0}) {
++      const Vector2 v = radius * direction;
++      Matrix2 H;
++      const Unit3 actual = p.retract(v, H);
++      const Matrix2 expectedH = numericalDerivative11(retract, v);
++      EXPECT(assert_equal(expectedH, H, 1e-8));
++
++      // An independent construction rotates p around p x (B v).
++      const Vector3 axisAngle = p.unitVector().cross(p.basis() * v);
++      const Unit3 expected = Rot3::Expmap(axisAngle) * p;
++      EXPECT(assert_equal(expected, actual, 1e-12));
++      EXPECT(assert_equal(retract(v), actual, 1e-12));
++    }
+   }
+ }
+ 
+--- gtsam-4.3.0.orig/gtsam/nonlinear/DoglegOptimizerImpl.h
++++ gtsam-4.3.0/gtsam/nonlinear/DoglegOptimizerImpl.h
+@@ -331,10 +331,14 @@ typename DoglegOptimizerImpl::IterationR
+     std::cout << "Initial Step Error: " << result.f_error << std::endl;
+ 
+   // Validate Step size will terminate search
+-  if (step < 1e-12 || params.stepSize < 1.0)
++  if (params.stepSize <= 1.0)
+     throw std::runtime_error(
+         "Invalid DoglegLineSearch configuration. Would cause infinite search.");
+ 
++  // A zero Gauss-Newton step means x0 already minimizes the linear model, so
++  // there is nothing to search.
++  if (step < 1e-12) return result;
++
+   // Search Increase delta
+   double eps = std::numeric_limits<double>::epsilon();
+   while (step < maxStep - eps) {
+--- gtsam-4.3.0.orig/python/README.md
++++ gtsam-4.3.0/python/README.md
+@@ -8,9 +8,10 @@ For instructions on updating the version
+ 
+ ## Requirements
+ 
+-- Cmake >= 3.15
+-- If you want to build the GTSAM python library for a specific python version (eg 3.6),
+-  use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
++- CMake >= 3.16
++- The Python wrapper requires Python 3.8 or newer. To select a specific Python
++  version, use the `-DGTSAM_PYTHON_VERSION=<version>` option when running
++  `cmake`; otherwise, the default interpreter will be used.
+ - This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind11-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/).
+ 
+   > **Note:** On systems that enforce [PEP 668](https://peps.python.org/pep-0668/) (Homebrew Python on macOS, and the system Python on Ubuntu 23.04+, Fedora, Arch, and other modern distros), bare `pip install` is blocked. Create and activate a virtual environment first:
+@@ -34,9 +35,9 @@ For instructions on updating the version
+ 
+ ## Install
+ 
+-- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`. For example, if your local Python version is 3.6.10, then you should run:
++- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`. For example, if your local Python version is 3.8.0, then you should run:
+   ```bash
+-  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
++  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.8.0
+   ```
+   If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
+ - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
+--- gtsam-4.3.0.orig/tests/testDoglegOptimizer.cpp
++++ gtsam-4.3.0/tests/testDoglegOptimizer.cpp
+@@ -195,6 +195,33 @@ TEST(DoglegOptimizer, IterateLineSearch)
+ }
+ 
+ /* ************************************************************************* */
++// At the minimum of the linear model the Gauss-Newton step is zero, so there
++// is nothing to search: Iterate must return the zero step instead of reporting
++// an invalid configuration. A genuinely invalid configuration still throws.
++TEST(DoglegOptimizer, IterateLineSearchZeroGaussNewtonStep) {
++  NonlinearFactorGraph fg;
++  fg.addPrior(X(1), Point2(1.0, 2.0), noiseModel::Isotropic::Sigma(2, 0.1));
++  Values config;
++  config.insert(X(1), Point2(1.0, 2.0));  // already the minimum
++
++  auto gbn = fg.linearize(config)->eliminateSequential();
++  const VectorValues dx_u = gbn->optimizeGradientSearch();
++  const VectorValues dx_n = gbn->optimize();
++  DOUBLES_EQUAL(0.0, dx_n.norm(), 1e-12);
++
++  const DoglegOptimizerImpl::IterationResult result =
++      DoglegLineSearchImpl::Iterate({0.02, 0.5, 1.5, 1e-3, false}, dx_u, dx_n,
++                                    *gbn, fg, config);
++  DOUBLES_EQUAL(0.0, result.dx_d.norm(), 1e-12);
++  DOUBLES_EQUAL(fg.error(config), result.f_error, 1e-12);
++
++  // stepSize < 1 can never terminate the search: still a configuration error.
++  CHECK_EXCEPTION(DoglegLineSearchImpl::Iterate({0.02, 0.5, 0.5, 1e-3, false},
++                                                dx_u, dx_n, *gbn, fg, config),
++                  std::runtime_error);
++}
++
++/* ************************************************************************* */
+ TEST(DoglegOptimizer, Constraint) {
+   // Create a pose-graph graph with a constraint on the first pose
+   NonlinearFactorGraph graph;
+--- gtsam-4.3.0.orig/tests/testGaussianISAM2.cpp
++++ gtsam-4.3.0/tests/testGaussianISAM2.cpp
+@@ -374,6 +374,34 @@ TEST(ISAM2, SlamlikeSolutionDoglegLineSe
+ }
+ 
+ /* ************************************************************************* */
++// Initial values that already satisfy the factors give a zero Gauss-Newton
++// step. That is a valid state, not a bad line-search configuration:
++// calculateEstimate() must return the values rather than throw.
++TEST(ISAM2, DoglegLineSearchZeroGaussNewtonStep) {
++  NonlinearFactorGraph graph;
++  graph.addPrior(0, Pose2(1.0, 2.0, 0.3), noiseModel::Isotropic::Sigma(3, 0.1));
++  Values initial;
++  initial.insert(0, Pose2(1.0, 2.0, 0.3));  // exact
++
++  ISAM2 isam(ISAM2Params{ISAM2DoglegLineSearchParams{}});
++  isam.update(graph, initial);
++  // Threw "Would cause infinite search" before the fix; the test harness
++  // reports an uncaught exception as a failure.
++  Values estimate = isam.calculateEstimate();
++  EXPECT(assert_equal(initial, estimate));
++
++  // A later update that is also already consistent must not throw either.
++  NonlinearFactorGraph odometry;
++  odometry.emplace_shared<BetweenFactor<Pose2>>(
++      0, 1, Pose2(1.0, 0.0, 0.0), noiseModel::Isotropic::Sigma(3, 0.1));
++  Values next;
++  next.insert(1, Pose2(1.0, 2.0, 0.3).compose(Pose2(1.0, 0.0, 0.0)));
++  isam.update(odometry, next);
++  estimate = isam.calculateEstimate();
++  EXPECT(assert_equal(next.at<Pose2>(1), estimate.at<Pose2>(1)));
++}
++
++/* ************************************************************************* */
+ TEST(ISAM2, clone) {
+ 
+   ISAM2 clone1;

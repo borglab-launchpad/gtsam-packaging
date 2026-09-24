@@ -1,3 +1,25 @@
+gtsam (4.3.0-0ubuntu14~1.gbp4c053b) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @4c053b6553503ea86cea431ff38d013c749fcd3a **
+
+  [ Frank Dellaert ]
+  * version patch changes
+  * Update README citation for GTSAM 4.3.0
+  * Correct Python README requirements
+  * Simplify Unit3 retraction Jacobian and small-angle handling
+  * B + format
+
+  [ Jacob Oursland ]
+  * Fix DoglegLineSearch throwing on a zero Gauss-Newton step
+
+  [ Fan Jiang ]
+  * Add Notes on G-M and State Space Model
+
+  [ Bernd Pfrommer ]
+  * added empty patch file
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 24 Sep 2026 16:35:07 +0000
+
 gtsam (4.3.0-0ubuntu13) resolute; urgency=medium
 
   [ Frank Dellaert ]
