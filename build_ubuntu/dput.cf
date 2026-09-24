@@ -94,6 +94,13 @@ method			= sftp
 incoming		= ~%(ppa)s
 login			= *
 
+[gtsam-develop]
+fqdn			= ppa.launchpad.net
+method			= ftp
+incoming		= ~borglab/ubuntu/gtsam-develop/
+login			= anonymous
+allow_unsigned_uploads	= 0
+
 [ssh-ppa]
 fqdn			= ppa.launchpad.net
 method			= sftp

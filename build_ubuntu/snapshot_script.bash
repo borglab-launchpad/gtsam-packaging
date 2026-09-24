@@ -182,8 +182,7 @@ do
     # upload to ubuntu ppa server for building
     pushd ..
     echo "---- pushing to ppa: -----------"
-    find . -maxdepth 3
-    dput -c ./dput.cf "$ppa" ${flavor}_*_source.changes
+    dput -c ./dput.cf gtsam-develop ${flavor}_*_source.changes
     popd
     
     # now update the changelog to capture the new commits. This will
