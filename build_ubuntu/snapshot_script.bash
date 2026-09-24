@@ -180,7 +180,7 @@ do
     pushd ..
     echo "---- pushing to ppa: -----------"
     ls -la ${flavor}_*_source.changes
-    dput -P "$ppa" ${flavor}_*_source.changes
+    dput -c ./build_ubuntu/dput.cf "$ppa" ${flavor}_*_source.changes
     popd
     
     # now update the changelog to capture the new commits. This will
