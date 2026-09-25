@@ -1,3 +1,11 @@
+gtsam (4.3.0-0ubuntu14~6.gbp095e7d) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @095e7d73ad81d2135efe6acbf51cba41d4f1bed5 **
+
+  * modified changelog for distro resolute
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Sep 2026 12:08:42 +0000
+
 gtsam (4.3.0-0ubuntu14~5.gbp86cb36) resolute; urgency=medium
 
   ** SNAPSHOT build @86cb365b43c653c373cba2378556f869dbf7fb1f **
