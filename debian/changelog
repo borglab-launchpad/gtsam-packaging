@@ -1,10 +1,17 @@
-gtsam (4.3.0-0ubuntu14~3.gbp4de829) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~4.gbpe391d8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e391d8f6c0f7267288480e7fa726c8888384900e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4de829077fb57f218682237909f73de89f8a1a2e **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 24 Sep 2026 16:37:20 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Disable -Werror by default and enable it explicitly in CI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Sep 2026 12:06:26 +0000
 
 gtsam (4.3.0-0ubuntu14~2.gbp7ec9cf) resolute; urgency=medium
 

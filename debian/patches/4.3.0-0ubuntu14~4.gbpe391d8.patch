@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Sep, 24 2026 16:35:08 +0000
+Date: Sep, 25 2026 12:06:28 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -21,6 +21,164 @@ Forwarded: (no|not-needed|<patch-forwarded-url>)
 Applied-Upstream: <version>, (<commit-url>|commit:<commid-id>)
 Reviewed-By: <name and email of someone who approved/reviewed the patch>
 
+--- gtsam-4.3.0.orig/.github/scripts/python.sh
++++ gtsam-4.3.0/.github/scripts/python.sh
+@@ -79,6 +79,7 @@ function build()
+ 
+   cmake $GITHUB_WORKSPACE \
+       -B build -G Ninja \
++      -DGTSAM_BUILD_WITH_WERROR=ON \
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+       -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+--- gtsam-4.3.0.orig/.github/scripts/python_wheels/cibw_before_all.sh
++++ gtsam-4.3.0/.github/scripts/python_wheels/cibw_before_all.sh
+@@ -90,6 +90,7 @@ rm -rf CMakeCache.txt CMakeFiles
+ # Build the Python wrapper module
+ cmake $PROJECT_DIR \
+     -B build \
++    -DGTSAM_BUILD_WITH_WERROR=ON \
+     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+     -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+     -DGTSAM_BUILD_TESTS=OFF \
+--- gtsam-4.3.0.orig/.github/scripts/unix.sh
++++ gtsam-4.3.0/.github/scripts/unix.sh
+@@ -19,6 +19,7 @@ function configure()
+   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
+   cmake $GITHUB_WORKSPACE \
+       -B build -G Ninja \
++      -DGTSAM_BUILD_WITH_WERROR=ON \
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
+       -DCMAKE_CXX_FLAGS="-w" \
+       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+--- gtsam-4.3.0.orig/.github/workflows/build-cibw.yml
++++ gtsam-4.3.0/.github/workflows/build-cibw.yml
+@@ -130,6 +130,7 @@ jobs:
+       - name: Run CMake
+         run: |
+           cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+             -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+ 
+--- gtsam-4.3.0.orig/.github/workflows/build-linux-arm64.yml
++++ gtsam-4.3.0/.github/workflows/build-linux-arm64.yml
+@@ -27,6 +27,7 @@ jobs:
+       - name: Configure
+         run: |
+           cmake -S . -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=ON \
+--- gtsam-4.3.0.orig/.github/workflows/build-python.yml
++++ gtsam-4.3.0/.github/workflows/build-python.yml
+@@ -124,6 +124,7 @@ jobs:
+         shell: bash
+         run: >-
+           cmake -S . -B build -G Ninja
++          -DGTSAM_BUILD_WITH_WERROR=ON
+           -DCMAKE_BUILD_TYPE=Release
+           -DGTSAM_BUILD_TESTS=OFF
+           -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+--- gtsam-4.3.0.orig/.github/workflows/build-system-libraries.yml
++++ gtsam-4.3.0/.github/workflows/build-system-libraries.yml
+@@ -46,6 +46,7 @@ jobs:
+       - name: Configure with system libraries
+         run: |
+           cmake -S . -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_DISABLE_FIND_PACKAGE_CHOLMOD=ON \
+             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+--- gtsam-4.3.0.orig/.github/workflows/build-windows.yml
++++ gtsam-4.3.0/.github/workflows/build-windows.yml
+@@ -89,6 +89,7 @@ jobs:
+           cmake -E remove_directory build
+           if [ "${{ matrix.build_type }}" = "Release" ]; then
+             cmake -B build -G Ninja \
++                  -DGTSAM_BUILD_WITH_WERROR=ON \
+                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+@@ -102,6 +103,7 @@ jobs:
+                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+           else
+             cmake -B build -G Ninja \
++                  -DGTSAM_BUILD_WITH_WERROR=ON \
+                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+--- gtsam-4.3.0.orig/.github/workflows/prod-cibw.yml
++++ gtsam-4.3.0/.github/workflows/prod-cibw.yml
+@@ -111,6 +111,7 @@ jobs:
+       - name: Run CMake
+         run: |
+           cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+             -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+ 
+--- gtsam-4.3.0.orig/.github/workflows/time-sfmbal-benchmark-runner.yml
++++ gtsam-4.3.0/.github/workflows/time-sfmbal-benchmark-runner.yml
+@@ -82,6 +82,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -121,6 +122,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -198,6 +200,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -237,6 +240,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -312,6 +316,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -351,6 +356,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+--- gtsam-4.3.0.orig/.github/workflows/vcpkg.yml
++++ gtsam-4.3.0/.github/workflows/vcpkg.yml
+@@ -105,6 +105,7 @@ jobs:
+         shell: bash
+         run: |
+           cmake -B build -G Ninja \
++              -DGTSAM_BUILD_WITH_WERROR=ON \
+               -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
+               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
 --- gtsam-4.3.0.orig/CMakeLists.txt
 +++ gtsam-4.3.0/CMakeLists.txt
 @@ -6,20 +6,20 @@ endif()
@@ -72,6 +230,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  ```
  
+--- gtsam-4.3.0.orig/cmake/GtsamBuildTypes.cmake
++++ gtsam-4.3.0/cmake/GtsamBuildTypes.cmake
+@@ -86,12 +86,9 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIO
+ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING)
+ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING)
+ 
+-if("${CMAKE_PROJECT_NAME}" STREQUAL "GTSAM")
+-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT ON)
+-else()
+-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT OFF)
+-endif()
+-option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." ${GTSAM_BUILD_WITH_WERROR_DEFAULT})
++# Off by default: new compilers or system libraries may emit harmless warnings
++# that should not break distribution packages or user builds. CI enables it.
++option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." OFF)
+ 
+ if(MSVC)
+   # Common to all configurations:
 --- gtsam-4.3.0.orig/gtsam/geometry/Unit3.cpp
 +++ gtsam-4.3.0/gtsam/geometry/Unit3.cpp
 @@ -279,33 +279,35 @@ double Unit3::distance(const Unit3& q, O
