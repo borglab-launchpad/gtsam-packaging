@@ -150,6 +150,7 @@ snap=`head -1 debian/changelog | sed 's/.*[(]//g; s/[)].*//g'`
 # remove all previous patches so they don't collide with the new ones,
 # which are computed between the version stored in the pristine tar
 # ball and the current snapshot.
+echo "removing patches..."
 git rm -r debian/patches/*
 # now build patch file for difference between pristine -> snapshot
 # (must disable editor to get away without commit message)
@@ -157,6 +158,7 @@ EDITOR=/bin/true dpkg-source --include-removal --include-binaries --commit . ${s
 rm -rf .pc # remove this automatically created directory to avoid error
 
 # commit updated changelog, patch, and binary files
+echo "committing changelog, patches, and include-binaries"
 git add debian/changelog debian/patches debian/source/include-binaries
 git commit -a -m "updated changelog and patch files for snapshot $snap"
 
@@ -165,6 +167,7 @@ git commit -a -m "updated changelog and patch files for snapshot $snap"
 #
 for distro in noble resolute
 do
+    echo "building snapshot for $distro"
     # remove any old build files
     rm -f ../${flavor}_*.dsc ../${flavor}_*.build ../${flavor}_*.buildinfo ../${flavor}_*.changes ../*.upload
 
@@ -173,10 +176,12 @@ do
     sed -i -z "s/UNRELEASED\;/${distro}\;/g" debian/changelog
     # must commit changes to the changelog file or else the buildpackage
     # will barf
+    echo "committing debian/changelog"
     git add debian/changelog
     git commit -m "modified changelog for distro $distro"
     # this will actually build the source package, i.e. create the
     # stuff that can be uploaded to ubuntu's ppa farm for building
+    echo "building source package for debian branch: ${packaging_branch}"
     gbp buildpackage -k${gpg_key} -S -sa --git-debian-branch=${packaging_branch} --source-option="--include-removal"
 
     # upload to ubuntu ppa server for building
