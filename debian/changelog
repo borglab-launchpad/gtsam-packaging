@@ -1,3 +1,43 @@
+gtsam-no-tbb (4.3.0-0ubuntu16~1.gbp61d420) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @61d42020b89fff905126606a09bae5be9ea6f977 **
+
+  [ Frank Dellaert ]
+  * version patch changes
+  * Update README citation for GTSAM 4.3.0
+  * Correct Python README requirements
+  * Simplify Unit3 retraction Jacobian and small-angle handling
+  * B + format
+  * Simplify Unit3 retraction Jacobian and small-angle handling
+
+  [ Jacob Oursland ]
+  * Fix DoglegLineSearch throwing on a zero Gauss-Newton step
+
+  [ Fan Jiang ]
+  * Add Notes on G-M and State Space Model
+
+  [ Tobias Fischer ]
+  * Make testFindSeparator independent of METIS' partition labelling
+  * Don't export the absolute metis include path
+  * Let the caller override Boost_USE_STATIC_LIBS on MSVC
+  * Link Threads::Threads so std::thread resolves on older glibc
+  * Install the gtwrap CMake config where find_package looks
+  * Install the GTSAM CMake config in the same place on every platform
+  * Do not launch the linker through ccache
+  * Give the geometry tests unique names
+  * Compare the iSAM2 error relative to its magnitude
+  * Allow installing the Python package into CMAKE_INSTALL_PREFIX
+  * Add a conda build CI workflow driven by pixi
+  * Run the conda build from the nightly CI instead of on pull requests
+
+  [ Jose Luis Blanco-Claraco ]
+  * Disable -Werror by default and enable it explicitly in CI
+
+  [ Jash Shah ]
+  * Fix lost wakeup in Scheduler destructor that could hang joining workers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 27 Sep 2026 22:02:18 +0000
+
 gtsam-no-tbb (4.3.0-0ubuntu15) focal; urgency=medium
 
   [ Frank Dellaert ]
