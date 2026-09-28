@@ -1,10 +1,36 @@
-gtsam (4.3.0-0ubuntu14~6.gbp095e7d) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~7.gbp81c400) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @81c40002f61356149227ccde41f5880d89020ac4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @095e7d73ad81d2135efe6acbf51cba41d4f1bed5 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 25 Sep 2026 12:08:42 +0000
+  [ Tobias Fischer ]
+  * Make testFindSeparator independent of METIS' partition labelling
+  * Don't export the absolute metis include path
+  * Let the caller override Boost_USE_STATIC_LIBS on MSVC
+  * Link Threads::Threads so std::thread resolves on older glibc
+  * Install the gtwrap CMake config where find_package looks
+  * Install the GTSAM CMake config in the same place on every platform
+  * Do not launch the linker through ccache
+  * Give the geometry tests unique names
+  * Compare the iSAM2 error relative to its magnitude
+  * Allow installing the Python package into CMAKE_INSTALL_PREFIX
+  * Add a conda build CI workflow driven by pixi
+  * Run the conda build from the nightly CI instead of on pull requests
+
+  [ Frank Dellaert ]
+  * Simplify Unit3 retraction Jacobian and small-angle handling
+
+  [ Jash Shah ]
+  * Find Threads in GTSAMConfig so find_package(GTSAM) works again
+  * Fix ISAM2::marginalizeLeaves skipping a leaf clique that does not depend on its parent's marginalized keys
+  * Fix lost wakeup in Scheduler destructor that could hang joining workers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Sep 2026 18:52:41 +0000
 
 gtsam (4.3.0-0ubuntu14~5.gbp86cb36) resolute; urgency=medium
 
