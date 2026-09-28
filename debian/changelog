@@ -1,3 +1,9 @@
+gtsam (4.3.0-0ubuntu13) resolute; urgency=medium
+
+  * Disable -Werror by default and enable it explicitly in CI
+
+ -- Bernd Pfrommer <bernd.pfrommer@gmail.com>  Mon, 28 Sep 2026 08:27:39 -0400
+
 gtsam (4.3.0-0ubuntu12) jammy; urgency=medium
 
   * reverted back to using system libsuitesparse
