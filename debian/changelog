@@ -1,10 +1,17 @@
-gtsam (4.3.0-0ubuntu14~9.gbp4e1683) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~10.gbp04ec5c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @04ec5c0b3d5d7d08e92d9a8a4c1ce58c6a29a67f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4e1683cc0ad96ac387b6aa9ba815600c8c1d9f4f **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Sep 2026 18:54:53 +0000
+  [ dellaert ]
+  * Update pixi lockfile
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Sep 2026 22:39:19 +0000
 
 gtsam (4.3.0-0ubuntu14~8.gbp2c3860) resolute; urgency=medium
 
