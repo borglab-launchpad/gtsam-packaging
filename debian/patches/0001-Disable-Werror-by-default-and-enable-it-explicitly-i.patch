@@ -1,0 +1,225 @@
+From: Jose Luis Blanco-Claraco <joseluisblancoc@gmail.com>
+Date: Thu, 24 Sep 2026 18:19:17 +0200
+Subject: Disable -Werror by default and enable it explicitly in CI
+
+Warnings-as-errors is a useful gate for GTSAM's own CI, but in downstream
+builds (distribution packages, user builds) new compilers, hardening/LTO
+flags or system libraries can emit harmless warnings that break the build.
+Make GTSAM_BUILD_WITH_WERROR default to OFF, and pass
+-DGTSAM_BUILD_WITH_WERROR=ON to every CMake configure step in the GitHub
+workflows and CI scripts.
+---
+ .github/scripts/python.sh                          | 1 +
+ .github/scripts/python_wheels/cibw_before_all.sh   | 1 +
+ .github/scripts/unix.sh                            | 1 +
+ .github/workflows/build-cibw.yml                   | 1 +
+ .github/workflows/build-linux-arm64.yml            | 1 +
+ .github/workflows/build-python.yml                 | 1 +
+ .github/workflows/build-system-libraries.yml       | 1 +
+ .github/workflows/build-windows.yml                | 2 ++
+ .github/workflows/prod-cibw.yml                    | 1 +
+ .github/workflows/time-sfmbal-benchmark-runner.yml | 6 ++++++
+ .github/workflows/vcpkg.yml                        | 1 +
+ cmake/GtsamBuildTypes.cmake                        | 9 +++------
+ 12 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/.github/scripts/python.sh b/.github/scripts/python.sh
+index eb5aa5e..28e3a02 100644
+--- a/.github/scripts/python.sh
++++ b/.github/scripts/python.sh
+@@ -79,6 +79,7 @@ function build()
+ 
+   cmake $GITHUB_WORKSPACE \
+       -B build -G Ninja \
++      -DGTSAM_BUILD_WITH_WERROR=ON \
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+       -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+diff --git a/.github/scripts/python_wheels/cibw_before_all.sh b/.github/scripts/python_wheels/cibw_before_all.sh
+index 4ba1f0c..9278aa6 100644
+--- a/.github/scripts/python_wheels/cibw_before_all.sh
++++ b/.github/scripts/python_wheels/cibw_before_all.sh
+@@ -90,6 +90,7 @@ rm -rf CMakeCache.txt CMakeFiles
+ # Build the Python wrapper module
+ cmake $PROJECT_DIR \
+     -B build \
++    -DGTSAM_BUILD_WITH_WERROR=ON \
+     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+     -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+     -DGTSAM_BUILD_TESTS=OFF \
+diff --git a/.github/scripts/unix.sh b/.github/scripts/unix.sh
+index eaa96d3..b95d22a 100755
+--- a/.github/scripts/unix.sh
++++ b/.github/scripts/unix.sh
+@@ -19,6 +19,7 @@ function configure()
+   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
+   cmake $GITHUB_WORKSPACE \
+       -B build -G Ninja \
++      -DGTSAM_BUILD_WITH_WERROR=ON \
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
+       -DCMAKE_CXX_FLAGS="-w" \
+       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+diff --git a/.github/workflows/build-cibw.yml b/.github/workflows/build-cibw.yml
+index 33b46a5..a945d7e 100644
+--- a/.github/workflows/build-cibw.yml
++++ b/.github/workflows/build-cibw.yml
+@@ -130,6 +130,7 @@ jobs:
+       - name: Run CMake
+         run: |
+           cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+             -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+ 
+diff --git a/.github/workflows/build-linux-arm64.yml b/.github/workflows/build-linux-arm64.yml
+index e75d54f..29ea5a1 100644
+--- a/.github/workflows/build-linux-arm64.yml
++++ b/.github/workflows/build-linux-arm64.yml
+@@ -27,6 +27,7 @@ jobs:
+       - name: Configure
+         run: |
+           cmake -S . -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=ON \
+diff --git a/.github/workflows/build-python.yml b/.github/workflows/build-python.yml
+index f7458cc..de1f8f9 100644
+--- a/.github/workflows/build-python.yml
++++ b/.github/workflows/build-python.yml
+@@ -124,6 +124,7 @@ jobs:
+         shell: bash
+         run: >-
+           cmake -S . -B build -G Ninja
++          -DGTSAM_BUILD_WITH_WERROR=ON
+           -DCMAKE_BUILD_TYPE=Release
+           -DGTSAM_BUILD_TESTS=OFF
+           -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+diff --git a/.github/workflows/build-system-libraries.yml b/.github/workflows/build-system-libraries.yml
+index ed13580..d18ca00 100644
+--- a/.github/workflows/build-system-libraries.yml
++++ b/.github/workflows/build-system-libraries.yml
+@@ -46,6 +46,7 @@ jobs:
+       - name: Configure with system libraries
+         run: |
+           cmake -S . -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_DISABLE_FIND_PACKAGE_CHOLMOD=ON \
+             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+diff --git a/.github/workflows/build-windows.yml b/.github/workflows/build-windows.yml
+index b8c7b19..62b7cdd 100644
+--- a/.github/workflows/build-windows.yml
++++ b/.github/workflows/build-windows.yml
+@@ -89,6 +89,7 @@ jobs:
+           cmake -E remove_directory build
+           if [ "${{ matrix.build_type }}" = "Release" ]; then
+             cmake -B build -G Ninja \
++                  -DGTSAM_BUILD_WITH_WERROR=ON \
+                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+@@ -102,6 +103,7 @@ jobs:
+                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+           else
+             cmake -B build -G Ninja \
++                  -DGTSAM_BUILD_WITH_WERROR=ON \
+                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+diff --git a/.github/workflows/prod-cibw.yml b/.github/workflows/prod-cibw.yml
+index 23f2726..335eac3 100644
+--- a/.github/workflows/prod-cibw.yml
++++ b/.github/workflows/prod-cibw.yml
+@@ -111,6 +111,7 @@ jobs:
+       - name: Run CMake
+         run: |
+           cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+             -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+ 
+diff --git a/.github/workflows/time-sfmbal-benchmark-runner.yml b/.github/workflows/time-sfmbal-benchmark-runner.yml
+index 6ebceee..99818f0 100644
+--- a/.github/workflows/time-sfmbal-benchmark-runner.yml
++++ b/.github/workflows/time-sfmbal-benchmark-runner.yml
+@@ -82,6 +82,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -121,6 +122,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -198,6 +200,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -237,6 +240,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -312,6 +316,7 @@ jobs:
+       - name: Configure (TBB=ON)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+@@ -351,6 +356,7 @@ jobs:
+       - name: Configure (TBB=OFF)
+         run: |
+           cmake -B build -G Ninja \
++            -DGTSAM_BUILD_WITH_WERROR=ON \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-w" \
+             -DGTSAM_BUILD_TESTS=OFF \
+diff --git a/.github/workflows/vcpkg.yml b/.github/workflows/vcpkg.yml
+index dee1842..c3e99a1 100644
+--- a/.github/workflows/vcpkg.yml
++++ b/.github/workflows/vcpkg.yml
+@@ -105,6 +105,7 @@ jobs:
+         shell: bash
+         run: |
+           cmake -B build -G Ninja \
++              -DGTSAM_BUILD_WITH_WERROR=ON \
+               -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
+               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+diff --git a/cmake/GtsamBuildTypes.cmake b/cmake/GtsamBuildTypes.cmake
+index b9271e2..5c91c4a 100644
+--- a/cmake/GtsamBuildTypes.cmake
++++ b/cmake/GtsamBuildTypes.cmake
+@@ -86,12 +86,9 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE)
+ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING)
+ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING)
+ 
+-if("${CMAKE_PROJECT_NAME}" STREQUAL "GTSAM")
+-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT ON)
+-else()
+-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT OFF)
+-endif()
+-option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." ${GTSAM_BUILD_WITH_WERROR_DEFAULT})
++# Off by default: new compilers or system libraries may emit harmless warnings
++# that should not break distribution packages or user builds. CI enables it.
++option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." OFF)
+ 
+ if(MSVC)
+   # Common to all configurations:
