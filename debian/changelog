@@ -1,10 +1,22 @@
-gtsam (4.3.0-0ubuntu14~12.gbpfb780c) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~13.gbpc032f9) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c032f993975363cf2b6cbca727f4c97919df7f71 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @fb780cfdfad82dd53757b994ee40100807b7ac4f **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Sep 2026 22:41:40 +0000
+  [ bboyack ]
+  * Added functionality to 'freeze' nodes in fixed lag smoothers so that they don't get marginalized out.
+  * Added more override functions for HessianFactor constructor to the python bindings.
+  * Changed variables from frozen/unfrozen to retained/released as they are consistently optimized. Included the gtsam_unstable serialization test.
+  * Undid the unstable serialization as I found the gtsam/base/serialize file and it's implementations.
+  * Address review feedback on fixed-lag smoother key retention
+  * Added a  check to FixedLagSmoother::findKeysBefore to speed up operation for those not using any retained keys.
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 03:14:14 +0000
 
 gtsam (4.3.0-0ubuntu14~11.gbp040ca4) resolute; urgency=medium
 

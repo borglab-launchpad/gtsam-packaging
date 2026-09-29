@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Sep, 28 2026 22:39:21 +0000
+Date: Sep, 29 2026 03:14:15 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -802,6 +802,138 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  }
  
+--- gtsam-4.3.0.orig/gtsam/linear/linear.i
++++ gtsam-4.3.0/gtsam/linear/linear.i
+@@ -560,6 +560,7 @@ virtual class HessianFactor : gtsam::Gau
+   HessianFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3, gtsam::Matrix G11, gtsam::Matrix G12, gtsam::Matrix G13,
+       gtsam::Vector g1, gtsam::Matrix G22, gtsam::Matrix G23, gtsam::Vector g2, gtsam::Matrix G33, gtsam::Vector g3,
+       double f);
++  HessianFactor(const gtsam::KeyVector& keys, const gtsam::SymmetricBlockMatrix& augmentedInformation);
+   HessianFactor(const gtsam::GaussianFactorGraph& factors);
+ 
+   //Standard Interface
+--- gtsam-4.3.0.orig/gtsam/nonlinear/BatchFixedLagSmoother.cpp
++++ gtsam-4.3.0/gtsam/nonlinear/BatchFixedLagSmoother.cpp
+@@ -55,6 +55,22 @@ Matrix BatchFixedLagSmoother::marginalCo
+ FixedLagSmoother::Result BatchFixedLagSmoother::update(
+     const NonlinearFactorGraph& newFactors, const Values& newTheta,
+     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
++  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, KeySet(), KeySet());
++}
++
++/* ************************************************************************* */
++FixedLagSmoother::Result BatchFixedLagSmoother::update(
++    const NonlinearFactorGraph& newFactors, const Values& newTheta,
++    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
++    const KeySet& keysToRetain, const KeySet& keysToRelease) {
++  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, keysToRetain, keysToRelease);
++}
++
++/* ************************************************************************* */
++FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
++    const NonlinearFactorGraph& newFactors, const Values& newTheta,
++    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
++    const KeySet& keysToRetain, const KeySet& keysToRelease) {
+ 
+   // Capture keys touched by explicit removals before adding new factors. They
+   // are removed below only when no replacement factor still references them.
+@@ -86,6 +102,17 @@ FixedLagSmoother::Result BatchFixedLagSm
+     }
+   }
+ 
++  // Retention names a variable, so it must be one the smoother holds or one
++  // arriving in this update. Validate before any state mutation.
++  for (const Key key : keysToRetain) {
++    if (!theta_.exists(key) && !newTheta.exists(key)) {
++      throw invalid_argument(
++          "BatchFixedLagSmoother::update: cannot retain key '" +
++          DefaultKeyFormatter(key) +
++          "', because no value exists in the smoother or newTheta.");
++    }
++  }
++
+   // Update all of the internal variables with the new information
+   gttic(augment_system);
+   // Add the new variables to theta
+@@ -105,6 +132,10 @@ FixedLagSmoother::Result BatchFixedLagSm
+   // reappear as a timestamp-only entry after its state is erased.
+   updateKeyTimestampMap(timestamps);
+ 
++  // Apply retain/release before computing marginalization candidates so that
++  // releasing takes effect immediately in this same update call
++  updateRetainedKeys(keysToRetain, keysToRelease);
++
+   // Preserve this update's cutoff even if the newest state is removed below.
+   const double current_timestamp = getCurrentTimestamp();
+ 
+@@ -120,7 +151,8 @@ FixedLagSmoother::Result BatchFixedLagSm
+   }
+   eraseKeys(unusedKeys);
+ 
+-  // Find the set of variables to be marginalized out
++  // Find the set of variables to be marginalized out (retained keys are excluded
++  // inside findKeysBefore)
+   KeyVector marginalizableKeys = findKeysBefore(
+       current_timestamp - smootherLag_);
+ 
+--- gtsam-4.3.0.orig/gtsam/nonlinear/BatchFixedLagSmoother.h
++++ gtsam-4.3.0/gtsam/nonlinear/BatchFixedLagSmoother.h
+@@ -78,6 +78,40 @@ public:
+                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                 const FactorIndices& factorsToRemove = FactorIndices()) override;
+ 
++  /**
++   * Add new factors as in update(), and also change the persistent set of
++   * retained keys before choosing which variables to marginalize.
++   *
++   * A retained key is never marginalized because of the lag, however old its
++   * timestamp; it stays retained across later updates, including calls to the
++   * four-argument update(), until it is released. Releasing a key whose
++   * timestamp is already outside the lag window marginalizes it in this same
++   * update. The retained set is changed only after the update is validated, so
++   * a rejected update leaves it unchanged.
++   *
++   * Every key in keysToRetain must name a value the smoother already holds or
++   * one supplied in newTheta in this update. Releasing a key that is not
++   * retained has no effect. A retained key is dropped from the set when its
++   * variable is removed from the smoother, for example because its last factor
++   * was removed.
++   *
++   * This overload is available only on the concrete smoother; calls through a
++   * FixedLagSmoother reference use the four-argument update().
++   *
++   * @param keysToRetain  keys to add to the retained set
++   * @param keysToRelease keys to remove from the retained set; applied after
++   *                      keysToRetain, so a key in both is released
++   * @throws std::invalid_argument identifying a key in keysToRetain with no
++   * value in the smoother or newTheta, in addition to the exceptions thrown by
++   * the four-argument update().
++   */
++  Result update(const NonlinearFactorGraph& newFactors,
++                const Values& newTheta,
++                const KeyTimestampMap& timestamps,
++                const FactorIndices& factorsToRemove,
++                const KeySet& keysToRetain,
++                const KeySet& keysToRelease = KeySet());
++
+   /** Compute an estimate from the incomplete linear delta computed during the last update.
+    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
+    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
+@@ -182,6 +216,14 @@ protected:
+   /** A cross-reference structure to allow efficient factor lookups by key **/
+   FactorIndex factorIndex_;
+ 
++  /** Shared body of both update() overloads. */
++  Result updateImpl(const NonlinearFactorGraph& newFactors,
++                    const Values& newTheta,
++                    const KeyTimestampMap& timestamps,
++                    const FactorIndices& factorsToRemove,
++                    const KeySet& keysToRetain,
++                    const KeySet& keysToRelease);
++
+   /** Augment the list of factors with a set of new factors */
+   void insertFactors(const NonlinearFactorGraph& newFactors);
+ 
 --- gtsam-4.3.0.orig/gtsam/nonlinear/DoglegOptimizerImpl.h
 +++ gtsam-4.3.0/gtsam/nonlinear/DoglegOptimizerImpl.h
 @@ -331,10 +331,14 @@ typename DoglegOptimizerImpl::IterationR
@@ -820,6 +952,103 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // Search Increase delta
    double eps = std::numeric_limits<double>::epsilon();
    while (step < maxStep - eps) {
+--- gtsam-4.3.0.orig/gtsam/nonlinear/FixedLagSmoother.cpp
++++ gtsam-4.3.0/gtsam/nonlinear/FixedLagSmoother.cpp
+@@ -42,7 +42,8 @@ void FixedLagSmoother::print(const std::
+ /* ************************************************************************* */
+ bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
+   return std::abs(smootherLag_ - rhs.smootherLag_) < tol
+-      && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin());
++      && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin())
++      && retainedKeys_ == rhs.retainedKeys_;
+ }
+ 
+ /* ************************************************************************* */
+@@ -76,8 +77,22 @@ void FixedLagSmoother::updateKeyTimestam
+ }
+ 
+ /* ************************************************************************* */
++void FixedLagSmoother::updateRetainedKeys(const KeySet& keysToRetain,
++                                        const KeySet& keysToRelease) {
++  for (Key key : keysToRetain) {
++    retainedKeys_.insert(key);
++  }
++  for (Key key : keysToRelease) {
++    retainedKeys_.erase(key);
++  }
++}
++
++/* ************************************************************************* */
+ void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
+   for(Key key: keys) {
++    // Also remove from retained set so it stays consistent after marginalization
++    retainedKeys_.erase(key);
++
+     // Erase the key from the Timestamp->Key map
+     const auto entry = keyTimestampMap_.find(key);
+     if (entry == keyTimestampMap_.end()) {
+@@ -119,8 +134,17 @@ double FixedLagSmoother::getCurrentTimes
+ KeyVector FixedLagSmoother::findKeysBefore(double timestamp) const {
+   KeyVector keys;
+   TimestampKeyMap::const_iterator end = timestampKeyMap_.lower_bound(timestamp);
+-  for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
+-    keys.push_back(iter->second);
++  if (retainedKeys_.empty()) {
++    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
++      keys.push_back(iter->second);
++    }
++  } else {
++    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
++      // Skip keys that have been retained — they are exempt from auto-marginalization
++      if (retainedKeys_.count(iter->second) == 0) {
++        keys.push_back(iter->second);
++      }
++    }
+   }
+   return keys;
+ }
+--- gtsam-4.3.0.orig/gtsam/nonlinear/FixedLagSmoother.h
++++ gtsam-4.3.0/gtsam/nonlinear/FixedLagSmoother.h
+@@ -106,6 +106,11 @@ public:
+     return keyTimestampMap_;
+   }
+ 
++  /// Keys exempt from lag-based marginalization until they are released.
++  const KeySet& retainedKeys() const {
++    return retainedKeys_;
++  }
++
+   /** Add new factors, updating the solution and relinearizing as needed. */
+   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+                         const Values& newTheta = Values(),
+@@ -138,16 +143,25 @@ protected:
+   TimestampKeyMap timestampKeyMap_;
+   KeyTimestampMap keyTimestampMap_;
+ 
++  /** Keys exempt from lag-based marginalization, excluded by findKeysBefore(). */
++  KeySet retainedKeys_;
++
+   /** Update the Timestamps associated with the keys */
+   void updateKeyTimestampMap(const KeyTimestampMap& newTimestamps);
+ 
+-  /** Erase keys from the Key-Timestamps database */
++  /** Erase keys from the Key-Timestamps database and the retained set. */
+   void eraseKeyTimestampMap(const KeyVector& keys);
+ 
++  /**
++   * Insert keysToRetain into the retained set, then erase keysToRelease. Call
++   * this before findKeysBefore() so a release takes effect in the same update.
++   */
++  void updateRetainedKeys(const KeySet& keysToRetain, const KeySet& keysToRelease);
++
+   /** Find the most recent timestamp of the system */
+   double getCurrentTimestamp() const;
+ 
+-  /** Find all of the keys associated with timestamps before the provided time */
++  /** Find the keys with timestamps before the provided time, skipping retained keys. */
+   KeyVector findKeysBefore(double timestamp) const;
+ 
+   /** Find all of the keys associated with timestamps before the provided time */
 --- gtsam-4.3.0.orig/gtsam/nonlinear/ISAM2.cpp
 +++ gtsam-4.3.0/gtsam/nonlinear/ISAM2.cpp
 @@ -606,10 +606,16 @@ void ISAM2::marginalizeLeaves(
@@ -842,6 +1071,351 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        }
  
        // See if we should remove the whole clique
+--- gtsam-4.3.0.orig/gtsam/nonlinear/IncrementalFixedLagSmoother.cpp
++++ gtsam-4.3.0/gtsam/nonlinear/IncrementalFixedLagSmoother.cpp
+@@ -47,6 +47,22 @@ bool IncrementalFixedLagSmoother::equals
+ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
+     const NonlinearFactorGraph& newFactors, const Values& newTheta,
+     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
++  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, KeySet(), KeySet());
++}
++
++/* ************************************************************************* */
++FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
++    const NonlinearFactorGraph& newFactors, const Values& newTheta,
++    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
++    const KeySet& keysToRetain, const KeySet& keysToRelease) {
++  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, keysToRetain, keysToRelease);
++}
++
++/* ************************************************************************* */
++FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
++    const NonlinearFactorGraph& newFactors, const Values& newTheta,
++    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
++    const KeySet& keysToRetain, const KeySet& keysToRelease) {
+ 
+   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
+ 
+@@ -88,16 +104,32 @@ FixedLagSmoother::Result IncrementalFixe
+     }
+   }
+ 
++  // Retention names a variable, so it must be one the smoother holds or one
++  // arriving in this update. Validate before any state mutation.
++  for (const Key key : keysToRetain) {
++    if (!isam_.valueExists(key) && !newTheta.exists(key)) {
++      throw std::invalid_argument(
++          "IncrementalFixedLagSmoother::update: cannot retain key '" +
++          DefaultKeyFormatter(key) +
++          "', because no value exists in the smoother or newTheta.");
++    }
++  }
++
+   // Update the Timestamps associated with the factor keys
+   updateKeyTimestampMap(timestamps);
+ 
++  // Apply retain/release before computing marginalization candidates so that
++  // releasing takes effect immediately in this same update call
++  updateRetainedKeys(keysToRetain, keysToRelease);
++
+   // Get current timestamp
+   double current_timestamp = getCurrentTimestamp();
+ 
+   if (debug)
+     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
+ 
+-  // Find the set of variables to be marginalized out
++  // Find the set of variables to be marginalized out (retained keys are excluded
++  // inside findKeysBefore, so recently released keys are now eligible here)
+   KeyVector marginalizableKeys = findKeysBefore(
+       current_timestamp - smootherLag_);
+ 
+--- gtsam-4.3.0.orig/gtsam/nonlinear/IncrementalFixedLagSmoother.h
++++ gtsam-4.3.0/gtsam/nonlinear/IncrementalFixedLagSmoother.h
+@@ -59,10 +59,10 @@ public:
+ 
+   /**
+    * Add new factors, updating the solution and re-linearizing as needed.
+-   * @param newFactors new factors on old and/or new variables
+-   * @param newTheta new values for new variables only
+-   * @param timestamps an (optional) map from keys to real time stamps
+-   * @param factorsToRemove an (optional) list of factors to remove.
++   * @param newFactors      new factors on old and/or new variables
++   * @param newTheta        new values for new variables only
++   * @param timestamps      an (optional) map from keys to real time stamps
++   * @param factorsToRemove an (optional) list of factors to remove
+    *
+    * Every key in @p timestamps must name a value the smoother already holds or
+    * one supplied in @p newTheta in this update; otherwise the update throws
+@@ -87,10 +87,44 @@ public:
+    * the smoother or in @p newTheta.
+    */
+   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+-                const Values& newTheta = Values(), //
++                const Values& newTheta = Values(),
+                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                 const FactorIndices& factorsToRemove = FactorIndices()) override;
+ 
++  /**
++   * Add new factors as in update(), and also change the persistent set of
++   * retained keys before choosing which variables to marginalize.
++   *
++   * A retained key is never marginalized because of the lag, however old its
++   * timestamp; it stays retained across later updates, including calls to the
++   * four-argument update(), until it is released. Releasing a key whose
++   * timestamp is already outside the lag window marginalizes it in this same
++   * update. The retained set is changed only after the update is validated, so
++   * a rejected update leaves it unchanged.
++   *
++   * Every key in keysToRetain must name a value the smoother already holds or
++   * one supplied in newTheta in this update. Releasing a key that is not
++   * retained has no effect. A retained key is dropped from the set when its
++   * variable is removed from the smoother, for example because its last factor
++   * was removed.
++   *
++   * This overload is available only on the concrete smoother; calls through a
++   * FixedLagSmoother reference use the four-argument update().
++   *
++   * @param keysToRetain  keys to add to the retained set
++   * @param keysToRelease keys to remove from the retained set; applied after
++   *                      keysToRetain, so a key in both is released
++   * @throws std::invalid_argument identifying a key in keysToRetain with no
++   * value in the smoother or newTheta, in addition to the exceptions thrown by
++   * the four-argument update().
++   */
++  Result update(const NonlinearFactorGraph& newFactors,
++                const Values& newTheta,
++                const KeyTimestampMap& timestamps,
++                const FactorIndices& factorsToRemove,
++                const KeySet& keysToRetain,
++                const KeySet& keysToRelease = KeySet());
++
+   /** Compute an estimate from the incomplete linear delta computed during the last update.
+    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
+    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
+@@ -162,6 +196,14 @@ protected:
+   /** Store results of latest isam2 update */
+   ISAM2Result isamResult_;
+ 
++  /// Shared body of both update() overloads.
++  Result updateImpl(const NonlinearFactorGraph& newFactors,
++                    const Values& newTheta,
++                    const KeyTimestampMap& timestamps,
++                    const FactorIndices& factorsToRemove,
++                    const KeySet& keysToRetain,
++                    const KeySet& keysToRelease);
++
+   /** Erase any keys associated with timestamps before the provided time */
+   void eraseKeysBefore(double timestamp);
+ 
+--- gtsam-4.3.0.orig/gtsam/nonlinear/nonlinear.i
++++ gtsam-4.3.0/gtsam/nonlinear/nonlinear.i
+@@ -997,6 +997,7 @@ virtual class FixedLagSmoother {
+   const gtsam::FixedLagSmootherKeyTimestampMap& timestamps() const;
+   double smootherLag() const;
+   void setSmootherLag(double smootherLag);
++  const gtsam::KeySet& retainedKeys() const;
+ 
+   gtsam::FixedLagSmootherResult update(
+       const gtsam::NonlinearFactorGraph& newFactors =
+@@ -1023,6 +1024,22 @@ virtual class BatchFixedLagSmoother : gt
+   const gtsam::Ordering& getOrdering() const;
+   const gtsam::VectorValues& getDelta() const;
+ 
++  gtsam::FixedLagSmootherResult update(
++      const gtsam::NonlinearFactorGraph& newFactors =
++          gtsam::NonlinearFactorGraph(),
++      const gtsam::Values& newTheta = gtsam::Values(),
++      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
++          gtsam::FixedLagSmootherKeyTimestampMap(),
++      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
++
++  gtsam::FixedLagSmootherResult update(
++      const gtsam::NonlinearFactorGraph& newFactors,
++      const gtsam::Values& newTheta,
++      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
++      const gtsam::FactorIndices& factorsToRemove,
++      const gtsam::KeySet& keysToRetain,
++      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
++
+   template <VALUE = {double, gtsam::Point2, gtsam::Rot2, gtsam::Pose2,
+                      gtsam::Point3, gtsam::Rot3, gtsam::Pose3,
+                      gtsam::NavState, gtsam::SL4, gtsam::Similarity2,
+@@ -1048,6 +1065,22 @@ virtual class IncrementalFixedLagSmoothe
+   const gtsam::ISAM2& getISAM2() const;
+   const gtsam::ISAM2Result& getISAM2Result() const;
+ 
++  gtsam::FixedLagSmootherResult update(
++      const gtsam::NonlinearFactorGraph& newFactors =
++          gtsam::NonlinearFactorGraph(),
++      const gtsam::Values& newTheta = gtsam::Values(),
++      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
++          gtsam::FixedLagSmootherKeyTimestampMap(),
++      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
++
++  gtsam::FixedLagSmootherResult update(
++      const gtsam::NonlinearFactorGraph& newFactors,
++      const gtsam::Values& newTheta,
++      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
++      const gtsam::FactorIndices& factorsToRemove,
++      const gtsam::KeySet& keysToRetain,
++      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
++
+   // Mirrors gtsam::ISAM2::calculateEstimate<VALUE>, which this forwards to.
+   template <VALUE = {double,
+                      gtsam::Point2,
+--- gtsam-4.3.0.orig/gtsam/nonlinear/tests/testBatchFixedLagSmoother.cpp
++++ gtsam-4.3.0/gtsam/nonlinear/tests/testBatchFixedLagSmoother.cpp
+@@ -35,6 +35,7 @@
+ 
+ using namespace std;
+ using namespace gtsam;
++using symbol_shorthand::X;
+ 
+ 
+ /* ************************************************************************* */
+@@ -738,5 +739,141 @@ TEST(BatchFixedLagSmoother, ValidatesRem
+ }  // namespace removal_validation
+ /* ************************************************************************* */
+ 
++/* ************************************************************************* */
++namespace retention {
++
++using Timestamps = BatchFixedLagSmoother::KeyTimestampMap;
++const SharedDiagonal kNoise = noiseModel::Isotropic::Sigma(2, 0.1);
++
++// A retained key survives far outside the lag window across later four-argument
++// updates, and is marginalized in the same update that releases it.
++TEST(BatchFixedLagSmoother, RetainAndRelease) {
++  BatchFixedLagSmoother smoother(10.0, LevenbergMarquardtParams());
++
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0, 0), kNoise);
++  Values values;
++  values.insert(X(0), Point2(0, 0));
++  smoother.update(factors, values, {{X(0), 0.0}});
++
++  // Add X(1) at t=2 and retain it.
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1, 0), kNoise);
++  values = Values();
++  values.insert(X(1), Point2(1, 0));
++  smoother.update(factors, values, {{X(1), 2.0}}, FactorIndices(),
++                  KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++
++  // Advance to t=50 one state at a time, far past the lag for X(1).
++  for (size_t i = 2; i <= 25; ++i) {
++    factors = NonlinearFactorGraph();
++    factors.emplace_shared<BetweenFactor<Point2>>(X(i - 1), X(i), Point2(1, 0),
++                                                  kNoise);
++    values = Values();
++    values.insert(X(i), Point2(double(i), 0));
++    smoother.update(factors, values, {{X(i), 2.0 * i}});
++  }
++
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++  EXPECT(smoother.timestamps().count(X(1)) == 1);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
++  EXPECT(assert_equal(Point2(1, 0), smoother.calculateEstimate<Point2>(X(1)),
++                      1e-2));
++
++  // Releasing X(1), whose timestamp is outside the lag, marginalizes it now.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet(), KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(smoother.timestamps().count(X(1)) == 0);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
++}
++
++// Retaining a key that is neither in the smoother nor in newTheta throws, and
++// the rejected update leaves the smoother unchanged.
++TEST(BatchFixedLagSmoother, RejectsRetainingUnknownKey) {
++  BatchFixedLagSmoother smoother(1.0, LevenbergMarquardtParams());
++
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0, 0), kNoise);
++  Values values;
++  values.insert(X(0), Point2(0, 0));
++  smoother.update(factors, values, {{X(0), 0.0}});
++
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(2), Point2(1, 0), kNoise);
++  values = Values();
++  values.insert(X(2), Point2(1, 0));
++  CHECK_EXCEPTION((smoother.update(factors, values, {{X(2), 5.0}},
++                                   FactorIndices(), KeySet{X(1)})),
++                  std::invalid_argument);
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(smoother.timestamps().count(X(2)) == 0);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(2)));
++
++  // A key the smoother already holds can be retained without new values.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet{X(0)});
++  EXPECT(smoother.retainedKeys().exists(X(0)));
++}
++
++// Retaining X(1) while both of its neighbors, X(0) and X(2), expire in the same
++// update marginalizes both neighbors and keeps the full-history solution for
++// X(1) and X(3). Releasing X(1) later marginalizes it immediately, because its
++// timestamp is already outside the lag. This is the scenario of
++// borglab/gtsam#2825.
++TEST(BatchFixedLagSmoother, RetainKeyWhileBothNeighborsExpire) {
++  BatchFixedLagSmoother smoother(5.0, LevenbergMarquardtParams());
++  NonlinearFactorGraph fullGraph;
++  Values fullValues;
++
++  // Prior on X(0) and the chain X(0)-X(1)-X(2), all at t=0, retaining X(1).
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0.0, 0.0), kNoise);
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1.0, 0.0),
++                                                kNoise);
++  factors.emplace_shared<BetweenFactor<Point2>>(X(1), X(2), Point2(1.0, 0.5),
++                                                kNoise);
++  Values values;
++  values.insert(X(0), Point2(0.1, -0.1));
++  values.insert(X(1), Point2(1.1, 0.1));
++  values.insert(X(2), Point2(1.9, 0.6));
++  fullGraph.push_back(factors);
++  fullValues.insert(values);
++  smoother.update(factors, values, {{X(0), 0.0}, {X(1), 0.0}, {X(2), 0.0}},
++                  FactorIndices(), KeySet{X(1)});
++
++  // X(3) at t=10 expires X(0) and X(2) together, leaving X(1) at t=0.
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(2), X(3), Point2(1.0, -0.5),
++                                                kNoise);
++  values = Values();
++  values.insert(X(3), Point2(3.1, 0.1));
++  fullGraph.push_back(factors);
++  fullValues.insert(values);
++  smoother.update(factors, values, {{X(3), 10.0}});
++
++  for (const Key expired : {X(0), X(2)}) {
++    EXPECT(!smoother.getLinearizationPoint().exists(expired));
++    EXPECT(smoother.timestamps().count(expired) == 0);
++  }
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++  EXPECT_DOUBLES_EQUAL(0.0, smoother.timestamps().at(X(1)), 1e-9);
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(1)));
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
++
++  // Releasing X(1) marginalizes it in this update.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet(), KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
++  EXPECT(smoother.timestamps().count(X(1)) == 0);
++  EXPECT(smoother.timestamps().count(X(3)) == 1);
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
++}
++
++}  // namespace retention
++/* ************************************************************************* */
++
+ int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+ /* ************************************************************************* */
 --- gtsam-4.3.0.orig/gtsam/nonlinear/tests/testIncrementalFixedLagSmoother.cpp
 +++ gtsam-4.3.0/gtsam/nonlinear/tests/testIncrementalFixedLagSmoother.cpp
 @@ -1078,6 +1078,55 @@ TEST(IncrementalFixedLagSmoother, Calcul
@@ -900,6 +1474,149 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  namespace removal_validation {
  
  // Invalid removal indices are diagnosed before additions or valid removals land.
+@@ -1146,6 +1195,142 @@ TEST(IncrementalFixedLagSmoother, Valida
+ }  // namespace removal_validation
+ /* ************************************************************************* */
+ 
++/* ************************************************************************* */
++namespace retention {
++
++using Timestamps = IncrementalFixedLagSmoother::KeyTimestampMap;
++const SharedDiagonal kNoise = noiseModel::Isotropic::Sigma(2, 0.1);
++
++// A retained key survives far outside the lag window across later four-argument
++// updates, and is marginalized in the same update that releases it.
++TEST(IncrementalFixedLagSmoother, RetainAndRelease) {
++  IncrementalFixedLagSmoother smoother(10.0, ISAM2Params());
++
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0, 0), kNoise);
++  Values values;
++  values.insert(X(0), Point2(0, 0));
++  smoother.update(factors, values, {{X(0), 0.0}});
++
++  // Add X(1) at t=2 and retain it.
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1, 0), kNoise);
++  values = Values();
++  values.insert(X(1), Point2(1, 0));
++  smoother.update(factors, values, {{X(1), 2.0}}, FactorIndices(),
++                  KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++
++  // Advance to t=50 one state at a time, far past the lag for X(1).
++  for (size_t i = 2; i <= 25; ++i) {
++    factors = NonlinearFactorGraph();
++    factors.emplace_shared<BetweenFactor<Point2>>(X(i - 1), X(i), Point2(1, 0),
++                                                  kNoise);
++    values = Values();
++    values.insert(X(i), Point2(double(i), 0));
++    smoother.update(factors, values, {{X(i), 2.0 * i}});
++  }
++
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++  EXPECT(smoother.timestamps().count(X(1)) == 1);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
++  EXPECT(assert_equal(Point2(1, 0), smoother.calculateEstimate<Point2>(X(1)),
++                      1e-2));
++
++  // Releasing X(1), whose timestamp is outside the lag, marginalizes it now.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet(), KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(smoother.timestamps().count(X(1)) == 0);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
++}
++
++// Retaining a key that is neither in the smoother nor in newTheta throws, and
++// the rejected update leaves the smoother unchanged.
++TEST(IncrementalFixedLagSmoother, RejectsRetainingUnknownKey) {
++  IncrementalFixedLagSmoother smoother(1.0, ISAM2Params());
++
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0, 0), kNoise);
++  Values values;
++  values.insert(X(0), Point2(0, 0));
++  smoother.update(factors, values, {{X(0), 0.0}});
++
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(2), Point2(1, 0), kNoise);
++  values = Values();
++  values.insert(X(2), Point2(1, 0));
++  CHECK_EXCEPTION((smoother.update(factors, values, {{X(2), 5.0}},
++                                   FactorIndices(), KeySet{X(1)})),
++                  std::invalid_argument);
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(smoother.timestamps().count(X(2)) == 0);
++  EXPECT(!smoother.getLinearizationPoint().exists(X(2)));
++
++  // A key the smoother already holds can be retained without new values.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet{X(0)});
++  EXPECT(smoother.retainedKeys().exists(X(0)));
++}
++
++// Retaining X(1) while both of its neighbors, X(0) and X(2), expire in the same
++// update marginalizes both neighbors and keeps the full-history solution for
++// X(1) and X(3). Releasing X(1) later marginalizes it immediately, because its
++// timestamp is already outside the lag. This is the scenario of
++// borglab/gtsam#2825.
++TEST(IncrementalFixedLagSmoother, RetainKeyWhileBothNeighborsExpire) {
++  IncrementalFixedLagSmoother smoother(5.0, ISAM2Params());
++  NonlinearFactorGraph fullGraph;
++  Values fullValues;
++
++  // Prior on X(0) and the chain X(0)-X(1)-X(2), all at t=0, retaining X(1).
++  NonlinearFactorGraph factors;
++  factors.addPrior(X(0), Point2(0.0, 0.0), kNoise);
++  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1.0, 0.0),
++                                                kNoise);
++  factors.emplace_shared<BetweenFactor<Point2>>(X(1), X(2), Point2(1.0, 0.5),
++                                                kNoise);
++  Values values;
++  values.insert(X(0), Point2(0.1, -0.1));
++  values.insert(X(1), Point2(1.1, 0.1));
++  values.insert(X(2), Point2(1.9, 0.6));
++  fullGraph.push_back(factors);
++  fullValues.insert(values);
++  smoother.update(factors, values, {{X(0), 0.0}, {X(1), 0.0}, {X(2), 0.0}},
++                  FactorIndices(), KeySet{X(1)});
++
++  // X(3) at t=10 expires X(0) and X(2) together, leaving X(1) at t=0.
++  factors = NonlinearFactorGraph();
++  factors.emplace_shared<BetweenFactor<Point2>>(X(2), X(3), Point2(1.0, -0.5),
++                                                kNoise);
++  values = Values();
++  values.insert(X(3), Point2(3.1, 0.1));
++  fullGraph.push_back(factors);
++  fullValues.insert(values);
++  smoother.update(factors, values, {{X(3), 10.0}});
++
++  for (const Key expired : {X(0), X(2)}) {
++    EXPECT(!smoother.getLinearizationPoint().exists(expired));
++    EXPECT(smoother.timestamps().count(expired) == 0);
++  }
++  EXPECT(smoother.retainedKeys().exists(X(1)));
++  EXPECT_DOUBLES_EQUAL(0.0, smoother.timestamps().at(X(1)), 1e-9);
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(1)));
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
++
++  // Releasing X(1) marginalizes it in this update.
++  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
++                  FactorIndices(), KeySet(), KeySet{X(1)});
++  EXPECT(smoother.retainedKeys().empty());
++  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
++  EXPECT(smoother.timestamps().count(X(1)) == 0);
++  EXPECT(smoother.timestamps().count(X(3)) == 1);
++  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
++}
++
++}  // namespace retention
++/* ************************************************************************* */
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam_unstable/partition/tests/testFindSeparator.cpp
 +++ gtsam-4.3.0/gtsam_unstable/partition/tests/testFindSeparator.cpp
 @@ -15,6 +15,29 @@ using namespace std;
@@ -988,6 +1705,76 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    for (int j=1; j<=8; j++)
      LONGS_EQUAL(1, partitionTable[j]);
    for (int j=9; j<=16; j++)
+--- /dev/null
++++ gtsam-4.3.0/matlab/gtsam_tests/testFixedLagSmootherRetention.m
+@@ -0,0 +1,55 @@
++% Retaining and releasing keys in both concrete fixed-lag smoothers.
++% A retained key outlives the lag across later four-argument updates, and is
++% marginalized in the same update that releases it.
++
++noise = gtsam.noiseModel.Isotropic.Sigma(2, 0.1);
++lag = 2.0;
++smoothers = {gtsam.BatchFixedLagSmoother(lag), gtsam.IncrementalFixedLagSmoother(lag)};
++
++for s = 1:numel(smoothers)
++  smoother = smoothers{s};
++  name = class(smoother);
++
++  % Add X(i) at time i, with a prior for X(0) or odometry from X(i - 1).
++  % Retain X(1) in the update that adds it.
++  for i = 0:7
++    key = gtsam.symbol('x', i);
++    factors = gtsam.NonlinearFactorGraph;
++    if i == 0
++      factors.add(gtsam.PriorFactorPoint2(key, gtsam.Point2(0, 0), noise));
++    else
++      factors.add(gtsam.BetweenFactorPoint2(gtsam.symbol('x', i - 1), key, gtsam.Point2(1, 0), noise));
++    end
++    values = gtsam.Values;
++    values.insert(key, gtsam.Point2(i, 0));
++    timestamps = gtsam.FixedLagSmootherKeyTimestampMap;
++    timestamps.insert(gtsam.FixedLagSmootherKeyTimestampMapValue(key, i));
++    if i == 1
++      keysToRetain = gtsam.KeySet;
++      keysToRetain.insert(key);
++      smoother.update(factors, values, timestamps, gtsam.FactorIndices, keysToRetain);
++    else
++      smoother.update(factors, values, timestamps);
++    end
++  end
++
++  x0 = gtsam.symbol('x', 0);
++  x1 = gtsam.symbol('x', 1);
++  expectedRetained = gtsam.KeySet;
++  expectedRetained.insert(x1);
++  gtsam.CHECK([name ' retainedKeys'], smoother.retainedKeys().equals(expectedRetained, 0));
++  gtsam.CHECK([name ' retainedKeys again'], smoother.retainedKeys().equals(expectedRetained, 0));
++  gtsam.CHECK([name ' retained timestamp'], smoother.timestamps().at(x1) == 1);
++  gtsam.CHECK([name ' expired key marginalized'], ~smoother.getLinearizationPoint().exists(x0));
++  gtsam.CHECK([name ' retained estimate'], ...
++        norm(smoother.calculateEstimatePoint2(x1) - gtsam.Point2(1, 0)) < 1e-6);
++
++  % X(1) is outside the lag, so releasing it marginalizes it now.
++  keysToRelease = gtsam.KeySet;
++  keysToRelease.insert(x1);
++  smoother.update(gtsam.NonlinearFactorGraph, gtsam.Values, gtsam.FixedLagSmootherKeyTimestampMap, ...
++                  gtsam.FactorIndices, gtsam.KeySet, keysToRelease);
++  gtsam.CHECK([name ' released'], smoother.retainedKeys().empty());
++  gtsam.CHECK([name ' released key marginalized'], ~smoother.getLinearizationPoint().exists(x1));
++  gtsam.CHECK([name ' newest key kept'], smoother.getLinearizationPoint().exists(gtsam.symbol('x', 7)));
++end
+--- gtsam-4.3.0.orig/matlab/gtsam_tests/test_gtsam.m
++++ gtsam-4.3.0/matlab/gtsam_tests/test_gtsam.m
+@@ -27,6 +27,9 @@ testCustomFactor
+ display 'Starting: testMosekSDP'
+ testMosekSDP
+ 
++display 'Starting: testFixedLagSmootherRetention'
++testFixedLagSmootherRetention
++
+ %% navigation
+ display 'Starting: testRotatingImuCovariance'
+ testRotatingImuCovariance
 --- /dev/null
 +++ gtsam-4.3.0/pixi.lock
 @@ -0,0 +1,7293 @@
@@ -8509,6 +9296,223 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    ```
    If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
  - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
+--- gtsam-4.3.0.orig/python/gtsam/tests/test_Factors.py
++++ gtsam-4.3.0/python/gtsam/tests/test_Factors.py
+@@ -13,6 +13,7 @@ import unittest
+ 
+ import gtsam
+ import numpy as np
++from gtsam.symbol_shorthand import X
+ from gtsam.utils.test_case import GtsamTestCase
+ 
+ 
+@@ -47,6 +48,99 @@ class TestJacobianFactor(GtsamTestCase):
+         jf = gtsam.JacobianFactor(gfg)
+         self.assertIsInstance(jf, gtsam.JacobianFactor)
+ 
++class TestHessianFactor(GtsamTestCase):
++    """Test HessianFactor"""
++
++    def test_gaussian_factor_graph(self):
++        """Test construction from GaussianFactorGraph."""
++        gfg = gtsam.GaussianFactorGraph()
++        hf = gtsam.HessianFactor(gfg)
++        self.assertIsInstance(hf, gtsam.HessianFactor)
++
++        nfg = gtsam.NonlinearFactorGraph()
++        nfg.push_back(gtsam.PriorFactorDouble(1, 0.0, gtsam.noiseModel.Isotropic.Sigma(1, 1.0)))
++        values = gtsam.Values()
++        values.insert(1, 0.0)
++        gfg = nfg.linearize(values)
++        hf = gtsam.HessianFactor(gfg)
++        self.assertIsInstance(hf, gtsam.HessianFactor)
++
++    def test_hessian_nary_factor(self):
++        """Test construction from n-ary factor."""
++        n = 4 # number of edges on factor
++        rng = np.random.default_rng(42)
++        A = rng.random((n*2, n*2))
++        Gfull = A @ A.T # Symmetric PD matrix
++        gfull = rng.random(n*2)
++        G11 = Gfull[:2,:2]
++        G12 = Gfull[:2,2:4]
++        G13 = Gfull[:2,4:6]
++        G14 = Gfull[:2,6:8]
++        G22 = Gfull[2:4,2:4]
++        G23 = Gfull[2:4,4:6]
++        G24 = Gfull[2:4,6:8]
++        G33 = Gfull[4:6,4:6]
++        G34 = Gfull[4:6,6:8]
++        G44 = Gfull[6:8,6:8]
++        g1 = gfull[:2]
++        g2 = gfull[2:4]
++        g3 = gfull[4:6]
++        g4 = gfull[6:8]
++        f = 1.0
++
++        # Unary Factors
++        hf_unary = gtsam.HessianFactor(X(0), G11, g1, f)
++
++        self.gtsamAssertEquals(hf_unary.augmentedInformation()[:-1,:-1], G11)
++        self.gtsamAssertEquals(hf_unary.augmentedInformation()[:-1,-1], g1)
++        self.assertEqual(float(hf_unary.augmentedInformation()[-1,-1]), f)
++
++        # Binary Factors
++        hf_binary = gtsam.HessianFactor(X(0), X(1), G11, G12, g1, G22, g2, f)
++        G_binary = np.block([
++            [G11, G12],
++            [G12.T, G22]
++        ])
++        self.gtsamAssertEquals(hf_binary.augmentedInformation()[:-1,:-1], G_binary)
++        self.gtsamAssertEquals(hf_binary.augmentedInformation()[:-1,-1], np.block([g1, g2]))
++        self.assertEqual(float(hf_binary.augmentedInformation()[-1,-1]), f)
++
++        # Ternary Factors
++        hf_ternary1 = gtsam.HessianFactor(X(0), X(1), X(2), G11, G12, G13, g1, G22, G23, g2, G33, g3, f)
++        G_ternary = np.block([
++            [G11, G12, G13],
++            [G12.T, G22, G23],
++            [G13.T, G23.T, G33]
++        ])
++        g_ternary = np.block([g1, g2, g3])
++        self.gtsamAssertEquals(hf_ternary1.augmentedInformation()[:-1,:-1], G_ternary)
++        self.gtsamAssertEquals(hf_ternary1.augmentedInformation()[:-1,-1], g_ternary)
++        self.assertEqual(float(hf_ternary1.augmentedInformation()[-1,-1]), f)
++
++        aug_info_ternary = np.zeros((3 * 2 + 1, 3 * 2 + 1))
++        aug_info_ternary[:-1, :-1] = G_ternary
++        aug_info_ternary[:-1, -1] = g_ternary
++        aug_info_ternary[-1, :-1] = g_ternary
++        aug_info_ternary[-1, -1] = f
++        hf_ternary2 = gtsam.HessianFactor(
++            [X(0), X(1), X(2)],
++            gtsam.SymmetricBlockMatrix([2, 2, 2, 1], aug_info_ternary)
++        )
++        self.gtsamAssertEquals(hf_ternary1, hf_ternary2)
++
++        # Quaternary Factors
++        aug_info_quaternary = np.zeros((n * 2 + 1, n * 2 + 1))
++        aug_info_quaternary[:-1, :-1] = Gfull
++        aug_info_quaternary[:-1, -1] = gfull
++        aug_info_quaternary[-1, :-1] = gfull
++        aug_info_quaternary[-1, -1] = f
++        hf_quaternary = gtsam.HessianFactor(
++            [X(0), X(1), X(2), X(3)],
++            gtsam.SymmetricBlockMatrix([2, 2, 2, 2, 1], aug_info_quaternary),
++        )
++        self.gtsamAssertEquals(hf_quaternary.augmentedInformation()[:-1,:-1], Gfull)
++        self.gtsamAssertEquals(hf_quaternary.augmentedInformation()[:-1,-1], gfull)
++        self.assertEqual(float(hf_quaternary.augmentedInformation()[-1,-1]), f)
+ 
+ if __name__ == "__main__":
+     unittest.main()
+--- /dev/null
++++ gtsam-4.3.0/python/gtsam/tests/test_FixedLagSmootherRetention.py
+@@ -0,0 +1,104 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++
++See LICENSE for the license information.
++
++Unit tests for retaining and releasing keys in the fixed-lag smoothers.
++"""
++
++# pylint: disable=invalid-name, no-name-in-module, no-member
++
++import unittest
++
++import numpy as np
++from gtsam.symbol_shorthand import X
++from gtsam.utils.test_case import GtsamTestCase
++
++import gtsam
++
++NOISE = gtsam.noiseModel.Isotropic.Sigma(2, 0.1)
++LAG = 2.0
++
++
++def add_state(smoother, i, *retain_and_release):
++    """Add X(i) at time i, with a prior for X(0) or odometry from X(i - 1)."""
++    factors = gtsam.NonlinearFactorGraph()
++    if i == 0:
++        factors.push_back(
++            gtsam.PriorFactorPoint2(X(0), gtsam.Point2(0, 0), NOISE))
++    else:
++        factors.push_back(
++            gtsam.BetweenFactorPoint2(X(i - 1), X(i), gtsam.Point2(1, 0),
++                                      NOISE))
++    values = gtsam.Values()
++    values.insert(X(i), gtsam.Point2(i, 0))
++    return smoother.update(factors, values, {X(i): float(i)}, [],
++                           *retain_and_release)
++
++
++class TestFixedLagSmootherRetention(GtsamTestCase):
++    """Both concrete smoothers retain and release keys through KeySet."""
++
++    def smoothers(self):
++        return [gtsam.BatchFixedLagSmoother(LAG),
++                gtsam.IncrementalFixedLagSmoother(LAG)]
++
++    def test_retain_and_release(self):
++        """A retained 64-bit symbol key outlives the lag until released."""
++        for smoother in self.smoothers():
++            with self.subTest(smoother=type(smoother).__name__):
++                add_state(smoother, 0)
++                add_state(smoother, 1, gtsam.KeySet([X(1)]))
++
++                # Later four-argument updates keep the persistent retained set.
++                for i in range(2, 8):
++                    add_state(smoother, i)
++
++                for _ in range(2):  # Repeated retrieval returns the same set.
++                    retained = smoother.retainedKeys()
++                    self.assertIsInstance(retained, gtsam.KeySet)
++                    self.gtsamAssertEquals(retained, gtsam.KeySet([X(1)]))
++                self.assertGreater(X(1), 2**32)
++                self.assertIn(X(1), smoother.timestamps())
++                self.assertFalse(smoother.getLinearizationPoint().exists(X(0)))
++                np.testing.assert_allclose(
++                    smoother.calculateEstimatePoint2(X(1)), [1, 0], atol=1e-6)
++
++                # X(1) is outside the lag, so releasing it marginalizes it now.
++                smoother.update(gtsam.NonlinearFactorGraph(), gtsam.Values(),
++                                {}, [], gtsam.KeySet(), gtsam.KeySet([X(1)]))
++                self.assertTrue(smoother.retainedKeys().empty())
++                self.assertNotIn(X(1), smoother.timestamps())
++                self.assertFalse(smoother.getLinearizationPoint().exists(X(1)))
++                self.assertTrue(smoother.getLinearizationPoint().exists(X(7)))
++
++    def test_release_keyword_argument(self):
++        """The retain and release sets can be passed by keyword."""
++        for smoother in self.smoothers():
++            with self.subTest(smoother=type(smoother).__name__):
++                add_state(smoother, 0, gtsam.KeySet([X(0)]))
++                for i in range(1, 4):
++                    add_state(smoother, i)
++                self.assertTrue(smoother.getLinearizationPoint().exists(X(0)))
++
++                smoother.update(gtsam.NonlinearFactorGraph(), gtsam.Values(),
++                                {}, [], keysToRetain=gtsam.KeySet(),
++                                keysToRelease=gtsam.KeySet([X(0)]))
++                self.assertTrue(smoother.retainedKeys().empty())
++                self.assertFalse(smoother.getLinearizationPoint().exists(X(0)))
++
++    def test_rejects_retaining_unknown_key(self):
++        """Retaining a key absent from the smoother and newTheta raises."""
++        for smoother in self.smoothers():
++            with self.subTest(smoother=type(smoother).__name__):
++                add_state(smoother, 0)
++                with self.assertRaises(ValueError):
++                    add_state(smoother, 1, gtsam.KeySet([X(2)]))
++                self.assertTrue(smoother.retainedKeys().empty())
++                self.assertFalse(smoother.getLinearizationPoint().exists(X(1)))
++
++
++if __name__ == "__main__":
++    unittest.main()
 --- gtsam-4.3.0.orig/python/gtsam/tests/test_VisualISAMExample.py
 +++ gtsam-4.3.0/python/gtsam/tests/test_VisualISAMExample.py
 @@ -84,7 +84,14 @@ class TestVisualISAMExample(GtsamTestCas
