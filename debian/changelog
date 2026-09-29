@@ -1,10 +1,26 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~6.gbpb1fdfc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~7.gbp680cc8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @680cc8025c800e92e8d8df18ce53b1d4a4106da1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b1fdfc402d2e95e217f3e2f8875206c0077e832f **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 28 Sep 2026 22:40:45 +0000
+  [ bboyack ]
+  * Added functionality to 'freeze' nodes in fixed lag smoothers so that they don't get marginalized out.
+  * Added more override functions for HessianFactor constructor to the python bindings.
+  * Changed variables from frozen/unfrozen to retained/released as they are consistently optimized. Included the gtsam_unstable serialization test.
+  * Undid the unstable serialization as I found the gtsam/base/serialize file and it's implementations.
+  * Address review feedback on fixed-lag smoother key retention
+  * Added a  check to FixedLagSmoother::findKeysBefore to speed up operation for those not using any retained keys.
+
+  [ Jose Luis Blanco-Claraco ]
+  * cmake: detect ROS binary package builds via /opt/ros install prefix
+  * Avoid -Warray-bounds false positive in EssentialMatrix::error
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 17:55:06 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~5.gbp6fa926) resolute; urgency=medium
 
