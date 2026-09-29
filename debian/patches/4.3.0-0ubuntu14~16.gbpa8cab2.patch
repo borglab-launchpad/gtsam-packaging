@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Sep, 29 2026 03:14:15 +0000
+Date: Sep, 29 2026 22:31:42 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -111,7 +111,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                    -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
 --- /dev/null
 +++ gtsam-4.3.0/.github/workflows/conda-build.yml
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,164 @@
 +name: Conda build
 +
 +# Builds GTSAM against conda-forge dependencies (system Eigen, metis, TBB,
@@ -220,6 +220,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +          CCACHE_BASEDIR: ${{ github.workspace }}
 +          CCACHE_NOHASHDIR: "1"
 +          CCACHE_MAXSIZE: 1G
++
++      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
++      # does: both use the build tree. Install the package just built into a
++      # fresh environment and build and run the example project against its
++      # GTSAMConfig.cmake, so that a broken exported config fails here.
++      - name: Build a CMake project against the conda package
++        shell: bash
++        run: |
++          prefix_path='$CONDA_PREFIX'
++          if [[ "$RUNNER_OS" == "Windows" ]]; then
++            prefix_path='$CONDA_PREFIX/Library'
++          fi
++          pixi exec \
++            --spec dist/gtsam-*.conda \
++            --spec cmake \
++            --spec ninja \
++            --spec cxx-compiler \
++            --spec eigen \
++            --spec libboost-devel \
++            --spec tbb-devel \
++            -- bash -c "
++              set -e
++              cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
++                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
++              cmake --build build-example
++              ./build-example/example
++            "
 +
 +      - name: Package build cache statistics
 +        if: always()
@@ -420,9 +447,64 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      set (SETUP_NAME "gtsam-develop")
  elseif ("${GTSAM_PRERELEASE_VERSION}" STREQUAL "")
      set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
+@@ -97,11 +97,19 @@ include(GtsamBuildTypes)
+ include(GtsamTesting)
+ include(GtsamPrinting)
+ 
++# Detect ROS 2 builds: colcon exports COLCON to its build subprocesses, while
++# ROS binary packages invoke CMake directly with an /opt/ros install prefix.
++if(DEFINED ENV{COLCON} OR CMAKE_INSTALL_PREFIX MATCHES "^/opt/ros/")
++  set(GTSAM_BUILDING_FOR_ROS TRUE)
++else()
++  set(GTSAM_BUILDING_FOR_ROS FALSE)
++endif()
++
+ ############### Decide on BOOST ######################################
+-# When building inside colcon (ROS 2 build farm or local colcon build),
+-# default to no Boost so ROS packages avoid the dependency.
++# When building for ROS 2 (colcon or binary packages), default to no Boost so
++# ROS packages avoid the dependency.
+ # Override explicitly with -DGTSAM_USE_BOOST_FEATURES=ON if needed.
+-if(DEFINED ENV{COLCON})
++if(GTSAM_BUILDING_FOR_ROS)
+   set(_gtsam_boost_default OFF)
+ else()
+   set(_gtsam_boost_default ON)
+--- gtsam-4.3.0.orig/INSTALL.md
++++ gtsam-4.3.0/INSTALL.md
+@@ -25,7 +25,9 @@ $ cmake --build . --target install
+ 
+     Boost version 1.70 or greater is required when either
+     `GTSAM_USE_BOOST_FEATURES` or `GTSAM_ENABLE_BOOST_SERIALIZATION` is
+-    enabled. Both options are enabled by default outside ROS 2 `colcon` builds.
++    enabled. Both options are enabled by default outside ROS 2 builds, which
++    are detected through `colcon` or an install prefix under `/opt/ros/`, as
++    used by ROS binary packages.
+     To build without Boost, disable both:
+ 
+     ```sh
+@@ -34,7 +36,7 @@ $ cmake --build . --target install
+         -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+     ```
+ 
+-    ROS 2 `colcon` builds also use the system Eigen package by default. This
++    ROS 2 builds also use the system Eigen package by default. This
+     keeps GTSAM and downstream ROS packages on the same Eigen version. Plain
+     CMake builds continue to use GTSAM's bundled Eigen by default. Either build
+     mode can override the choice explicitly with `GTSAM_USE_SYSTEM_EIGEN`.
 --- gtsam-4.3.0.orig/README.md
 +++ gtsam-4.3.0/README.md
-@@ -117,13 +117,15 @@ We provide support for [MATLAB](matlab/R
+@@ -80,7 +80,8 @@ Boost is optional. Two CMake flags gover
+ - `GTSAM_ENABLE_BOOST_SERIALIZATION=ON|OFF` controls Boost serialization of factor graphs, factors, and related types.
+ 
+ Both options default to ON for ordinary CMake builds and OFF inside ROS 2
+-`colcon` builds. If either option is ON, install
++builds (`colcon`, or an install prefix under `/opt/ros/`). If either option is
++ON, install
+ [Boost](https://www.boost.org/users/download/) 1.70 or newer:
+ 
+ - macOS: `brew install boost`
+@@ -117,13 +118,15 @@ We provide support for [MATLAB](matlab/R
  If you are using GTSAM for academic work, please use the following citation:
  
  ```bibtex
@@ -566,6 +648,40 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          else()
              set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "")
              set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "")
+--- gtsam-4.3.0.orig/cmake/HandleCephes.cmake
++++ gtsam-4.3.0/cmake/HandleCephes.cmake
+@@ -12,6 +12,14 @@ set_property(TARGET cephes-gtsam PROPERT
+   $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/cephes>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes/>)
+ 
++# The bundled CMakeLists links the absolute path returned by
++# find_library(MATH_LIBRARY m). That path is exported as is, so consumers of
++# GTSAMConfig.cmake try to link a libm.so that only exists on the build machine
++# (e.g. the sysroot of a conda build environment). Export libm by name instead.
++if(MATH_LIBRARY)
++  set_property(TARGET cephes-gtsam PROPERTY INTERFACE_LINK_LIBRARIES m)
++endif()
++
+ list(APPEND GTSAM_EXPORTED_TARGETS cephes-gtsam)
+ 
+ add_library(cephes-gtsam-if INTERFACE)
+--- gtsam-4.3.0.orig/cmake/HandleEigen.cmake
++++ gtsam-4.3.0/cmake/HandleEigen.cmake
+@@ -1,10 +1,10 @@
+ ###############################################################################
+ # Option for using system Eigen or GTSAM-bundled Eigen
+ # ROS packages declare Eigen as a dependency and must use that same Eigen in
+-# GTSAM and downstream packages to avoid incompatible Eigen versions.  colcon
+-# exports COLCON for every build subprocess, so use the system package by
+-# default there while preserving the bundled-Eigen default elsewhere.
+-if(DEFINED ENV{COLCON})
++# GTSAM and downstream packages to avoid incompatible Eigen versions, so use
++# the system package by default there while preserving the bundled-Eigen
++# default elsewhere.
++if(GTSAM_BUILDING_FOR_ROS)
+   set(_gtsam_system_eigen_default ON)
+ else()
+   set(_gtsam_system_eigen_default OFF)
 --- gtsam-4.3.0.orig/cmake/HandleMetis.cmake
 +++ gtsam-4.3.0/cmake/HandleMetis.cmake
 @@ -28,7 +28,12 @@ if(GTSAM_USE_SYSTEM_METIS)
@@ -650,6 +766,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-4.3.0.orig/gtsam/geometry/EssentialMatrix.cpp
++++ gtsam-4.3.0/gtsam/geometry/EssentialMatrix.cpp
+@@ -107,10 +107,10 @@ double EssentialMatrix::error(const Vect
+     OptionalJacobian<1, 5> H) const {
+   if (H) {
+     // See math.lyx
+-    Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);
+-    Matrix12 HD = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
+-        * direction().basis();
+-    *H << HR, HD;
++    H->block<1, 3>(0, 0) = vA.transpose() * E_ * skewSymmetric(-vB);
++    H->block<1, 2>(0, 3) = vA.transpose() *
++                           skewSymmetric(-rotation().matrix() * vB) *
++                           direction().basis();
+   }
+   return dot(vA, E_ * vB);
+ }
 --- gtsam-4.3.0.orig/gtsam/geometry/Unit3.cpp
 +++ gtsam-4.3.0/gtsam/geometry/Unit3.cpp
 @@ -279,33 +279,35 @@ double Unit3::distance(const Unit3& q, O

@@ -1,10 +1,22 @@
-gtsam (4.3.0-0ubuntu14~15.gbp6107e9) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~16.gbpa8cab2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @a8cab2d2fa0867fb02213c54e69369c6de16116a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6107e9c53144960d75e9675e94a752e5cfc33029 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 03:16:02 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * cmake: detect ROS binary package builds via /opt/ros install prefix
+  * Avoid -Warray-bounds false positive in EssentialMatrix::error
+
+  [ Diego Ferigo ]
+  * Export libm by name from cephes-gtsam
+  * Build a CMake project against the conda package in the conda CI
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 22:31:41 +0000
 
 gtsam (4.3.0-0ubuntu14~14.gbp4ddaf4) resolute; urgency=medium
 
