@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~9.gbpdcfd55) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~10.gbpcca1ac) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cca1ac2a77f95129c52cb01ad6e446b1d0486855 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @dcfd5571fd010eb32af3ed4a2c5b501197a98f60 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 17:57:17 +0000
+  [ Diego Ferigo ]
+  * Export libm by name from cephes-gtsam
+  * Build a CMake project against the conda package in the conda CI
+
+  [ Jash Shah ]
+  * Convert sparse TableFactor to DecisionTreeFactor from its nonzeros
+
+  [ stef3141 ]
+  * made predictPIM public
+
+  [ Varun Agrawal ]
+  * rename ordered to ordered_keys to be more readable
+  * Directly use Choice::Unique for leaves-up merging to prevent repeated (quadratic) traversal of the tree
+
+  [ Frank Dellaert ]
+  * Use orderedKeys naming in sparse table conversion
+  * Clarify keyValueForIndex documentation [skip ci]
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Sep 2026 21:13:49 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~8.gbp77cce5) resolute; urgency=medium
 

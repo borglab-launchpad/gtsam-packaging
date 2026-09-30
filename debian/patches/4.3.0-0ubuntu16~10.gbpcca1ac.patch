@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Sep, 29 2026 17:55:08 +0000
+Date: Sep, 30 2026 21:13:51 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -111,7 +111,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                    -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/.github/workflows/conda-build.yml
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,164 @@
 +name: Conda build
 +
 +# Builds GTSAM against conda-forge dependencies (system Eigen, metis, TBB,
@@ -220,6 +220,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +          CCACHE_BASEDIR: ${{ github.workspace }}
 +          CCACHE_NOHASHDIR: "1"
 +          CCACHE_MAXSIZE: 1G
++
++      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
++      # does: both use the build tree. Install the package just built into a
++      # fresh environment and build and run the example project against its
++      # GTSAMConfig.cmake, so that a broken exported config fails here.
++      - name: Build a CMake project against the conda package
++        shell: bash
++        run: |
++          prefix_path='$CONDA_PREFIX'
++          if [[ "$RUNNER_OS" == "Windows" ]]; then
++            prefix_path='$CONDA_PREFIX/Library'
++          fi
++          pixi exec \
++            --spec dist/gtsam-*.conda \
++            --spec cmake \
++            --spec ninja \
++            --spec cxx-compiler \
++            --spec eigen \
++            --spec libboost-devel \
++            --spec tbb-devel \
++            -- bash -c "
++              set -e
++              cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
++                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
++              cmake --build build-example
++              ./build-example/example
++            "
 +
 +      - name: Package build cache statistics
 +        if: always()
@@ -621,6 +648,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          else()
              set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "")
              set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "")
+--- gtsam-no-tbb-4.3.0.orig/cmake/HandleCephes.cmake
++++ gtsam-no-tbb-4.3.0/cmake/HandleCephes.cmake
+@@ -12,6 +12,14 @@ set_property(TARGET cephes-gtsam PROPERT
+   $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/cephes>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes/>)
+ 
++# The bundled CMakeLists links the absolute path returned by
++# find_library(MATH_LIBRARY m). That path is exported as is, so consumers of
++# GTSAMConfig.cmake try to link a libm.so that only exists on the build machine
++# (e.g. the sysroot of a conda build environment). Export libm by name instead.
++if(MATH_LIBRARY)
++  set_property(TARGET cephes-gtsam PROPERTY INTERFACE_LINK_LIBRARIES m)
++endif()
++
+ list(APPEND GTSAM_EXPORTED_TARGETS cephes-gtsam)
+ 
+ add_library(cephes-gtsam-if INTERFACE)
 --- gtsam-no-tbb-4.3.0.orig/cmake/HandleEigen.cmake
 +++ gtsam-no-tbb-4.3.0/cmake/HandleEigen.cmake
 @@ -1,10 +1,10 @@
@@ -722,6 +766,204 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/TableFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/TableFactor.cpp
+@@ -23,7 +23,10 @@
+ #include <gtsam/hybrid/HybridValues.h>
+ #include <gtsam/inference/Ordering.h>
+ 
++#include <algorithm>
++#include <functional>
+ #include <utility>
++#include <vector>
+ 
+ using namespace std;
+ 
+@@ -392,14 +395,50 @@ DecisionTreeFactor TableFactor::toDecisi
+     return DecisionTreeFactor(dkeys, tree);
+   }
+ 
+-  std::vector<double> table(sparse_table_.size(), 0.0);
++  // Build the tree from the nonzero entries only, so a sparse table over many
++  // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
++  // in the product of all cardinalities. Keys go from highest to lowest, the
++  // order a DecisionTree keeps from root to leaves.
++  DiscreteKeys orderedKeys = dkeys;
++  std::sort(orderedKeys.begin(), orderedKeys.end(),
++            [](const DiscreteKey& a, const DiscreteKey& b) {
++              return a.first > b.first;
++            });
++  std::vector<std::pair<std::vector<size_t>, double>> entries;
++  entries.reserve(sparse_table_.nonZeros());
+   for (SparseIt it(sparse_table_); it; ++it) {
+-    table[it.index()] = it.value();
++    std::vector<size_t> values;
++    values.reserve(orderedKeys.size());
++    for (const DiscreteKey& dkey : orderedKeys) {
++      values.push_back(keyValueForIndex(dkey.first, it.index()));
++    }
++    entries.emplace_back(std::move(values), it.value());
+   }
++  std::sort(entries.begin(), entries.end());
++
++  using Tree = DecisionTree<Key, double>;
++  std::function<Tree(size_t, size_t, size_t)> build =
++      [&](size_t level, size_t begin, size_t end) -> Tree {
++    if (begin == end) return Tree(0.0);
++    if (level == orderedKeys.size()) return Tree(entries[begin].second);
++    std::vector<Tree> branches;
++    branches.reserve(orderedKeys[level].second);
++    size_t first = begin;
++    for (size_t value = 0; value < orderedKeys[level].second; ++value) {
++      size_t last = first;
++      while (last < end && entries[last].first[level] == value) ++last;
++      branches.push_back(build(level + 1, first, last));
++      first = last;
++    }
++    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
++  };
++
++  // Build the decision tree
++  const Tree built = build(0, 0, entries.size());
++  // Merge identical branches to reduce size of the tree
++  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
+ 
+-  AlgebraicDecisionTree<Key> tree(dkeys, table);
+-  DecisionTreeFactor f(dkeys, tree);
+-  return f;
++  return DecisionTreeFactor(dkeys, tree);
+ }
+ 
+ /* ************************************************************************ */
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/TableFactor.h
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/TableFactor.h
+@@ -60,18 +60,41 @@ class GTSAM_EXPORT TableFactor : public
+   DiscreteKeys sorted_dkeys_;
+ 
+   /**
+-   * @brief Uses lazy cartesian product to find nth entry in the cartesian
+-   * product of arrays in O(1)
+-   * Example)
+-   *   v0 | v1 | val
+-   *    0 |  0 |  10
+-   *    0 |  1 |  21
+-   *    1 |  0 |  32
+-   *    1 |  1 |  43
+-   *   keyValueForIndex(v1, 2) = 0
+-   * @param target_key nth entry's key to find out its assigned value
+-   * @param index nth entry in the sparse vector
+-   * @return TableFactor
++   * Return the discrete value assigned to `target_key` at a linear table
++   * index.
++   *
++   * A key's discrete value is the integer identifying one of its alternatives,
++   * ranging from zero to its cardinality minus one. It is distinct from the
++   * factor value stored at a table index. Keys use the order in which they
++   * were supplied to the factor, and the last key varies fastest.
++   * `denominators_[target_key]` is the product of the cardinalities of all
++   * keys after `target_key`, so the discrete value is
++   * `(index / denominators_[target_key]) % cardinality(target_key)`.
++   *
++   * `index` is the linear index in the full table, even when the table is
++   * sparse; it is not the ordinal number of a nonzero entry. For example, let
++   * `v0` have cardinality 2 and `v1` cardinality 3:
++   *
++   *   index | v0 discrete value | v1 discrete value | factor value
++   *   ------|-------------------|-------------------|-------------
++   *       0 |                 0 |                 0 |          10
++   *       1 |                 0 |                 1 |          21
++   *       2 |                 0 |                 2 |          32
++   *       3 |                 1 |                 0 |          43
++   *       4 |                 1 |                 1 |          54
++   *       5 |                 1 |                 2 |          65
++   *
++   * At index 2, `keyValueForIndex(v1, 2)` returns the discrete value 2; the
++   * factor value in that row is 32. At index 5, the discrete value for `v1`
++   * is also 2, but the factor value is 65. Meanwhile,
++   * `keyValueForIndex(v0, 2)` returns 0. With three keys `(x, y, z)` of
++   * cardinalities `(2, 3, 2)`, `z` changes every index, `y` every 2 indices,
++   * and `x` every 6 indices. Index 8 represents the discrete values
++   * `(x, y, z) = (1, 1, 0)`.
++   *
++   * @param target_key Key whose discrete value to decode.
++   * @param index Linear index in the full Cartesian-product table.
++   * @return The discrete value of `target_key` at `index`.
+    */
+   size_t keyValueForIndex(Key target_key, uint64_t index) const;
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testTableFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testTableFactor.cpp
+@@ -26,7 +26,9 @@
+ #include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/discrete/TableFactor.h>
+ 
++#include <algorithm>
+ #include <chrono>
++#include <numeric>
+ #include <random>
+ 
+ using namespace std;
+@@ -203,6 +205,60 @@ TEST(TableFactor, Conversion) {
+ }
+ 
+ /* ************************************************************************* */
++// toDecisionTreeFactor builds from the nonzero entries; check it against the
++// dense construction for random keys (not in label order), cardinalities, and
++// sparsity levels.
++TEST(TableFactor, ConversionMatchesDenseTable) {
++  std::mt19937 rng(42);
++  for (size_t trial = 0; trial < 300; trial++) {
++    const size_t nrKeys = 1 + rng() % 6;
++    std::vector<Key> labels(12);
++    std::iota(labels.begin(), labels.end(), 0);
++    std::shuffle(labels.begin(), labels.end(), rng);
++    DiscreteKeys dkeys;
++    size_t size = 1;
++    for (size_t i = 0; i < nrKeys; i++) {
++      dkeys.emplace_back(labels[i], 1 + rng() % 4);
++      size *= dkeys.back().second;
++    }
++    const double density = (rng() % 5) / 4.0;
++    std::vector<double> table(size, 0.0);
++    for (double& value : table) {
++      if ((rng() % 1000) < density * 1000) value = 1 + rng() % 9;
++    }
++
++    const TableFactor tf(dkeys, table);
++    EXPECT(assert_equal(DecisionTreeFactor(dkeys, table),
++                        tf.toDecisionTreeFactor()));
++  }
++}
++
++/* ************************************************************************* */
++// A sparse table over many keys converts without enumerating every assignment.
++TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
++  const size_t nrKeys = 26;
++  DiscreteKeys dkeys;
++  for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
++
++  Eigen::SparseVector<double> table(size_t(1) << nrKeys);
++  table.insert(5) = 1.0;
++  table.insert(12345) = 2.0;
++  table.insert((size_t(1) << nrKeys) - 1) = 3.0;
++  const TableFactor tf(dkeys, table);
++
++  const DecisionTreeFactor dtf = tf.toDecisionTreeFactor();
++  EXPECT(dtf.nrLeaves() < 100);
++  for (const uint64_t index : {uint64_t(0), uint64_t(5), uint64_t(12345),
++                               (uint64_t(1) << nrKeys) - 1}) {
++    DiscreteValues values;
++    for (size_t i = 0; i < nrKeys; i++) {
++      values[dkeys[i].first] = (index >> (nrKeys - 1 - i)) & 1;
++    }
++    EXPECT_DOUBLES_EQUAL(tf(values), dtf(values), 1e-12);
++  }
++}
++
++/* ************************************************************************* */
+ // Check multiplication with a TableDistribution in both operand orders.
+ TEST(TableFactor, TableDistributionMultiplication) {
+   const DiscreteKey key(0, 3);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/geometry/EssentialMatrix.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/geometry/EssentialMatrix.cpp
 @@ -107,10 +107,10 @@ double EssentialMatrix::error(const Vect
@@ -901,6 +1143,40 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    HessianFactor(const gtsam::GaussianFactorGraph& factors);
  
    //Standard Interface
+--- gtsam-no-tbb-4.3.0.orig/gtsam/navigation/NavState.h
++++ gtsam-no-tbb-4.3.0/gtsam/navigation/NavState.h
+@@ -225,6 +225,14 @@ public:
+                   OptionalJacobian<9, 3> G1 = {},
+                   OptionalJacobian<9, 3> G2 = {}) const;
+ 
++  // Return the predicted state directly, avoiding a local/retract round-trip.
++  NavState predictPIM(const Vector9& pim, double dt,
++                      const Vector3& n_gravity,
++                      const std::optional<Vector3>& omegaCoriolis,
++                      OptionalJacobian<9, 9> H1 = {},
++                      OptionalJacobian<9, 9> H2 = {},
++                      OptionalJacobian<9, 3> H3 = {}) const;
++
+ #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+   /**
+    * Compute the legacy approximate tangent-space Coriolis contribution.
+@@ -250,16 +258,6 @@ public:
+   /// @}
+ 
+ private:
+-  friend class PreintegrationBase;
+-
+-  // Return the predicted state directly, avoiding a local/retract round-trip.
+-  NavState predictPIM(const Vector9& pim, double dt,
+-                      const Vector3& n_gravity,
+-                      const std::optional<Vector3>& omegaCoriolis,
+-                      OptionalJacobian<9, 9> H1 = {},
+-                      OptionalJacobian<9, 9> H2 = {},
+-                      OptionalJacobian<9, 3> H3 = {}) const;
+-
+   /// @{
+   /// serialization
+ #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
 --- gtsam-no-tbb-4.3.0.orig/gtsam/nonlinear/BatchFixedLagSmoother.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/nonlinear/BatchFixedLagSmoother.cpp
 @@ -55,6 +55,22 @@ Matrix BatchFixedLagSmoother::marginalCo
