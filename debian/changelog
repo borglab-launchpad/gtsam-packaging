@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~12.gbp86ec7b) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~13.gbp08a78f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @08a78f6d2bdfeecbe091d70a57d86f709783a1b4 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @86ec7bf0e7d1fbe0e5fe81aedf31cecb00e2f5a6 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 30 Sep 2026 21:16:02 +0000
+  [ Frank Dellaert ]
+  * Restore deprecated attitude factor aliases and align ROS version metadata
+  * Advance develop version to 4.3.2 across CMake, ROS and Pixi
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Oct 2026 20:58:59 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~11.gbpcc0b73) resolute; urgency=medium
 
