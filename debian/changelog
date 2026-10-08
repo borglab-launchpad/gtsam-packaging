@@ -1,10 +1,44 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~15.gbp2b16ea) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~16.gbp144d68) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @144d68a92c12c4b77aa1fb54908ec4f9160c02db **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2b16ea0a9a6730cde18bd814f74f784fdd76f4aa **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 01 Oct 2026 21:01:09 +0000
+  [ Jash Shah ]
+  * Add SemanticModeEvidence hybrid example: text-derived mode factors
+  * Record the example's probabilities with its own request and note prompt sensitivity
+  * Replace, not re-add, the selected hybrid component on each DCSAM update
+  * Normalize mixture components, start DCSAM from two initial guesses, add trajectory and mode probability plots
+
+  [ Varun Agrawal ]
+  * Break down larger .i files to decrease RAM use during wrapper compilation
+  * Split wrapper files semantically
+  * Update copilot instructions
+  * Use SparseVector definition with index type as int64_t
+  * address review comments
+  * Add test for new SparseVector
+  * Address more review comments
+
+  [ Frank Dellaert ]
+  * Enable unused factor slot reuse by default in DCSAM
+  * Document wrapper placement by logical API group [skip ci]
+  * Fix MATLAB natural-coordinate QCQP migration [skip ci]
+  * Fix MATLAB augmented Lagrangian parameter binding [skip ci]
+
+  [ avinashresearch1 ]
+  * Lift QCQPs with one shared homogeneous coordinate per PSD block
+  * Remove the homogenizing coordinate from D=1 QCQPs
+  * Return (A, a, b) triples from QCQP traits at every D
+  * Address review: keep original names and drop the soft Frobenius prior
+  * Rename the SDP view maps and drop "first moment" wording
+  * Explain the shared homogenization and restore the Q_f name
+  * Follow the Luo et al. constraint convention and drop the homogeneous option
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 08 Oct 2026 14:24:00 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~14.gbp78a91a) resolute; urgency=medium
 
