@@ -1,10 +1,60 @@
-gtsam (4.3.0-0ubuntu14~18.gbpb6b856) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~19.gbp8bec56) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8bec560505d7f3b97330dbc6134d10524a9117e9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b6b856ebd8ab633d85dd4f35a4b171d6c29cb63b **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 29 Sep 2026 22:33:55 +0000
+  [ Jash Shah ]
+  * Convert sparse TableFactor to DecisionTreeFactor from its nonzeros
+  * Add SemanticModeEvidence hybrid example: text-derived mode factors
+  * Record the example's probabilities with its own request and note prompt sensitivity
+  * Replace, not re-add, the selected hybrid component on each DCSAM update
+  * Normalize mixture components, start DCSAM from two initial guesses, add trajectory and mode probability plots
+
+  [ stef3141 ]
+  * made predictPIM public
+
+  [ Varun Agrawal ]
+  * Break down larger .i files to decrease RAM use during wrapper compilation
+  * Split wrapper files semantically
+  * Update copilot instructions
+  * rename ordered to ordered_keys to be more readable
+  * Directly use Choice::Unique for leaves-up merging to prevent repeated (quadratic) traversal of the tree
+  * Use SparseVector definition with index type as int64_t
+  * address review comments
+  * Add test for new SparseVector
+  * Address more review comments
+
+  [ Frank Dellaert ]
+  * Use orderedKeys naming in sparse table conversion
+  * Clarify keyValueForIndex documentation [skip ci]
+  * Restore deprecated attitude factor aliases and align ROS version metadata
+  * Advance develop version to 4.3.2 across CMake, ROS and Pixi
+  * Enable unused factor slot reuse by default in DCSAM
+  * Document wrapper placement by logical API group [skip ci]
+  * Persist trusted Conda compiler caches and configure isolated package launchers
+  * Keep package launchers single-wrapped and align cache diagnostics
+  * Fix MATLAB natural-coordinate QCQP migration [skip ci]
+  * Keep expired package cache diagnostics from failing Windows CI
+  * Fix MATLAB augmented Lagrangian parameter binding [skip ci]
+
+  [ avinashresearch1 ]
+  * Lift QCQPs with one shared homogeneous coordinate per PSD block
+  * Remove the homogenizing coordinate from D=1 QCQPs
+  * Return (A, a, b) triples from QCQP traits at every D
+  * Address review: keep original names and drop the soft Frobenius prior
+  * Rename the SDP view maps and drop "first moment" wording
+  * Explain the shared homogenization and restore the Q_f name
+  * Follow the Luo et al. constraint convention and drop the homogeneous option
+
+  [ OliverJMG ]
+  * Fix ISAM2::marginalizeLeaves leaving a split clique's noise model misaligned
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Oct 2026 00:40:53 +0000
 
 gtsam (4.3.0-0ubuntu14~17.gbp826d52) resolute; urgency=medium
 
