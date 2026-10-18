@@ -1,10 +1,39 @@
-gtsam (4.3.0-0ubuntu14~21.gbp2b9628) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~22.gbp089e0e) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @089e0ecda0235ce620d6ff1319b6db9713fb83f5 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2b96284a46053ccd1e729dbfc5a0fd9cac5aaa69 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 09 Oct 2026 00:43:09 +0000
+  [ dellaert ]
+  * Update pixi lockfile
+  * Update pixi lockfile
+
+  [ avinashresearch1 ]
+  * Tie chordal clique overlaps to the parent clique
+  * Hoist the diagonal overlap tie into one batched constraint
+
+  [ Rohan Bansal ]
+  * implement discrete group-step lifts
+  * bug fix for abc filter
+
+  [ Frank Dellaert ]
+  * Fix noise-model serialization across Python binding translation units
+  * Restore libpython in the Pixi test environment
+  * Fix Conda Python dependencies and installation prefixes
+  * Test installed Conda Python packages and unstable wrappers
+  * Make Conda MSVC builds cacheable and report per-run statistics
+  * Scope Windows Conda settings to the appropriate platform
+  * Fix PyPI develop release cleanup
+  * Use absolute splash image URLs
+
+  [ vera-rubin ]
+  * Fix robust weight queries to use whitened residuals
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 23:09:14 +0000
 
 gtsam (4.3.0-0ubuntu14~20.gbp00efdd) resolute; urgency=medium
 
