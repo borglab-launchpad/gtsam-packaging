@@ -1,3 +1,11 @@
+gtsam-no-tbb (4.3.0-0ubuntu16~27.gbp8f458e) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @8f458e5d77ee028a1f728e686ef0cbab0c36c61f **
+
+  * modified changelog for distro resolute
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 23:11:17 +0000
+
 gtsam-no-tbb (4.3.0-0ubuntu16~26.gbp66c34a) resolute; urgency=medium
 
   ** SNAPSHOT build @66c34a38884c6b848bf291c2fc51f4dd0e4dd037 **
