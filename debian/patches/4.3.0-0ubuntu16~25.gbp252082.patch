@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 18 2026 19:04:17 +0000
+Date: Oct, 18 2026 23:09:06 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -100,6 +100,175 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
      -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
      -DGTSAM_BUILD_TESTS=OFF \
+--- gtsam-no-tbb-4.3.0.orig/.github/scripts/python_wheels/cleanup_gtsam_develop.sh
++++ gtsam-no-tbb-4.3.0/.github/scripts/python_wheels/cleanup_gtsam_develop.sh
+@@ -134,7 +134,12 @@ class FormParser(HTMLParser):
+         if self._current is not None and tag == "input":
+             name = attrs.get("name")
+             if name:
+-                self._current["inputs"][name] = attrs.get("value", "")
++                default_value = (
++                    "on" if attrs.get("type", "").lower() == "checkbox" else ""
++                )
++                self._current["inputs"][name] = attrs.get(
++                    "value", default_value
++                )
+ 
+     def handle_endtag(self, tag):
+         if tag == "title":
+@@ -313,65 +318,104 @@ def release_page_after_reauthentication(
+ 
+ 
+ delete_requests = []
++failures = []
+ for version in versions:
+-    release_path, release_url, release_page = release_page_after_reauthentication(
+-        version
+-    )
+-    csrf, form = csrf_for(
+-        release_page.text, required_input="confirm_delete_version"
+-    )
+-    if not csrf or not form:
+-        raise RuntimeError(
+-            f"PyPI did not expose a deletion form for {package!r} {version!r}: "
+-            + describe_forms(release_page)
++    try:
++        release_path, release_url, release_page = (
++            release_page_after_reauthentication(version)
+         )
+-
+-    form_url = safe_form_url(form["action"])
+-    if not same_path(form_url, release_path):
+-        raise RuntimeError(
+-            f"Refusing unexpected deletion form action {form['action']!r}."
++        csrf, form = csrf_for(
++            release_page.text, required_input="confirm_delete_version"
+         )
+-    delete_requests.append((version, release_path, release_url, form_url, csrf))
++        if not csrf or not form:
++            raise RuntimeError(
++                f"PyPI did not expose a deletion form for {package!r} "
++                f"{version!r}: " + describe_forms(release_page)
++            )
+ 
+-print(f"Validated deletion forms for all {len(delete_requests)} release(s).")
+-print("Deletion starts in 5 seconds; press Ctrl-C now to abort.", flush=True)
+-time.sleep(5)
++        form_url = safe_form_url(form["action"])
++        if not same_path(form_url, release_path):
++            raise RuntimeError(
++                f"Refusing unexpected deletion form action "
++                f"{form['action']!r}."
++            )
++        form_inputs = dict(form["inputs"])
++        form_inputs["csrf_token"] = csrf
++        form_inputs["confirm_delete_version"] = version
++        delete_requests.append(
++            (version, release_path, release_url, form_url, form_inputs)
++        )
++    except Exception as error:
++        failures.append((version, f"could not prepare deletion: {error}"))
++        print(
++            f"WARNING: Skipping {package!r} version {version}: {error}",
++            file=sys.stderr,
++            flush=True,
++        )
+ 
+-for version, release_path, release_url, form_url, csrf in delete_requests:
+-    print(f"Deleting {package!r} version {version}...", flush=True)
+-    delete_response = session.post(
+-        form_url,
+-        data={
+-            "csrf_token": csrf,
+-            "confirm_delete_version": version,
+-        },
+-        headers={"referer": release_url},
+-        timeout=30,
++if delete_requests:
++    print(
++        f"Validated deletion forms for {len(delete_requests)} of "
++        f"{len(versions)} release(s)."
+     )
+-    delete_response.raise_for_status()
+-    if (
+-        same_path(delete_response.url, "/account/login/")
+-        or same_path(delete_response.url, "/account/reauthenticate/")
+-        or delete_response.url.startswith(f"{base_url}/account/two-factor/")
+-    ):
+-        raise RuntimeError(
+-            f"PyPI requested authentication again while deleting {version!r}."
+-        )
++    print("Deletion starts in 5 seconds; press Ctrl-C now to abort.", flush=True)
++    time.sleep(5)
+ 
+-    verification = session.get(release_url, allow_redirects=False, timeout=30)
+-    if verification.status_code != 404:
+-        release_list_path = f"/manage/project/{package}/releases/"
+-        redirect_url = urljoin(
+-            base_url, verification.headers.get("location", "")
++for version, release_path, release_url, form_url, form_inputs in delete_requests:
++    print(f"Deleting {package!r} version {version}...", flush=True)
++    try:
++        delete_response = session.post(
++            form_url,
++            data=form_inputs,
++            headers={"referer": release_url},
++            timeout=30,
+         )
+-        if not verification.is_redirect or not same_path(
+-            redirect_url, release_list_path
++        delete_response.raise_for_status()
++        if (
++            same_path(delete_response.url, "/account/login/")
++            or same_path(delete_response.url, "/account/reauthenticate/")
++            or delete_response.url.startswith(
++                f"{base_url}/account/two-factor/"
++            )
+         ):
+             raise RuntimeError(
+-                f"PyPI did not confirm removal of {version!r}; "
+-                "stopping before deleting another release."
++                f"PyPI requested authentication again while deleting "
++                f"{version!r}."
++            )
++
++        verification = session.get(
++            release_url, allow_redirects=False, timeout=30
++        )
++        if verification.status_code != 404:
++            release_list_path = f"/manage/project/{package}/releases/"
++            redirect_url = urljoin(
++                base_url, verification.headers.get("location", "")
+             )
+-    print(f"Deleted {package!r} version {version}.", flush=True)
++            if not verification.is_redirect or not same_path(
++                redirect_url, release_list_path
++            ):
++                raise RuntimeError(
++                    f"PyPI did not confirm removal of {version!r}."
++                )
++        print(f"Deleted {package!r} version {version}.", flush=True)
++    except Exception as error:
++        failures.append((version, f"deletion failed: {error}"))
++        print(
++            f"ERROR: Could not delete {package!r} version {version}: "
++            f"{error}",
++            file=sys.stderr,
++            flush=True,
++        )
++        print("Continuing with the next release.", file=sys.stderr, flush=True)
++
++if failures:
++    print(
++        f"Cleanup completed with {len(failures)} failure(s):",
++        file=sys.stderr,
++    )
++    for version, error in failures:
++        print(f"  {version}: {error}", file=sys.stderr)
++    raise SystemExit(1)
+ PY
+ }
+ 
 --- gtsam-no-tbb-4.3.0.orig/.github/scripts/unix.sh
 +++ gtsam-no-tbb-4.3.0/.github/scripts/unix.sh
 @@ -19,6 +19,7 @@ function configure()
@@ -170,12 +339,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                    -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/.github/workflows/conda-build.yml
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,243 @@
 +name: Conda build
 +
 +# Builds GTSAM against conda-forge dependencies (system Eigen, metis, TBB,
-+# Boost, SuiteSparse) on every platform the conda-forge feedstock ships, runs
-+# the C++ and Python test suites, and builds the conda package itself. This is
++# Boost, SuiteSparse) on every platform the conda-forge feedstock ships. The
++# locked development build runs C++ and Python tests; the separately resolved
++# package runs installed Python tests and a C++ consumer. This is
 +# the combination that tends to surface portability problems, so catching them
 +# here avoids discovering them at release time in
 +# https://github.com/conda-forge/gtsam-feedstock.
@@ -199,12 +369,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  build:
 +    name: ${{ matrix.platform }}
 +    runs-on: ${{ matrix.runs-on }}
-+    # pixi's activation env does not interpolate $PIXI_PROJECT_ROOT on Windows,
-+    # so sccache read it literally and cached into a directory of that name,
-+    # which actions/cache never picked up. Set it where the runner expands it.
-+    env:
-+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
-+      SCCACHE_CACHE_SIZE: 1G
 +    strategy:
 +      fail-fast: false
 +      matrix:
@@ -222,6 +386,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +    steps:
 +      - uses: actions/checkout@v7
++
++      # pixi's activation env does not interpolate $PIXI_PROJECT_ROOT on Windows.
++      # Expand the cache path here, and retain statistics through long builds.
++      # Each server is explicitly stopped when its phase finishes.
++      - name: Configure Windows compiler cache
++        if: runner.os == 'Windows'
++        shell: bash
++        run: |
++          {
++            echo "SCCACHE_DIR=$GITHUB_WORKSPACE/.sccache"
++            echo "SCCACHE_CACHE_SIZE=1G"
++            echo "SCCACHE_IDLE_TIMEOUT=0"
++          } >> "$GITHUB_ENV"
 +
 +      - uses: prefix-dev/setup-pixi@v0.10.2
 +        with:
@@ -256,6 +433,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - name: Check pixi.toml and CMakeLists.txt agree on the version
 +        run: pixi run -e test check-version
 +
++      - name: Reset test compiler cache statistics
++        continue-on-error: true
++        shell: bash
++        run: |
++          cache=ccache
++          if [[ "$RUNNER_OS" == "Windows" ]]; then cache=sccache; fi
++          pixi run -e test "$cache" --version
++          pixi run -e test "$cache" --zero-stats
++
 +      - name: Build GTSAM and the unit tests
 +        run: pixi run -e test build-tests
 +
@@ -268,13 +454,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - name: Run the Python tests
 +        run: pixi run -e test python-test
 +
++      - name: Run the unstable Python tests
++        run: pixi run -e test python-test-unstable
++
 +      # Reports the real hit rate, so a cache that has silently stopped working
 +      # shows up here instead of as an unexplained slowdown.
 +      - name: Test build cache statistics
 +        if: always() && runner.os != 'Windows'
 +        run: |
 +          pixi run -e test ccache --show-config
-+          pixi run -e test ccache --show-stats
++          pixi run -e test ccache --show-stats --verbose
 +        continue-on-error: true
 +
 +      - name: Test build cache statistics (Windows)
@@ -302,20 +491,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      # --path avoids selecting GTSAM's ROS package.xml as the manifest.
 +      # CondaPackageCache.cmake passes cache settings through the isolated
 +      # backend's compiler launchers and reports the effective configuration.
++      - name: Reset package compiler cache statistics
++        if: runner.os != 'Windows'
++        continue-on-error: true
++        run: |
++          pixi exec --spec ccache ccache --version
++          pixi exec --spec ccache ccache --zero-stats
++        env:
++          CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
++
++      - name: Reset package compiler cache statistics (Windows)
++        if: runner.os == 'Windows'
++        continue-on-error: true
++        run: |
++          pixi exec --spec sccache sccache --version
++          pixi exec --spec sccache sccache --zero-stats
++        env:
++          SCCACHE_DIR: ${{ github.workspace }}/.sccache-pkg
++          SCCACHE_SERVER_PORT: 4227
++
 +      - name: Build the conda package
++        id: package
 +        run: pixi build --path pixi.toml --output-dir dist
 +
-+      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
-+      # does: both use the build tree. Install the package just built into a
-+      # fresh environment and build and run the example project against its
-+      # GTSAMConfig.cmake, so that a broken exported config fails here.
-+      - name: Build a CMake project against the conda package
++      # Test the actual package in its own environment. The development build
++      # above can have different dependencies, compilers and compiler flags.
++      - name: Test the installed conda package
 +        shell: bash
 +        run: |
-+          prefix_path='$CONDA_PREFIX'
-+          if [[ "$RUNNER_OS" == "Windows" ]]; then
-+            prefix_path='$CONDA_PREFIX/Library'
-+          fi
++          # Expand CONDA_PREFIX inside the consumer environment.
++          # shellcheck disable=SC2016
 +          pixi exec \
 +            --spec dist/gtsam-*.conda \
 +            --spec cmake \
@@ -324,19 +529,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +            --spec eigen \
 +            --spec libboost-devel \
 +            --spec tbb-devel \
-+            -- bash -c "
++            --spec pytest \
++            -- bash -c '
 +              set -e
++              prefix_path="$CONDA_PREFIX"
++              if [[ "$RUNNER_OS" == "Windows" ]]; then
++                prefix_path="$CONDA_PREFIX/Library"
++              fi
++              python -I scripts/test_conda_package.py
 +              cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
-+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
++                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$prefix_path"
 +              cmake --build build-example
 +              ./build-example/example
-+            "
++            '
 +
 +      - name: Package build cache statistics
 +        if: always() && runner.os != 'Windows'
 +        run: |
 +          pixi exec --spec ccache ccache --show-config
-+          pixi exec --spec ccache ccache --show-stats
++          pixi exec --spec ccache ccache --show-stats --verbose
++        continue-on-error: true
 +        env:
 +          CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
 +          CCACHE_BASEDIR: ${{ github.workspace }}
@@ -346,8 +558,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +      - name: Package build cache statistics (Windows)
 +        if: always() && runner.os == 'Windows'
-+        # The server may have expired while linking, packaging or testing the
-+        # consumer. A failed diagnostic must not fail a successful package build.
++        # A failed diagnostic must not fail a successful package build.
 +        run: pixi exec --spec sccache sccache --stop-server
 +        continue-on-error: true
 +        env:
@@ -367,6 +578,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +          key: ${{ steps.package-cache.outputs.cache-primary-key }}
 +
 +      - uses: actions/upload-artifact@v7
++        if: always() && steps.package.outcome == 'success'
 +        with:
 +          name: conda-package-${{ matrix.platform }}
 +          path: dist/*.conda
@@ -589,6 +801,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      mode can override the choice explicitly with `GTSAM_USE_SYSTEM_EIGEN`.
 --- gtsam-no-tbb-4.3.0.orig/README.md
 +++ gtsam-no-tbb-4.3.0/README.md
+@@ -6,9 +6,9 @@
+ <p align="center">
+   <a href="https://borglab.github.io/gtsam/">
+     <picture>
+-      <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
+-      <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
+-      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
++      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-dark.png">
++      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-light.png">
++      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-light.png" width="100%">
+     </picture>
+   </a>
+ </p>
 @@ -80,7 +80,8 @@ Boost is optional. Two CMake flags gover
  - `GTSAM_ENABLE_BOOST_SERIALIZATION=ON|OFF` controls Boost serialization of factor graphs, factors, and related types.
  
@@ -624,13 +849,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/cmake/CondaDefaults.cmake
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,43 @@
 +# Cache defaults for building GTSAM against conda-forge dependencies. Pass with
 +#   cmake -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake
 +# which, unlike `cmake -C`, takes a path relative to the source tree.
 +#
-+# Shared by `pixi build` and the pixi `test` environment so the packaged build
-+# and the tested build cannot drift apart. See pixi.toml.
++# Shared GTSAM options for `pixi build` and the pixi `test` environment.
++# Dependencies, compilers and their flags are resolved separately. See pixi.toml.
 +
 +set(CMAKE_BUILD_TYPE Release CACHE STRING "")
 +
@@ -640,6 +865,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +# Warnings-as-errors is useful upstream, but it would make the packaged build
 +# hostage to every new compiler version conda-forge ships.
 +set(GTSAM_BUILD_WITH_WERROR OFF CACHE BOOL "")
++
++# MSVC's /Fp precompiled-header calls cannot be cached by sccache.
++# WIN32 is not guaranteed to be initialized in this early project hook.
++if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
++  set(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS OFF CACHE BOOL "")
++endif()
 +
 +# Nothing here needs the examples or the timing scripts.
 +set(GTSAM_BUILD_EXAMPLES_ALWAYS OFF CACHE BOOL "")
@@ -664,10 +895,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +set(GTSAM_INSTALL_CPPUNITLITE OFF CACHE BOOL "")
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/cmake/CondaPackageCache.cmake
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,55 @@
 +# Only the pixi package build includes this file. Keep the test environment
 +# and other workflows on their existing compiler-cache configuration.
 +include("${CMAKE_CURRENT_LIST_DIR}/CondaDefaults.cmake")
++
++# Windows C++ files install under PREFIX/Library, but Python's site-packages
++# belongs under PREFIX. The backend supplies the host environment as PREFIX.
++if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND DEFINED ENV{PREFIX})
++  file(TO_CMAKE_PATH "$ENV{PREFIX}" _conda_python_prefix)
++  set(GTSAM_PYTHON_INSTALL_PREFIX "${_conda_python_prefix}" CACHE PATH "")
++endif()
 +
 +# The backend sanitizes its environment and sets HOME to its work directory.
 +# Workflow CCACHE_* / SCCACHE_* variables therefore do not reach the compiler.
@@ -705,10 +943,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +message(STATUS "Conda package cache directory: ${_conda_cache_dir}")
 +message(STATUS "Conda package C launcher: ${CMAKE_C_COMPILER_LAUNCHER}")
 +message(STATUS "Conda package C++ launcher: ${CMAKE_CXX_COMPILER_LAUNCHER}")
++execute_process(COMMAND "${_conda_cache_program}" --version)
 +execute_process(
 +  COMMAND "${CMAKE_COMMAND}" -E env ${_conda_cache_env}
 +    "${_conda_cache_program}" ${_conda_cache_diagnostics}
-+  COMMAND_ERROR_IS_FATAL ANY)
++  RESULT_VARIABLE _conda_cache_diagnostic_result)
++if(NOT _conda_cache_diagnostic_result EQUAL 0)
++  message(WARNING "Could not report Conda package cache configuration")
++endif()
 --- gtsam-no-tbb-4.3.0.orig/cmake/Config.cmake.in
 +++ gtsam-no-tbb-4.3.0/cmake/Config.cmake.in
 @@ -31,6 +31,9 @@ if(@GTSAM_USE_TBB@)
@@ -840,6 +1082,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      target_link_libraries(metis-gtsam-if INTERFACE ${GTSAM_METIS_LINK_TARGET})
    endif()
  else()
+--- gtsam-no-tbb-4.3.0.orig/cmake/HandlePython.cmake
++++ gtsam-no-tbb-4.3.0/cmake/HandlePython.cmake
+@@ -22,13 +22,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_M
+     else()
+       # Get info about the Python3 interpreter
+       # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
+-      find_package(Python3 COMPONENTS Interpreter Development)
+-
+-      if(NOT ${Python3_FOUND})
+-        message(
+-          FATAL_ERROR
+-            "Cannot find Python3 interpreter. Please install Python >= 3.6.")
+-      endif()
++      find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+ 
+       set(Python_VERSION_MAJOR ${Python3_VERSION_MAJOR})
+       set(Python_VERSION_MINOR ${Python3_VERSION_MINOR})
 --- gtsam-no-tbb-4.3.0.orig/examples/CertifiableMosek.h
 +++ gtsam-no-tbb-4.3.0/examples/CertifiableMosek.h
 @@ -74,7 +74,7 @@ QcqpProblem makeAnchoredQcqp(const Nonli
@@ -16698,7 +16957,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  timestamp: 1786599623274
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/pixi.toml
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,177 @@
 +[workspace]
 +name = "gtsam"
 +description = "Conda build of GTSAM against conda-forge dependencies"
@@ -16711,8 +16970,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +#
 +# This builds GTSAM the way conda-forge does: against the system Eigen, metis,
 +# TBB, Boost and SuiteSparse rather than the bundled copies. That combination
-+# is what tends to surface portability problems, so building it on every PR
-+# catches them before they reach the feedstock.
++# is what tends to surface portability problems. Nightly and manual CI runs
++# build against current conda-forge packages and test the installed artifact.
 +# ---------------------------------------------------------------------------
 +[package]
 +name = "gtsam"
@@ -16726,8 +16985,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +# cephes (gtsam/3rdparty/cephes) is C, the rest is C++.
 +compilers = ["c", "cxx"]
 +# The GTSAM options live in cmake/CondaDefaults.cmake, shared with the test
-+# environment below so the packaged build and the tested build cannot drift
-+# apart. CondaPackageCache.cmake includes those defaults and configures the
++# environment below. Its locked dependencies and toolchain can differ from
++# the package backend's freshly resolved environment and compiler flags.
++# CondaPackageCache.cmake includes those defaults and configures the
 +# package's isolated compiler cache. The include resolves relative to the tree,
 +# unlike `cmake -C`, which resolves against the working directory -- this
 +# backend runs cmake from a build directory far away from the sources.
@@ -16772,14 +17032,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +pip = "*"
 +setuptools = "*"
 +
++# CMake's Development component also needs the separate embedding library.
++[package.host-dependencies."if(host_platform != 'win-64')"]
++libpython = "*"
++
 +[package.run-dependencies]
 +pyparsing = "*"
 +
 +# ---------------------------------------------------------------------------
-+# Test environment: configure, build everything including the unit tests, and
-+# run them. `pixi build` only builds the install target, so it never compiles
-+# the test binaries, and the test suite is where dependency-version
-+# regressions actually surface.
++# Development environment: build and run C++ and Python tests with the
++# dependencies in pixi.lock. Packaging resolves its own dependencies, so CI
++# also tests the installed package; these suites do not validate that build.
 +# ---------------------------------------------------------------------------
 +[feature.test.dependencies]
 +c-compiler = "*"
@@ -16818,9 +17081,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +[feature.test.target.win-64.dependencies]
 +sccache = "*"
 +
-+# GTSAM never launches ccache under MSVC, so Windows recompiles everything on
-+# every run. sccache does support cl.exe, and GTSAM's Release flags are /MD /O2
-+# with no /Zi, which sccache cannot cache.
++# Use sccache with MSVC. CondaDefaults.cmake disables precompiled headers,
++# whose /Fp flag prevents caching the main GTSAM library's compilations.
 +[feature.test.target.win-64.activation.env]
 +CMAKE_PREFIX_PATH = "$CONDA_PREFIX\\Library"
 +CMAKE_C_COMPILER_LAUNCHER = "sccache"
@@ -16861,6 +17123,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +cmd = ["cmake", "--build", "build", "--target", "python-test"]
 +depends-on = ["build-python"]
 +
++[feature.test.tasks.python-test-unstable]
++cmd = ["cmake", "--build", "build", "--target", "python-test-unstable"]
++depends-on = ["build-python"]
++
 +# pixi cannot read the version out of CMakeLists.txt yet
 +# (prefix-dev/pixi#2946), so check the two agree rather than letting them
 +# drift silently.
@@ -16890,7 +17156,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
      ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
  )
-@@ -417,6 +421,30 @@ add_custom_target(${GTSAM_PYTHON_INSTALL
+@@ -417,6 +421,36 @@ add_custom_target(${GTSAM_PYTHON_INSTALL
          WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
          VERBATIM)
  
@@ -16902,14 +17168,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +option(GTSAM_PYTHON_INSTALL_INTO_PREFIX
 +       "Install the Python package into CMAKE_INSTALL_PREFIX as part of `install`"
 +       OFF)
++set(GTSAM_PYTHON_INSTALL_PREFIX "" CACHE PATH
++    "Override the Python installation prefix; empty follows CMAKE_INSTALL_PREFIX")
 +
 +if(GTSAM_PYTHON_INSTALL_INTO_PREFIX)
 +  install(CODE "
-+    message(STATUS \"Installing the GTSAM Python package into \${CMAKE_INSTALL_PREFIX}\")
++    set(_gtsam_python_prefix \"${GTSAM_PYTHON_INSTALL_PREFIX}\")
++    if(_gtsam_python_prefix STREQUAL \"\")
++      set(_gtsam_python_prefix \"\${CMAKE_INSTALL_PREFIX}\")
++    endif()
++    message(STATUS \"Installing the GTSAM Python package into \${_gtsam_python_prefix}\")
 +    execute_process(
 +      COMMAND \"${PYTHON_EXECUTABLE}\" -m pip install .
 +              --no-deps --no-build-isolation --no-compile
-+              --prefix \"\${CMAKE_INSTALL_PREFIX}\"
++              --prefix \"\${_gtsam_python_prefix}\"
 +      WORKING_DIRECTORY \"${GTSAM_PYTHON_BUILD_DIRECTORY}\"
 +      RESULT_VARIABLE _gtsam_pip_result)
 +    if(NOT _gtsam_pip_result EQUAL 0)
@@ -22004,6 +22276,32 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + * with `PYBIND11_MAKE_OPAQUE` this allows the types to be modified with Python,
 + * and saves one copy operation.
 + */
+--- gtsam-no-tbb-4.3.0.orig/python/gtsam/tests/test_DiscreteFactorGraph.py
++++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_DiscreteFactorGraph.py
+@@ -15,7 +15,9 @@ import unittest
+ 
+ import numpy as np
+ from gtsam.utils.test_case import GtsamTestCase
+-from dfg_utils import make_key, generate_transition_cpt, generate_observation_cpt
++from gtsam.tests.dfg_utils import (
++    make_key, generate_transition_cpt, generate_observation_cpt,
++)
+ 
+ from gtsam import (
+     DecisionTreeFactor,
+--- gtsam-no-tbb-4.3.0.orig/python/gtsam/tests/test_DiscreteSearch.py
++++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_DiscreteSearch.py
+@@ -13,7 +13,9 @@ Author: Frank Dellaert
+ 
+ import unittest
+ 
+-from dfg_utils import generate_observation_cpt, generate_transition_cpt, make_key
++from gtsam.tests.dfg_utils import (
++    generate_observation_cpt, generate_transition_cpt, make_key,
++)
+ from gtsam.utils.test_case import GtsamTestCase
+ 
+ from gtsam import (
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam/tests/test_Factors.py
 +++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_Factors.py
 @@ -13,6 +13,7 @@ import unittest
@@ -22535,6 +22833,54 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +if __name__ == "__main__":
 +    main()
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/scripts/test_conda_package.py
+@@ -0,0 +1,45 @@
++"""Run the installed Conda package's Python suites with ``python -I``.
++
++The working directory and import checks prevent the checkout or its build tree
++from supplying a module that is missing from the package.
++"""
++
++from contextlib import chdir
++import importlib
++import importlib.machinery
++from pathlib import Path
++import sys
++from tempfile import TemporaryDirectory
++
++
++def main() -> int:
++    if not sys.flags.isolated:
++        raise RuntimeError("Run this check with python -I")
++
++    prefix = Path(sys.prefix).resolve()
++    print(f"Installed-package Python: {sys.version}", flush=True)
++    print(f"Installed-package prefix: {prefix}", flush=True)
++    with TemporaryDirectory(prefix="gtsam-conda-test-") as directory, chdir(directory):
++        for name in ("gtsam", "gtsam_unstable"):
++            for module_name in (name, f"{name}.{name}"):
++                module = importlib.import_module(module_name)
++                location = Path(module.__file__).resolve()
++                if not location.is_relative_to(prefix):
++                    raise RuntimeError(f"{module_name} loaded outside {prefix}: {location}")
++                if module_name != name and not any(
++                    str(location).endswith(suffix)
++                    for suffix in importlib.machinery.EXTENSION_SUFFIXES
++                ):
++                    raise RuntimeError(f"{module_name} is not an extension: {location}")
++                print(f"{module_name}: {location}", flush=True)
++
++        import pytest
++
++        return pytest.main([
++            "-v", "--import-mode=importlib", "--pyargs",
++            "gtsam.tests", "gtsam_unstable.tests",
++        ])
++
++
++if __name__ == "__main__":
++    sys.exit(main())
 --- gtsam-no-tbb-4.3.0.orig/tests/testDoglegOptimizer.cpp
 +++ gtsam-no-tbb-4.3.0/tests/testDoglegOptimizer.cpp
 @@ -195,6 +195,33 @@ TEST(DoglegOptimizer, IterateLineSearch)

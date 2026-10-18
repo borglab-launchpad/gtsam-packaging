@@ -1,10 +1,22 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~24.gbpb7e46e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~25.gbp252082) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @252082b11d00e607d80fa530c95ef31dc9e08ace **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b7e46e913d67c8e17cbcd315fb5fdd6ef2fa6f0c **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 19:06:57 +0000
+  [ Frank Dellaert ]
+  * Fix Conda Python dependencies and installation prefixes
+  * Test installed Conda Python packages and unstable wrappers
+  * Make Conda MSVC builds cacheable and report per-run statistics
+  * Scope Windows Conda settings to the appropriate platform
+  * Fix PyPI develop release cleanup
+  * Use absolute splash image URLs
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 23:09:05 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~23.gbp502109) resolute; urgency=medium
 
