@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~21.gbp107cf4) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~22.gbpe6e90c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e6e90c9e1cab800388cca2c48fe74cbf851d5574 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @107cf4ffb2214e1ea4bdec9cbb2f5626d4fdd6b1 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 16:58:55 +0000
+  [ Frank Dellaert ]
+  * Restore libpython in the Pixi test environment
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 19:04:15 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~20.gbpf363bd) resolute; urgency=medium
 
