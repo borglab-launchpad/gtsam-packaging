@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -253,7 +254,7 @@ TableFactor::TableFactor(const DecisionTreeFactor& dtf)
 
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteConditional& c)
-    : TableFactor(c.discreteKeys(), c) {}
+    : TableFactor(c.toTableFactor()) {}
 
 /* ************************************************************************ */
 SparseVector TableFactor::Convert(const DiscreteKeys& keys,
@@ -305,13 +306,12 @@ bool TableFactor::equals(const DiscreteFactor& other, double tol) const {
 
 /* ************************************************************************ */
 double TableFactor::evaluate(const Assignment<Key>& values) const {
-  // a b c d => D * (C * (B * (a) + b) + c) + d
-  uint64_t idx = 0, card = 1;
-  for (auto it = sorted_dkeys_.rbegin(); it != sorted_dkeys_.rend(); ++it) {
-    if (values.find(it->first) != values.end()) {
-      idx += card * values.at(it->first);
-    }
-    card *= it->second;
+  // The table is laid out in key order, and each key's value is weighted by
+  // its denominator, i.e., the product of the cardinalities of later keys.
+  uint64_t idx = 0;
+  for (auto&& [key, denominator] : denominators_) {
+    auto it = values.find(key);
+    if (it != values.end()) idx += it->second * denominator;
   }
   return sparse_table_.coeff(idx);
 }
@@ -342,6 +342,11 @@ double TableFactor::error(const HybridValues& values) const {
 /* ************************************************************************ */
 DecisionTreeFactor TableFactor::operator*(const DecisionTreeFactor& f) const {
   return toDecisionTreeFactor() * f;
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::operator*(const DiscreteConditional& c) const {
+  return *this * c.toTableFactor();
 }
 
 /* ************************************************************************ */
@@ -775,21 +780,6 @@ size_t TableFactor::keyValueForIndex(Key target_key, uint64_t index) const {
   return (index / denominators_.at(target_key)) % cardinality(target_key);
 }
 
-/* ************************************************************************ */
-std::vector<std::pair<DiscreteValues, double>> TableFactor::enumerate() const {
-  // Get all possible assignments
-  std::vector<std::pair<Key, size_t>> pairs = discreteKeys();
-  // Reverse to make cartesian product output a more natural ordering.
-  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  const auto assignments = DiscreteValues::CartesianProduct(rpairs);
-  // Construct unordered_map with values
-  std::vector<std::pair<DiscreteValues, double>> result;
-  for (const auto& assignment : assignments) {
-    result.emplace_back(assignment, operator()(assignment));
-  }
-  return result;
-}
-
 // Print out header.
 /* ************************************************************************ */
 string TableFactor::markdown(const KeyFormatter& keyFormatter,
@@ -855,7 +845,7 @@ string TableFactor::html(const KeyFormatter& keyFormatter,
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::prune(size_t maxNrAssignments) const {
+DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
   const size_t N = maxNrAssignments;
 
   // Get the probabilities in the TableFactor so we can threshold.
@@ -867,7 +857,7 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
   }
 
   // The number of probabilities can be lower than max_leaves.
-  if (probabilities.size() <= N) return *this;
+  if (probabilities.size() <= N) return std::make_shared<TableFactor>(*this);
 
   // Sort the vector in descending order based on the element values.
   sort(probabilities.begin(), probabilities.end(),
@@ -889,13 +879,67 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
   }
 
   // Create pruned decision tree factor and return.
-  return TableFactor(this->discreteKeys(), pruned_vec);
+  return std::make_shared<TableFactor>(this->discreteKeys(), pruned_vec);
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::reorder(const DiscreteKeys& keys) const {
+  // Equal sizes and cardinality maps rule out duplicate keys as well.
+  if (keys.size() != keys_.size() || keys.cardinalities() != cardinalities_) {
+    throw std::invalid_argument(
+        "TableFactor::reorder: keys must be a permutation of the factor keys.");
+  }
+
+  // Move each nonzero entry to its index in the new layout, then insert them
+  // in increasing order.
+  std::vector<std::pair<int64_t, double>> entries;
+  entries.reserve(sparse_table_.nonZeros());
+  for (SparseIt it(sparse_table_); it; ++it) {
+    entries.emplace_back(uniqueRep(keys, it.index()), it.value());
+  }
+  std::sort(entries.begin(), entries.end());
+  SparseVector reordered(sparse_table_.size());
+  reordered.reserve(entries.size());
+  for (auto&& [index, value] : entries) reordered.insertBack(index) = value;
+  return TableFactor(keys, reordered);
 }
 
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("TableFactor::restrict not implemented");
+  // Split our keys into those fixed by the assignment and those left free,
+  // keeping the free keys in their original order.
+  // Assigned keys that are not in this factor are ignored.
+  DiscreteValues fixedValues;
+  DiscreteKeys freeKeys;
+  uint64_t freeCardinality = 1;
+  for (Key key : keys_) {
+    auto it = assignment.find(key);
+    if (it != assignment.end()) {
+      fixedValues[key] = it->second;
+    } else {
+      freeKeys.emplace_back(key, cardinality(key));
+      freeCardinality *= cardinality(key);
+    }
+  }
+
+  // Copy the nonzero entries that agree with the fixed values, re-indexed over
+  // the free keys. Matching entries keep their relative order, so indices are
+  // inserted in increasing order.
+  SparseVector restrictedTable(freeCardinality);
+  restrictedTable.reserve(sparse_table_.nonZeros());
+  for (SparseIt it(sparse_table_); it; ++it) {
+    const bool matches = std::all_of(
+        fixedValues.begin(), fixedValues.end(), [&](const auto& keyValue) {
+          return keyValueForIndex(keyValue.first, it.index()) ==
+                 keyValue.second;
+        });
+    if (matches) {
+      restrictedTable.insert(uniqueRep(freeKeys, it.index())) = it.value();
+    }
+  }
+  restrictedTable.data().squeeze();
+  return std::make_shared<TableFactor>(freeKeys, restrictedTable);
 }
 
 /* ************************************************************************ */

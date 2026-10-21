@@ -20,8 +20,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -41,51 +41,107 @@ using std::vector;
 namespace gtsam {
 
 // Instantiate base class
-template class GTSAM_EXPORT
-    Conditional<DecisionTreeFactor, DiscreteConditional>;
+template class GTSAM_EXPORT Conditional<DiscreteFactor, DiscreteConditional>;
+
+/* ************************************************************************** */
+/// Return the stored factor if `f` is a conditional, so that products and
+/// quotients use its representation.
+static DiscreteFactor::shared_ptr StoredFactor(
+    const DiscreteFactor::shared_ptr& f) {
+  if (auto conditional = std::dynamic_pointer_cast<DiscreteConditional>(f)) {
+    return conditional->factor();
+  }
+  return f;
+}
+
+/* ************************************************************************** */
+/// Return `factor` with its keys in the order of `keys`, keeping the
+/// representation of tables. Decision trees do not depend on key order, so
+/// only their keys change.
+/// Throws if `keys` is not a permutation of the
+/// factor's keys and cardinalities.
+static DiscreteFactor::shared_ptr InKeyOrder(
+    const DiscreteFactor::shared_ptr& factor, const DiscreteKeys& keys) {
+  const KeyVector& factorKeys = factor->keys();
+  // Equal sizes and cardinality maps rule out duplicate keys as well.
+  if (keys.size() != factorKeys.size() ||
+      keys.cardinalities() != factor->cardinalities()) {
+    throw std::invalid_argument(
+        "DiscreteConditional: potentials keys and cardinalities must match.");
+  }
+  if (std::equal(factorKeys.begin(), factorKeys.end(), keys.begin(),
+                 keys.end(), [](Key key, const DiscreteKey& discreteKey) {
+                   return key == discreteKey.first;
+                 })) {
+    return factor;
+  }
+  if (auto table = std::dynamic_pointer_cast<TableFactor>(factor)) {
+    return std::make_shared<TableFactor>(table->reorder(keys));
+  }
+  return std::make_shared<DecisionTreeFactor>(keys,
+                                              factor->toDecisionTreeFactor());
+}
+
+/* ************************************************************************** */
+DiscreteConditional::DiscreteConditional()
+    : factor_(std::make_shared<DecisionTreeFactor>()) {}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
                                          const DiscreteFactor& f)
-    : BaseFactor((f / f.sum(nrFrontals))->toDecisionTreeFactor()),
-      BaseConditional(nrFrontals) {}
+    : DiscreteConditional(nrFrontals, f.discreteKeys(),
+                          f / f.sum(nrFrontals)) {}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(size_t nrFrontals,
                                          const DiscreteKeys& keys,
                                          const ADT& potentials)
-    : BaseFactor(keys, potentials), BaseConditional(nrFrontals) {}
+    : BaseFactor(keys.indices(), keys.cardinalities()),
+      BaseConditional(nrFrontals),
+      factor_(std::make_shared<DecisionTreeFactor>(keys, potentials)) {}
+
+/* ************************************************************************** */
+DiscreteConditional::DiscreteConditional(
+    size_t nrFrontals, const DiscreteKeys& keys,
+    const DiscreteFactor::shared_ptr& potentials)
+    : BaseFactor(keys.indices(), keys.cardinalities()),
+      BaseConditional(nrFrontals) {
+  if (!potentials) {
+    throw std::invalid_argument(
+        "DiscreteConditional: the potentials factor must not be null.");
+  }
+  factor_ = InKeyOrder(StoredFactor(potentials), keys);
+}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
                                          const DecisionTreeFactor& marginal)
-    : BaseFactor(joint / marginal),
-      BaseConditional(joint.size() - marginal.size()) {}
+    : BaseConditional(joint.size() - marginal.size()),
+      factor_(std::make_shared<DecisionTreeFactor>(joint / marginal)) {
+  keys_ = factor_->keys();
+  cardinalities_ = factor_->cardinalities();
+}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
                                          const DecisionTreeFactor& marginal,
                                          const Ordering& orderedKeys)
     : DiscreteConditional(joint, marginal) {
-  keys_.clear();
-  keys_.insert(keys_.end(), orderedKeys.begin(), orderedKeys.end());
+  DiscreteKeys keys;
+  for (Key key : orderedKeys) keys.emplace_back(key, cardinality(key));
+  keys_ = keys.indices();
+  factor_ = InKeyOrder(factor_, keys);
 }
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const Signature& signature)
-    : BaseFactor(signature.discreteKeys(), signature.cpt()),
-      BaseConditional(1) {}
+    : DiscreteConditional(1, signature.discreteKeys(),
+                          std::make_shared<DecisionTreeFactor>(
+                              signature.discreteKeys(), signature.cpt())) {}
 
 /* ************************************************************************** */
 DiscreteConditional DiscreteConditional::operator*(
     const DiscreteConditional& other) const {
-  // If the root is a nullptr, we have a TableDistribution
-  // TODO(Varun) Revisit this hack after RSS2025 submission
-  if (!other.root_) {
-    DiscreteConditional dc(other.nrFrontals(), other.toDecisionTreeFactor());
-    return dc * (*this);
-  }
-
   // Take union of frontal keys
   KeySet newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
@@ -116,8 +172,9 @@ DiscreteConditional DiscreteConditional::operator*(
   // Finally, add parents to keys, in order
   for (auto&& dk : parents) discreteKeys.push_back(dk);
 
-  ADT product = ADT::apply(other, Ring::mul);
-  return DiscreteConditional(newFrontals.size(), discreteKeys, product);
+  // Multiply the stored factors, so the product keeps their representation.
+  return DiscreteConditional(newFrontals.size(), discreteKeys,
+                             factor_->multiply(other.factor_));
 }
 
 /* ************************************************************************** */
@@ -130,13 +187,11 @@ DiscreteConditional DiscreteConditional::marginal(Key key) const {
   // Calculate the keys as the frontal keys without the given key.
   DiscreteKeys discreteKeys{{key, cardinality(key)}};
 
-  // Calculate sum
-  ADT adt(*this);
-  for (auto&& k : frontals())
-    if (k != key) adt = adt.sum(k, cardinality(k));
-
-  // Return new factor
-  return DiscreteConditional(1, discreteKeys, adt);
+  // Sum out all other frontal keys
+  Ordering summedKeys;
+  for (Key k : frontals())
+    if (k != key) summedKeys.push_back(k);
+  return DiscreteConditional(1, discreteKeys, sum(summedKeys));
 }
 
 /* ************************************************************************** */
@@ -153,47 +208,86 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << "):\n";
-  ADT::print("", formatter);
+  printValues(formatter);
   cout << endl;
+}
+
+/* ************************************************************************** */
+void DiscreteConditional::printValues(const KeyFormatter& formatter) const {
+  // Print just the tree for decision trees, matching the historical output.
+  if (auto tree = std::dynamic_pointer_cast<DecisionTreeFactor>(factor_)) {
+    tree->ADT::print("", formatter);
+  } else {
+    factor_->print("", formatter);
+  }
 }
 
 /* ************************************************************************** */
 bool DiscreteConditional::equals(const DiscreteFactor& other,
                                  double tol) const {
-  if (!dynamic_cast<const BaseFactor*>(&other)) {
-    return false;
-  } else {
-    const BaseFactor& f(static_cast<const BaseFactor&>(other));
-    return BaseFactor::equals(f, tol);
+  const auto* conditional = dynamic_cast<const DiscreteConditional*>(&other);
+  if (!conditional) return false;
+  // Compare values as decision trees, so that conditionals stored in
+  // different representations can be equal.
+  return DiscreteFactor::equals(other, tol) &&
+         BaseConditional::equals(*conditional, tol) &&
+         ADT(toDecisionTreeFactor()).equals(conditional->toDecisionTreeFactor(),
+                                            tol);
+}
+
+/* ************************************************************************** */
+DiscreteFactor::shared_ptr DiscreteConditional::multiply(
+    const DiscreteFactor::shared_ptr& f) const {
+  return factor_->multiply(StoredFactor(f));
+}
+
+/* ************************************************************************** */
+DiscreteFactor::shared_ptr DiscreteConditional::operator/(
+    const DiscreteFactor::shared_ptr& f) const {
+  return *factor_ / StoredFactor(f);
+}
+
+/* ************************************************************************** */
+TableFactor DiscreteConditional::toTableFactor() const {
+  return factor_->toTableFactor();
+}
+
+/* ************************************************************************** */
+/// Return the entries of `given` whose keys are in `keys`, skipping the rest.
+template <typename KEYS>
+static DiscreteValues SelectValues(const DiscreteValues& given,
+                                   const KEYS& keys) {
+  DiscreteValues selected;
+  for (Key key : keys) {
+    auto it = given.find(key);
+    if (it != given.end()) selected[key] = it->second;
+  }
+  return selected;
+}
+
+/* ************************************************************************** */
+void DiscreteConditional::checkParents(const DiscreteValues& given) const {
+  for (Key key : parents()) {
+    if (given.find(key) == given.end()) {
+      given.print("parentsValues: ");
+      throw runtime_error("DiscreteConditional::choose: parent value missing");
+    }
   }
 }
 
 /* ************************************************************************** */
-DiscreteConditional::ADT DiscreteConditional::choose(
-    const DiscreteValues& given, bool forceComplete) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the parent variables.
-  DiscreteConditional::ADT adt(*this);
-  size_t value;
-  for (Key j : parents()) {
-    try {
-      value = given.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (std::out_of_range&) {
-      if (forceComplete) {
-        given.print("parentsValues: ");
-        throw runtime_error(
-            "DiscreteConditional::choose: parent value missing");
-      }
-    }
-  }
-  return adt;
+DiscreteValues DiscreteConditional::parentValues(const DiscreteValues& given,
+                                                 bool forceComplete) const {
+  if (forceComplete) checkParents(given);
+  return SelectValues(given, parents());
 }
 
 /* ************************************************************************** */
 DiscreteConditional::shared_ptr DiscreteConditional::choose(
     const DiscreteValues& given) const {
-  ADT adt = choose(given, false);  // P(F|S=given)
+  // P(F|S=given)
+  const DiscreteFactor::shared_ptr restricted =
+      restrict(parentValues(given, false));
 
   // Collect all keys not in given.
   DiscreteKeys dKeys;
@@ -206,32 +300,32 @@ DiscreteConditional::shared_ptr DiscreteConditional::choose(
       dKeys.emplace_back(j, this->cardinality(j));
     }
   }
-  return std::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
+  return std::make_shared<DiscreteConditional>(nrFrontals(), dKeys,
+                                               restricted);
 }
 
 /* ************************************************************************** */
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     const DiscreteValues& frontalValues) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the frontal variables.
-  ADT adt(*this);
-  size_t value;
-  for (Key j : frontals()) {
-    try {
-      value = frontalValues.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (exception&) {
-      frontalValues.print("frontalValues: ");
-      throw runtime_error("DiscreteConditional::choose: frontal value missing");
-    }
+  const DiscreteValues selected = SelectValues(frontalValues, frontals());
+  if (selected.size() < nrFrontals()) {
+    frontalValues.print("frontalValues: ");
+    throw runtime_error("DiscreteConditional::choose: frontal value missing");
+  }
+  const DiscreteFactor::shared_ptr restricted = restrict(selected);
+
+  // Restricting keeps the remaining keys in order, so these are the parents.
+  if (auto tree = std::dynamic_pointer_cast<DecisionTreeFactor>(restricted)) {
+    return tree;
   }
 
-  // Convert ADT to factor.
+  // Convert to a factor on the parents.
   DiscreteKeys discreteKeys;
   for (Key j : parents()) {
     discreteKeys.emplace_back(j, this->cardinality(j));
   }
-  return std::make_shared<DecisionTreeFactor>(discreteKeys, adt);
+  return std::make_shared<DecisionTreeFactor>(
+      discreteKeys, restricted->toDecisionTreeFactor());
 }
 
 /* ****************************************************************************/
@@ -248,7 +342,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ************************************************************************** */
 size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+  checkParents(parentsValues);
 
   // Initialize
   size_t maxValue = 0;
@@ -291,8 +385,7 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values,
 /* ************************************************************************** */
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
                                    std::mt19937_64* rng) const {
-  // Get the correct conditional distribution
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+  checkParents(parentsValues);
 
   // TODO(Duy): only works for one key now, seems horribly slow this way
   if (nrFrontals() != 1) {
@@ -303,10 +396,10 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
   Key key = firstFrontalKey();
   size_t nj = cardinality(key);
   vector<double> p(nj);
-  DiscreteValues frontals;
+  DiscreteValues values = parentsValues;
   for (size_t value = 0; value < nj; value++) {
-    frontals[key] = value;
-    p[value] = pFS(frontals);  // P(F=value|S=parentsValues)
+    values[key] = value;
+    p[value] = (*this)(values);  // P(F=value|S=parentsValues)
     if (p[value] == 1.0) {
       return value;  // shortcut exit
     }
@@ -390,7 +483,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   ss << "*\n" << std::endl;
   if (nrParents() == 0) {
     // We have no parents, call factor method.
-    ss << BaseFactor::markdown(keyFormatter, names);
+    ss << factor_->markdown(keyFormatter, names);
     return ss.str();
   }
 
@@ -442,7 +535,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
   ss << "</i></p>\n";
   if (nrParents() == 0) {
     // We have no parents, call factor method.
-    ss << BaseFactor::html(keyFormatter, names);
+    ss << factor_->html(keyFormatter, names);
     return ss.str();
   }
 
@@ -494,24 +587,16 @@ double DiscreteConditional::evaluate(const HybridValues& x) const {
 }
 
 /* ************************************************************************* */
-DiscreteFactor::shared_ptr DiscreteConditional::max(
-    const Ordering& keys) const {
-  return BaseFactor::max(keys);
-}
-
-/* ************************************************************************* */
-void DiscreteConditional::prune(size_t maxNrAssignments) {
-  // Get as DiscreteConditional so the probabilities are normalized
-  DiscreteConditional pruned(nrFrontals(), BaseFactor::prune(maxNrAssignments));
-  this->root_ = pruned.root_;
+DiscreteFactor::shared_ptr DiscreteConditional::prune(
+    size_t maxNrAssignments) const {
+  // Construct from the pruned factor, which renormalizes it.
+  return std::make_shared<DiscreteConditional>(
+      nrFrontals(), *factor_->prune(maxNrAssignments));
 }
 
 /* ************************************************************************ */
 void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
-  AlgebraicDecisionTree<Key> tree(*this);
-  for (auto [key, value] : given) {
-    tree = tree.choose(key, value);
-  }
+  const DiscreteFactor::shared_ptr restricted = restrict(given);
 
   // Get the leftover DiscreteKey frontals
   DiscreteKeys frontals;
@@ -536,7 +621,7 @@ void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
   // Update the conditional
   this->keys_ = allDkeys.indices();
   this->cardinalities_ = allDkeys.cardinalities();
-  this->root_ = tree.root_;
+  this->factor_ = InKeyOrder(restricted, allDkeys);
   this->nrFrontals_ = frontals.size();
 }
 
