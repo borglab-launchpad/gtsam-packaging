@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 21 2026 15:30:45 +0000
+Date: Oct, 21 2026 19:32:00 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -4010,7 +4010,27 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                                                   const std::string& table) {
    // Convert string to doubles.
    std::vector<double> ys;
-@@ -392,14 +394,50 @@ DecisionTreeFactor TableFactor::toDecisi
+@@ -303,13 +305,12 @@ bool TableFactor::equals(const DiscreteF
+ 
+ /* ************************************************************************ */
+ double TableFactor::evaluate(const Assignment<Key>& values) const {
+-  // a b c d => D * (C * (B * (a) + b) + c) + d
+-  uint64_t idx = 0, card = 1;
+-  for (auto it = sorted_dkeys_.rbegin(); it != sorted_dkeys_.rend(); ++it) {
+-    if (values.find(it->first) != values.end()) {
+-      idx += card * values.at(it->first);
+-    }
+-    card *= it->second;
++  // The table is laid out in key order, and each key's value is weighted by
++  // its denominator, i.e., the product of the cardinalities of later keys.
++  uint64_t idx = 0;
++  for (auto&& [key, denominator] : denominators_) {
++    auto it = values.find(key);
++    if (it != values.end()) idx += it->second * denominator;
+   }
+   return sparse_table_.coeff(idx);
+ }
+@@ -392,14 +393,50 @@ DecisionTreeFactor TableFactor::toDecisi
      return DecisionTreeFactor(dkeys, tree);
    }
  
@@ -4055,20 +4075,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    }
 +    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
 +  };
-+
-+  // Build the decision tree
-+  const Tree built = build(0, 0, entries.size());
-+  // Merge identical branches to reduce size of the tree
-+  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
  
 -  AlgebraicDecisionTree<Key> tree(dkeys, table);
 -  DecisionTreeFactor f(dkeys, tree);
 -  return f;
++  // Build the decision tree
++  const Tree built = build(0, 0, entries.size());
++  // Merge identical branches to reduce size of the tree
++  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
++
 +  return DecisionTreeFactor(dkeys, tree);
  }
  
  /* ************************************************************************ */
-@@ -428,7 +466,7 @@ TableFactor TableFactor::choose(const Di
+@@ -428,7 +465,7 @@ TableFactor TableFactor::choose(const Di
    uint64_t child_card = 1;
    for (const DiscreteKey& child_dkey : child_dkeys)
      child_card *= child_dkey.second;
@@ -4077,7 +4097,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    child_sparse_table_.reserve(child_card);
  
    // Populate child sparse table.
-@@ -486,7 +524,7 @@ DiscreteFactor::shared_ptr TableFactor::
+@@ -486,7 +523,7 @@ DiscreteFactor::shared_ptr TableFactor::
  /* ************************************************************************ */
  double TableFactor::max() const {
    double max_value = std::numeric_limits<double>::lowest();
@@ -4086,7 +4106,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      max_value = std::max(max_value, it.value());
    }
    return max_value;
-@@ -507,7 +545,7 @@ TableFactor TableFactor::apply(Unary op)
+@@ -507,7 +544,7 @@ TableFactor TableFactor::apply(Unary op)
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -4095,7 +4115,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -526,7 +564,7 @@ TableFactor TableFactor::apply(UnaryAssi
+@@ -526,7 +563,7 @@ TableFactor TableFactor::apply(UnaryAssi
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -4104,7 +4124,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -554,7 +592,7 @@ TableFactor TableFactor::apply(const Tab
+@@ -554,7 +591,7 @@ TableFactor TableFactor::apply(const Tab
        f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
    // 3. Initialize the multiplied factor with a scope-aware upper bound on its
    // number of nonzeros.
@@ -4113,7 +4133,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        scopes.unionScope.cardinality);
    multipliedSparseTable.reserve(
        scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
-@@ -682,7 +720,7 @@ TableFactor::shared_ptr TableFactor::com
+@@ -682,7 +719,7 @@ TableFactor::shared_ptr TableFactor::com
      card *= cardinality(keys_[i]);
    }
    // Create combined table.
@@ -4122,7 +4142,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -717,7 +755,7 @@ TableFactor::shared_ptr TableFactor::com
+@@ -717,7 +754,7 @@ TableFactor::shared_ptr TableFactor::com
      }
    }
    // Create combined table.
@@ -4131,7 +4151,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -842,7 +880,7 @@ TableFactor TableFactor::prune(size_t ma
+@@ -842,7 +879,7 @@ TableFactor TableFactor::prune(size_t ma
    if (probabilities.size() > N) probabilities.resize(N);
  
    // Create pruned sparse vector.
@@ -4140,7 +4160,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    pruned_vec.reserve(probabilities.size());
  
    // Populate pruned sparse vector.
-@@ -857,7 +895,39 @@ TableFactor TableFactor::prune(size_t ma
+@@ -857,7 +894,39 @@ TableFactor TableFactor::prune(size_t ma
  /* ************************************************************************ */
  DiscreteFactor::shared_ptr TableFactor::restrict(
      const DiscreteValues& assignment) const {
@@ -4429,10 +4449,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Check multiplication with a TableDistribution in both operand orders.
  TEST(TableFactor, TableDistributionMultiplication) {
    const DiscreteKey key(0, 3);
-@@ -503,6 +603,81 @@ TEST(TableFactor, UnaryAssignment) {
+@@ -503,6 +603,97 @@ TEST(TableFactor, UnaryAssignment) {
  }
  
  /* ************************************************************************* */
++namespace key_order_fixture {
++// Keys deliberately not in increasing order: X comes first but has key 1.
++const DiscreteKey X(1, 2), Y(0, 3);
++const std::vector<double> values{1, 2, 3, 4, 5, 6};
++
++// Evaluating a table whose keys are not sorted agrees with the decision tree.
++TEST(TableFactor, EvaluateUnsortedKeys) {
++  const TableFactor table(X & Y, values);
++  const DecisionTreeFactor tree(X & Y, values);
++  for (auto&& [assignment, value] : tree.enumerate()) {
++    EXPECT_DOUBLES_EQUAL(value, table.evaluate(assignment), 1e-9);
++  }
++}
++
++}  // namespace key_order_fixture
++/* ************************************************************************* */
 +namespace restrict_fixture {
 +const DiscreteKey A(12, 2), B(5, 3), C(91, 2);
 +
