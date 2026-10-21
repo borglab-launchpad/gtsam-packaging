@@ -1,10 +1,41 @@
-gtsam (4.3.0-0ubuntu14~24.gbp547b81) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~25.gbp422600) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @42260034807b8c3677b205a24eaca3e1ab034fe9 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @547b8107a5c2202d6d23aaf40b4f6a43d6b8bf57 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 18 Oct 2026 23:11:35 +0000
+  [ Oluwatodimu Afolayan ]
+  * Create and implement KnownLandmarkSquaredRangeFactor.h and create KnownLandmarkSquaredRangeFactor.ipynb file.
+  * Generalize KnownLandmarkSquaredRangeFactor.h using templated integer for size of state.
+  * Fix tempo in evaluate error in KnownLandmarkSquareddRangeFactor.h, implement testKnownSquaredRangeFactor.cpp.
+  * Refactor KnownLandmarkSquaredRangeFactor.h using measuredRangeSquared_ variable; Add class documentation for KnownLandmarkSquaredRangeFactor. Add test for negative range error.
+  * Add KnownLandmarkSquaredRangeFactor bindings to slam.i
+  * Add squared-range landmark documnetation and example, update slam.md with squared-range landmark description.
+  * Fix typos in squared-range factor and its test file.
+  * Remove generated CMake files.
+  * Update authorship of square-range known landmark .h and test files; move square-range known landmark .i implementation from slam.i to slam_synchronization.i.
+  * Implement print function in squared-range known landmark factor. Expand factor description/documentation.
+  * Fix documentation of squared-range known landmark factor test file.
+  * Revise square range known landmark factor documentation and example colab files.
+  * Correct formatting errors in squared range localization factor documentation and localization example.
+
+  [ dellaert ]
+  * Update pixi lockfile
+
+  [ Frank Dellaert ]
+  * Preserve expression bounds in diagonal block updates
+  * Use fixed-size matrices in Gaussian sampling tests
+
+  [ Varun Agrawal ]
+  * Implement TableFactor::restrict
+  * Refactor DiscreteConditional so that it uses DiscreteFactor operations only
+  * Use correct SparseVector
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Oct 2026 15:30:44 +0000
 
 gtsam (4.3.0-0ubuntu14~23.gbp881e44) resolute; urgency=medium
 
