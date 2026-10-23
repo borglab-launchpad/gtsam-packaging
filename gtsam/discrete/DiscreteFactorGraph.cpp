@@ -145,8 +145,8 @@ namespace gtsam {
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = std::make_shared<DiscreteLookupTable>(
-        nrFrontals, orderedKeys, product->toDecisionTreeFactor());
+    auto lookup =
+        std::make_shared<DiscreteLookupTable>(nrFrontals, orderedKeys, product);
     gttoc(lookup);
 
     return {std::dynamic_pointer_cast<DiscreteConditional>(lookup), max};
@@ -217,17 +217,17 @@ namespace gtsam {
     gttoc(sum);
 
     // Ordering keys for the conditional so that frontalKeys are really in front
-    Ordering orderedKeys;
-    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
-                       frontalKeys.end());
-    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(),
-                       sum->keys().end());
+    DiscreteKeys orderedKeys;
+    for (Key key : frontalKeys)
+      orderedKeys.emplace_back(key, product->cardinality(key));
+    for (Key key : sum->keys())
+      orderedKeys.emplace_back(key, product->cardinality(key));
 
-    // now divide product/sum to get conditional
+    // Now divide product/sum to get conditional, keeping the original
+    // representation of the product, e.g., a sparse table
     gttic(divide);
     auto conditional = std::make_shared<DiscreteConditional>(
-        product->toDecisionTreeFactor(), sum->toDecisionTreeFactor(),
-        orderedKeys);
+        frontalKeys.size(), orderedKeys, *product / sum);
     gttoc(divide);
 
     return {conditional, sum};

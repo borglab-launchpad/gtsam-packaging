@@ -21,6 +21,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
@@ -47,7 +48,9 @@ TEST(DiscreteConditional, constructors) {
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
   DecisionTreeFactor expected2 = f2 / f2.sum(1)->toDecisionTreeFactor();
-  EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
+  EXPECT(actual2.keys() == f2.keys());
+  EXPECT(assert_equal<DecisionTreeFactor::ADT>(expected2,
+                                               actual2.toDecisionTreeFactor()));
 
   std::vector<double> probs{0.2, 0.5, 0.3, 0.6, 0.4, 0.7, 0.25, 0.55, 0.35, 0.65, 0.45, 0.75};
   DiscreteConditional actual3(X, {Y, Z}, probs);
@@ -71,7 +74,9 @@ TEST(DiscreteConditional, constructors_alt_interface) {
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
   DecisionTreeFactor expected2 = f2 / f2.sum(1)->toDecisionTreeFactor();
-  EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
+  EXPECT(actual2.keys() == f2.keys());
+  EXPECT(assert_equal<DecisionTreeFactor::ADT>(expected2,
+                                               actual2.toDecisionTreeFactor()));
 }
 
 /* ************************************************************************* */
@@ -126,8 +131,8 @@ TEST(DiscreteConditional, Multiply) {
   DiscreteConditional conditional(A | B = "1/2 2/1");
   DiscreteConditional prior(B % "1/2");
 
-  // The expected factor
-  DecisionTreeFactor f(A & B, "1 4 2 2");
+  // The expected factor, with keys in the sorted order of the product
+  DecisionTreeFactor f(B & A, "1 2 4 2");
   DiscreteConditional expected(2, f);
 
   // P(A,B) = P(A|B) * P(B) = P(B) * P(A|B)
@@ -290,6 +295,102 @@ TEST(DiscreteConditional, choose) {
 }
 
 /* ************************************************************************* */
+namespace key_order_fixture {
+// Keys deliberately not in increasing order: X comes first but has key 1.
+const DiscreteKey X(1, 2), Y(0, 3), Z(2, 2);
+
+// The stored factor takes the conditional's key order, whatever its input
+// order, and conditionals in different representations compare equal.
+TEST(DiscreteConditional, StoredFactorKeyOrder) {
+  const std::string spec = "1 4 2 5 3 6";  // over (Y, X)
+  const DiscreteConditional fromTable(
+      1, X & Y, std::make_shared<TableFactor>(Y & X, spec));
+  EXPECT(fromTable.factor()->keys() == fromTable.keys());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(fromTable.factor()));
+
+  const DecisionTreeFactor tree(Y & X, spec);
+  const DiscreteConditional fromTree(
+      1, X & Y, std::make_shared<DecisionTreeFactor>(tree));
+  EXPECT(fromTree.factor()->keys() == fromTree.keys());
+  for (auto&& [assignment, value] : tree.enumerate()) {
+    EXPECT_DOUBLES_EQUAL(value, fromTable(assignment), 1e-9);
+  }
+  EXPECT(assert_equal(fromTree, fromTable));
+}
+
+// Construction rejects potentials whose cardinalities or keys do not match,
+// even when the key ids are already in order.
+TEST(DiscreteConditional, MismatchedPotentials) {
+  const DiscreteKey threeStateX(X.first, 3);
+  const auto table = std::make_shared<TableFactor>(X, "0.5 0.5");
+  CHECK_EXCEPTION(DiscreteConditional(1, DiscreteKeys{threeStateX}, table),
+                  std::invalid_argument);
+  const auto tree = std::make_shared<DecisionTreeFactor>(X, "0.5 0.5");
+  CHECK_EXCEPTION(DiscreteConditional(1, DiscreteKeys{threeStateX}, tree),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(DiscreteConditional(1, X & Y, table), std::invalid_argument);
+}
+
+// Constructing from a factor takes its first key as the frontal and normalizes
+// over it, even when that key is not the smallest.
+TEST(DiscreteConditional, FromFactorKeyOrder) {
+  const DecisionTreeFactor joint(X & Y, std::vector<double>{1, 2, 3, 4, 5, 6});
+  const DiscreteConditional conditional(1, joint);
+  EXPECT_LONGS_EQUAL(X.first, conditional.firstFrontalKey());
+  for (size_t y = 0; y < Y.second; y++) {
+    double total = 0.0;
+    for (size_t x = 0; x < X.second; x++) {
+      total += conditional({{X.first, x}, {Y.first, y}});
+    }
+    EXPECT_DOUBLES_EQUAL(1.0, total, 1e-9);
+  }
+}
+
+// Products, choose, and removeDiscreteModes keep the stored factor in the
+// conditional's key order, and match the decision tree results.
+TEST(DiscreteConditional, DerivedKeyOrder) {
+  const std::vector<double> zGivenX{0.25, 0.5, 0.75, 0.5};  // over (Z, X)
+  const DiscreteConditional tableZ(
+      1, Z & X, std::make_shared<TableFactor>(Z & X, zGivenX));
+  const DiscreteConditional treeZ(1, Z & X,
+                                  DecisionTreeFactor::ADT(Z & X, zGivenX));
+  const DiscreteConditional xGivenY(X, {Y}, "1/1 1/2 2/1");
+
+  const DiscreteConditional product = tableZ * xGivenY;
+  EXPECT(product.factor()->keys() == product.keys());
+  EXPECT(assert_equal(treeZ * xGivenY, product));
+
+  const auto chosen = product.choose({{Y.first, 1}});
+  EXPECT(chosen->factor()->keys() == chosen->keys());
+
+  DiscreteConditional removed = product;
+  removed.removeDiscreteModes({{X.first, 0}});
+  EXPECT(removed.factor()->keys() == removed.keys());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(removed.factor()));
+  DiscreteConditional treeRemoved = treeZ * xGivenY;
+  treeRemoved.removeDiscreteModes({{X.first, 0}});
+  EXPECT(assert_equal(treeRemoved, removed));
+}
+
+}  // namespace key_order_fixture
+/* ************************************************************************* */
+// Pruning returns a renormalized conditional with the original key order.
+TEST(DiscreteConditional, Prune) {
+  // Keys are deliberately not in sorted order.
+  DiscreteKey A(5, 2), B(3, 2);
+  DiscreteConditional conditional(A, {B}, "1/4 2/3");  // P(A|B)
+
+  // Keeping the top two values, 0.8 and 0.6, leaves A=1 for each B.
+  auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(conditional.prune(2));
+  CHECK(pruned);
+  EXPECT(conditional.keys() == pruned->keys());
+  EXPECT_LONGS_EQUAL(1, pruned->nrFrontals());
+  DiscreteConditional expected(A, {B}, "0/1 0/1");
+  EXPECT(assert_equal(expected, *pruned, 1e-9));
+}
+
+/* ************************************************************************* */
 // Check argmax on P(C|D) and P(D), plus tie-breaking for P(B)
 TEST(DiscreteConditional, Argmax) {
   DiscreteKey C(2, 2), D(4, 2);
@@ -316,6 +417,57 @@ TEST(DiscreteConditional, Argmax) {
   given[D.first] = 0;
   size_t actual4 = C_given_D.argmax(given);
   EXPECT_LONGS_EQUAL(1, actual4);
+}
+
+/* ************************************************************************* */
+// Multiplication preserves normalization after pruning a table-backed prior.
+TEST(DiscreteConditional, PrunedTableConditionalProduct) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  const DiscreteConditional prior(1, TableFactor(A, "0.4 0.6"));
+  const auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(prior.prune(1));
+  CHECK(pruned);
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
+
+  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
+  const DiscreteConditional joint = conditional * *pruned;
+
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
+                       1e-12);
+
+  double total = 0.0;
+  for (const auto& values : joint.allAssignments()) total += joint(values);
+  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+}
+
+/* ************************************************************************* */
+// Mode removal updates table storage and metadata without renormalizing.
+TEST(DiscreteConditional, RemoveDiscreteModesUpdatesTable) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  DiscreteConditional conditional(2, TableFactor(A & C, "1 2 3 4"));
+  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
+
+  EXPECT_LONGS_EQUAL(1, conditional.size());
+  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
+  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional.factor()));
+  EXPECT(conditional.factor()->keys() == conditional.keys());
+
+  // Keep the A=1 slice of the normalized joint, with its original mass.
+  EXPECT_DOUBLES_EQUAL(0.3, conditional(DiscreteValues{{C.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, conditional(DiscreteValues{{C.first, 1}}), 1e-12);
+
+  const DecisionTreeFactor expected(C, "0.3 0.4");
+  const DecisionTreeFactor converted = conditional.toDecisionTreeFactor();
+  EXPECT_LONGS_EQUAL(1, converted.size());
+  EXPECT(assert_equal(expected, converted));
 }
 
 /* ************************************************************************* */

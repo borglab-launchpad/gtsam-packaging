@@ -25,6 +25,7 @@
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -134,6 +135,17 @@ TEST(DecisionTreeFactor, Divide) {
   KeySet keys(joint.keys());
   keys.insert(pA.keys().begin(), pA.keys().end());
   EXPECT(assert_inequal(KeySet(pS.keys()), keys));
+}
+
+/* ************************************************************************* */
+// Dividing by a TableFactor divides this factor by it, not the reverse.
+TEST(DecisionTreeFactor, DivideByTable) {
+  const DiscreteKey A(0, 2);
+  const DecisionTreeFactor tree(A, "2 8");
+  const auto quotient = tree / std::make_shared<TableFactor>(A, "1 4");
+  CHECK(std::dynamic_pointer_cast<TableFactor>(quotient));
+  EXPECT(assert_equal(DecisionTreeFactor(A, "2 2"),
+                      quotient->toDecisionTreeFactor()));
 }
 
 /* ************************************************************************* */
@@ -256,30 +268,33 @@ TEST(DecisionTreeFactor, Prune) {
 
   // Only keep the leaves with the top 5 values.
   size_t maxNrAssignments = 5;
-  auto pruned5 = f.prune(maxNrAssignments);
+  auto pruned5 =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(maxNrAssignments));
 
   // Pruned leaves should be 0
   DecisionTreeFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
-  EXPECT(assert_equal(expected, pruned5));
+  EXPECT(assert_equal(expected, *pruned5));
 
   // Check for more extreme pruning where we only keep the top 2 leaves
   maxNrAssignments = 2;
-  auto pruned2 = f.prune(maxNrAssignments);
+  auto pruned2 =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(maxNrAssignments));
   DecisionTreeFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
-  EXPECT(assert_equal(expected2, pruned2));
+  EXPECT(assert_equal(expected2, *pruned2));
 
   DecisionTreeFactor expected3(D & C & B & A,
                                "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
                                "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
-  auto pruned3 = factor.prune(maxNrAssignments);
-  EXPECT(assert_equal(expected3, pruned3));
+  auto pruned3 = std::dynamic_pointer_cast<DecisionTreeFactor>(
+      factor.prune(maxNrAssignments));
+  EXPECT(assert_equal(expected3, *pruned3));
 
   // Edge case where the number of hypotheses are less than maxNrAssignments
   DecisionTreeFactor f(A, "0.50001 0.49999");
-  auto pruned4 = f.prune(10);
+  auto pruned4 = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(10));
   DecisionTreeFactor expected4(A, "0.50001 0.49999");
-  EXPECT(assert_equal(expected4, pruned4));
+  EXPECT(assert_equal(expected4, *pruned4));
 }
 
 /* ************************************************************************** */

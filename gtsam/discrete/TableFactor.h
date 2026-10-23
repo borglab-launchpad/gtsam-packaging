@@ -113,6 +113,17 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
   }
 
+  /**
+   * Apply a binary operator when every key and cardinality of `factor` is
+   * contained in this table. Each stored entry projects to exactly one index
+   * in `factor`; only stored matches invoke op, in the original operand order.
+   * Preserve the sorted result layout and the intersection of stored entries,
+   * including explicitly stored zeros. Storage strides, not keys_ order,
+   * determine the projection. See doc/TableFactorSubsetOperations.md for the
+   * index derivation, sparse semantics, and benchmark reproduction commands.
+   */
+  TableFactor applySubset(const TableFactor& factor, Binary op) const;
+
  public:
   /**
    * Convert probability table given as doubles to SparseVector.
@@ -211,6 +222,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /// Multiply with a conditional, keeping the sparse table representation.
+  TableFactor operator*(const DiscreteConditional& c) const;
+
   /**
    * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
    *
@@ -257,6 +271,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /// Find the maximum value in the factor.
   double max() const override;
+
+  /// Return the assignment to all keys with the largest value.
+  DiscreteValues argmax() const;
 
   /// Create new factor by maximizing over all values with the same separator.
   DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
@@ -324,9 +341,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   shared_ptr combine(const Ordering& keys, Binary op) const;
 
-  /// Enumerate all values into a map from values to double.
-  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
   /**
    * @brief Prune the decision tree of discrete variables.
    *
@@ -343,15 +357,21 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * 0.8).
    *
    * @param maxNrAssignments The maximum number of assignments to keep.
-   * @return TableFactor
+   * @return The pruned TableFactor.
    */
-  TableFactor prune(size_t maxNrAssignments) const;
+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
   /**
    * Get the number of non-zero values contained in this factor.
    * It could be much smaller than `prod_{key}(cardinality(key))`.
    */
   uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
+
+  /**
+   * Return the same factor with its keys, and hence its table layout, in the
+   * given order. The keys must be a permutation of this factor's keys.
+   */
+  TableFactor reorder(const DiscreteKeys& keys) const;
 
   /**
    * Restrict the factor to the given assignment, returning a TableFactor over

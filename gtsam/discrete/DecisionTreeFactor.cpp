@@ -41,7 +41,13 @@ namespace gtsam {
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
       : DiscreteFactor(c.keys(), c.cardinalities()),
-        AlgebraicDecisionTree<Key>(c) {}
+        AlgebraicDecisionTree<Key>(c.toDecisionTreeFactor()) {}
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::operator*(
+      const DiscreteConditional& c) const {
+    return *this * c.toDecisionTreeFactor();
+  }
 
   /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
@@ -96,9 +102,10 @@ namespace gtsam {
   DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
       const DiscreteFactor::shared_ptr& f) const {
     if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
-      // Check if `f` is a TableFactor. If yes, then
-      // convert `this` to a TableFactor which is cheaper.
-      return std::make_shared<TableFactor>(tf->operator/(TableFactor(*this)));
+      // If `f` is a TableFactor, divide as tables, which is cheaper. Use the
+      // virtual conversion so derived decision tree factors can provide their
+      // actual sparse representation.
+      return std::make_shared<TableFactor>(toTableFactor() / *tf);
 
     } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If `f` is a DecisionTreeFactor, divide normally.
@@ -230,23 +237,6 @@ namespace gtsam {
       }
     }
     return std::make_shared<DecisionTreeFactor>(dkeys, result);
-  }
-
-  /* ************************************************************************ */
-  std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate()
-      const {
-    // Get all possible assignments
-    DiscreteKeys pairs = discreteKeys();
-    // Reverse to make cartesian product output a more natural ordering.
-    DiscreteKeys rpairs(pairs.rbegin(), pairs.rend());
-    const auto assignments = DiscreteValues::CartesianProduct(rpairs);
-
-    // Construct unordered_map with values
-    std::vector<std::pair<DiscreteValues, double>> result;
-    for (const auto& assignment : assignments) {
-      result.emplace_back(assignment, evaluate(assignment));
-    }
-    return result;
   }
 
   /* ************************************************************************ */
@@ -514,7 +504,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
+  DiscreteFactor::shared_ptr DecisionTreeFactor::prune(
+      size_t maxNrAssignments) const {
     const size_t N = maxNrAssignments;
 
     double threshold = computeThreshold(N);
@@ -546,24 +537,23 @@ namespace gtsam {
     DecisionTree<Key, double> thresholded(*this, thresholdFunc);
 
     // Create pruned decision tree factor and return.
-    return DecisionTreeFactor(this->discreteKeys(), thresholded);
+    return std::make_shared<DecisionTreeFactor>(this->discreteKeys(),
+                                                thresholded);
   }
 
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr DecisionTreeFactor::restrict(
     const DiscreteValues& assignment) const {
   ADT restricted_tree = ADT::restrict(assignment);
-  // Get all the keys that are not restricted by the assignment
+  // Get all the keys that are not restricted by the assignment, in order.
   // This ensures that the new restricted factor doesn't have keys
   // for which the information has been removed.
-  DiscreteKeys restricted_keys = this->discreteKeys();
-  for (auto&& kv : assignment) {
-    Key key = kv.first;
-    // Remove the key from the keys list
-    restricted_keys.erase(
-        std::remove_if(restricted_keys.begin(), restricted_keys.end(),
-                       [key](const DiscreteKey& k) { return k.first == key; }),
-        restricted_keys.end());
+  DiscreteKeys restricted_keys;
+  restricted_keys.reserve(keys_.size());
+  for (Key key : keys_) {
+    if (assignment.find(key) == assignment.end()) {
+      restricted_keys.emplace_back(key, cardinality(key));
+    }
   }
   // Create the restricted factor with the appropriate keys and tree.
   return std::make_shared<DecisionTreeFactor>(restricted_keys, restricted_tree);

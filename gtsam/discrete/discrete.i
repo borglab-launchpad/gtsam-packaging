@@ -40,6 +40,7 @@ virtual class DiscreteFactor : gtsam::Factor {
   double evaluate(const gtsam::Assignment<gtsam::Key>& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::AlgebraicDecisionTree<gtsam::Key> errorTree() const;
+  std::vector<std::pair<gtsam::DiscreteValues, double>> enumerate() const;
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
@@ -74,7 +75,6 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       bool showZero = true) const;
-  std::vector<std::pair<gtsam::DiscreteValues, double>> enumerate() const;
   string markdown(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const std::map<gtsam::Key, std::vector<std::string>>& names =
@@ -87,9 +87,9 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
 
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
-virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
+virtual class DiscreteConditional : gtsam::DiscreteFactor {
   DiscreteConditional();
-  DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
+  DiscreteConditional(size_t nFrontals, const gtsam::DiscreteFactor& f);
   DiscreteConditional(const gtsam::DiscreteKey& key, string spec);
   DiscreteConditional(const gtsam::DiscreteKey& key,
                       const gtsam::DiscreteKeys& parents, string spec);
@@ -113,6 +113,15 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
   gtsam::DiscreteConditional marginal(gtsam::Key key) const;
+  gtsam::DiscreteFactor* factor() const;
+  gtsam::DecisionTreeFactor toDecisionTreeFactor() const;
+  gtsam::TableFactor toTableFactor() const;
+  uint64_t nrValues() const;
+  size_t cardinality(gtsam::Key j) const;
+  gtsam::DiscreteFactor* sum(size_t nrFrontals) const;
+  gtsam::DiscreteFactor* sum(const gtsam::Ordering& keys) const;
+  gtsam::DiscreteFactor* max(size_t nrFrontals) const;
+  gtsam::DiscreteFactor* max(const gtsam::Ordering& keys) const;
   gtsam::Key firstFrontalKey() const;
   size_t nrFrontals() const;
   size_t nrParents() const;
@@ -133,7 +142,10 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                      std::mt19937_64 @rng = nullptr) const;
   size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
 
-  // Markdown and HTML
+  // Graphviz, Markdown and HTML
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      bool showZero = true) const;
   string markdown(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const std::map<gtsam::Key, std::vector<std::string>>& names =
@@ -170,20 +182,9 @@ virtual class TableFactor : gtsam::DiscreteFactor {
               const gtsam::DecisionTreeFactor& dtf);
   TableFactor(const gtsam::DecisionTreeFactor& dtf);
 
+  gtsam::DiscreteValues argmax() const;
+
   double error(const gtsam::DiscreteValues& values) const;
-};
-
-#include <gtsam/discrete/TableDistribution.h>
-virtual class TableDistribution : gtsam::DiscreteConditional {
-  TableDistribution();
-  TableDistribution(const gtsam::TableFactor& f);
-  TableDistribution(const gtsam::DiscreteKey& key, std::vector<double> spec);
-  TableDistribution(const gtsam::DiscreteKeys& keys, std::vector<double> spec);
-  TableDistribution(const gtsam::DiscreteKeys& keys, string spec);
-  TableDistribution(const gtsam::DiscreteKey& key, string spec);
-
-  gtsam::TableFactor table() const;
-  uint64_t nrValues() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
