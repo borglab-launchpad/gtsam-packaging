@@ -1,10 +1,54 @@
-gtsam (4.3.0-0ubuntu14~30.gbpf66441) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~31.gbpad7cc0) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ad7cc095803f15ed2bcde83af3ef86a46f705840 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f66441655ecce22a68c315a90740350f019aa85f **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Oct 2026 19:34:21 +0000
+  [ R Kent James ]
+  * Add rosdoc2 config that excludes vendored 3rdparty code
+
+  [ Frank Dellaert ]
+  * Avoid temporary camera Jacobian copy in CameraSet
+  * Fix localization notebook title rendering and state notation
+  * Optimize subset table multiplication and division
+  * Fix signed sparse lookup indices for MSVC
+
+  [ Varun Agrawal ]
+  * Discrete prune now returns DiscreteFactor::shared_ptr
+  * Update calling code to use new DiscreteFactor::shared_ptr
+  * Add DiscreteFactor::enumerate as a base class method
+  * DiscreteConditional now inherits from DiscreteFactor which allows for opaque use of underlying storage mechanism (tree vs sparse table)
+  * Update wrapper
+  * Update hybrid factor graph to use general DiscreteFactor instead of concrete DecisionTreeFactor
+  * Overload operator* for use with DiscreteConditional
+  * `dot()` backwards compatibility
+  * Update Python tests
+  * Optimizations to reduce memory allocations and speed up other things
+  * Remove DiscreteLookupTable::argmax in favor of parent and optimize argmaxInPlace
+  * Add additional tests from Frank's comments
+  * Fix issue where different cardinalities can exist in InKeyOrder
+  * Default TableDistribution constructor now creates a TableFactor explicitly
+  * Fix asymmetric equality check in TableDistribution
+  * Fix python wrapper
+  * Deprecate TableDistribution
+  * Remove TableDistribution calls and instead use TableFactor backed DiscreteConditional directly
+  * Formatting
+  * Update jupyter notebooks
+  * Update wrapper and docs
+  * Put table distribution tests within deprecation guard
+  * Increase coverage of DiscreteConditional for DerivedKeyOrder
+  * Add recommended tests for DiscreteConditional
+  * Update TableConditional tests so we have the same coverage as from before TableDistribution was deprecated
+  * Remove toDecisionTreeFactor calls in discrete elimination
+  * Fix mixed type division between TableFactor and DecisionTreeFactor
+  * Add new test and fix
+  * Add new regression test and format
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Oct 2026 04:10:40 +0000
 
 gtsam (4.3.0-0ubuntu14~29.gbp5f9f53) resolute; urgency=medium
 
