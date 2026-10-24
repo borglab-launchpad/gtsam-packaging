@@ -1,10 +1,24 @@
-gtsam (4.3.0-0ubuntu14~33.gbp39ba81) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~34.gbp0d921f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0d921f5402d14927de4b45f1cef32560e144ff5a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @39ba81c26a0931a923ce9af2e042709ace27a842 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 23 Oct 2026 04:12:56 +0000
+  [ Varun Agrawal ]
+  * Fix DecisionTreeFactor::computeThreshold bug
+  * Update TableFactor::prune to match the behavior of DecisionTreeFactor::prune
+  * Fix type in count_if from int to double
+  * Call correct Eigen::SparseVector prune method
+  * Fix shortcut for binary apply when operated on by keyless factor with 0
+  * Fix max() to handle all zero case
+  * Update applySubset to also use the correct prune() method and update the test accordingly
+  * Add nodiscard annotations to warn about users about compatibility changes
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Oct 2026 19:16:52 +0000
 
 gtsam (4.3.0-0ubuntu14~32.gbpeb0c77) resolute; urgency=medium
 
