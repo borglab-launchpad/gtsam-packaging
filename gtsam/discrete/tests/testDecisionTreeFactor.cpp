@@ -25,6 +25,7 @@
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -134,6 +135,17 @@ TEST(DecisionTreeFactor, Divide) {
   KeySet keys(joint.keys());
   keys.insert(pA.keys().begin(), pA.keys().end());
   EXPECT(assert_inequal(KeySet(pS.keys()), keys));
+}
+
+/* ************************************************************************* */
+// Dividing by a TableFactor divides this factor by it, not the reverse.
+TEST(DecisionTreeFactor, DivideByTable) {
+  const DiscreteKey A(0, 2);
+  const DecisionTreeFactor tree(A, "2 8");
+  const auto quotient = tree / std::make_shared<TableFactor>(A, "1 4");
+  CHECK(std::dynamic_pointer_cast<TableFactor>(quotient));
+  EXPECT(assert_equal(DecisionTreeFactor(A, "2 2"),
+                      quotient->toDecisionTreeFactor()));
 }
 
 /* ************************************************************************* */
@@ -283,6 +295,22 @@ TEST(DecisionTreeFactor, Prune) {
   auto pruned4 = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(10));
   DecisionTreeFactor expected4(A, "0.50001 0.49999");
   EXPECT(assert_equal(expected4, *pruned4));
+}
+
+// Check that pruning keeps the largest values regardless of where they appear
+// in the tree, and keeps every value tied with the N-th largest.
+TEST(DecisionTreeFactor, PruneKeepsLargestValues) {
+  DiscreteKey X(0, 5);
+  DecisionTreeFactor f(X, "0.2 0.2 0.1 0.2 0.3");
+
+  // The threshold is the 3rd largest value, counting duplicates.
+  EXPECT_DOUBLES_EQUAL(0.2, f.computeThreshold(3), 1e-9);
+
+  auto pruned =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(3));
+
+  DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
+  EXPECT(assert_equal(expected, *pruned));
 }
 
 /* ************************************************************************** */
