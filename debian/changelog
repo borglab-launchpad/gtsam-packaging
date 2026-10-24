@@ -1,10 +1,41 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~30.gbp93c96a) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~31.gbpe51d84) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @e51d84502d2e0a323568372ace247e6e73e43d34 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @93c96ac2590925842bf62487461a467cdb99bbc6 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 21 Oct 2026 22:59:16 +0000
+  [ Varun Agrawal ]
+  * Deprecate TableDistribution
+  * Remove TableDistribution calls and instead use TableFactor backed DiscreteConditional directly
+  * Formatting
+  * Update jupyter notebooks
+  * Update wrapper and docs
+  * Put table distribution tests within deprecation guard
+  * Increase coverage of DiscreteConditional for DerivedKeyOrder
+  * Add recommended tests for DiscreteConditional
+  * Update TableConditional tests so we have the same coverage as from before TableDistribution was deprecated
+  * Remove toDecisionTreeFactor calls in discrete elimination
+  * Fix mixed type division between TableFactor and DecisionTreeFactor
+  * Add new test and fix
+  * Add new regression test and format
+  * Fix DecisionTreeFactor::computeThreshold bug
+  * Update TableFactor::prune to match the behavior of DecisionTreeFactor::prune
+  * Fix type in count_if from int to double
+  * Call correct Eigen::SparseVector prune method
+  * Fix shortcut for binary apply when operated on by keyless factor with 0
+  * Fix max() to handle all zero case
+  * Update applySubset to also use the correct prune() method and update the test accordingly
+  * Add nodiscard annotations to warn about users about compatibility changes
+
+  [ Frank Dellaert ]
+  * Optimize subset table multiplication and division
+  * Fix signed sparse lookup indices for MSVC
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Oct 2026 19:16:54 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~29.gbpbd3024) resolute; urgency=medium
 

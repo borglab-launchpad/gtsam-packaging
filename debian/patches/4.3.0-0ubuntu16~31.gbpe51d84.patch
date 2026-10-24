@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 21 2026 22:56:56 +0000
+Date: Oct, 24 2026 19:16:56 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -3663,11 +3663,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    const auto addValidAssignments = [&](const auto& add, size_t depth,
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/Constraint.h
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/Constraint.h
-@@ -119,6 +119,10 @@ class GTSAM_EXPORT Constraint : public D
+@@ -119,6 +119,11 @@ class GTSAM_EXPORT Constraint : public D
      return toDecisionTreeFactor().max(keys);
    }
  
-+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override {
++  [[nodiscard]] DiscreteFactor::shared_ptr prune(
++      size_t maxNrAssignments) const override {
 +    return toDecisionTreeFactor().prune(maxNrAssignments);
 +  }
 +
@@ -3691,7 +3692,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /* ************************************************************************ */
    bool DecisionTreeFactor::equals(const DiscreteFactor& other,
-@@ -233,23 +239,6 @@ namespace gtsam {
+@@ -96,9 +102,10 @@ namespace gtsam {
+   DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
+       const DiscreteFactor::shared_ptr& f) const {
+     if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
+-      // Check if `f` is a TableFactor. If yes, then
+-      // convert `this` to a TableFactor which is cheaper.
+-      return std::make_shared<TableFactor>(tf->operator/(TableFactor(*this)));
++      // If `f` is a TableFactor, divide as tables, which is cheaper. Use the
++      // virtual conversion so derived decision tree factors can provide their
++      // actual sparse representation.
++      return std::make_shared<TableFactor>(toTableFactor() / *tf);
+ 
+     } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+       // If `f` is a DecisionTreeFactor, divide normally.
+@@ -233,23 +240,6 @@ namespace gtsam {
    }
  
    /* ************************************************************************ */
@@ -3715,17 +3730,102 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    std::vector<double> DecisionTreeFactor::probabilities() const {
      // Set of all keys
      KeySet allKeys(keys().begin(), keys().end());
-@@ -514,7 +503,8 @@ namespace gtsam {
+@@ -415,14 +405,6 @@ namespace gtsam {
+       std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
+     }
+ 
+-    /// Push value `x`, `n` number of times.
+-    void push(double x, size_t n) {
+-      for (size_t i = 0; i < n; ++i) {
+-        v_.push_back(x);
+-        std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
+-      }
+-    }
+-
+     /// Pop the top value of the heap.
+     double pop() {
+       std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
+@@ -480,26 +462,18 @@ namespace gtsam {
+         nrAssignments *= cardinalities_.at(k);
+       }
+ 
+-      // If min-heap is empty, fill it initially.
+-      // This is because there is nothing at the top.
+-      if (min_heap.empty()) {
+-        min_heap.push(p, std::min(nrAssignments, N));
+-
+-      } else {
+-        for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
+-          // If p is larger than the smallest element,
+-          // then we insert into the min heap.
+-          // We check against the top each time because the
+-          // heap maintains the smallest element at the top.
+-          if (p > min_heap.top()) {
+-            if (min_heap.size() == N) {
+-              min_heap.pop();
+-            }
+-            min_heap.push(p);
+-          } else {
+-            // p is <= min value so move to the next one
+-            break;
+-          }
++      // Insert one copy of p per assignment in the subtree, keeping only the
++      // N largest values. Until the heap is full every value belongs in it;
++      // afterwards p must beat the current smallest value to get in.
++      for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
++        if (min_heap.size() < N) {
++          min_heap.push(p);
++        } else if (p > min_heap.top()) {
++          min_heap.pop();
++          min_heap.push(p);
++        } else {
++          // p is <= the smallest kept value, so its remaining copies are too.
++          break;
+         }
+       }
+       return p;
+@@ -514,56 +488,36 @@ namespace gtsam {
    }
  
    /* ************************************************************************ */
 -  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
+-    const size_t N = maxNrAssignments;
+-
+-    double threshold = computeThreshold(N);
+-
+-    // Now threshold the decision tree
+-    size_t total = 0;
+-    auto thresholdFunc = [threshold, &total, N](const double& value) {
+-      // There is a possible case where the `threshold` is equal to 0.0
+-      // In that case `(value < threshold) == false`
+-      // which increases the leaf total erroneously.
+-      // Hence we check for 0.0 explicitly.
+-      if (fpEqual(value, 0.0, 1e-12)) {
+-        return 0.0;
+-      }
+-
+-      // Check if value is less than the threshold and
+-      // we haven't exceeded the maximum number of leaves.
+-      // TODO(Varun): Bug since we can have a case where we need to prune higher
+-      // probabilities after we have reached N.
+-      // E.g. N=3 for [0.2, 0.2, 0.1, 0.2, 0.3]
+-      // will give [0.2, 0.2, 0.0, 0.2, 0.0]
+-      if (value < threshold || total >= N) {
+-        return 0.0;
+-      } else {
+-        total += 1;
+-        return value;
+-      }
 +  DiscreteFactor::shared_ptr DecisionTreeFactor::prune(
 +      size_t maxNrAssignments) const {
-     const size_t N = maxNrAssignments;
- 
-     double threshold = computeThreshold(N);
-@@ -546,24 +536,23 @@ namespace gtsam {
++    // Keep every value at or above the N-th largest one. We don't stop after N
++    // kept values: leaves are visited in tree order, not value order, so a cap
++    // would drop larger values that come later. Values tied with the threshold
++    // are all kept, so more than N assignments can survive.
++    const double threshold = computeThreshold(maxNrAssignments);
++    auto thresholdFunc = [threshold](const double& value) {
++      return value < threshold ? 0.0 : value;
+     };
      DecisionTree<Key, double> thresholded(*this, thresholdFunc);
  
      // Create pruned decision tree factor and return.
@@ -3781,15 +3881,35 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      /// Get all the probabilities in order of assignment values
      std::vector<double> probabilities() const;
  
-@@ -299,9 +299,9 @@ namespace gtsam {
-      * 0.8).
+@@ -287,21 +287,20 @@ namespace gtsam {
+      * @brief Prune the decision tree of discrete variables.
+      *
+      * Pruning will set the leaves to be "pruned" to 0 indicating a 0
+-     * probability. An assignment is pruned if it is not in the top
+-     * `maxNrAssignments` values.
++     * probability. An assignment is pruned if its value is smaller than the
++     * `maxNrAssignments`-th largest value, counting duplicates.
+      *
+-     * A violation can occur if there are more
+-     * duplicate values than `maxNrAssignments`. A violation here is the need to
+-     * un-prune the decision tree (e.g. all assignment values are 1.0). We could
+-     * have another case where some subset of duplicates exist (e.g. for a tree
+-     * with 8 assignments we have 1, 1, 1, 1, 0.8, 0.7, 0.6, 0.5), but this is
+-     * not a violation since the for `maxNrAssignments=5` the top values are (1,
+-     * 0.8).
++     * Every assignment tied with that value is kept, so more than
++     * `maxNrAssignments` assignments survive when ties straddle the cutoff.
++     * For example, pruning (0.2, 0.2, 0.1, 0.2, 0.3) to 3 assignments gives
++     * (0.2, 0.2, 0, 0.2, 0.3), and a factor whose values are all equal is not
++     * pruned at all.
       *
       * @param maxNrAssignments The maximum number of assignments to keep.
 -     * @return DecisionTreeFactor
 +     * @return The pruned DecisionTreeFactor.
       */
 -    DecisionTreeFactor prune(size_t maxNrAssignments) const;
-+    DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
++    [[nodiscard]] DiscreteFactor::shared_ptr prune(
++        size_t maxNrAssignments) const override;
  
      /**
       * Get the number of non-zero values contained in this factor.
@@ -4441,7 +4561,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /// Render as markdown table.
    std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                         const Names& names = {}) const override;
-@@ -292,8 +397,12 @@ class GTSAM_EXPORT DiscreteConditional
+@@ -292,8 +397,13 @@ class GTSAM_EXPORT DiscreteConditional
     */
    double negLogConstant() const override;
  
@@ -4452,11 +4572,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   * assignments, and renormalize. Returns a DiscreteConditional with the same
 +   * keys and number of frontals.
 +   */
-+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
++  [[nodiscard]] DiscreteFactor::shared_ptr prune(
++      size_t maxNrAssignments) const override;
  
    /**
     * @brief Remove the discrete modes whose assignments are given to us.
-@@ -308,18 +417,33 @@ class GTSAM_EXPORT DiscreteConditional
+@@ -308,18 +418,33 @@ class GTSAM_EXPORT DiscreteConditional
    /// @}
  
   protected:
@@ -4538,7 +4659,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /// Multiply with a scalar
    virtual DiscreteFactor::shared_ptr operator*(double s) const = 0;
  
-@@ -186,6 +192,12 @@ class GTSAM_EXPORT DiscreteFactor : publ
+@@ -186,6 +192,13 @@ class GTSAM_EXPORT DiscreteFactor : publ
    virtual DiscreteFactor::shared_ptr restrict(
        const DiscreteValues& assignment) const = 0;
  
@@ -4546,14 +4667,28 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   * Prune the factor, keeping the `maxNrAssignments` assignments with the
 +   * largest values and setting all other values to zero.
 +   */
-+  virtual DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const = 0;
++  [[nodiscard]] virtual DiscreteFactor::shared_ptr prune(
++      size_t maxNrAssignments) const = 0;
 +
    /// @}
    /// @name Wrapper support
    /// @{
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/DiscreteFactorGraph.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/DiscreteFactorGraph.cpp
-@@ -145,8 +145,8 @@ namespace gtsam {
+@@ -71,7 +71,11 @@ namespace gtsam {
+         result = result ? result->multiply(factor) : factor;
+       }
+     }
+-    if (result->max() == 0.0 && result->nrValues() == 1) {
++    // Discrete factors are nonnegative, so a zero maximum means the product is
++    // zero everywhere.
++    // Also don't require a single stored value, since an all-zero
++    // TableFactor stores nothing.
++    if (result->max() == 0.0) {
+       throw std::runtime_error(
+           "Product factor is 0.0, possibly due to disjointed discrete "
+           "factors.");
+@@ -145,8 +149,8 @@ namespace gtsam {
      // Make lookup with product
      gttic(lookup);
      size_t nrFrontals = frontalKeys.size();
@@ -4564,6 +4699,32 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      gttoc(lookup);
  
      return {std::dynamic_pointer_cast<DiscreteConditional>(lookup), max};
+@@ -217,17 +221,17 @@ namespace gtsam {
+     gttoc(sum);
+ 
+     // Ordering keys for the conditional so that frontalKeys are really in front
+-    Ordering orderedKeys;
+-    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
+-                       frontalKeys.end());
+-    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(),
+-                       sum->keys().end());
++    DiscreteKeys orderedKeys;
++    for (Key key : frontalKeys)
++      orderedKeys.emplace_back(key, product->cardinality(key));
++    for (Key key : sum->keys())
++      orderedKeys.emplace_back(key, product->cardinality(key));
+ 
+-    // now divide product/sum to get conditional
++    // Now divide product/sum to get conditional, keeping the original
++    // representation of the product, e.g., a sparse table
+     gttic(divide);
+     auto conditional = std::make_shared<DiscreteConditional>(
+-        product->toDecisionTreeFactor(), sum->toDecisionTreeFactor(),
+-        orderedKeys);
++        frontalKeys.size(), orderedKeys, *product / sum);
+     gttoc(divide);
+ 
+     return {conditional, sum};
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/DiscreteLookupDAG.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/DiscreteLookupDAG.cpp
 @@ -23,6 +23,7 @@
@@ -4715,7 +4876,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     */
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/TableDistribution.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/TableDistribution.cpp
-@@ -39,87 +39,39 @@ using std::vector;
+@@ -15,6 +15,10 @@
+  *  @author Varun Agrawal
+  */
+ 
++#include <gtsam/config.h>
++
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
++
+ #include <gtsam/base/Testable.h>
+ #include <gtsam/base/debug.h>
+ #include <gtsam/base/utilities.h>
+@@ -39,145 +43,53 @@ using std::vector;
  namespace gtsam {
  
  /// Normalize sparse_table
@@ -4820,26 +4992,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************ */
-@@ -127,7 +79,7 @@ DiscreteValues TableDistribution::argmax
-   uint64_t maxIdx = 0;
-   double maxValue = 0.0;
- 
+ DiscreteValues TableDistribution::argmax() const {
+-  uint64_t maxIdx = 0;
+-  double maxValue = 0.0;
+-
 -  Eigen::SparseVector<double> sparseTable = table_.sparseTable();
-+  const SparseVector& sparseTable = tableFactor().sparseTable();
- 
-   for (SparseIt it(sparseTable); it; ++it) {
-     if (it.value() > maxValue) {
-@@ -136,48 +88,14 @@ DiscreteValues TableDistribution::argmax
-     }
-   }
- 
+-
+-  for (SparseIt it(sparseTable); it; ++it) {
+-    if (it.value() > maxValue) {
+-      maxIdx = it.index();
+-      maxValue = it.value();
+-    }
+-  }
+-
 -  return table_.findAssignments(maxIdx);
 -}
 -
 -/* ****************************************************************************/
 -void TableDistribution::prune(size_t maxNrAssignments) {
 -  table_ = table_.prune(maxNrAssignments);
-+  return tableFactor().findAssignments(maxIdx);
++  return tableFactor().argmax();
  }
  
  /* ****************************************************************************/
@@ -4883,15 +5055,38 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  }  // namespace gtsam
++
++#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/TableDistribution.h
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/TableDistribution.h
-@@ -38,9 +38,12 @@ namespace gtsam {
+@@ -17,6 +17,9 @@
+ 
+ #pragma once
+ 
++#include <gtsam/config.h>
++
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+ #include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/inference/Conditional-inst.h>
+@@ -31,16 +34,20 @@ namespace gtsam {
+  * Distribution which uses a SparseVector as the internal
+  * representation, similar to the TableFactor.
+  *
+- * This is primarily used in the case when we have a clique in the BayesTree
+- * which consists of all the discrete variables, e.g. in hybrid elimination.
++ * @deprecated A DiscreteConditional can store its probabilities in a
++ * TableFactor directly. Construct one with
++ * `DiscreteConditional(f.size(), f)` from a TableFactor `f`, which normalizes
++ * it and keeps the sparse table. Use `toTableFactor()` in place of `table()`,
++ * and `toTableFactor().argmax()` in place of `argmax()`.
+  *
+  * @ingroup discrete
   */
  class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   private:
 -  TableFactor table_;
-+  typedef SparseVector::InnerIterator SparseIt;
- 
+-
 -  typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
 +  /// The stored factor, which is always a TableFactor.
 +  const TableFactor& tableFactor() const {
@@ -4900,7 +5095,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
   public:
    // typedefs needed to play nice with gtsam
-@@ -54,10 +57,11 @@ class GTSAM_EXPORT TableDistribution : p
+@@ -54,10 +61,11 @@ class GTSAM_EXPORT TableDistribution : p
    /// @name Standard Constructors
    /// @{
  
@@ -4915,7 +5110,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    TableDistribution(const TableFactor& f);
  
    /**
-@@ -91,7 +95,9 @@ class GTSAM_EXPORT TableDistribution : p
+@@ -91,7 +99,9 @@ class GTSAM_EXPORT TableDistribution : p
    /// GTSAM-style print
    void print(
        const std::string& s = "Table Distribution: ",
@@ -4926,7 +5121,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// GTSAM-style equals
    bool equals(const DiscreteFactor& other, double tol = 1e-9) const override;
-@@ -101,36 +107,7 @@ class GTSAM_EXPORT TableDistribution : p
+@@ -101,36 +111,7 @@ class GTSAM_EXPORT TableDistribution : p
    /// @{
  
    /// Return the underlying TableFactor
@@ -4964,7 +5159,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /**
     * @brief Return assignment that maximizes value.
-@@ -139,32 +116,12 @@ class GTSAM_EXPORT TableDistribution : p
+@@ -139,32 +120,13 @@ class GTSAM_EXPORT TableDistribution : p
     */
    DiscreteValues argmax() const;
  
@@ -4995,11 +5190,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -  /// Get the number of non-zero values.
 -  uint64_t nrValues() const override { return table_.sparseTable().nonZeros(); }
 +  /// Prune the conditional and renormalize, returning a TableDistribution.
-+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
++  [[nodiscard]] DiscreteFactor::shared_ptr prune(
++      size_t maxNrAssignments) const override;
  
    /// @}
  
-@@ -175,7 +132,6 @@ class GTSAM_EXPORT TableDistribution : p
+@@ -175,7 +137,6 @@ class GTSAM_EXPORT TableDistribution : p
    template <class Archive>
    void serialize(Archive& ar, const unsigned int /*version*/) {
      ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
@@ -5007,6 +5203,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  #endif
  };
+@@ -186,3 +147,5 @@ template <>
+ struct traits<TableDistribution> : public Testable<TableDistribution> {};
+ 
+ }  // namespace gtsam
++
++#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/TableFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/TableFactor.cpp
 @@ -23,7 +23,11 @@
@@ -5021,7 +5223,51 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  using namespace std;
  
-@@ -128,8 +132,7 @@ TableFactor::TableFactor(const DiscreteK
+@@ -112,6 +116,43 @@ struct ScopePartition {
+   }
+ };
+ 
++/// One mixed-radix digit, or a contiguous group of digits, in two table layouts.
++struct IndexProjection {
++  uint64_t sourceStride;
++  uint64_t cardinality;
++  uint64_t targetStride;
++};
++
++/**
++ * Cache the strides needed to project a source index onto a subset of its keys.
++ * Adjacent digits can be decoded together when they are contiguous in both
++ * layouts: a * c + b = (index / stride) % (cardinality_a * c). For example,
++ * projecting onto a suffix of the source keys needs one group instead of one
++ * integer division and remainder per key. Use actual strides because the
++ * metadata-only TableFactor constructor can reorder keys without moving data.
++ */
++std::vector<IndexProjection> makeSubsetProjection(
++    const DiscreteKeys& keys, const std::map<Key, size_t>& sourceStrides,
++    const std::map<Key, size_t>& targetStrides) {
++  std::vector<IndexProjection> projection;
++  projection.reserve(keys.size());
++  for (const auto& [key, cardinality] : keys) {
++    if (cardinality == 1) continue;  // This digit is always zero.
++    const IndexProjection term{sourceStrides.at(key), cardinality,
++                               targetStrides.at(key)};
++    if (!projection.empty() &&
++        projection.back().sourceStride == term.sourceStride * cardinality &&
++        projection.back().targetStride == term.targetStride * cardinality) {
++      auto& previous = projection.back();
++      previous = {term.sourceStride, previous.cardinality * cardinality,
++                  term.targetStride};
++    } else {
++      projection.push_back(term);
++    }
++  }
++  return projection;
++}
++
+ }  // namespace
+ 
+ /* ************************************************************************ */
+@@ -128,15 +169,16 @@ TableFactor::TableFactor(const DiscreteK
  }
  
  /* ************************************************************************ */
@@ -5031,7 +5277,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()),
        sparse_table_(table.size()) {
    sparse_table_ = table;
-@@ -156,17 +159,17 @@ TableFactor::TableFactor(const DiscreteK
+-  double denom = table.size();
++  // Use integer arithmetic since `double` cannot represent every index above
++  // 2^53 due to precision limitations.
++  uint64_t denominator = table.size();
+   for (const DiscreteKey& dkey : dkeys) {
+-    denom /= dkey.second;
+-    denominators_.insert(std::pair<Key, double>(dkey.first, denom));
++    denominator /= dkey.second;
++    denominators_.emplace(dkey.first, denominator);
+   }
+   sorted_dkeys_ = discreteKeys();
+   sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
+@@ -156,17 +198,17 @@ TableFactor::TableFactor(const DiscreteK
   *  is then used to create the TableFactor.
   *
   * @param dt The DecisionTree
@@ -5053,7 +5311,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t nrValues = 0;
    dt.visit([&nrValues](double x) {
      if (x > 0) nrValues += 1;
-@@ -251,11 +254,11 @@ TableFactor::TableFactor(const DecisionT
+@@ -177,10 +219,10 @@ static Eigen::SparseVector<double> Compu
+ 
+   // Compute denominators to be used in computing sparse table indices
+   std::map<Key, size_t> denominators;
+-  double denom = sparseTable.size();
++  uint64_t denominator = sparseTable.size();
+   for (const DiscreteKey& dkey : dkeys) {
+-    denom /= dkey.second;
+-    denominators.insert(std::pair<Key, double>(dkey.first, denom));
++    denominator /= dkey.second;
++    denominators.emplace(dkey.first, denominator);
+   }
+ 
+   /**
+@@ -251,11 +293,11 @@ TableFactor::TableFactor(const DecisionT
  
  /* ************************************************************************ */
  TableFactor::TableFactor(const DiscreteConditional& c)
@@ -5068,16 +5340,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t max_size = 1;
    for (auto&& [_, cardinality] : keys.cardinalities()) {
      max_size *= cardinality;
-@@ -266,7 +269,7 @@ Eigen::SparseVector<double> TableFactor:
+@@ -266,21 +308,22 @@ Eigen::SparseVector<double> TableFactor:
          "input.");
    }
  
 -  Eigen::SparseVector<double> sparse_table(table.size());
 +  SparseVector sparse_table(table.size());
    // Count number of nonzero elements in table and reserve the space.
++  // Take each value as a double: converting to an integer would truncate
++  // probabilities below 1 to 0 and undercount.
    const uint64_t nnz = std::count_if(table.begin(), table.end(),
-                                      [](uint64_t i) { return i != 0; });
-@@ -280,7 +283,7 @@ Eigen::SparseVector<double> TableFactor:
+-                                     [](uint64_t i) { return i != 0; });
++                                     [](double value) { return value != 0.0; });
+   sparse_table.reserve(nnz);
+   for (uint64_t i = 0; i < table.size(); i++) {
+     if (table[i] != 0) sparse_table.insert(i) = table[i];
+   }
+-  sparse_table.pruned();
+   sparse_table.data().squeeze();
+   return sparse_table;
  }
  
  /* ************************************************************************ */
@@ -5086,7 +5367,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                                                   const std::string& table) {
    // Convert string to doubles.
    std::vector<double> ys;
-@@ -303,13 +306,12 @@ bool TableFactor::equals(const DiscreteF
+@@ -303,13 +346,12 @@ bool TableFactor::equals(const DiscreteF
  
  /* ************************************************************************ */
  double TableFactor::evaluate(const Assignment<Key>& values) const {
@@ -5106,7 +5387,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    return sparse_table_.coeff(idx);
  }
-@@ -343,6 +345,11 @@ DecisionTreeFactor TableFactor::operator
+@@ -343,6 +385,11 @@ DecisionTreeFactor TableFactor::operator
  }
  
  /* ************************************************************************ */
@@ -5118,14 +5399,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  DiscreteFactor::shared_ptr TableFactor::multiply(
      const DiscreteFactor::shared_ptr& f) const {
    DiscreteFactor::shared_ptr result;
-@@ -392,14 +399,50 @@ DecisionTreeFactor TableFactor::toDecisi
+@@ -392,14 +439,50 @@ DecisionTreeFactor TableFactor::toDecisi
      return DecisionTreeFactor(dkeys, tree);
    }
  
 -  std::vector<double> table(sparse_table_.size(), 0.0);
--  for (SparseIt it(sparse_table_); it; ++it) {
--    table[it.index()] = it.value();
--  }
 +  // Build the tree from the nonzero entries only, so a sparse table over many
 +  // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
 +  // in the product of all cardinalities. Keys go from highest to lowest, the
@@ -5137,14 +5415,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +            });
 +  std::vector<std::pair<std::vector<size_t>, double>> entries;
 +  entries.reserve(sparse_table_.nonZeros());
-+  for (SparseIt it(sparse_table_); it; ++it) {
+   for (SparseIt it(sparse_table_); it; ++it) {
+-    table[it.index()] = it.value();
 +    std::vector<size_t> values;
 +    values.reserve(orderedKeys.size());
 +    for (const DiscreteKey& dkey : orderedKeys) {
 +      values.push_back(keyValueForIndex(dkey.first, it.index()));
 +    }
 +    entries.emplace_back(std::move(values), it.value());
-+  }
+   }
 +  std::sort(entries.begin(), entries.end());
 +
 +  using Tree = DecisionTree<Key, double>;
@@ -5163,20 +5442,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    }
 +    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
 +  };
-+
-+  // Build the decision tree
-+  const Tree built = build(0, 0, entries.size());
-+  // Merge identical branches to reduce size of the tree
-+  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
  
 -  AlgebraicDecisionTree<Key> tree(dkeys, table);
 -  DecisionTreeFactor f(dkeys, tree);
 -  return f;
++  // Build the decision tree
++  const Tree built = build(0, 0, entries.size());
++  // Merge identical branches to reduce size of the tree
++  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
++
 +  return DecisionTreeFactor(dkeys, tree);
  }
  
  /* ************************************************************************ */
-@@ -428,7 +471,7 @@ TableFactor TableFactor::choose(const Di
+@@ -428,7 +511,7 @@ TableFactor TableFactor::choose(const Di
    uint64_t child_card = 1;
    for (const DiscreteKey& child_dkey : child_dkeys)
      child_card *= child_dkey.second;
@@ -5185,16 +5464,51 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    child_sparse_table_.reserve(child_card);
  
    // Populate child sparse table.
-@@ -486,7 +529,7 @@ DiscreteFactor::shared_ptr TableFactor::
+@@ -442,7 +525,8 @@ TableFactor TableFactor::choose(const Di
+     }
+   }
+ 
+-  child_sparse_table_.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  child_sparse_table_.prune(0.0);
+   child_sparse_table_.data().squeeze();
+   return TableFactor(child_dkeys, child_sparse_table_);
+ }
+@@ -485,14 +569,31 @@ DiscreteFactor::shared_ptr TableFactor::
+ 
  /* ************************************************************************ */
  double TableFactor::max() const {
-   double max_value = std::numeric_limits<double>::lowest();
+-  double max_value = std::numeric_limits<double>::lowest();
 -  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
++  // Assignments without a stored value are implicitly zero, so they count
++  // toward the maximum too, e.g. an all-zero factor stores nothing.
++  double max_value = sparse_table_.nonZeros() < sparse_table_.size()
++                         ? 0.0
++                         : std::numeric_limits<double>::lowest();
 +  for (SparseVector::InnerIterator it(sparse_table_); it; ++it) {
      max_value = std::max(max_value, it.value());
    }
    return max_value;
-@@ -507,7 +550,7 @@ TableFactor TableFactor::apply(Unary op)
+ }
+ 
+ /* ************************************************************************ */
++DiscreteValues TableFactor::argmax() const {
++  uint64_t maxIndex = 0;
++  double maxValue = 0.0;
++  for (SparseIt it(sparse_table_); it; ++it) {
++    if (it.value() > maxValue) {
++      maxIndex = it.index();
++      maxValue = it.value();
++    }
++  }
++  return findAssignments(maxIndex);
++}
++
++/* ************************************************************************ */
+ DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
+   return combine(nrFrontals, Ring::max);
+ }
+@@ -507,7 +608,7 @@ TableFactor TableFactor::apply(Unary op)
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5203,7 +5517,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -526,7 +569,7 @@ TableFactor TableFactor::apply(UnaryAssi
+@@ -516,7 +617,8 @@ TableFactor TableFactor::apply(Unary op)
+   }
+ 
+   // Free unused memory and return.
+-  sparse_table.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  sparse_table.prune(0.0);
+   sparse_table.data().squeeze();
+   return TableFactor(discreteKeys(), sparse_table);
+ }
+@@ -526,7 +628,7 @@ TableFactor TableFactor::apply(UnaryAssi
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5212,7 +5536,95 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -554,7 +597,7 @@ TableFactor TableFactor::apply(const Tab
+@@ -536,17 +638,84 @@ TableFactor TableFactor::apply(UnaryAssi
+   }
+ 
+   // Free unused memory and return.
+-  sparse_table.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  sparse_table.prune(0.0);
+   sparse_table.data().squeeze();
+   return TableFactor(discreteKeys(), sparse_table);
+ }
+ 
+ /* ************************************************************************ */
++TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const {
++  SparseVector result(sparse_table_.size());
++  if (factor.sparse_table_.nonZeros() == 0)
++    return TableFactor(sorted_dkeys_, result);
++  // A strict subset can broadcast each entry across several source entries.
++  // Equal scopes can only intersect, so retain the tighter allocation bound.
++  result.reserve(size() == factor.size()
++                     ? std::min(sparse_table_.nonZeros(),
++                                factor.sparse_table_.nonZeros())
++                     : sparse_table_.nonZeros());
++
++  const auto projection = makeSubsetProjection(
++      factor.sorted_dkeys_, denominators_, factor.denominators_);
++
++  // Inspect actual strides: the metadata-only constructor can change keys_
++  // without changing the underlying storage order.
++  bool sortedLayout = true;
++  uint64_t stride = 1;
++  for (auto key = sorted_dkeys_.rbegin(); key != sorted_dkeys_.rend(); ++key) {
++    sortedLayout &= denominators_.at(key->first) == stride;
++    stride *= key->second;
++  }
++  const auto& other = factor.sparse_table_;
++  const bool dense = other.nonZeros() == other.size();
++  const auto* indices = other.innerIndexPtr();
++  for (SparseIt entry(sparse_table_); entry; ++entry) {
++    uint64_t target = 0;
++    for (const auto& term : projection)
++      target += ((entry.index() / term.sourceStride) % term.cardinality) *
++                term.targetStride;
++    // Projection stays within other.size(); match Eigen's signed index type.
++    const auto targetIndex = static_cast<SparseVector::StorageIndex>(target);
++    Eigen::Index offset = targetIndex;
++    if (!dense) {
++      const auto* end = indices + other.nonZeros();
++      const auto* found = std::lower_bound(indices, end, targetIndex);
++      // Do not invoke a generic op on absent entries. Explicitly stored zeros
++      // still participate, just as in the general sparse join.
++      if (found == end || *found != targetIndex) continue;
++      offset = found - indices;
++    }
++    const double value = op(entry.value(), other.valuePtr()[offset]);
++    if (sortedLayout)
++      result.insertBack(entry.index()) = value;
++    else
++      result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
++  }
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  result.prune(0.0);
++  result.data().squeeze();
++  return TableFactor(sorted_dkeys_, result);
++}
++
++/* ************************************************************************ */
+ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
+-  if (keys_.empty() && sparse_table_.nonZeros() == 0)
++  // Only a default-constructed factor has an empty table, and it acts as the
++  // identity. A keyless scalar always has a table of length 1, even when its
++  // value is 0, so a computed zero still applies.
++  if (keys_.empty() && sparse_table_.size() == 0)
+     return f;
+-  else if (f.keys_.empty() && f.sparse_table_.nonZeros() == 0)
++  else if (f.keys_.empty() && f.sparse_table_.size() == 0)
+     return *this;
++  // Multiplying by a subset or dividing by a separator needs only a lookup,
++  // not a hash join with per-entry assignment maps. Check containment before
++  // allocating the four scope vectors needed only by the general join. Compare
++  // key/cardinality pairs, not just labels, to preserve the existing dispatch.
++  if (f.size() <= size() &&
++      std::includes(sorted_dkeys_.begin(), sorted_dkeys_.end(),
++                    f.sorted_dkeys_.begin(), f.sorted_dkeys_.end())) {
++    return applySubset(f, op);
++  }
+   // 1. Partition both scopes and compute their cardinalities in one pass.
+   const ScopePartition scopes(sorted_dkeys_, f.sorted_dkeys_);
+   // 2. Create hash table for input factor f
+@@ -554,7 +723,7 @@ TableFactor TableFactor::apply(const Tab
        f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
    // 3. Initialize the multiplied factor with a scope-aware upper bound on its
    // number of nonzeros.
@@ -5221,7 +5633,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        scopes.unionScope.cardinality);
    multipliedSparseTable.reserve(
        scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
-@@ -682,7 +725,7 @@ TableFactor::shared_ptr TableFactor::com
+@@ -571,7 +740,8 @@ TableFactor TableFactor::apply(const Tab
+     }
+   }
+   // 5. Free unused memory.
+-  multipliedSparseTable.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  multipliedSparseTable.prune(0.0);
+   multipliedSparseTable.data().squeeze();
+   // 6. Create union keys and return.
+   return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
+@@ -682,7 +852,7 @@ TableFactor::shared_ptr TableFactor::com
      card *= cardinality(keys_[i]);
    }
    // Create combined table.
@@ -5230,7 +5652,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -717,7 +760,7 @@ TableFactor::shared_ptr TableFactor::com
+@@ -691,7 +861,8 @@ TableFactor::shared_ptr TableFactor::com
+     combined_table.coeffRef(idx) = new_val;
+   }
+   // Free unused memory.
+-  combined_table.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  combined_table.prune(0.0);
+   combined_table.data().squeeze();
+   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
+ }
+@@ -717,7 +888,7 @@ TableFactor::shared_ptr TableFactor::com
      }
    }
    // Create combined table.
@@ -5239,7 +5671,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -737,21 +780,6 @@ size_t TableFactor::keyValueForIndex(Key
+@@ -726,7 +897,8 @@ TableFactor::shared_ptr TableFactor::com
+     combined_table.coeffRef(idx) = new_val;
+   }
+   // Free unused memory.
+-  combined_table.pruned();
++  // Drop exact zeros, which would otherwise be stored and counted as values.
++  combined_table.prune(0.0);
+   combined_table.data().squeeze();
+   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
+ }
+@@ -737,21 +909,6 @@ size_t TableFactor::keyValueForIndex(Key
    return (index / denominators_.at(target_key)) % cardinality(target_key);
  }
  
@@ -5261,7 +5703,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Print out header.
  /* ************************************************************************ */
  string TableFactor::markdown(const KeyFormatter& keyFormatter,
-@@ -817,7 +845,7 @@ string TableFactor::html(const KeyFormat
+@@ -817,47 +974,93 @@ string TableFactor::html(const KeyFormat
  }
  
  /* ************************************************************************ */
@@ -5269,41 +5711,64 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
    const size_t N = maxNrAssignments;
  
-   // Get the probabilities in the TableFactor so we can threshold.
-@@ -829,7 +857,7 @@ TableFactor TableFactor::prune(size_t ma
+-  // Get the probabilities in the TableFactor so we can threshold.
+-  vector<pair<Eigen::Index, double>> probabilities;
+-
+-  // Store non-zero probabilities along with their indices in a vector.
++  // Collect the stored values so we can find the N-th largest.
++  vector<double> values;
++  values.reserve(sparse_table_.nonZeros());
+   for (SparseIt it(sparse_table_); it; ++it) {
+-    probabilities.emplace_back(it.index(), it.value());
++    values.push_back(it.value());
    }
  
-   // The number of probabilities can be lower than max_leaves.
+-  // The number of probabilities can be lower than max_leaves.
 -  if (probabilities.size() <= N) return *this;
-+  if (probabilities.size() <= N) return std::make_shared<TableFactor>(*this);
+-
+-  // Sort the vector in descending order based on the element values.
+-  sort(probabilities.begin(), probabilities.end(),
+-       [](const std::pair<Eigen::Index, double>& a,
+-          const std::pair<Eigen::Index, double>& b) {
+-         return a.second > b.second;
+-       });
++  // The number of values can be lower than N, so there is nothing to prune.
++  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
  
-   // Sort the vector in descending order based on the element values.
-   sort(probabilities.begin(), probabilities.end(),
-@@ -842,7 +870,7 @@ TableFactor TableFactor::prune(size_t ma
-   if (probabilities.size() > N) probabilities.resize(N);
+-  // Keep the largest N probabilities in the vector.
+-  if (probabilities.size() > N) probabilities.resize(N);
++  // Keep every value at or above the N-th largest one, as
++  // DecisionTreeFactor::prune does. Values tied with the threshold are all
++  // kept, so more than N assignments can survive.
++  SparseVector pruned(sparse_table_.size());
++  if (N > 0) {
++    std::nth_element(values.begin(), values.begin() + (N - 1), values.end(),
++                     std::greater<double>());
++    const double threshold = values[N - 1];
++    for (SparseIt it(sparse_table_); it; ++it) {
++      if (it.value() >= threshold) pruned.insert(it.index()) = it.value();
++    }
++  }
  
-   // Create pruned sparse vector.
+-  // Create pruned sparse vector.
 -  Eigen::SparseVector<double> pruned_vec(sparse_table_.size());
-+  SparseVector pruned_vec(sparse_table_.size());
-   pruned_vec.reserve(probabilities.size());
- 
-   // Populate pruned sparse vector.
-@@ -851,13 +879,67 @@ TableFactor TableFactor::prune(size_t ma
-   }
- 
-   // Create pruned decision tree factor and return.
--  return TableFactor(this->discreteKeys(), pruned_vec);
-+  return std::make_shared<TableFactor>(this->discreteKeys(), pruned_vec);
+-  pruned_vec.reserve(probabilities.size());
++  return std::make_shared<TableFactor>(this->discreteKeys(), pruned);
 +}
-+
+ 
+-  // Populate pruned sparse vector.
+-  for (const auto& prob : probabilities) {
+-    pruned_vec.insert(prob.first) = prob.second;
 +/* ************************************************************************ */
 +TableFactor TableFactor::reorder(const DiscreteKeys& keys) const {
 +  // Equal sizes and cardinality maps rule out duplicate keys as well.
 +  if (keys.size() != keys_.size() || keys.cardinalities() != cardinalities_) {
 +    throw std::invalid_argument(
 +        "TableFactor::reorder: keys must be a permutation of the factor keys.");
-+  }
-+
+   }
+ 
+-  // Create pruned decision tree factor and return.
+-  return TableFactor(this->discreteKeys(), pruned_vec);
 +  // Move each nonzero entry to its index in the new layout, then insert them
 +  // in increasing order.
 +  std::vector<std::pair<int64_t, double>> entries;
@@ -5436,7 +5901,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     */
    size_t keyValueForIndex(Key target_key, uint64_t index) const;
  
-@@ -89,18 +118,18 @@ class GTSAM_EXPORT TableFactor : public
+@@ -84,23 +113,34 @@ class GTSAM_EXPORT TableFactor : public
+     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
+   }
+ 
++  /**
++   * Apply a binary operator when every key and cardinality of `factor` is
++   * contained in this table. Each stored entry projects to exactly one index
++   * in `factor`; only stored matches invoke op, in the original operand order.
++   * Preserve the sorted result layout and the intersection of stored entries,
++   * including explicitly stored zeros. Storage strides, not keys_ order,
++   * determine the projection. See doc/TableFactorSubsetOperations.md for the
++   * index derivation, sparse semantics, and benchmark reproduction commands.
++   */
++  TableFactor applySubset(const TableFactor& factor, Binary op) const;
++
+  public:
+   /**
     * Convert probability table given as doubles to SparseVector.
     * Example: {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
     */
@@ -5458,7 +5939,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
  
    /// @name Standard Constructors
-@@ -114,7 +143,7 @@ class GTSAM_EXPORT TableFactor : public
+@@ -114,7 +154,7 @@ class GTSAM_EXPORT TableFactor : public
  
    /** Constructor from sparse_table */
    TableFactor(const DiscreteKeys& keys,
@@ -5467,7 +5948,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /** Constructor from doubles */
    TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
-@@ -160,7 +189,7 @@ class GTSAM_EXPORT TableFactor : public
+@@ -160,7 +200,7 @@ class GTSAM_EXPORT TableFactor : public
    // /// @{
  
    /// Getter for the underlying sparse vector
@@ -5476,7 +5957,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// Evaluate probability distribution, is just look up in TableFactor.
    double evaluate(const Assignment<Key>& values) const override;
-@@ -182,6 +211,9 @@ class GTSAM_EXPORT TableFactor : public
+@@ -182,6 +222,9 @@ class GTSAM_EXPORT TableFactor : public
    /// multiply with DecisionTreeFactor
    DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
  
@@ -5486,7 +5967,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /**
     * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
     *
-@@ -295,9 +327,6 @@ class GTSAM_EXPORT TableFactor : public
+@@ -229,6 +272,9 @@ class GTSAM_EXPORT TableFactor : public
+   /// Find the maximum value in the factor.
+   double max() const override;
+ 
++  /// Return the assignment to all keys with the largest value.
++  DiscreteValues argmax() const;
++
+   /// Create new factor by maximizing over all values with the same separator.
+   DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
+ 
+@@ -295,28 +341,24 @@ class GTSAM_EXPORT TableFactor : public
     */
    shared_ptr combine(const Ordering& keys, Binary op) const;
  
@@ -5496,19 +5987,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /**
     * @brief Prune the decision tree of discrete variables.
     *
-@@ -314,9 +343,9 @@ class GTSAM_EXPORT TableFactor : public
-    * 0.8).
+    * Pruning will set the values to be "pruned" to 0 indicating a 0
+-   * probability. An assignment is pruned if it is not in the top
+-   * `maxNrAssignments` values.
++   * probability. An assignment is pruned if its value is smaller than the
++   * `maxNrAssignments`-th largest value, counting duplicates.
+    *
+-   * A violation can occur if there are more
+-   * duplicate values than `maxNrAssignments`. A violation here is the need to
+-   * un-prune the decision tree (e.g. all assignment values are 1.0). We could
+-   * have another case where some subset of duplicates exist (e.g. for a tree
+-   * with 8 assignments we have 1, 1, 1, 1, 0.8, 0.7, 0.6, 0.5), but this is
+-   * not a violation since the for `maxNrAssignments=5` the top values are (1,
+-   * 0.8).
++   * Every assignment tied with that value is kept, so more than
++   * `maxNrAssignments` assignments survive when ties straddle the cutoff.
++   * For example, pruning (0.2, 0.2, 0.1, 0.2, 0.3) to 3 assignments gives
++   * (0.2, 0.2, 0, 0.2, 0.3), and a factor whose values are all equal is not
++   * pruned at all. This matches DecisionTreeFactor::prune.
     *
     * @param maxNrAssignments The maximum number of assignments to keep.
 -   * @return TableFactor
 +   * @return The pruned TableFactor.
     */
 -  TableFactor prune(size_t maxNrAssignments) const;
-+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
++  [[nodiscard]] DiscreteFactor::shared_ptr prune(
++      size_t maxNrAssignments) const override;
  
    /**
     * Get the number of non-zero values contained in this factor.
-@@ -324,7 +353,17 @@ class GTSAM_EXPORT TableFactor : public
+@@ -324,7 +366,17 @@ class GTSAM_EXPORT TableFactor : public
     */
    uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
  
@@ -5557,13 +6065,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    DiscreteConditional(const gtsam::DiscreteKey& key, string spec);
    DiscreteConditional(const gtsam::DiscreteKey& key,
                        const gtsam::DiscreteKeys& parents, string spec);
-@@ -113,6 +113,14 @@ virtual class DiscreteConditional : gtsa
+@@ -113,6 +113,15 @@ virtual class DiscreteConditional : gtsa
    gtsam::DiscreteConditional operator*(
        const gtsam::DiscreteConditional& other) const;
    gtsam::DiscreteConditional marginal(gtsam::Key key) const;
 +  gtsam::DiscreteFactor* factor() const;
 +  gtsam::DecisionTreeFactor toDecisionTreeFactor() const;
 +  gtsam::TableFactor toTableFactor() const;
++  uint64_t nrValues() const;
 +  size_t cardinality(gtsam::Key j) const;
 +  gtsam::DiscreteFactor* sum(size_t nrFrontals) const;
 +  gtsam::DiscreteFactor* sum(const gtsam::Ordering& keys) const;
@@ -5572,7 +6081,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    gtsam::Key firstFrontalKey() const;
    size_t nrFrontals() const;
    size_t nrParents() const;
-@@ -133,7 +141,10 @@ virtual class DiscreteConditional : gtsa
+@@ -133,7 +142,10 @@ virtual class DiscreteConditional : gtsa
                       std::mt19937_64 @rng = nullptr) const;
    size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
  
@@ -5584,9 +6093,346 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    string markdown(
        const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
        const std::map<gtsam::Key, std::vector<std::string>>& names =
+@@ -170,20 +182,9 @@ virtual class TableFactor : gtsam::Discr
+               const gtsam::DecisionTreeFactor& dtf);
+   TableFactor(const gtsam::DecisionTreeFactor& dtf);
+ 
+-  double error(const gtsam::DiscreteValues& values) const;
+-};
+-
+-#include <gtsam/discrete/TableDistribution.h>
+-virtual class TableDistribution : gtsam::DiscreteConditional {
+-  TableDistribution();
+-  TableDistribution(const gtsam::TableFactor& f);
+-  TableDistribution(const gtsam::DiscreteKey& key, std::vector<double> spec);
+-  TableDistribution(const gtsam::DiscreteKeys& keys, std::vector<double> spec);
+-  TableDistribution(const gtsam::DiscreteKeys& keys, string spec);
+-  TableDistribution(const gtsam::DiscreteKey& key, string spec);
++  gtsam::DiscreteValues argmax() const;
+ 
+-  gtsam::TableFactor table() const;
+-  uint64_t nrValues() const;
++  double error(const gtsam::DiscreteValues& values) const;
+ };
+ 
+ #include <gtsam/discrete/DiscreteBayesNet.h>
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/discrete.md
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/discrete.md
+@@ -118,7 +118,9 @@ Mathematical abstraction for algebraic o
+ Parses string representations of conditional probability signatures, enabling convenient model specification from text.
+ 
+ ### TableDistribution
+-Utility class for working with probability distributions represented as tables.
++Deprecated in GTSAM 4.3: construct a `DiscreteConditional` from a `TableFactor` instead, which stores the probabilities in the sparse table.
++
++**Notebook**: [TableDistribution.ipynb](doc/TableDistribution.ipynb)
+ 
+ ## Example Workflows
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/doc/DiscreteDistribution.ipynb
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/doc/DiscreteDistribution.ipynb
+@@ -8,7 +8,7 @@
+         "\n",
+         "A `DiscreteDistribution` is a `DiscreteConditional` with no parents. It represents a prior probability on a single discrete variable, e.g., $P(X)$. It can be thought of as a special case of a factor, specifically one that sums to 1.\n",
+         "\n",
+-        "It derives from `gtsam.DiscreteConditional` and can be used interchangeably with a `DecisionTreeFactor` or `DiscreteConditional` in most contexts, such as adding it to a `DiscreteFactorGraph` or `DiscreteBayesNet`."
++        "It derives from `gtsam.DiscreteConditional`, so it can be used wherever a `DiscreteConditional` or another `DiscreteFactor` is expected, such as in a `DiscreteFactorGraph` or `DiscreteBayesNet`."
+       ],
+       "metadata": {}
+     },
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/doc/TableDistribution.ipynb
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/doc/TableDistribution.ipynb
+@@ -4,9 +4,11 @@
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+-    "# TableDistribution\n",
++    "# TableDistribution (deprecated)\n",
+     "\n",
+-    "Sometimes decision trees are quite expensive for very sparse distributions; `TableDistribution` instead uses a sparse matrix representation and is also used internally in many algorithms. It is a normalized discrete conditional that is convenient for priors and conditional probability tables."
++    "`TableDistribution` was a `DiscreteConditional` that stored its probabilities in a sparse table. A `DiscreteConditional` can now store its probabilities in any `DiscreteFactor`, so constructing one from a `TableFactor` gives the same sparse representation without a separate class.\n",
++    "\n",
++    "`TableDistribution` is deprecated in GTSAM 4.3. In C++ it is available only when `GTSAM_ALLOW_DEPRECATED_SINCE_V43` is enabled, and it is no longer wrapped in Python. This page shows the replacement for each use."
+    ]
+   },
+   {
+@@ -59,9 +61,7 @@
+    "outputs": [],
+    "source": [
+     "import gtsam\n",
+-    "import numpy as np\n",
+-    "from gtsam.symbol_shorthand import M, X\n",
+-    "from IPython.display import Markdown, display"
++    "import numpy as np"
+    ]
+   },
+   {
+@@ -70,7 +70,7 @@
+    "source": [
+     "## Creating a distribution\n",
+     "\n",
+-    "A unary distribution takes a `(key, cardinality)` pair and either a numeric sequence or a ratio string. Numeric inputs are normalized by the conditional semantics."
++    "Normalize a `TableFactor` into a `DiscreteConditional`, taking all of its keys as frontals. The conditional keeps the sparse table, which `factor()` returns."
+    ]
+   },
+   {
+@@ -80,10 +80,15 @@
+    "outputs": [],
+    "source": [
+     "weather = (gtsam.symbol(\"W\", 0), 3)\n",
+-    "distribution = gtsam.TableDistribution(weather, [6.0, 3.0, 1.0])\n",
++    "weather_keys = gtsam.DiscreteKeys()\n",
++    "weather_keys.push_back(weather)\n",
++    "\n",
++    "# Previously: gtsam.TableDistribution(weather, [6.0, 3.0, 1.0])\n",
++    "distribution = gtsam.DiscreteConditional(\n",
++    "    1, gtsam.TableFactor(weather_keys, [6.0, 3.0, 1.0]))\n",
+     "\n",
+-    "print(\"number of values:\", distribution.nrValues())\n",
+-    "print(\"table size:\", distribution.table().size())"
++    "print(\"stored as:\", type(distribution.factor()).__name__)\n",
++    "print(\"number of values:\", distribution.nrValues())"
+    ]
+   },
+   {
+@@ -92,7 +97,7 @@
+    "source": [
+     "## Evaluating and choosing values\n",
+     "\n",
+-    "As a `DiscreteConditional`, the distribution supports `evaluate()`, `logProbability()`, `argmax()`, and `sample()`. `evaluate()` expects `DiscreteValues`; `argmax()` returns the most likely frontal value for the supplied parent assignment."
++    "The conditional supports `evaluate()`, `logProbability()`, `argmax()`, and `sample()`. `evaluate()` expects `DiscreteValues`; `argmax()` returns the most likely frontal value for the supplied parent assignment."
+    ]
+   },
+   {
+@@ -115,7 +120,7 @@
+    "source": [
+     "## Multiple keys and table access\n",
+     "\n",
+-    "Passing `DiscreteKeys` creates a conditional over several frontals. `table()` returns the backing `TableFactor`, while `choose(given)` fixes parent values and `marginal(key)` removes other frontals by summation."
++    "For a joint distribution over several keys, take all of them as frontals. `toTableFactor()` replaces `table()`, and `toTableFactor().argmax()` replaces `argmax()` for the most likely assignment to all keys. As before, `choose(given)` fixes parent values and `marginal(key)` removes other frontals by summation."
+    ]
+   },
+   {
+@@ -128,8 +133,11 @@
+     "keys = gtsam.DiscreteKeys()\n",
+     "keys.push_back(weather)\n",
+     "keys.push_back(umbrella)\n",
+-    "joint = gtsam.TableDistribution(keys, \"6 1 3 2 1 7\")\n",
+-    "print(\"joint assignments:\", joint.nrValues())"
++    "\n",
++    "# Previously: gtsam.TableDistribution(keys, \"6 1 3 2 1 7\")\n",
++    "joint = gtsam.DiscreteConditional(2, gtsam.TableFactor(keys, \"6 1 3 2 1 7\"))\n",
++    "print(\"joint assignments:\", joint.nrValues())\n",
++    "print(\"most likely assignment:\", joint.toTableFactor().argmax())"
+    ]
+   },
+   {
+@@ -138,7 +146,7 @@
+    "source": [
+     "## Source\n",
+     "\n",
+-    "[`TableDistribution.h`](../TableDistribution.h)\n",
++    "[`DiscreteConditional.h`](../DiscreteConditional.h), [`TableFactor.h`](../TableFactor.h), and the deprecated [`TableDistribution.h`](../TableDistribution.h).\n",
+     "\n",
+     "## AI assistance caveat\n",
+     "\n",
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/doc/TableFactorSubsetOperations.md
+@@ -0,0 +1,165 @@
++# Table operations with a contained scope
++
++Discrete elimination normalizes a joint factor by dividing it by a separator
++factor. Every separator key already belongs to the joint. Multiplication also
++frequently combines a joint with a factor over a subset of its keys.
++
++`TableFactor::apply` uses a direct lookup for this case. The general hash join
++remains available when the right operand introduces any new key or has a
++different cardinality for a shared key. There is no public API or table layout
++change.
++
++## Reading the implementation
++
++1. `apply` checks containment on the cached sorted `(key, cardinality)` pairs.
++   Successful checks avoid constructing the general join's scope vectors and
++   per-entry assignment maps.
++2. `applySubset` constructs an integer index projection once, then visits the
++   left operand's stored entries. Each entry has exactly one possible match in
++   the right operand.
++3. A fully stored right operand permits direct array access. A sparse right
++   operand uses binary search over its stored indices.
++4. The result retains the existing sorted-key layout. Entries append directly
++   when the left storage already has that layout; otherwise their indices are
++   converted to the sorted layout before insertion.
++
++## Index projection
++
++For a key with cardinality `c` and source stride `s`, the value encoded by a
++linear source index `i` is
++
++```text
++value = (i / s) % c
++```
++
++If that key has target stride `t`, its contribution to the target index is
++`value * t`. Summing these contributions projects the joint index into the
++separator. All arithmetic stays integral, including indices above `2^53`.
++
++Consecutive dimensions can be decoded together when they are adjacent in both
++storage layouts. For a previous block followed by a dimension `(s, c, t)`, the
++conditions are
++
++```text
++previous.sourceStride == s * c
++previous.targetStride == t * c
++```
++
++The combined block has source stride `s`, cardinality
++`previous.cardinality * c`, and target stride `t`. This is the usual
++mixed-radix identity: decoding several adjacent digits together gives the same
++integer as decoding and recombining them separately.
++
++For example, a joint over `(A:2, B:3, C:2)` uses strides `(6, 2, 1)`.
++A separator over `(B:3, C:2)` uses `(2, 1)`. Its two contributions
++
++```text
++((i / 2) % 3) * 2 + i % 2
++```
++
++collapse to `i % 6`. Reordered or nonadjacent dimensions remain separate blocks.
++
++## Behavior that must remain unchanged
++
++- Containment compares cardinalities as well as keys.
++- A missing sparse entry is different from an explicitly stored zero. The
++  generic binary operation is called only for stored matches, including zeros;
++  an output zero remains stored. This matters for operations beyond multiplication
++  and division, and for `nrValues()`.
++- Operand order remains `op(leftValue, rightValue)`, including for division and
++  other noncommutative operations.
++- Metadata-only constructors can reorder `keys_` without rearranging storage.
++  Projection and append eligibility therefore use the actual stride maps.
++- Equal-scope output allocation is bounded by the smaller stored-entry count.
++  A sparse mask does not require a dense-sized allocation.
++- Existing treatment of default-constructed empty factors remains in `apply`
++  before the fast-path dispatch.
++
++If the left operand has `L` stored entries, the right has `R`, and the projection
++has `B` coalesced blocks, lookup work is `O(L * (B + 1))` for a fully stored right
++operand and `O(L * (B + 1 + log R))` for a sparse one. The extra constant covers
++scalar or unit-cardinality subsets with no projection blocks. No right-hand hash map or
++per-entry assignment map is allocated. Reordering an unsorted result retains
++the existing sparse insertion cost.
++
++## Validation and measurement
++
++`testTableFactor` compares products and quotients with decision trees over all
++permutations and subsets of a three-key factor. Additional cases cover generic
++binary operations, stored and missing zeros, metadata-only reordering, empty
++tables, and exact sparse indices above `2^53`. Discrete elimination and hybrid
++inference suites exercise the caller paths.
++
++The focused benchmark `timeTableFactorSubset` and the existing
++`timeHybridInference` measure table operations and end-to-end hybrid inference,
++respectively. Validate both revisions with the same compiler and build flags;
++run timing processes serially after builds finish.
++
++```sh
++cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
++  -DGTSAM_USE_BOOST_FEATURES=OFF -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF \
++  -DGTSAM_WITH_TBB=OFF -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
++  -DGTSAM_BUILD_UNSTABLE=OFF -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
++  -DGTSAM_BUILD_TIMING_ALWAYS=OFF
++cmake --build build --parallel 6 --target \
++  testTableFactor.run testDiscreteFactorGraph.run \
++  testDecisionTreeFactor.run testDiscreteConditional.run \
++  testHybridGaussianFactorGraph.run testHybridBayesNet.run \
++  timeTableFactorSubset timeHybridInference
++build/timing/timeTableFactorSubset --warmup 3 --repeats 31
++build/timing/timeHybridInference --objects 6 --warmup 3 \
++  --repeats 11 --iterations 10
++```
++
++For the parent revision, compile the focused benchmark source from this branch
++against the parent's library: it uses only existing public APIs. Alternate
++baseline/optimized process order across at least three rounds and report the
++median of those round medians. The PR records the exact baseline SHA, build
++configuration, and measured results; timings are workload- and machine-specific.
++
++## Recorded comparison
++
++Baseline: PR #2868 at `b5c566dd6f2b30f581779152d55e5199ec099aed`.
++Both libraries used GCC 14.2.0, Release, `GTSAM_DT_MERGING=ON`, and the flags above
++(Boost and TBB disabled). Each value below is the median of three alternating
++process rounds; all times are microseconds per call. The focused benchmark
++validates every assignment against independent dense arithmetic before timing.
++The hybrid benchmark verifies that sequential and multifrontal solutions agree.
++Checksums matched across revisions. These numbers are not directly comparable
++to the different GCC/TBB configuration used in the parent PR's description.
++
++### Hybrid data association
++
++| Objects | Operation | Parent | Optimized | Speedup |
++|---:|---|---:|---:|---:|
++| 3 | Sequential construction | 34.39 | 32.91 | 1.04× |
++| 3 | Sequential optimization | 7.65 | 7.01 | 1.09× |
++| 3 | Multifrontal construction | 33.00 | 33.01 | 1.00× |
++| 3 | Multifrontal optimization | 3.30 | 3.33 | 0.99× |
++| 4 | Sequential construction | 74.26 | 63.91 | 1.16× |
++| 4 | Sequential optimization | 19.82 | 14.80 | 1.34× |
++| 4 | Multifrontal construction | 58.61 | 51.44 | 1.14× |
++| 4 | Multifrontal optimization | 4.83 | 4.73 | 1.02× |
++| 5 | Sequential construction | 195.34 | 156.89 | 1.25× |
++| 5 | Sequential optimization | 89.95 | 55.08 | 1.63× |
++| 5 | Multifrontal construction | 114.35 | 82.29 | 1.39× |
++| 5 | Multifrontal optimization | 7.38 | 7.28 | 1.01× |
++| 6 | Sequential construction | 1090.65 | 823.81 | 1.32× |
++| 6 | Sequential optimization | 660.19 | 419.80 | 1.57× |
++| 6 | Multifrontal construction | 421.05 | 159.87 | 2.63× |
++| 6 | Multifrontal optimization | 20.18 | 19.60 | 1.03× |
++
++Small cases and multifrontal optimization change little. The largest measured
++end-to-end gain is in six-object multifrontal construction; the table-only
++speedups below are not whole-pipeline speedups.
++
++### Table division, 14 binary keys
++
++| Joint storage | Right-hand scope | Parent | Optimized | Speedup |
++|---|---|---:|---:|---:|
++| Dense | suffix | 5410.22 | 161.87 | 33.42× |
++| Dense | middle | 4329.52 | 184.84 | 23.42× |
++| Dense | equal | 7153.62 | 99.82 | 71.67× |
++| Sparse | suffix | 1366.66 | 164.25 | 8.32× |
++| Sparse | middle | 1254.16 | 158.22 | 7.93× |
++| Sparse | equal | 1384.51 | 140.43 | 9.86× |
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testDecisionTreeFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testDecisionTreeFactor.cpp
-@@ -256,30 +256,33 @@ TEST(DecisionTreeFactor, Prune) {
+@@ -25,6 +25,7 @@
+ #include <gtsam/discrete/DiscreteDistribution.h>
+ #include <gtsam/discrete/DiscreteFactor.h>
+ #include <gtsam/discrete/Signature.h>
++#include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/inference/Key.h>
+ #include <gtsam/inference/Ordering.h>
+ 
+@@ -137,6 +138,17 @@ TEST(DecisionTreeFactor, Divide) {
+ }
+ 
+ /* ************************************************************************* */
++// Dividing by a TableFactor divides this factor by it, not the reverse.
++TEST(DecisionTreeFactor, DivideByTable) {
++  const DiscreteKey A(0, 2);
++  const DecisionTreeFactor tree(A, "2 8");
++  const auto quotient = tree / std::make_shared<TableFactor>(A, "1 4");
++  CHECK(std::dynamic_pointer_cast<TableFactor>(quotient));
++  EXPECT(assert_equal(DecisionTreeFactor(A, "2 2"),
++                      quotient->toDecisionTreeFactor()));
++}
++
++/* ************************************************************************* */
+ TEST(DecisionTreeFactor, sum_max) {
+   DiscreteKey v0(0, 3), v1(1, 2);
+   DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
+@@ -256,30 +268,49 @@ TEST(DecisionTreeFactor, Prune) {
  
    // Only keep the leaves with the top 5 values.
    size_t maxNrAssignments = 5;
@@ -5625,6 +6471,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    DecisionTreeFactor expected4(A, "0.50001 0.49999");
 -  EXPECT(assert_equal(expected4, pruned4));
 +  EXPECT(assert_equal(expected4, *pruned4));
++}
++
++// Check that pruning keeps the largest values regardless of where they appear
++// in the tree, and keeps every value tied with the N-th largest.
++TEST(DecisionTreeFactor, PruneKeepsLargestValues) {
++  DiscreteKey X(0, 5);
++  DecisionTreeFactor f(X, "0.2 0.2 0.1 0.2 0.3");
++
++  // The threshold is the 3rd largest value, counting duplicates.
++  EXPECT_DOUBLES_EQUAL(0.2, f.computeThreshold(3), 1e-9);
++
++  auto pruned =
++      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(3));
++
++  DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
++  EXPECT(assert_equal(expected, *pruned));
  }
  
  /* ************************************************************************** */
@@ -5700,7 +6562,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    DiscreteConditional expected(2, f);
  
    // P(A,B) = P(A|B) * P(B) = P(B) * P(A|B)
-@@ -290,6 +295,98 @@ TEST(DiscreteConditional, choose) {
+@@ -290,6 +295,102 @@ TEST(DiscreteConditional, choose) {
  }
  
  /* ************************************************************************* */
@@ -5756,7 +6618,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 +
 +// Products, choose, and removeDiscreteModes keep the stored factor in the
-+// conditional's key order.
++// conditional's key order, and match the decision tree results.
 +TEST(DiscreteConditional, DerivedKeyOrder) {
 +  const std::vector<double> zGivenX{0.25, 0.5, 0.75, 0.5};  // over (Z, X)
 +  const DiscreteConditional tableZ(
@@ -5775,6 +6637,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  DiscreteConditional removed = product;
 +  removed.removeDiscreteModes({{X.first, 0}});
 +  EXPECT(removed.factor()->keys() == removed.keys());
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(removed.factor()));
++  DiscreteConditional treeRemoved = treeZ * xGivenY;
++  treeRemoved.removeDiscreteModes({{X.first, 0}});
++  EXPECT(assert_equal(treeRemoved, removed));
 +}
 +
 +}  // namespace key_order_fixture
@@ -5799,6 +6665,259 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Check argmax on P(C|D) and P(D), plus tie-breaking for P(B)
  TEST(DiscreteConditional, Argmax) {
    DiscreteKey C(2, 2), D(4, 2);
+@@ -319,6 +420,76 @@ TEST(DiscreteConditional, Argmax) {
+ }
+ 
+ /* ************************************************************************* */
++// Pruning keeps every value tied with the N-th largest and renormalizes, for
++// both decision-tree and table-backed conditionals.
++TEST(DiscreteConditional, PruneKeepsTies) {
++  const DiscreteKey X(0, 5);
++  const std::string spec = "0.2 0.2 0.1 0.2 0.3";
++
++  // The three 0.2 values tie for 3rd largest, so all of them survive.
++  const DiscreteConditional expected(1, DecisionTreeFactor(X, "2 2 0 2 3"));
++  for (const DiscreteConditional& conditional :
++       {DiscreteConditional(1, DecisionTreeFactor(X, spec)),
++        DiscreteConditional(1, TableFactor(X, spec))}) {
++    const auto pruned =
++        std::dynamic_pointer_cast<DiscreteConditional>(conditional.prune(3));
++    CHECK(pruned);
++    EXPECT(assert_equal(expected, *pruned));
++  }
++}
++
++/* ************************************************************************* */
++// Multiplication preserves normalization after pruning a table-backed prior.
++TEST(DiscreteConditional, PrunedTableConditionalProduct) {
++  const DiscreteKey A(0, 2), C(2, 2);
++  const DiscreteConditional prior(1, TableFactor(A, "0.4 0.6"));
++  const auto pruned =
++      std::dynamic_pointer_cast<DiscreteConditional>(prior.prune(1));
++  CHECK(pruned);
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
++
++  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
++  const DiscreteConditional joint = conditional * *pruned;
++
++  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
++                       1e-12);
++  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
++                       1e-12);
++  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
++                       1e-12);
++  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
++                       1e-12);
++
++  double total = 0.0;
++  for (const auto& values : joint.allAssignments()) total += joint(values);
++  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
++}
++
++/* ************************************************************************* */
++// Mode removal updates table storage and metadata without renormalizing.
++TEST(DiscreteConditional, RemoveDiscreteModesUpdatesTable) {
++  const DiscreteKey A(0, 2), C(2, 2);
++  DiscreteConditional conditional(2, TableFactor(A & C, "1 2 3 4"));
++  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
++
++  EXPECT_LONGS_EQUAL(1, conditional.size());
++  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
++  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
++  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional.factor()));
++  EXPECT(conditional.factor()->keys() == conditional.keys());
++
++  // Keep the A=1 slice of the normalized joint, with its original mass.
++  EXPECT_DOUBLES_EQUAL(0.3, conditional(DiscreteValues{{C.first, 0}}), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.4, conditional(DiscreteValues{{C.first, 1}}), 1e-12);
++
++  const DecisionTreeFactor expected(C, "0.3 0.4");
++  const DecisionTreeFactor converted = conditional.toDecisionTreeFactor();
++  EXPECT_LONGS_EQUAL(1, converted.size());
++  EXPECT(assert_equal(expected, converted));
++}
++
++/* ************************************************************************* */
+ // Check markdown representation looks as expected, no parents.
+ TEST(DiscreteConditional, markdown_prior) {
+   DiscreteKey A(Symbol('x', 1), 3);
+--- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testDiscreteFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testDiscreteFactorGraph.cpp
+@@ -21,6 +21,7 @@
+ #include <gtsam/discrete/DiscreteEliminationTree.h>
+ #include <gtsam/discrete/DiscreteFactor.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
++#include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/inference/BayesNet.h>
+ #include <gtsam/inference/Symbol.h>
+ 
+@@ -54,10 +55,9 @@ TEST_UNSAFE(DiscreteFactorGraph, debugSc
+ 
+ /* ************************************************************************* */
+ /// Test the () operator of DiscreteFactorGraph
+-TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
+-
++TEST_UNSAFE(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
+   // Three keys P1 and P2
+-  DiscreteKey P1(0,2), P2(1,2), P3(2,3);
++  DiscreteKey P1(0, 2), P2(1, 2), P3(2, 3);
+ 
+   // Create the DiscreteFactorGraph
+   DiscreteFactorGraph graph;
+@@ -71,9 +71,10 @@ TEST_UNSAFE( DiscreteFactorGraph, Discre
+   values[1] = 1;
+ 
+   // Check if graph evaluation works ( 0.3*0.6*4 )
+-  EXPECT_DOUBLES_EQUAL( .72, graph(values), 1e-9);
++  EXPECT_DOUBLES_EQUAL(.72, graph(values), 1e-9);
+ 
+-  // Creating a new test with third node and adding unary and ternary factors on it
++  // Creating a new test with third node and adding unary and ternary factors on
++  // it
+   graph.add(P3, "0.9 0.2 0.5");
+   graph.add(P1 & P2 & P3, "1 2 3 4 5 6 7 8 9 10 11 12");
+ 
+@@ -83,7 +84,7 @@ TEST_UNSAFE( DiscreteFactorGraph, Discre
+   values[2] = 1;
+ 
+   // Check if graph evaluation works (0.3*0.9*1*0.2*8)
+-  EXPECT_DOUBLES_EQUAL( 4.32, graph(values), 1e-9);
++  EXPECT_DOUBLES_EQUAL(4.32, graph(values), 1e-9);
+ 
+   // Below values lead to selecting the 3rd index in the ternary factor table
+   values[0] = 0;
+@@ -91,11 +92,27 @@ TEST_UNSAFE( DiscreteFactorGraph, Discre
+   values[2] = 0;
+ 
+   // Check if graph evaluation works (0.9*0.6*1*0.9*4)
+-  EXPECT_DOUBLES_EQUAL( 1.944, graph(values), 1e-9);
++  EXPECT_DOUBLES_EQUAL(1.944, graph(values), 1e-9);
+ 
+   // Check if graph product works
+   DecisionTreeFactor product = graph.product()->toDecisionTreeFactor();
+-  EXPECT_DOUBLES_EQUAL( 1.944, product(values), 1e-9);
++  EXPECT_DOUBLES_EQUAL(1.944, product(values), 1e-9);
++}
++
++/* ************************************************************************* */
++// A product that is zero everywhere throws, whatever the factor type.
++TEST(DiscreteFactorGraph, ZeroProductThrows) {
++  const DiscreteKey X(0, 2);
++
++  DiscreteFactorGraph trees;
++  trees.emplace_shared<DecisionTreeFactor>(X, "1 0");
++  trees.emplace_shared<DecisionTreeFactor>(X, "0 1");
++  CHECK_EXCEPTION(trees.product(), std::runtime_error);
++
++  DiscreteFactorGraph tables;
++  tables.emplace_shared<TableFactor>(X, "1 0");
++  tables.emplace_shared<TableFactor>(X, "0 1");
++  CHECK_EXCEPTION(tables.product(), std::runtime_error);
+ }
+ 
+ /* ************************************************************************* */
+@@ -111,7 +128,8 @@ TEST(DiscreteFactorGraph, test) {
+ 
+   // Test EliminateDiscrete
+   const Ordering frontalKeys{0};
+-  const auto [conditional, newFactorPtr] = EliminateDiscrete(graph, frontalKeys);
++  const auto [conditional, newFactorPtr] =
++      EliminateDiscrete(graph, frontalKeys);
+ 
+   DecisionTreeFactor newFactor =
+       *std::dynamic_pointer_cast<DecisionTreeFactor>(newFactorPtr);
+@@ -154,7 +172,7 @@ TEST(DiscreteFactorGraph, test) {
+   EXPECT(assert_equal(expectedBayesNet, *actual2));
+ 
+   // Test mpe
+-  DiscreteValues mpe { {0, 0}, {1, 0}, {2, 0}};
++  DiscreteValues mpe{{0, 0}, {1, 0}, {2, 0}};
+   auto actualMPE = graph.optimize();
+   EXPECT(assert_equal(mpe, actualMPE));
+   EXPECT_DOUBLES_EQUAL(9, graph(mpe), 1e-5);  // regression
+@@ -212,7 +230,7 @@ TEST(DiscreteFactorGraph, marginalIsNotM
+   bayesNet.add(A % "10/9");
+ 
+   // The expected MPE is A=1, B=1
+-  DiscreteValues mpe { {0, 1}, {1, 1} };
++  DiscreteValues mpe{{0, 1}, {1, 1}};
+ 
+   // Which we verify using max-product:
+   DiscreteFactorGraph graph(bayesNet);
+@@ -235,7 +253,7 @@ TEST(DiscreteFactorGraph, testMPE_Darwic
+   graph.add(T1 & T2 & A, "1 0 0 1 0 1 1 0");
+   graph.add(A, "1 0");  // evidence, A = yes (first choice in Darwiche)
+ 
+-  DiscreteValues mpe { {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 0}};
++  DiscreteValues mpe{{0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 0}};
+   EXPECT_DOUBLES_EQUAL(0.33858, graph(mpe), 1e-5);  // regression
+   // You can check visually by printing product:
+   // graph.product().print("Darwiche-product");
+@@ -351,10 +369,60 @@ TEST(DiscreteFactorGraph, markdown) {
+   EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
+ }
+ 
++// Elimination preserves sparse storage, frontal order, and the scaled joint.
++TEST(DiscreteFactorGraph, EliminateSparseTablePreservesRepresentation) {
++  const DiscreteKey A(2, 2), B(0, 3), C(1, 2);
++  const DiscreteKeys keys = A & B & C;  // Deliberately unsorted.
++  const vector<double> values{0, 2, 3, 0, 5, 6, 7, 0, 9, 10, 0, 12};
++
++  DiscreteFactorGraph tableGraph, treeGraph;
++  tableGraph.emplace_shared<TableFactor>(keys, values);
++  treeGraph.emplace_shared<DecisionTreeFactor>(keys, values);
++
++  // Eliminate two frontals in an order different from the input key order.
++  const Ordering frontals{C.first, A.first};
++  const auto [conditional, separator] = EliminateDiscrete(tableGraph, frontals);
++  const auto [treeConditional, treeSeparator] =
++      EliminateDiscrete(treeGraph, frontals);
++
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional->factor()) !=
++         nullptr);
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(separator) != nullptr);
++  const KeyVector expectedKeys{C.first, A.first, B.first};
++  EXPECT(conditional->keys() == expectedKeys);
++  EXPECT_LONGS_EQUAL(2, conditional->nrFrontals());
++  EXPECT_LONGS_EQUAL(1, conditional->nrParents());
++  EXPECT(separator->keys() == KeyVector{B.first});
++
++  const auto reconstructed = conditional->multiply(separator);
++  const vector<double> marginal{9, 22, 23};
++  for (size_t b = 0; b < B.second; ++b) {
++    double total = 0.0;
++    for (size_t a = 0; a < A.second; ++a) {
++      for (size_t c = 0; c < C.second; ++c) {
++        const DiscreteValues assignment{
++            {A.first, a}, {B.first, b}, {C.first, c}};
++        const double weight = values[a * 6 + b * 2 + c];
++        const double probability = (*conditional)(assignment);
++        EXPECT_DOUBLES_EQUAL(weight / marginal[b], probability, 1e-12);
++        EXPECT_DOUBLES_EQUAL((*treeConditional)(assignment), probability,
++                             1e-12);
++        EXPECT_DOUBLES_EQUAL(marginal[b] / 12.0, (*separator)(assignment),
++                             1e-12);
++        EXPECT_DOUBLES_EQUAL((*treeSeparator)(assignment),
++                             (*separator)(assignment), 1e-12);
++        EXPECT_DOUBLES_EQUAL(weight / 12.0, (*reconstructed)(assignment),
++                             1e-12);
++        total += probability;
++      }
++    }
++    EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
++  }
++}
++
+ /* ************************************************************************* */
+ int main() {
+-TestResult tr;
+-return TestRegistry::runAllTests(tr);
++  TestResult tr;
++  return TestRegistry::runAllTests(tr);
+ }
+ /* ************************************************************************* */
+-
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testDiscreteMarginals.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testDiscreteMarginals.cpp
 @@ -133,12 +133,12 @@ TEST_UNSAFE( DiscreteMarginals, truss )
@@ -5827,9 +6946,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testTableFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testTableFactor.cpp
-@@ -26,7 +26,9 @@
+@@ -25,8 +25,11 @@
+ #include <gtsam/discrete/Signature.h>
  #include <gtsam/discrete/TableDistribution.h>
  #include <gtsam/discrete/TableFactor.h>
++#include <gtsam/inference/Ordering.h>
  
 +#include <algorithm>
  #include <chrono>
@@ -5837,7 +6958,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <random>
  
  using namespace std;
-@@ -198,11 +200,109 @@ TEST(TableFactor, Conversion) {
+@@ -181,9 +184,10 @@ TEST(TableFactor, Conversion) {
+       assert_equal(tf, static_cast<const DiscreteFactor&>(tf).toTableFactor()));
+ 
+   const DiscreteKey distributionKey(3, 2);
+-  const TableDistribution distribution(distributionKey, "1 3");
++  const DiscreteConditional distribution(1,
++                                         TableFactor(distributionKey, "1 3"));
+   EXPECT(assert_equal(
+-      distribution.table(),
++      TableFactor(distributionKey, "0.25 0.75"),
+       static_cast<const DiscreteFactor&>(distribution).toTableFactor()));
+ 
+   // Test for correct construction when keys are not in reverse order.
+@@ -198,28 +202,290 @@ TEST(TableFactor, Conversion) {
    // GTSAM_PRINT(tf2.toDecisionTreeFactor());
  
    // Check for ADT equality since the order of keys is irrelevant
@@ -5847,6 +6981,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************* */
+-// Check multiplication with a TableDistribution in both operand orders.
+-TEST(TableFactor, TableDistributionMultiplication) {
 +// toDecisionTreeFactor builds from the nonzero entries; check it against the
 +// dense construction for random keys (not in label order), cardinalities, and
 +// sparsity levels.
@@ -5945,10 +7081,197 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 +
 +/* ************************************************************************* */
- // Check multiplication with a TableDistribution in both operand orders.
- TEST(TableFactor, TableDistributionMultiplication) {
++namespace subset_operations {
++
++// Subset products and quotients agree with trees for every key order and subset.
++TEST(TableFactor, SubsetOperationsAcrossKeyOrders) {
++  const DiscreteKeys sortedKeys{{0, 2}, {2, 3}, {5, 2}};
++  DiscreteKeys keys = sortedKeys;
++  do {
++    const vector<double> values{0, 2, 3, 0, 5, 6, 7, 0, 9, 10, 0, 12};
++    const TableFactor joint(keys, values);
++    const DecisionTreeFactor tree(keys, values);
++    for (unsigned mask = 0; mask < 8; ++mask) {
++      DiscreteKeys subset;
++      size_t cardinality = 1;
++      for (size_t i = 0; i < keys.size(); ++i) {
++        if (mask & (1U << i)) {
++          subset.push_back(keys[i]);
++          cardinality *= keys[i].second;
++        }
++      }
++      std::reverse(subset.begin(), subset.end());
++      for (bool sparse : {false, true}) {
++        vector<double> weights(cardinality);
++        for (size_t i = 0; i < cardinality; ++i)
++          weights[i] = sparse && i % 3 == 1 ? 0 : i + 2;
++        const TableFactor factor(subset, weights);
++        const DecisionTreeFactor treeFactor = subset.empty()
++            ? DecisionTreeFactor(subset, DecisionTreeFactor::ADT(weights[0]))
++            : DecisionTreeFactor(subset, weights);
++        const auto product = joint * factor;
++        const auto quotient = joint / factor;
++        EXPECT(product.keys() == sortedKeys.indices());
++        EXPECT(quotient.keys() == sortedKeys.indices());
++        EXPECT(assert_equal(tree * treeFactor, product.toDecisionTreeFactor()));
++        EXPECT(assert_equal(tree / treeFactor, quotient.toDecisionTreeFactor()));
++      }
++    }
++  } while (std::next_permutation(keys.begin(), keys.end()));
++}
++
++// Generic apply evaluates stored zeros but not missing entries, and drops zero
++// results.
++TEST(TableFactor, SubsetApplyUsesStoredZeros) {
++  const DiscreteKey A(0, 2), B(1, 3);
++  SparseVector jointEntries(6);
++  jointEntries.insertBack(0) = 0;
++  jointEntries.insertBack(1) = 2;
++  jointEntries.insertBack(2) = 7;
++  jointEntries.insertBack(3) = 4;
++  jointEntries.insertBack(4) = 0;
++  jointEntries.insertBack(5) = 6;
++  const TableFactor joint(A & B, jointEntries);
++  SparseVector entries(3);
++  entries.insertBack(0) = 0;
++  entries.insertBack(2) = 7;
++  const TableFactor subset(DiscreteKeys{B}, entries);
++  const auto result = joint.apply(subset, [](double a, double b) { return a - b; });
++  // Indices 0 and 2 compute to zero and are dropped. Index 3 exists only
++  // because the subset's zero for B=0 is stored. Indices 1 and 4 are never
++  // evaluated because the subset has no entry for B=1.
++  SparseVector expected(6);
++  expected.insertBack(3) = 4;
++  expected.insertBack(5) = -1;
++  EXPECT_LONGS_EQUAL(2, result.nrValues());
++  EXPECT(assert_equal(TableFactor(A & B, expected), result));
++  vector<int64_t> storedIndices;
++  const SparseVector stored = result.sparseTable();
++  for (SparseVector::InnerIterator entry(stored); entry; ++entry)
++    storedIndices.push_back(entry.index());
++  EXPECT(storedIndices == vector<int64_t>({3, 5}));
++
++  const TableFactor empty(DiscreteKeys{B}, SparseVector(3));
++  EXPECT_LONGS_EQUAL(0, joint.apply(empty, Ring::add).nrValues());
++}
++
++// Strides, rather than metadata key order, determine subset lookup indices.
++TEST(TableFactor, SubsetApplyWithMetadataOrder) {
++  const DiscreteKey A(0, 2), B(1, 3);
++  const TableFactor original(B & A, "1 2 3 4 5 6");
++  const TableFactor metadata(A & B, original);
++  const TableFactor subset(B, "2 0 3");
++  EXPECT(assert_equal(TableFactor(A & B, "2 0 15 4 0 18"), metadata * subset));
++}
++
++// The right-hand table's stored order can differ from its metadata as well.
++TEST(TableFactor, SubsetApplyWithRightMetadataOrder) {
++  const DiscreteKey A(0, 2), B(1, 3), C(2, 2);
++  const TableFactor joint(B & A & C, "1 2 3 4 5 6 7 8 9 10 11 12");
++  for (const char* weights : {"2 3 5 7", "2 0 5 7"}) {
++    const TableFactor original(C & A, weights);
++    const TableFactor subset(A & C, original);
++    const auto product = joint * subset;
++    const auto quotient = joint / subset;
++    for (size_t a = 0; a < A.second; ++a) {
++      for (size_t b = 0; b < B.second; ++b) {
++        for (size_t c = 0; c < C.second; ++c) {
++          const DiscreteValues values{{A.first, a}, {B.first, b}, {C.first, c}};
++          EXPECT_DOUBLES_EQUAL(joint(values) * subset(values), product(values),
++                              1e-12);
++          EXPECT_DOUBLES_EQUAL(Ring::div(joint(values), subset(values)),
++                              quotient(values), 1e-12);
++        }
++      }
++    }
++  }
++}
++
++// An empty joint keeps its full scope when combined with a nonempty subset.
++TEST(TableFactor, SubsetApplyWithEmptyJoint) {
++  const DiscreteKey A(0, 2), B(1, 3);
++  const TableFactor empty(A & B, SparseVector(6));
++  const TableFactor subset(B, "2 3 4");
++  const auto result = empty.apply(subset, Ring::add);
++  EXPECT_LONGS_EQUAL(0, result.nrValues());
++  EXPECT(result.keys() == KeyVector({A.first, B.first}));
++  EXPECT_LONGS_EQUAL(6, result.sparseTable().size());
++}
++
++// Unit-cardinality dimensions neither contribute to nor interrupt indexing.
++TEST(TableFactor, SubsetApplyWithUnitCardinalities) {
++  const DiscreteKey A(0, 2), U(1, 1), B(2, 3), V(3, 1), C(4, 2);
++  for (const DiscreteKeys& keys :
++       vector<DiscreteKeys>{{A, U, B, V, C}, {C, V, B, U, A}}) {
++    const TableFactor joint(keys, "1 0 3 4 0 6 7 8 0 10 11 12");
++    const auto tree = joint.toDecisionTreeFactor();
++    for (const DiscreteKeys& subsetKeys :
++         vector<DiscreteKeys>{{B, V, C}, {C, V, B}, {U, V}}) {
++      size_t cardinality = 1;
++      for (const auto& key : subsetKeys) cardinality *= key.second;
++      vector<double> weights(cardinality);
++      for (size_t i = 0; i < cardinality; ++i)
++        weights[i] = i % 3 == 1 ? 0 : i + 2;
++      const TableFactor subset(subsetKeys, weights);
++      const DecisionTreeFactor treeSubset(subsetKeys, weights);
++      EXPECT(assert_equal(tree * treeSubset,
++                          (joint * subset).toDecisionTreeFactor()));
++      EXPECT(assert_equal(tree / treeSubset,
++                          (joint / subset).toDecisionTreeFactor()));
++    }
++  }
++}
++
++// Disjoint, overlapping, and larger right-hand scopes retain general joins.
++TEST(TableFactor, ApplyWithoutRightSubset) {
++  const DiscreteKey A(0, 2), B(1, 3), C(2, 2);
++  const TableFactor joint(B & A, "1 0 3 4 0 6");
++  const auto tree = joint.toDecisionTreeFactor();
++  for (const DiscreteKeys& keys :
++       vector<DiscreteKeys>{{C}, {B, C}, {C, B, A}}) {
++    size_t cardinality = 1;
++    for (const auto& key : keys) cardinality *= key.second;
++    vector<double> weights(cardinality);
++    for (size_t i = 0; i < cardinality; ++i)
++      weights[i] = i % 3 == 0 ? 0 : i + 2;
++    const TableFactor other(keys, weights);
++    const DecisionTreeFactor treeOther(keys, weights);
++    EXPECT(assert_equal(tree * treeOther, (joint * other).toDecisionTreeFactor()));
++    EXPECT(assert_equal(tree / treeOther, (joint / other).toDecisionTreeFactor()));
++  }
++}
++
++}  // namespace subset_operations
++
++/* ************************************************************************* */
++// Check multiplication with a table-backed conditional in both operand orders.
++TEST(TableFactor, TableConditionalMultiplication) {
    const DiscreteKey key(0, 3);
-@@ -250,7 +350,7 @@ TEST(TableFactor, multiplication) {
+   const auto table =
+       std::make_shared<TableFactor>(key, std::vector<double>{2.0, 3.0, 4.0});
+-  const auto distribution = std::make_shared<TableDistribution>(key, "1 2 3");
++  const auto conditional =
++      std::make_shared<DiscreteConditional>(1, TableFactor(key, "1 2 3"));
+   const TableFactor expected(key, std::vector<double>{1.0 / 3.0, 1.0, 2.0});
+ 
+   const auto tableFirst =
+-      std::dynamic_pointer_cast<TableFactor>(table->multiply(distribution));
+-  const auto distributionFirst =
+-      std::dynamic_pointer_cast<TableFactor>(distribution->multiply(table));
++      std::dynamic_pointer_cast<TableFactor>(table->multiply(conditional));
++  const auto conditionalFirst =
++      std::dynamic_pointer_cast<TableFactor>(conditional->multiply(table));
+ 
+   CHECK(tableFirst);
+-  CHECK(distributionFirst);
++  CHECK(conditionalFirst);
+   EXPECT(assert_equal(expected, *tableFirst));
+-  EXPECT(assert_equal(expected, *distributionFirst));
++  EXPECT(assert_equal(expected, *conditionalFirst));
+ }
+ 
+ /* ************************************************************************* */
+@@ -250,7 +516,7 @@ TEST(TableFactor, multiplication) {
    DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
    CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) *
                                     f1.toDecisionTreeFactor()));
@@ -5957,7 +7280,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    // Multiply two factors
    TableFactor f2(v1 & v2, "5 6 7 8");
-@@ -377,17 +477,19 @@ TEST(TableFactor, Prune) {
+@@ -377,17 +643,19 @@ TEST(TableFactor, Prune) {
  
    // Only keep the leaves with the top 5 values.
    size_t maxNrAssignments = 5;
@@ -5981,7 +7304,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    DiscreteKey D(4, 2);
    TableFactor factor(
-@@ -399,8 +501,9 @@ TEST(TableFactor, Prune) {
+@@ -399,8 +667,21 @@ TEST(TableFactor, Prune) {
                          "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
                          "0.999952870000 1.0 1.0 1.0 1.0");
    maxNrAssignments = 5;
@@ -5990,13 +7313,83 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  auto pruned3 =
 +      std::dynamic_pointer_cast<TableFactor>(factor.prune(maxNrAssignments));
 +  EXPECT(assert_equal(expected3, *pruned3));
++}
++
++// Check that pruning keeps every value tied with the N-th largest, matching
++// DecisionTreeFactor::prune.
++TEST(TableFactor, PruneKeepsTies) {
++  DiscreteKey X(0, 5);
++  TableFactor f(X, "0.2 0.2 0.1 0.2 0.3");
++
++  auto pruned = std::dynamic_pointer_cast<TableFactor>(f.prune(3));
++
++  TableFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
++  EXPECT(assert_equal(expected, *pruned));
  }
  
  /* ************************************************************************* */
-@@ -503,6 +606,189 @@ TEST(TableFactor, UnaryAssignment) {
+@@ -503,6 +784,295 @@ TEST(TableFactor, UnaryAssignment) {
  }
  
  /* ************************************************************************* */
++// Check that zeros produced by an operation are not stored in the result.
++TEST(TableFactor, OperationsDropZeros) {
++  const DiscreteKey X(0, 2), Y(1, 2);
++  const TableFactor f(X & Y, "0.1 0.2 0.3 0.4");
++
++  // Unary ops that zero out values below 0.25.
++  const auto threshold = [](const double& x) { return x < 0.25 ? 0.0 : x; };
++  EXPECT_LONGS_EQUAL(2, f.apply(threshold).nrValues());
++  const auto thresholdAssignment = [&](const Assignment<Key>&,
++                                       const double& x) { return threshold(x); };
++  EXPECT_LONGS_EQUAL(2, f.apply(thresholdAssignment).nrValues());
++
++  // A binary op whose products underflow to zero.
++  const TableFactor tiny(X & Y, "1e-200 1e-200 1 1");
++  const auto product = [](const double& a, const double& b) {
++    return a * b * 1e-200;
++  };
++  EXPECT_LONGS_EQUAL(2, f.apply(tiny, product).nrValues());
++
++  // Summing out X cancels the values for Y=0.
++  const TableFactor g(X & Y, "1 2 -1 3");
++  EXPECT_LONGS_EQUAL(1, g.sum(1)->nrValues());
++  EXPECT_LONGS_EQUAL(1, g.sum(Ordering{X.first})->nrValues());
++}
++
++/* ************************************************************************* */
++// A computed scalar zero must annihilate factors in either multiplication order.
++TEST(TableFactor, ComputedScalarZero) {
++  const DiscreteKey X(0, 2);
++  const TableFactor prior(X, "0.25 0.75");
++  const TableFactor scalar(DiscreteKeys{}, std::vector<double>{1.0});
++  const auto zero = scalar.apply([](const double&) { return 0.0; });
++
++  for (const TableFactor& result :
++       {zero * prior, prior * zero, prior / zero}) {
++    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 0}}), 1e-12);
++    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 1}}), 1e-12);
++  }
++}
++
++/* ************************************************************************* */
++// Removing stored zeros must preserve the maximum of an all-zero factor.
++TEST(TableFactor, MaximumAfterZeroing) {
++  const DiscreteKey X(0, 2);
++  const auto zero = TableFactor(X, "0.25 0.75") * 0.0;
++  EXPECT_DOUBLES_EQUAL(0.0, zero->max(), 1e-12);
++}
++
++/* ************************************************************************* */
++// A default-constructed factor acts as the identity in multiplication.
++TEST(TableFactor, DefaultIsIdentity) {
++  const DiscreteKey X(0, 2);
++  const TableFactor prior(X, "0.25 0.75");
++  EXPECT(assert_equal(prior, TableFactor() * prior));
++  EXPECT(assert_equal(prior, prior * TableFactor()));
++}
++
++/* ************************************************************************* */
 +namespace key_order_fixture {
 +// Keys deliberately not in increasing order: X comes first but has key 1.
 +const DiscreteKey X(1, 2), Y(0, 3);
@@ -6075,13 +7468,88 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +}  // namespace restrict_fixture
 +/* ************************************************************************* */
-+namespace table_distribution_fixture {
++namespace table_conditional_fixture {
 +const DiscreteKey A(0, 2), B(1, 3);
 +const std::string spec = "1 2 3 4 5 6";
-+const TableDistribution distribution(A & B, spec);
-+// The same joint distribution, stored as a decision tree.
++// A joint distribution stored as a sparse table, and as a decision tree.
++const DiscreteConditional tableConditional(2, TableFactor(A & B, spec));
 +const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
 +
++// Equality with a decision-tree conditional holds in both directions.
++TEST(TableConditional, EqualsAcrossRepresentations) {
++  EXPECT(treeConditional.equals(tableConditional));
++  EXPECT(tableConditional.equals(treeConditional));
++}
++
++// Constructing a conditional from a TableFactor keeps the sparse table.
++TEST(TableConditional, Storage) {
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(tableConditional.factor()));
++  EXPECT(assert_equal(treeConditional, tableConditional));
++}
++
++// Marginalizing a table-backed conditional matches the decision tree version.
++TEST(TableConditional, Marginal) {
++  EXPECT(assert_equal(treeConditional.marginal(A.first),
++                      tableConditional.marginal(A.first)));
++}
++
++// The likelihood of a table-backed conditional matches the decision tree
++// version.
++TEST(TableConditional, Likelihood) {
++  const DiscreteValues frontalValues{{A.first, 1}, {B.first, 2}};
++  EXPECT(assert_equal(*treeConditional.likelihood(frontalValues),
++                      *tableConditional.likelihood(frontalValues)));
++}
++
++// Multiplying conditionals works with a table-backed one on either side.
++TEST(TableConditional, ConditionalProduct) {
++  const DiscreteKey C(2, 2);
++  const DiscreteConditional conditional(C, {A}, "1/3 2/2");  // P(C|A)
++  const DiscreteConditional expected = conditional * treeConditional;
++  EXPECT(assert_equal(expected, conditional * tableConditional));
++  EXPECT(assert_equal(expected, tableConditional * conditional));
++}
++
++// Pruning a table-backed conditional keeps the table and renormalizes.
++TEST(TableConditional, Prune) {
++  const auto pruned =
++      std::dynamic_pointer_cast<DiscreteConditional>(tableConditional.prune(2));
++  CHECK(pruned);
++  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
++  EXPECT(assert_equal(DiscreteConditional(2, TableFactor(A & B, "0 0 0 0 5 6")),
++                      *pruned));
++}
++
++// The argmax of a table is the assignment with the largest value.
++TEST(TableFactor, Argmax) {
++  const DiscreteValues expected{{A.first, 1}, {B.first, 2}};
++  EXPECT(assert_equal(expected, TableFactor(A & B, spec).argmax()));
++}
++
++// Verify that sparse indices for a large integer range remain exact.
++TEST(TableFactor, EvaluateLargeIntegerStride) {
++  DiscreteKeys keys{{0, 2}};
++  DiscreteValues values{{0, 1}};
++  uint64_t stride = 1;
++  for (Key key = 1; key <= 34; ++key) {
++    keys.emplace_back(key, 3);
++    values[key] = 0;
++    stride *= 3;
++  }
++
++  // The logical table is large, but only one nonzero entry is allocated.
++  // stride = 3^34 = 16677181699666569, which fits in a 64-bit index.
++  SparseVector entries(2 * stride);
++  entries.insert(stride) = 7.0;
++  const TableFactor table(keys, entries);
++
++  EXPECT_DOUBLES_EQUAL(7.0, table(values), 1e-12);
++  const TableFactor subset(DiscreteKey(0, 2), "0 2");
++  EXPECT_DOUBLES_EQUAL(14.0, (table * subset)(values), 1e-12);
++  EXPECT_DOUBLES_EQUAL(3.5, (table / subset)(values), 1e-12);
++}
++
++#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 +// A default-constructed TableDistribution still stores a TableFactor.
 +TEST(TableDistribution, DefaultConstructor) {
 +  const TableDistribution empty;
@@ -6090,65 +7558,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  EXPECT(assert_equal(empty, TableDistribution()));
 +}
 +
-+// Equality with a decision-tree conditional holds in both directions.
-+TEST(TableDistribution, EqualsAcrossRepresentations) {
-+  const DiscreteConditional& tableConditional = distribution;
-+  EXPECT(treeConditional.equals(tableConditional));
-+  EXPECT(tableConditional.equals(treeConditional));
++// The deprecated TableDistribution matches a table-backed conditional, and
++// equality holds in both directions.
++TEST(TableDistribution, DeprecatedShim) {
++  const TableDistribution distribution(A & B, spec);
++  EXPECT(tableConditional.equals(distribution));
++  EXPECT(distribution.equals(tableConditional));
++  EXPECT(assert_equal(tableConditional.toTableFactor(), distribution.table()));
++  EXPECT(assert_equal(distribution.table().argmax(), distribution.argmax()));
++  EXPECT(std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2)));
 +}
-+
-+// Marginalizing a TableDistribution matches the decision tree version.
-+TEST(TableDistribution, Marginal) {
-+  EXPECT(assert_equal(treeConditional.marginal(A.first),
-+                      distribution.marginal(A.first)));
-+}
-+
-+// The likelihood of a TableDistribution matches the decision tree version.
-+TEST(TableDistribution, Likelihood) {
-+  const DiscreteValues frontalValues{{A.first, 1}, {B.first, 2}};
-+  EXPECT(assert_equal(*treeConditional.likelihood(frontalValues),
-+                      *distribution.likelihood(frontalValues)));
-+}
-+
-+// Multiplying conditionals works with a TableDistribution on either side.
-+TEST(TableDistribution, ConditionalProduct) {
-+  const DiscreteKey C(2, 2);
-+  const DiscreteConditional conditional(C, {A}, "1/3 2/2");  // P(C|A)
-+  const DiscreteConditional& tableConditional = distribution;
-+  const DiscreteConditional expected = conditional * treeConditional;
-+  EXPECT(assert_equal(expected, conditional * tableConditional));
-+  EXPECT(assert_equal(expected, tableConditional * conditional));
-+}
-+
-+// Pruning a TableDistribution returns a renormalized TableDistribution.
-+TEST(TableDistribution, Prune) {
-+  const auto pruned =
-+      std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2));
-+  CHECK(pruned);
-+  EXPECT(assert_equal(TableDistribution(A & B, "0 0 0 0 5 6"), *pruned));
-+}
-+
-+}  // namespace table_distribution_fixture
 +
 +// Multiplication must preserve normalization after pruning a table prior.
 +TEST(TableDistribution, PrunedConditionalProduct) {
-+  const DiscreteKey A(0, 2), B(1, 2);
-+  TableDistribution prior(A, "0.4 0.6");
++  const DiscreteKey C(2, 2);
++  const TableDistribution prior(A, "0.4 0.6");
 +  // Retain only A=1. Pruning returns a new, renormalized distribution.
 +  const auto pruned =
 +      std::dynamic_pointer_cast<TableDistribution>(prior.prune(1));
 +  CHECK(pruned);
-+  const DiscreteConditional conditional(B, {A}, "1/1 1/1");  // P(B|A)
++  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
 +  const DiscreteConditional& tablePrior = *pruned;
 +  const DiscreteConditional joint = conditional * tablePrior;
 +
-+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 0}}),
++  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
 +                       1e-12);
-+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 1}}),
++  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
 +                       1e-12);
-+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 0}}),
++  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
 +                       1e-12);
-+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 1}}),
++  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
 +                       1e-12);
 +
 +  double total = 0.0;
@@ -6158,27 +7597,29 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +// Removing a known mode through the base class must update table storage too.
 +TEST(TableDistribution, RemoveDiscreteModesUpdatesTable) {
-+  const DiscreteKey A(0, 2), B(1, 2);
-+  TableDistribution distribution(A & B, "1 2 3 4");
++  const DiscreteKey C(2, 2);
++  TableDistribution distribution(A & C, "1 2 3 4");
 +  DiscreteConditional& conditional = distribution;
 +  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
 +
 +  EXPECT_LONGS_EQUAL(1, conditional.size());
 +  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
 +  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
-+  EXPECT_LONGS_EQUAL(B.first, conditional.firstFrontalKey());
++  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
 +
 +  // Keep the A=1 slice of the original normalized joint: [0.3, 0.4].
 +  // Mode removal restricts the distribution; it does not renormalize it.
-+  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{B.first, 0}}), 1e-12);
-+  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{B.first, 1}}), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{C.first, 0}}), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{C.first, 1}}), 1e-12);
 +
-+  const DecisionTreeFactor expected(B, "0.3 0.4");
++  const DecisionTreeFactor expected(C, "0.3 0.4");
 +  const DecisionTreeFactor converted = distribution.toDecisionTreeFactor();
 +  EXPECT_LONGS_EQUAL(1, converted.size());
 +  EXPECT(assert_equal(expected, converted));
 +}
++#endif
 +
++}  // namespace table_conditional_fixture
 +/* ************************************************************************* */
  int main() {
    TestResult tr;
@@ -7356,15 +8797,71 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    explicit DCSAM(const ISAM2Params &isam_params);
  
    /**
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/HybridBayesNet.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/HybridBayesNet.cpp
+@@ -19,7 +19,6 @@
+ #include <gtsam/discrete/DiscreteBayesNet.h>
+ #include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridValues.h>
+ 
+@@ -151,14 +150,7 @@ DiscreteValues HybridBayesNet::mpe() con
+ 
+   for (auto &&conditional : *this) {
+     if (conditional->isDiscrete()) {
+-      if (auto dtc = conditional->asDiscrete<TableDistribution>()) {
+-        // The number of keys should be small so should not
+-        // be expensive to convert to DiscreteConditional.
+-        discrete_fg.push_back(DiscreteConditional(dtc->nrFrontals(),
+-                                                  dtc->toDecisionTreeFactor()));
+-      } else {
+-        discrete_fg.push_back(conditional->asDiscrete());
+-      }
++      discrete_fg.push_back(conditional->asDiscrete());
+     }
+   }
+ 
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/HybridBayesTree.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/HybridBayesTree.cpp
-@@ -201,11 +201,14 @@ void HybridBayesTree::prune(const size_t
+@@ -20,7 +20,7 @@
+ #include <gtsam/base/treeTraversal-inst.h>
+ #include <gtsam/discrete/DiscreteBayesNet.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
+-#include <gtsam/discrete/TableDistribution.h>
++#include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridBayesTree.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+@@ -47,9 +47,7 @@ DiscreteValues HybridBayesTree::discrete
+     const DiscreteFactorGraph& dfg) const {
+   DiscreteFactor::shared_ptr product = dfg.scaledProduct();
+ 
+-  TableFactor p = product->toTableFactor();
+-  DiscreteValues assignment = TableDistribution(p).argmax();
+-  return assignment;
++  return product->toTableFactor().argmax();
+ }
+ 
+ /* ************************************************************************* */
+@@ -63,8 +61,7 @@ DiscreteValues HybridBayesTree::mpe() co
+ 
+   //  The root should be discrete only, we compute the MPE
+   if (root_conditional->isDiscrete()) {
+-    auto discrete = root_conditional->asDiscrete<TableDistribution>();
+-    discrete_fg.push_back(discrete);
++    discrete_fg.push_back(root_conditional->asDiscrete());
+     mpe = discreteMaxProduct(discrete_fg);
+   } else {
+     mpe = DiscreteValues();
+@@ -201,11 +198,13 @@ void HybridBayesTree::prune(const size_t
      return;
    }
  
 -  auto prunedDiscreteProbs =
-+  auto discreteProbs =
-       this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
+-      this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
++  auto discreteProbs = this->roots_.at(0)->conditional()->asDiscrete();
  
 -  // Imperative pruning
 -  prunedDiscreteProbs->prune(maxNrLeaves);
@@ -7376,6 +8873,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// Helper struct for pruning the hybrid bayes tree.
    struct HybridPrunerData {
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/HybridGaussianFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/HybridGaussianFactorGraph.cpp
+@@ -25,7 +25,6 @@
+ #include <gtsam/discrete/DiscreteJunctionTree.h>
+ #include <gtsam/discrete/DiscreteKey.h>
+ #include <gtsam/discrete/DiscreteValues.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+ #include <gtsam/hybrid/HybridEliminationTree.h>
+@@ -323,7 +322,8 @@ discreteElimination(const HybridGaussian
+     DiscreteFactor::shared_ptr product = dfg.scaledProduct();
+ 
+     TableFactor p = product->toTableFactor();
+-    auto conditional = std::make_shared<TableDistribution>(p);
++    // Normalizing keeps the sparse table representation.
++    auto conditional = std::make_shared<DiscreteConditional>(p.size(), p);
+ 
+     DiscreteFactor::shared_ptr sum = p.sum(frontalKeys);
+ 
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/HybridNonlinearFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/HybridNonlinearFactor.cpp
 @@ -214,7 +214,7 @@ std::shared_ptr<HybridGaussianFactor> Hy
@@ -7405,6 +8922,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /**
     * @brief Restrict the factor to the given discrete values.
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/HybridNonlinearISAM.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/HybridNonlinearISAM.cpp
+@@ -15,7 +15,6 @@
+  * @author Varun Agrawal
+  */
+ 
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+ #include <gtsam/hybrid/HybridNonlinearFactor.h>
+ #include <gtsam/hybrid/HybridNonlinearISAM.h>
+@@ -65,14 +64,8 @@ void HybridNonlinearISAM::reorderRelinea
+     // Obtain the new linearization point
+     const Values newLinPoint = estimate();
+ 
+-    DiscreteConditional::shared_ptr discreteProbabilities;
+-
+-    auto discreteRoot = isam_.roots().at(0)->conditional();
+-    if (discreteRoot->asDiscrete<TableDistribution>()) {
+-      discreteProbabilities = discreteRoot->asDiscrete<TableDistribution>();
+-    } else {
+-      discreteProbabilities = discreteRoot->asDiscrete();
+-    }
++    const DiscreteConditional::shared_ptr discreteProbabilities =
++        isam_.roots().at(0)->conditional()->asDiscrete();
+ 
+     isam_.clear();
+ 
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testDCSAM.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testDCSAM.cpp
 @@ -411,6 +411,145 @@ TEST(DCSAM, SimpleSemanticSlam) {
@@ -7553,8 +9097,90 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  /* *************************************************************************
   */
  int main() {
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testGaussianMixture.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testGaussianMixture.cpp
+@@ -20,7 +20,6 @@
+ #include <gtsam/discrete/DecisionTreeFactor.h>
+ #include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteKey.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridGaussianConditional.h>
+ #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+@@ -80,8 +79,8 @@ TEST(GaussianMixture, GaussianMixtureMod
+   double midway = mu1 - mu0;
+   auto eliminationResult =
+       gmm.toFactorGraph({{Z(0), Vector1(midway)}}).eliminateSequential();
+-  auto pMid = eliminationResult->at(0)->asDiscrete<TableDistribution>();
+-  EXPECT(assert_equal(TableDistribution(m, "60 40"), *pMid));
++  auto pMid = eliminationResult->at(0)->asDiscrete();
++  EXPECT(assert_equal(DiscreteConditional(m, "60/40"), *pMid));
+ 
+   // Everywhere else, the result should be a sigmoid.
+   for (const double shift : {-4, -2, 0, 2, 4}) {
+@@ -91,8 +90,7 @@ TEST(GaussianMixture, GaussianMixtureMod
+     // Workflow 1: convert HBN to HFG and solve
+     auto eliminationResult1 =
+         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+-    auto posterior1 =
+-        *eliminationResult1->at(0)->asDiscrete<TableDistribution>();
++    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
+     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
+ 
+     // Workflow 2: directly specify HFG and solve
+@@ -101,8 +99,7 @@ TEST(GaussianMixture, GaussianMixtureMod
+         m, std::vector{Gaussian(mu0, sigma, z), Gaussian(mu1, sigma, z)});
+     hfg1.push_back(mixing);
+     auto eliminationResult2 = hfg1.eliminateSequential();
+-    auto posterior2 =
+-        *eliminationResult2->at(0)->asDiscrete<TableDistribution>();
++    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
+     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
+   }
+ }
+@@ -141,8 +138,8 @@ TEST(GaussianMixture, GaussianMixtureMod
+   EXPECT(assert_equal(expectedDiscretePosterior,
+                       eliminationResultMax->discretePosterior(vv)));
+ 
+-  auto pMax = *eliminationResultMax->at(0)->asDiscrete<TableDistribution>();
+-  EXPECT(assert_equal(TableDistribution(m, "42 58"), pMax, 1e-4));
++  auto pMax = *eliminationResultMax->at(0)->asDiscrete();
++  EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
+ 
+   // Everywhere else, the result should be a bell curve like function.
+   for (const double shift : {-4, -2, 0, 2, 4}) {
+@@ -152,8 +149,7 @@ TEST(GaussianMixture, GaussianMixtureMod
+     // Workflow 1: convert HBN to HFG and solve
+     auto eliminationResult1 =
+         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+-    auto posterior1 =
+-        *eliminationResult1->at(0)->asDiscrete<TableDistribution>();
++    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
+     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
+ 
+     // Workflow 2: directly specify HFG and solve
+@@ -162,8 +158,7 @@ TEST(GaussianMixture, GaussianMixtureMod
+         m, std::vector{Gaussian(mu0, sigma0, z), Gaussian(mu1, sigma1, z)});
+     hfg.push_back(mixing);
+     auto eliminationResult2 = hfg.eliminateSequential();
+-    auto posterior2 =
+-        *eliminationResult2->at(0)->asDiscrete<TableDistribution>();
++    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
+     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
+   }
+ }
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridBayesNet.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridBayesNet.cpp
+@@ -20,8 +20,8 @@
+ 
+ #include <gtsam/base/MatrixConstants.h>
+ #include <gtsam/base/Testable.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteFactor.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridBayesTree.h>
+ #include <gtsam/hybrid/HybridConditional.h>
 @@ -516,14 +516,15 @@ TEST(HybridBayesNet, UpdateDiscreteCondi
    }
  
@@ -7591,6 +9217,299 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ****************************************************************************/
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridEstimation.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridEstimation.cpp
+@@ -18,8 +18,8 @@
+ #include <gtsam/base/MatrixConstants.h>
+ #include <gtsam/base/VectorConstants.h>
+ #include <gtsam/discrete/DiscreteBayesNet.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteMarginals.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/geometry/Pose3.h>
+ #include <gtsam/hybrid/DiscreteBoundaryFactor.h>
+@@ -347,14 +347,14 @@ TEST(HybridEstimation, EliminateSequenti
+ 
+   // Create expected discrete conditional on m0.
+   DiscreteKey m(M(0), 2);
+-  TableDistribution expected(m, "0.51341712 1");  // regression
++  DiscreteConditional expected(m, "0.51341712/1");  // regression
+ 
+   // Eliminate into BN using one ordering
+   const Ordering ordering1{X(0), X(1), M(0)};
+   HybridBayesNet::shared_ptr bn1 = fg->eliminateSequential(ordering1);
+ 
+   // Check that the discrete conditional matches the expected.
+-  auto dc1 = bn1->back()->asDiscrete<TableDistribution>();
++  auto dc1 = bn1->back()->asDiscrete();
+   EXPECT(assert_equal(expected, *dc1, 1e-9));
+ 
+   // Eliminate into BN using a different ordering
+@@ -362,7 +362,7 @@ TEST(HybridEstimation, EliminateSequenti
+   HybridBayesNet::shared_ptr bn2 = fg->eliminateSequential(ordering2);
+ 
+   // Check that the discrete conditional matches the expected.
+-  auto dc2 = bn2->back()->asDiscrete<TableDistribution>();
++  auto dc2 = bn2->back()->asDiscrete();
+   EXPECT(assert_equal(expected, *dc2, 1e-9));
+ }
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridGaussianFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridGaussianFactorGraph.cpp
+@@ -25,9 +25,9 @@
+ #include <gtsam/base/Vector.h>
+ #include <gtsam/base/VectorConstants.h>
+ #include <gtsam/discrete/DecisionTreeFactor.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteKey.h>
+ #include <gtsam/discrete/DiscreteValues.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+ #include <gtsam/hybrid/HybridFactor.h>
+@@ -644,7 +644,7 @@ TEST(HybridGaussianFactorGraph, Eliminat
+       mode, std::vector{conditional0, conditional1});
+ 
+   // Add prior on mode.
+-  expectedBayesNet.emplace_shared<TableDistribution>(mode, "74 26");
++  expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "74/26");
+ 
+   // Test elimination
+   const auto posterior = fg.eliminateSequential();
+@@ -694,7 +694,7 @@ TEST(HybridGaussianFactorGraph, Eliminat
+       m1, std::vector{conditional0, conditional1});
+ 
+   // Add prior on m1.
+-  expectedBayesNet.emplace_shared<TableDistribution>(m1, "0.188638 0.811362");
++  expectedBayesNet.emplace_shared<DiscreteConditional>(m1, "0.188638/0.811362");
+ 
+   // Test elimination
+   const auto posterior = fg.eliminateSequential();
+@@ -730,9 +730,7 @@ TEST(HybridGaussianFactorGraph, Eliminat
+       mode, std::vector{conditional0, conditional1});
+ 
+   // Add prior on mode.
+-  // Since this is the only discrete conditional, it is added as a
+-  // TableDistribution.
+-  expectedBayesNet.emplace_shared<TableDistribution>(mode, "23 77");
++  expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "23/77");
+ 
+   // Test elimination
+   const auto posterior = fg.eliminateSequential();
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridGaussianISAM.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridGaussianISAM.cpp
+@@ -17,9 +17,9 @@
+  */
+ 
+ #include <gtsam/discrete/DiscreteBayesNet.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteDistribution.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+ #include <gtsam/hybrid/HybridGaussianISAM.h>
+@@ -142,7 +142,7 @@ TEST(HybridGaussianISAM, IncrementalInfe
+       expectedRemainingGraph->eliminateMultifrontal(discreteOrdering);
+ 
+   // Test the probability values with regression tests.
+-  auto discrete = isam[M(1)]->conditional()->asDiscrete<TableDistribution>();
++  auto discrete = isam[M(1)]->conditional()->asDiscrete();
+   EXPECT(assert_equal(0.095292, (*discrete)({{M(0), 0}, {M(1), 0}}), 1e-5));
+   EXPECT(assert_equal(0.282758, (*discrete)({{M(0), 1}, {M(1), 0}}), 1e-5));
+   EXPECT(assert_equal(0.314175, (*discrete)({{M(0), 0}, {M(1), 1}}), 1e-5));
+@@ -222,7 +222,7 @@ TEST(HybridGaussianISAM, ApproxInference
+     1 1 1 Leaf  0.5
+   */
+ 
+-  auto discreteConditional_m0 = *dynamic_pointer_cast<TableDistribution>(
++  auto discreteConditional_m0 = *dynamic_pointer_cast<DiscreteConditional>(
+       incrementalHybrid[M(0)]->conditional()->inner());
+   EXPECT(discreteConditional_m0.keys() == KeyVector({M(0), M(1), M(2)}));
+ 
+@@ -474,9 +474,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
+ 
+   // Test if the optimal discrete mode assignment is (1, 1, 1).
+   DiscreteFactorGraph discreteGraph;
+-  // discreteTree is a TableDistribution, so we convert to
+-  // DecisionTreeFactor for the DiscreteFactorGraph
+-  discreteGraph.push_back(discreteTree->toDecisionTreeFactor());
++  discreteGraph.push_back(discreteTree);
+   DiscreteValues optimal_assignment = discreteGraph.optimize();
+ 
+   DiscreteValues expected_assignment;
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridMotionModel.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridMotionModel.cpp
+@@ -23,7 +23,6 @@
+ #include <gtsam/base/TestableAssertions.h>
+ #include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteValues.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridGaussianConditional.h>
+ #include <gtsam/hybrid/HybridGaussianFactor.h>
+@@ -145,9 +144,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+     // Since no measurement on x1, we hedge our bets
+     // Importance sampling run with 100k samples gives 50.051/49.949
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "50 50");
+-    EXPECT(
+-        assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>())));
++    DiscreteConditional expected(m1, "50/50");
++    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
+   }
+ 
+   {
+@@ -163,9 +161,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+     // Since we have a measurement on x1, we get a definite result
+     // Values taken from an importance sampling run with 100k samples:
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "44.3854 55.6146");
+-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>()),
+-                        0.02));
++    DiscreteConditional expected(m1, "44.3854/55.6146");
++    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
+   }
+ }
+ 
+@@ -252,9 +249,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+ 
+     // Values taken from an importance sampling run with 100k samples:
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "48.3158 51.6842");
+-    EXPECT(assert_equal(
+-        expected, *(eliminated->at(2)->asDiscrete<TableDistribution>()), 0.02));
++    DiscreteConditional expected(m1, "48.3158/51.6842");
++    EXPECT(assert_equal(expected, *(eliminated->at(2)->asDiscrete()), 0.02));
+   }
+ 
+   {
+@@ -268,9 +264,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+ 
+     // Values taken from an importance sampling run with 100k samples:
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "55.396 44.604");
+-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>()),
+-                        0.02));
++    DiscreteConditional expected(m1, "55.396/44.604");
++    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
+   }
+ }
+ 
+@@ -346,9 +341,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+ 
+     // Values taken from an importance sampling run with 100k samples:
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "51.7762 48.2238");
+-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>()),
+-                        0.02));
++    DiscreteConditional expected(m1, "51.7762/48.2238");
++    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
+   }
+ 
+   {
+@@ -362,9 +356,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+ 
+     // Values taken from an importance sampling run with 100k samples:
+     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-    TableDistribution expected(m1, "49.0762 50.9238");
+-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>()),
+-                        0.05));
++    DiscreteConditional expected(m1, "49.0762/50.9238");
++    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.05));
+   }
+ }
+ 
+@@ -389,9 +382,8 @@ TEST(HybridGaussianFactorGraph, TwoState
+ 
+   // Values taken from an importance sampling run with 100k samples:
+   // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+-  TableDistribution expected(m1, "8.91527 91.0847");
+-  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete<TableDistribution>()),
+-                      0.01));
++  DiscreteConditional expected(m1, "8.91527/91.0847");
++  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.01));
+ }
+ 
+ /* ************************************************************************* */
+@@ -546,8 +538,8 @@ TEST(HybridGaussianFactorGraph, Differen
+   DiscreteValues dv0{{M(1), 0}};
+   DiscreteValues dv1{{M(1), 1}};
+ 
+-  TableDistribution expected_m1(m1, "0.5 0.5");
+-  TableDistribution actual_m1 = *(hbn->at(2)->asDiscrete<TableDistribution>());
++  DiscreteConditional expected_m1(m1, "0.5/0.5");
++  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+ 
+   EXPECT(assert_equal(expected_m1, actual_m1));
+ }
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridNonlinearFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridNonlinearFactorGraph.cpp
+@@ -18,9 +18,9 @@
+ #include <gtsam/base/TestableAssertions.h>
+ #include <gtsam/base/utilities.h>
+ #include <gtsam/discrete/DiscreteBayesNet.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteDistribution.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/hybrid/HybridEliminationTree.h>
+ #include <gtsam/hybrid/HybridFactor.h>
+@@ -513,8 +513,7 @@ TEST(HybridNonlinearFactorGraph, Full_El
+   // P(m1)
+   EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(1)});
+   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
+-  TableDistribution dtc =
+-      *hybridBayesNet->at(4)->asDiscrete<TableDistribution>();
++  DiscreteConditional dtc = *hybridBayesNet->at(4)->asDiscrete();
+   EXPECT(DiscreteConditional(dtc.nrFrontals(), dtc.toDecisionTreeFactor())
+              .equals(*discreteBayesNet.at(1)));
+ }
+@@ -1066,8 +1065,8 @@ TEST(HybridNonlinearFactorGraph, Differe
+   DiscreteValues dv0{{M(1), 0}};
+   DiscreteValues dv1{{M(1), 1}};
+ 
+-  TableDistribution expected_m1(m1, "0.5 0.5");
+-  TableDistribution actual_m1 = *(hbn->at(2)->asDiscrete<TableDistribution>());
++  DiscreteConditional expected_m1(m1, "0.5/0.5");
++  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+ 
+   EXPECT(assert_equal(expected_m1, actual_m1));
+ }
+--- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridNonlinearISAM.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridNonlinearISAM.cpp
+@@ -17,9 +17,9 @@
+  */
+ 
+ #include <gtsam/discrete/DiscreteBayesNet.h>
++#include <gtsam/discrete/DiscreteConditional.h>
+ #include <gtsam/discrete/DiscreteDistribution.h>
+ #include <gtsam/discrete/DiscreteFactorGraph.h>
+-#include <gtsam/discrete/TableDistribution.h>
+ #include <gtsam/geometry/Pose2.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+ #include <gtsam/hybrid/HybridNonlinearISAM.h>
+@@ -266,7 +266,7 @@ TEST(HybridNonlinearISAM, ApproxInferenc
+     1 1 1 Leaf  0.5
+   */
+ 
+-  auto discreteConditional_m0 = *dynamic_pointer_cast<TableDistribution>(
++  auto discreteConditional_m0 = *dynamic_pointer_cast<DiscreteConditional>(
+       bayesTree[M(0)]->conditional()->inner());
+   EXPECT(discreteConditional_m0.keys() == KeyVector({M(0), M(1), M(2)}));
+ 
+@@ -517,8 +517,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
+ 
+   // The final discrete graph should not be empty since we have eliminated
+   // all continuous variables.
+-  auto discreteTree =
+-      bayesTree[M(3)]->conditional()->asDiscrete<TableDistribution>();
++  auto discreteTree = bayesTree[M(3)]->conditional()->asDiscrete();
+   EXPECT_LONGS_EQUAL(3, discreteTree->size());
+ 
+   // Test if the optimal discrete mode assignment is (1, 1, 1).
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testHybridSmoother.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testHybridSmoother.cpp
 @@ -119,10 +119,14 @@ TEST(HybridSmoother, IncrementalSmoother
@@ -7629,8 +9548,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // Get the continuous delta update as well as
 --- gtsam-no-tbb-4.3.0.orig/gtsam/hybrid/tests/testSerializationHybrid.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/hybrid/tests/testSerializationHybrid.cpp
-@@ -48,6 +48,7 @@ BOOST_CLASS_EXPORT_GUID(DiscreteConditio
- BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution")
+@@ -18,7 +18,7 @@
+ 
+ #include <gtsam/base/serializationTestHelpers.h>
+ #include <gtsam/discrete/DiscreteConditional.h>
+-#include <gtsam/discrete/TableDistribution.h>
++#include <gtsam/discrete/TableFactor.h>
+ #include <gtsam/hybrid/HybridBayesNet.h>
+ #include <gtsam/hybrid/HybridBayesTree.h>
+ #include <gtsam/hybrid/HybridConditional.h>
+@@ -45,9 +45,9 @@ BOOST_CLASS_EXPORT_GUID(HybridFactor, "g
+ BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor")
+ BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional")
+ BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional")
+-BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution")
  
  BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
 +BOOST_CLASS_EXPORT_GUID(TableFactor, "gtsam_TableFactor")
@@ -26870,6 +28801,27 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +if __name__ == "__main__":
 +    unittest.main()
+--- gtsam-no-tbb-4.3.0.orig/python/gtsam/tests/test_HybridFactorGraph.py
++++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_HybridFactorGraph.py
+@@ -18,7 +18,7 @@ import gtsam
+ from gtsam import (DiscreteConditional, GaussianConditional, HybridBayesNet,
+                    HybridGaussianConditional, HybridGaussianFactor,
+                    HybridGaussianFactorGraph, HybridValues, JacobianFactor,
+-                   TableDistribution, noiseModel)
++                   TableFactor, noiseModel)
+ from gtsam.symbol_shorthand import C, M, X, Z
+ from gtsam.utils.test_case import GtsamTestCase
+ 
+@@ -51,7 +51,8 @@ class TestHybridGaussianFactorGraph(Gtsa
+         self.assertEqual(len(hybridCond.keys()), 2)
+ 
+         discrete_conditional = hbn.at(hbn.size() - 1).inner()
+-        self.assertIsInstance(discrete_conditional, TableDistribution)
++        self.assertIsInstance(discrete_conditional, DiscreteConditional)
++        self.assertIsInstance(discrete_conditional.factor(), TableFactor)
+ 
+     def test_optimize(self):
+         """Test construction of hybrid factor graph."""
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_KnownLandmarkSquaredRangeFactor.py
 @@ -0,0 +1,51 @@
@@ -27485,6 +29437,136 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    values.reserve(validAssignments);
    std::vector<bool> used(numberObjects, false);
    const auto addAssignments = [&](const auto& add, size_t depth,
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/timing/timeTableFactorSubset.cpp
+@@ -0,0 +1,127 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ * See LICENSE for the license information
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file timeTableFactorSubset.cpp
++ * @brief Benchmark products and quotients with a factor on a subset of keys.
++ */
++
++#include <gtsam/discrete/TableFactor.h>
++
++#include <algorithm>
++#include <cmath>
++#include <iomanip>
++#include <iostream>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++#include "internal/TimingUtils.h"
++
++namespace {
++
++using gtsam::DiscreteKeys;
++using gtsam::DiscreteValues;
++using gtsam::TableFactor;
++
++volatile double timingChecksum = 0.0;
++
++// The first key is the most significant bit in these binary-key tables.
++size_t projectIndex(size_t index, size_t numberKeys,
++                    const DiscreteKeys& subset) {
++  size_t projected = 0;
++  for (const auto& [key, cardinality] : subset)
++    projected = 2 * projected + ((index >> (numberKeys - 1 - key)) & 1);
++  return projected;
++}
++
++// Check every assignment against arithmetic on the original dense vectors.
++// This happens outside timing and does not use TableFactor's index projection.
++void validate(const TableFactor& result, const std::vector<double>& values,
++              const std::vector<double>& marginal, size_t numberKeys,
++              const DiscreteKeys& subset, bool divide) {
++  DiscreteValues assignment;
++  for (size_t key = 0; key < numberKeys; ++key) assignment[key] = 0;
++  for (size_t index = 0; index < values.size(); ++index) {
++    for (size_t key = 0; key < numberKeys; ++key)
++      assignment[key] = (index >> (numberKeys - 1 - key)) & 1;
++    const double denominator = marginal[projectIndex(index, numberKeys, subset)];
++    const double expected = divide
++        ? (denominator == 0 ? 0 : values[index] / denominator)
++        : values[index] * denominator;
++    const double actual = result(assignment);
++    if (!std::isfinite(actual) ||
++        std::abs(actual - expected) > 1e-12 * std::max(1.0, expected))
++      throw std::runtime_error("Subset operation disagrees with dense arithmetic");
++  }
++}
++
++}  // namespace
++
++int main(int argc, char** argv) {
++  gtsam::timing::Arguments arguments(argc, argv);
++  if (arguments.helpRequested()) {
++    std::cout << "Usage: timeTableFactorSubset [--warmup N] [--repeats N] "
++                 "[--output FILE]\n"
++                 "Runs dense and sparse tables with 6, 10, and 14 binary keys.\n";
++    return 0;
++  }
++  const size_t warmups = arguments.sizeValue("--warmup", 3);
++  const size_t repetitions = arguments.sizeValue("--repeats", 31);
++  const std::string outputPath = arguments.stringValue("--output", "");
++  arguments.validateAllConsumed();
++  if (repetitions == 0) throw std::invalid_argument("require repeats >= 1");
++
++  std::vector<gtsam::timing::BenchmarkMetric> metrics;
++  std::cout << "keys,sparse,scope,operation,median_us\n"
++            << std::fixed << std::setprecision(3);
++  for (size_t numberKeys : {6, 10, 14}) {
++    DiscreteKeys keys;
++    for (size_t key = 0; key < numberKeys; ++key) keys.emplace_back(key, 2);
++    for (bool sparse : {false, true}) {
++      std::vector<double> values(size_t(1) << numberKeys);
++      for (size_t index = 0; index < values.size(); ++index)
++        values[index] = sparse && index % 5 ? 0 : 1 + index % 7;
++      const TableFactor joint(keys, values);
++      for (const std::string scope : {"suffix", "middle", "equal"}) {
++        DiscreteKeys subset;
++        for (const auto& key : keys) {
++          if (scope == "equal" ||
++              (key.first > 0 && (scope == "suffix" || key.first + 1 < numberKeys)))
++            subset.push_back(key);
++        }
++        // Compute the marginal independently, then construct the subset factor.
++        std::vector<double> marginal(size_t(1) << subset.size(), 0);
++        for (size_t index = 0; index < values.size(); ++index)
++          marginal[projectIndex(index, numberKeys, subset)] += values[index];
++        const TableFactor factor(subset, marginal);
++        for (bool divide : {false, true}) {
++          validate(divide ? joint / factor : joint * factor, values, marginal,
++                   numberKeys, subset, divide);
++          const auto samples = gtsam::timing::measureMilliseconds([&] {
++            const TableFactor result = divide ? joint / factor : joint * factor;
++            timingChecksum += result.nrValues();
++          }, warmups, repetitions);
++          const double microseconds = 1000 * gtsam::timing::summarizeSamples(
++              samples, gtsam::timing::MedianPolicy::kUpperMiddle).median;
++          const std::string operation = divide ? "divide" : "multiply";
++          std::cout << numberKeys << ',' << sparse << ',' << scope << ','
++                    << operation << ',' << microseconds << '\n';
++          metrics.push_back({std::to_string(numberKeys) + "_keys_" +
++                                 (sparse ? "sparse_" : "dense_") + scope + "_" +
++                                 operation,
++                             "microseconds", microseconds});
++        }
++      }
++    }
++  }
++  if (!outputPath.empty())
++    gtsam::timing::writeBenchmarkActionMetrics(outputPath, metrics);
++  std::cerr << "timing checksum: " << timingChecksum << '\n';
++  return 0;
++}
 --- gtsam-no-tbb-4.3.0.orig/wrap/CMakeLists.txt
 +++ gtsam-no-tbb-4.3.0/wrap/CMakeLists.txt
 @@ -10,11 +10,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmak
