@@ -1,10 +1,19 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~33.gbp677904) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~34.gbpaf8582) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @af85820ba35fd451f6843f2e7e008c55c23d7969 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @677904441d1742a32ed866f5f414b82430cee618 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Oct 2026 19:19:05 +0000
+  [ DLuminary ]
+  * Fix TableFactor build with Eigen 5: avoid prune() predicate overload
+  * Use scale-relative tolerance in SmartProjectionPoseFactor HessianWithRotation
+  * Fix BiasedGPSFactor single-Jacobian requests and wrap it for Python
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Oct 2026 18:04:44 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~32.gbpd3a214) resolute; urgency=medium
 

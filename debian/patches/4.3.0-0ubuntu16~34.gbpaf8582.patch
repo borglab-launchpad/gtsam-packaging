@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 24 2026 19:16:56 +0000
+Date: Oct, 25 2026 18:04:45 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -5223,7 +5223,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  using namespace std;
  
-@@ -112,6 +116,43 @@ struct ScopePartition {
+@@ -112,6 +116,55 @@ struct ScopePartition {
    }
  };
  
@@ -5264,10 +5264,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  return projection;
 +}
 +
++/**
++ * Remove explicitly stored zeros from a sparse table and release unused
++ * storage. Both prune() arguments are passed on purpose: Eigen 5 adds a
++ * templated prune(F&& keep_predicate) overload that would capture a lone
++ * prune(0.0) and fail to compile, while the two-argument value overload exists
++ * in Eigen 3.4 and 5. With a zero reference, only exact zeros are removed.
++ */
++void removeZeros(SparseVector& table) {
++  table.prune(0.0, 0.0);
++  table.data().squeeze();
++}
++
  }  // namespace
  
  /* ************************************************************************ */
-@@ -128,15 +169,16 @@ TableFactor::TableFactor(const DiscreteK
+@@ -128,15 +181,16 @@ TableFactor::TableFactor(const DiscreteK
  }
  
  /* ************************************************************************ */
@@ -5289,7 +5301,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    sorted_dkeys_ = discreteKeys();
    sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
-@@ -156,17 +198,17 @@ TableFactor::TableFactor(const DiscreteK
+@@ -156,17 +210,17 @@ TableFactor::TableFactor(const DiscreteK
   *  is then used to create the TableFactor.
   *
   * @param dt The DecisionTree
@@ -5311,7 +5323,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t nrValues = 0;
    dt.visit([&nrValues](double x) {
      if (x > 0) nrValues += 1;
-@@ -177,10 +219,10 @@ static Eigen::SparseVector<double> Compu
+@@ -177,10 +231,10 @@ static Eigen::SparseVector<double> Compu
  
    // Compute denominators to be used in computing sparse table indices
    std::map<Key, size_t> denominators;
@@ -5325,7 +5337,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    /**
-@@ -251,11 +293,11 @@ TableFactor::TableFactor(const DecisionT
+@@ -251,11 +305,11 @@ TableFactor::TableFactor(const DecisionT
  
  /* ************************************************************************ */
  TableFactor::TableFactor(const DiscreteConditional& c)
@@ -5340,7 +5352,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t max_size = 1;
    for (auto&& [_, cardinality] : keys.cardinalities()) {
      max_size *= cardinality;
-@@ -266,21 +308,22 @@ Eigen::SparseVector<double> TableFactor:
+@@ -266,21 +320,22 @@ Eigen::SparseVector<double> TableFactor:
          "input.");
    }
  
@@ -5367,7 +5379,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                                                   const std::string& table) {
    // Convert string to doubles.
    std::vector<double> ys;
-@@ -303,13 +346,12 @@ bool TableFactor::equals(const DiscreteF
+@@ -303,13 +358,12 @@ bool TableFactor::equals(const DiscreteF
  
  /* ************************************************************************ */
  double TableFactor::evaluate(const Assignment<Key>& values) const {
@@ -5387,7 +5399,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    return sparse_table_.coeff(idx);
  }
-@@ -343,6 +385,11 @@ DecisionTreeFactor TableFactor::operator
+@@ -343,6 +397,11 @@ DecisionTreeFactor TableFactor::operator
  }
  
  /* ************************************************************************ */
@@ -5399,7 +5411,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  DiscreteFactor::shared_ptr TableFactor::multiply(
      const DiscreteFactor::shared_ptr& f) const {
    DiscreteFactor::shared_ptr result;
-@@ -392,14 +439,50 @@ DecisionTreeFactor TableFactor::toDecisi
+@@ -392,14 +451,50 @@ DecisionTreeFactor TableFactor::toDecisi
      return DecisionTreeFactor(dkeys, tree);
    }
  
@@ -5425,7 +5437,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    entries.emplace_back(std::move(values), it.value());
    }
 +  std::sort(entries.begin(), entries.end());
-+
+ 
+-  AlgebraicDecisionTree<Key> tree(dkeys, table);
+-  DecisionTreeFactor f(dkeys, tree);
+-  return f;
 +  using Tree = DecisionTree<Key, double>;
 +  std::function<Tree(size_t, size_t, size_t)> build =
 +      [&](size_t level, size_t begin, size_t end) -> Tree {
@@ -5442,10 +5457,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    }
 +    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
 +  };
- 
--  AlgebraicDecisionTree<Key> tree(dkeys, table);
--  DecisionTreeFactor f(dkeys, tree);
--  return f;
++
 +  // Build the decision tree
 +  const Tree built = build(0, 0, entries.size());
 +  // Merge identical branches to reduce size of the tree
@@ -5455,7 +5467,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************ */
-@@ -428,7 +511,7 @@ TableFactor TableFactor::choose(const Di
+@@ -428,7 +523,7 @@ TableFactor TableFactor::choose(const Di
    uint64_t child_card = 1;
    for (const DiscreteKey& child_dkey : child_dkeys)
      child_card *= child_dkey.second;
@@ -5464,17 +5476,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    child_sparse_table_.reserve(child_card);
  
    // Populate child sparse table.
-@@ -442,7 +525,8 @@ TableFactor TableFactor::choose(const Di
+@@ -442,8 +537,7 @@ TableFactor TableFactor::choose(const Di
      }
    }
  
 -  child_sparse_table_.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  child_sparse_table_.prune(0.0);
-   child_sparse_table_.data().squeeze();
+-  child_sparse_table_.data().squeeze();
++  removeZeros(child_sparse_table_);
    return TableFactor(child_dkeys, child_sparse_table_);
  }
-@@ -485,14 +569,31 @@ DiscreteFactor::shared_ptr TableFactor::
+ 
+@@ -485,14 +579,31 @@ DiscreteFactor::shared_ptr TableFactor::
  
  /* ************************************************************************ */
  double TableFactor::max() const {
@@ -5508,7 +5520,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
    return combine(nrFrontals, Ring::max);
  }
-@@ -507,7 +608,7 @@ TableFactor TableFactor::apply(Unary op)
+@@ -507,7 +618,7 @@ TableFactor TableFactor::apply(Unary op)
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5517,17 +5529,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -516,7 +617,8 @@ TableFactor TableFactor::apply(Unary op)
+@@ -516,8 +627,7 @@ TableFactor TableFactor::apply(Unary op)
    }
  
    // Free unused memory and return.
 -  sparse_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  sparse_table.prune(0.0);
-   sparse_table.data().squeeze();
+-  sparse_table.data().squeeze();
++  removeZeros(sparse_table);
    return TableFactor(discreteKeys(), sparse_table);
  }
-@@ -526,7 +628,7 @@ TableFactor TableFactor::apply(UnaryAssi
+ 
+@@ -526,7 +636,7 @@ TableFactor TableFactor::apply(UnaryAssi
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5536,14 +5548,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -536,17 +638,84 @@ TableFactor TableFactor::apply(UnaryAssi
+@@ -536,17 +646,80 @@ TableFactor TableFactor::apply(UnaryAssi
    }
  
    // Free unused memory and return.
 -  sparse_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  sparse_table.prune(0.0);
-   sparse_table.data().squeeze();
+-  sparse_table.data().squeeze();
++  removeZeros(sparse_table);
    return TableFactor(discreteKeys(), sparse_table);
  }
  
@@ -5595,9 +5606,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    else
 +      result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
 +  }
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  result.prune(0.0);
-+  result.data().squeeze();
++  removeZeros(result);
 +  return TableFactor(sorted_dkeys_, result);
 +}
 +
@@ -5624,7 +5633,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // 1. Partition both scopes and compute their cardinalities in one pass.
    const ScopePartition scopes(sorted_dkeys_, f.sorted_dkeys_);
    // 2. Create hash table for input factor f
-@@ -554,7 +723,7 @@ TableFactor TableFactor::apply(const Tab
+@@ -554,7 +727,7 @@ TableFactor TableFactor::apply(const Tab
        f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
    // 3. Initialize the multiplied factor with a scope-aware upper bound on its
    // number of nonzeros.
@@ -5633,17 +5642,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        scopes.unionScope.cardinality);
    multipliedSparseTable.reserve(
        scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
-@@ -571,7 +740,8 @@ TableFactor TableFactor::apply(const Tab
+@@ -571,8 +744,7 @@ TableFactor TableFactor::apply(const Tab
      }
    }
    // 5. Free unused memory.
 -  multipliedSparseTable.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  multipliedSparseTable.prune(0.0);
-   multipliedSparseTable.data().squeeze();
+-  multipliedSparseTable.data().squeeze();
++  removeZeros(multipliedSparseTable);
    // 6. Create union keys and return.
    return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
-@@ -682,7 +852,7 @@ TableFactor::shared_ptr TableFactor::com
+ }
+@@ -682,7 +854,7 @@ TableFactor::shared_ptr TableFactor::com
      card *= cardinality(keys_[i]);
    }
    // Create combined table.
@@ -5652,16 +5661,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -691,7 +861,8 @@ TableFactor::shared_ptr TableFactor::com
+@@ -691,8 +863,7 @@ TableFactor::shared_ptr TableFactor::com
      combined_table.coeffRef(idx) = new_val;
    }
    // Free unused memory.
 -  combined_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  combined_table.prune(0.0);
-   combined_table.data().squeeze();
+-  combined_table.data().squeeze();
++  removeZeros(combined_table);
    return std::make_shared<TableFactor>(remain_dkeys, combined_table);
  }
+ 
 @@ -717,7 +888,7 @@ TableFactor::shared_ptr TableFactor::com
      }
    }
@@ -5671,17 +5680,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -726,7 +897,8 @@ TableFactor::shared_ptr TableFactor::com
+@@ -726,8 +897,7 @@ TableFactor::shared_ptr TableFactor::com
      combined_table.coeffRef(idx) = new_val;
    }
    // Free unused memory.
 -  combined_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  combined_table.prune(0.0);
-   combined_table.data().squeeze();
+-  combined_table.data().squeeze();
++  removeZeros(combined_table);
    return std::make_shared<TableFactor>(remain_dkeys, combined_table);
  }
-@@ -737,21 +909,6 @@ size_t TableFactor::keyValueForIndex(Key
+ 
+@@ -737,21 +907,6 @@ size_t TableFactor::keyValueForIndex(Key
    return (index / denominators_.at(target_key)) % cardinality(target_key);
  }
  
@@ -5703,7 +5712,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Print out header.
  /* ************************************************************************ */
  string TableFactor::markdown(const KeyFormatter& keyFormatter,
-@@ -817,47 +974,93 @@ string TableFactor::html(const KeyFormat
+@@ -817,47 +972,93 @@ string TableFactor::html(const KeyFormat
  }
  
  /* ************************************************************************ */
@@ -5725,16 +5734,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 -  // The number of probabilities can be lower than max_leaves.
 -  if (probabilities.size() <= N) return *this;
--
++  // The number of values can be lower than N, so there is nothing to prune.
++  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
+ 
 -  // Sort the vector in descending order based on the element values.
 -  sort(probabilities.begin(), probabilities.end(),
 -       [](const std::pair<Eigen::Index, double>& a,
 -          const std::pair<Eigen::Index, double>& b) {
 -         return a.second > b.second;
 -       });
-+  // The number of values can be lower than N, so there is nothing to prune.
-+  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
- 
+-
 -  // Keep the largest N probabilities in the vector.
 -  if (probabilities.size() > N) probabilities.resize(N);
 +  // Keep every value at or above the N-th largest one, as
@@ -14142,6 +14151,62 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  TestResult tr;
 +  return TestRegistry::runAllTests(tr);
 +}
+--- gtsam-no-tbb-4.3.0.orig/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
+@@ -1105,6 +1105,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+ }
+ 
+ /* *************************************************************************/
++// Verifies that the Hessian is invariant to a rigid motion of all cameras.
+ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
+   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
+ 
+@@ -1127,6 +1128,11 @@ TEST( SmartProjectionPoseFactor, Hessian
+   std::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
+       values);
+ 
++  // Entries are O(1e7), so scale the tolerance with the matrix: a fixed 1e-7
++  // allows only a few dozen ULPs and fails under benign rounding changes.
++  const Matrix information = factor->information();
++  const double tolerance = 1e-12 * information.norm();
++
+   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+ 
+   Values rotValues;
+@@ -1138,7 +1144,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+       rotValues);
+ 
+   // Hessian is invariant to rotations in the nondegenerate case
+-  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
++  EXPECT(assert_equal(information, factorRot->information(), tolerance));
+ 
+   Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+       Point3(10, -4, 5));
+@@ -1152,7 +1158,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+       smartFactorInstance->linearize(tranValues);
+ 
+   // Hessian is invariant to rotations and translations in the nondegenerate case
+-  EXPECT(assert_equal(factor->information(), factorRotTran->information(), 1e-7));
++  EXPECT(assert_equal(information, factorRotTran->information(), tolerance));
+ }
+ 
+ /* *************************************************************************/
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/gtsam_unstable.i
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/gtsam_unstable.i
+@@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: g
+   //void print(string s) const;
+ };
+ 
++#include <gtsam_unstable/slam/BiasedGPSFactor.h>
++virtual class BiasedGPSFactor : gtsam::NoiseModelFactor {
++  BiasedGPSFactor(gtsam::Key posekey, gtsam::Key biaskey, const gtsam::Point3& measured,
++                  const gtsam::noiseModel::Base* model);
++  const gtsam::Point3& measured() const;
++};
++
+ #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
+ virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
+   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/partition/tests/testFindSeparator.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/partition/tests/testFindSeparator.cpp
 @@ -15,6 +15,29 @@ using namespace std;
@@ -14230,6 +14295,78 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    for (int j=1; j<=8; j++)
      LONGS_EQUAL(1, partitionTable[j]);
    for (int j=9; j<=16; j++)
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/slam/BiasedGPSFactor.h
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/BiasedGPSFactor.h
+@@ -26,7 +26,8 @@ namespace gtsam {
+ 
+   /**
+    * A class to model GPS measurements, including a bias term which models
+-   * common-mode errors and that can be partially corrected if other sensors are used
++   * common-mode errors and that can be partially corrected if other sensors are used.
++   * The error is pose.translation() + bias - measured, all in the navigation frame.
+    * @ingroup slam
+    */
+   class BiasedGPSFactor
+@@ -81,18 +82,12 @@ namespace gtsam {
+     Vector3 evaluateError(const Pose3& pose, const Point3& bias,
+                           OptionalMatrixType H1,
+                           OptionalMatrixType H2) const override {
+-
+-      if (H1 || H2){
+-        H1->resize(3,6); // jacobian wrt pose
+-        (*H1) << Z_3x3,  pose.rotation().matrix();
+-        H2->resize(3,3); // jacobian wrt bias
+-        *H2 = I_3x3;
+-      }
+-      return pose.translation() + bias - measured_;
++      if (H2) *H2 = I_3x3;
++      return pose.translation(H1) + bias - measured_;
+     }
+ 
+     /** return the measured */
+-    const Point3 measured() const {
++    const Point3& measured() const {
+       return measured_;
+     }
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
+@@ -77,6 +77,35 @@ TEST(BiasedGPSFactor, jacobian) {
+ }
+ 
+ /* ************************************************************************* */
++namespace single_jacobian {
++const Pose3 pose(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 0.5, 0.2));
++const Point3 bias(0.3, -0.2, 0.1);
++const BiasedGPSFactor factor(X(1), B(1), Point3(1.5, 0.0, 0.4),
++                             Isotropic::Sigma(3, 0.05));
++
++// Requesting only the pose Jacobian must not touch the absent bias Jacobian.
++TEST(BiasedGPSFactor, poseJacobianOnly) {
++  Matrix expectedH1, expectedH2, actualH1;
++  const Vector3 expectedError =
++      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
++  const Vector3 actualError = factor.evaluateError(pose, bias, &actualH1, nullptr);
++  EXPECT(assert_equal(expectedError, actualError));
++  EXPECT(assert_equal(expectedH1, actualH1));
++}
++
++// Requesting only the bias Jacobian must not touch the absent pose Jacobian.
++TEST(BiasedGPSFactor, biasJacobianOnly) {
++  Matrix expectedH1, expectedH2, actualH2;
++  const Vector3 expectedError =
++      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
++  const Vector3 actualError = factor.evaluateError(pose, bias, nullptr, &actualH2);
++  EXPECT(assert_equal(expectedError, actualError));
++  EXPECT(assert_equal(expectedH2, actualH2));
++  EXPECT(assert_equal(Matrix(I_3x3), actualH2));
++}
++
++}  // namespace single_jacobian
++/* ************************************************************************* */
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/timing/timeHybridAllDiff.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/timing/timeHybridAllDiff.cpp
 @@ -35,6 +35,7 @@ using gtsam::DecisionTreeFactor;
@@ -29092,6 +29229,63 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #endif
  
  #include "python/gtsam_unstable/preamble.h"
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/tests/test_BiasedGPSFactor.py
+@@ -0,0 +1,54 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++
++See LICENSE for the license information.
++
++Unit tests for BiasedGPSFactor.
++"""
++
++# pylint: disable=invalid-name, no-name-in-module, no-member
++
++import unittest
++
++import numpy as np
++
++import gtsam
++import gtsam_unstable
++from gtsam.symbol_shorthand import B, X
++from gtsam.utils.test_case import GtsamTestCase
++
++
++class TestBiasedGPSFactor(GtsamTestCase):
++    """The error is pose.translation() + bias - measured."""
++
++    def setUp(self):
++        self.pose = gtsam.Pose3(gtsam.Rot3.Rodrigues(0.1, 0.2, 0.3),
++                                gtsam.Point3(1.0, 0.5, 0.2))
++        self.bias = np.array([0.3, -0.2, 0.1])
++        self.measured = gtsam.Point3(1.5, 0.0, 0.4)
++        self.factor = gtsam_unstable.BiasedGPSFactor(
++            X(1), B(1), self.measured, gtsam.noiseModel.Isotropic.Sigma(3, 0.5))
++        self.values = gtsam.Values()
++        self.values.insert(X(1), self.pose)
++        self.values.insert(B(1), self.bias)
++
++    def test_error(self):
++        """The error is the biased position minus the measurement."""
++        self.assertIsInstance(self.factor, gtsam.NoiseModelFactor)
++        np.testing.assert_allclose(self.factor.measured(), self.measured)
++        np.testing.assert_allclose(
++            self.factor.unwhitenedError(self.values),
++            self.pose.translation() + self.bias - self.measured)
++
++    def test_jacobians(self):
++        """The whitened Jacobians are [0 R] and I, scaled by 1/sigma."""
++        jacobian, _ = self.factor.linearize(self.values).jacobian()
++        expected = np.hstack([np.zeros((3, 3)), self.pose.rotation().matrix(),
++                              np.eye(3)]) / 0.5
++        np.testing.assert_allclose(jacobian, expected, atol=1e-12)
++
++
++if __name__ == "__main__":
++    unittest.main()
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam_unstable/tests/test_Serialization.py
 +++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/tests/test_Serialization.py
 @@ -1,6 +1,10 @@
