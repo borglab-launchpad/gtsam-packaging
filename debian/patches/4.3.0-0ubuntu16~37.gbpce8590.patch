@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 25 2026 18:04:45 +0000
+Date: Oct, 26 2026 10:19:47 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -3677,7 +3677,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      throw std::runtime_error("Constraint::error not implemented");
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/DecisionTreeFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/DecisionTreeFactor.cpp
-@@ -41,7 +41,13 @@ namespace gtsam {
+@@ -24,7 +24,11 @@
+ #include <gtsam/hybrid/HybridValues.h>
+ #include <gtsam/inference/Ordering.h>
+ 
++#include <functional>
++#include <limits>
++#include <queue>
+ #include <utility>
++#include <vector>
+ 
+ using namespace std;
+ 
+@@ -41,7 +45,13 @@ namespace gtsam {
    /* ************************************************************************ */
    DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
        : DiscreteFactor(c.keys(), c.cardinalities()),
@@ -3692,7 +3704,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /* ************************************************************************ */
    bool DecisionTreeFactor::equals(const DiscreteFactor& other,
-@@ -96,9 +102,10 @@ namespace gtsam {
+@@ -96,9 +106,10 @@ namespace gtsam {
    DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
        const DiscreteFactor::shared_ptr& f) const {
      if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
@@ -3706,7 +3718,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
      } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
        // If `f` is a DecisionTreeFactor, divide normally.
-@@ -233,23 +240,6 @@ namespace gtsam {
+@@ -233,23 +244,6 @@ namespace gtsam {
    }
  
    /* ************************************************************************ */
@@ -3730,10 +3742,32 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    std::vector<double> DecisionTreeFactor::probabilities() const {
      // Set of all keys
      KeySet allKeys(keys().begin(), keys().end());
-@@ -415,14 +405,6 @@ namespace gtsam {
-       std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
-     }
+@@ -398,172 +392,106 @@ namespace gtsam {
+       : DiscreteFactor(keys.indices(), keys.cardinalities()),
+         AlgebraicDecisionTree<Key>(keys, table) {}
  
+-  /**
+-   * @brief Min-Heap class to help with pruning.
+-   * The `top` element is always the smallest value.
++  /** Min-heap of (value, nrAssignments) pairs holding the N largest values.
++   * Each leaf adds one entry weighted by the assignments it covers, rather than
++   * one copy per assignment, and the heap drops its smallest entries once the
++   * rest cover N. It therefore holds at most min(N, #leaves) + 1 entries,
++   * whether N is small or a leaf covers billions of assignments.
+    */
+-  class MinHeap {
+-    std::vector<double> v_;
+-
+-   public:
+-    /// Default constructor
+-    MinHeap() {}
+-
+-    /// Push value onto the heap
+-    void push(double x) {
+-      v_.push_back(x);
+-      std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
+-    }
+-
 -    /// Push value `x`, `n` number of times.
 -    void push(double x, size_t n) {
 -      for (size_t i = 0; i < n; ++i) {
@@ -3742,13 +3776,85 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      }
 -    }
 -
-     /// Pop the top value of the heap.
-     double pop() {
-       std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
-@@ -480,26 +462,18 @@ namespace gtsam {
-         nrAssignments *= cardinalities_.at(k);
-       }
+-    /// Pop the top value of the heap.
+-    double pop() {
+-      std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
+-      double x = v_.back();
+-      v_.pop_back();
+-      return x;
+-    }
+-
+-    /// Return the top value of the heap without popping it.
+-    double top() { return v_.at(0); }
+-
+-    /**
+-     * @brief Print the heap as a sequence.
+-     *
+-     * @param s A string to prologue the output.
+-     */
+-    void print(const std::string& s = "") {
+-      std::cout << (s.empty() ? "" : s + " ");
+-      for (size_t i = 0; i < v_.size(); i++) {
+-        std::cout << v_.at(i);
+-        if (v_.size() > 1 && i < v_.size() - 1) std::cout << ", ";
+-      }
+-      std::cout << std::endl;
+-    }
+-
+-    /// Return true if heap is empty.
+-    bool empty() const { return v_.empty(); }
+-
+-    /// Return the size of the heap.
+-    size_t size() const { return v_.size(); }
+-  };
++  using WeightedValue = std::pair<double, size_t>;
++  using WeightedMinHeap =
++      std::priority_queue<WeightedValue, std::vector<WeightedValue>,
++                          std::greater<WeightedValue>>;
  
+   /* ************************************************************************ */
+   double DecisionTreeFactor::computeThreshold(const size_t N) const {
+-    // Set of all keys
+-    std::set<Key> allKeys = this->labels();
+-    MinHeap min_heap;
++    // With nothing to keep, no value can reach the threshold.
++    if (N == 0) return std::numeric_limits<double>::infinity();
+ 
+-    auto op = [&](const Assignment<Key>& a, double p) {
+-      // Get all the keys in the current assignment
+-      KeySet assignment_keys;
+-      for (auto&& [k, _] : a) {
+-        assignment_keys.insert(k);
+-      }
++    WeightedMinHeap min_heap;
++    // The min_heap's total count is tracked as its gap from N rather than as a
++    // sum, which could overflow when N is close to SIZE_MAX.
++    // While the heap covers fewer than N assignments, nrMissing is the
++    // shortfall; afterwards nrSurplus is the excess, which stays below the
++    // smallest entry's count since that entry could otherwise be dropped.
++    size_t nrMissing = N, nrSurplus = 0;
+ 
+-      // Find the keys missing in the assignment
+-      KeyVector diff;
+-      std::set_difference(allKeys.begin(), allKeys.end(),
+-                          assignment_keys.begin(), assignment_keys.end(),
+-                          std::back_inserter(diff));
++    auto op = [&](const Assignment<Key>& a, double p) {
++      // A full min_heap only takes values above its smallest one.
++      if (nrMissing == 0 && p <= min_heap.top().first) return p;
+ 
+-      // Compute the total number of assignments in the (pruned) subtree
++      // A leaf covers every assignment of the keys missing from its path.
++      // Iterate over the factor's keys rather than the tree's labels():
++      // merging drops keys the values don't depend on from the tree,
++      // but each leaf still stands for all of their assignments.
++      // Counts beyond N don't change the threshold, so saturate at N before
++      // multiplying to keep the count from overflowing.
+       size_t nrAssignments = 1;
+-      for (auto&& k : diff) {
+-        nrAssignments *= cardinalities_.at(k);
+-      }
+-
 -      // If min-heap is empty, fill it initially.
 -      // This is because there is nothing at the top.
 -      if (min_heap.empty()) {
@@ -3769,22 +3875,44 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -            // p is <= min value so move to the next one
 -            break;
 -          }
-+      // Insert one copy of p per assignment in the subtree, keeping only the
-+      // N largest values. Until the heap is full every value belongs in it;
-+      // afterwards p must beat the current smallest value to get in.
-+      for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
-+        if (min_heap.size() < N) {
-+          min_heap.push(p);
-+        } else if (p > min_heap.top()) {
-+          min_heap.pop();
-+          min_heap.push(p);
-+        } else {
-+          // p is <= the smallest kept value, so its remaining copies are too.
-+          break;
-         }
+-        }
++      for (auto&& [key, cardinality] : cardinalities_) {
++        if (a.count(key) > 0) continue;
++        nrAssignments = nrAssignments > N / cardinality
++                            ? N
++                            : nrAssignments * cardinality;
++      }
++
++      min_heap.emplace(p, nrAssignments);
++      if (nrAssignments < nrMissing) {
++        nrMissing -= nrAssignments;
++        return p;
++      }
++
++      // The heap now covers N, with nrSurplus + nrPending to spare. Drop the
++      // smallest entries while the rest still cover N. The new entry is never
++      // dropped: each drop shrinks nrPending below its count.
++      size_t nrPending = nrAssignments - nrMissing;
++      nrMissing = 0;
++      while (nrPending >= min_heap.top().second - nrSurplus) {
++        nrPending -= min_heap.top().second - nrSurplus;
++        nrSurplus = 0;
++        min_heap.pop();
        }
++      // Below the smallest entry's count by the loop condition, so no overflow.
++      nrSurplus += nrPending;
        return p;
-@@ -514,56 +488,36 @@ namespace gtsam {
+     };
+     this->visitWith(op);
+ 
+-    // If total number of hypotheses is less than N, return 0.0
+-    if (min_heap.size() < N) {
+-      return 0.0;
+-    }
+-    return min_heap.top();
++    // The factor has fewer than N assignments in total.
++    if (nrMissing > 0) return 0.0;
++    return min_heap.top().first;
    }
  
    /* ************************************************************************ */
@@ -3871,7 +3999,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      static double safe_div(const double& a, const double& b);
  
      /**
-@@ -266,9 +269,6 @@ namespace gtsam {
+@@ -266,20 +269,19 @@ namespace gtsam {
       */
      shared_ptr combine(const Ordering& keys, Binary op) const;
  
@@ -3881,7 +4009,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      /// Get all the probabilities in order of assignment values
      std::vector<double> probabilities() const;
  
-@@ -287,21 +287,20 @@ namespace gtsam {
+     /**
+-     * @brief Compute the probability value which is the threshold above which
+-     * only `N` leaves are present.
++     * @brief Compute the `N`-th largest value over all assignments, counting
++     * duplicates.
+      *
+-     * This is used for pruning out the smaller probabilities.
++     * This is the threshold used by prune(). A leaf counts once for every
++     * assignment it covers, including assignments of keys the tree no longer
++     * branches on after compression. Returns 0 when the factor has fewer than
++     * `N` assignments, and infinity when `N` is 0.
+      *
+-     * @param N The number of leaves to keep post pruning.
+-     * @return double
++     * @param N The number of assignments to keep post pruning.
+      */
+     double computeThreshold(const size_t N) const;
+ 
+@@ -287,21 +289,20 @@ namespace gtsam {
       * @brief Prune the decision tree of discrete variables.
       *
       * Pruning will set the leaves to be "pruned" to 0 indicating a 0
@@ -6415,7 +6561,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +| Sparse | equal | 1384.51 | 140.43 | 9.86× |
 --- gtsam-no-tbb-4.3.0.orig/gtsam/discrete/tests/testDecisionTreeFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/discrete/tests/testDecisionTreeFactor.cpp
-@@ -25,6 +25,7 @@
+@@ -25,9 +25,15 @@
  #include <gtsam/discrete/DiscreteDistribution.h>
  #include <gtsam/discrete/DiscreteFactor.h>
  #include <gtsam/discrete/Signature.h>
@@ -6423,7 +6569,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/inference/Key.h>
  #include <gtsam/inference/Ordering.h>
  
-@@ -137,6 +138,17 @@ TEST(DecisionTreeFactor, Divide) {
++#include <algorithm>
++#include <functional>
++#include <limits>
++#include <vector>
++
+ using namespace std;
+ using namespace gtsam;
+ 
+@@ -137,6 +143,17 @@ TEST(DecisionTreeFactor, Divide) {
  }
  
  /* ************************************************************************* */
@@ -6441,7 +6595,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(DecisionTreeFactor, sum_max) {
    DiscreteKey v0(0, 3), v1(1, 2);
    DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
-@@ -256,30 +268,49 @@ TEST(DecisionTreeFactor, Prune) {
+@@ -256,30 +273,127 @@ TEST(DecisionTreeFactor, Prune) {
  
    // Only keep the leaves with the top 5 values.
    size_t maxNrAssignments = 5;
@@ -6496,6 +6650,84 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +  DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
 +  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that each leaf counts all the assignments it covers, including those
++// of keys the tree no longer branches on after compression.
++TEST(DecisionTreeFactor, PruneCompressedKey) {
++  DiscreteKey X(0, 2), Y(1, 2);
++  DecisionTreeFactor f(X & Y, "0.1 0.4 0.1 0.4");
++
++  // The values don't depend on X, so compression removes it from the tree.
++  EXPECT_LONGS_EQUAL(1, f.labels().size());
++
++  // Each 0.4 leaf stands for two assignments, so it alone fills the top 2.
++  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(2), 1e-9);
++
++  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(2));
++  DecisionTreeFactor expected(X & Y, "0 0.4 0 0.4");
++  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that keeping zero assignments prunes everything, as TableFactor does.
++TEST(DecisionTreeFactor, PruneToZero) {
++  DiscreteKey X(0, 3);
++  DecisionTreeFactor f(X, "0.2 0.5 0.3");
++
++  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(0));
++  DecisionTreeFactor expected(X, "0 0 0");
++  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that a leaf's assignment count saturates instead of overflowing when
++// compression removes as many binary keys as size_t has bits.
++TEST(DecisionTreeFactor, PruneCompressedMultiplicityOverflow) {
++  const size_t bits = std::numeric_limits<size_t>::digits;
++  const DiscreteKey Y(bits, 2);
++  DecisionTreeFactor f(Y, "0.1 0.9");
++  for (size_t k = 0; k < bits; ++k)
++    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
++
++  EXPECT_LONGS_EQUAL(2, f.nrLeaves());
++  EXPECT_DOUBLES_EQUAL(0.9, f.computeThreshold(1), 1e-12);
++  const auto pruned = f.prune(1);
++  EXPECT_DOUBLES_EQUAL(0.0, (*pruned)(DiscreteValues{{Y.first, 0}}), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.9, (*pruned)(DiscreteValues{{Y.first, 1}}), 1e-12);
++}
++
++// Check that the threshold is the N-th largest value over many leaves, both
++// for small N, where the heap stays bounded, and for N up to the total count.
++TEST(DecisionTreeFactor, ComputeThresholdManyLeaves) {
++  // 1024 assignments over 10 binary keys, where every value appears twice in
++  // branches that don't merge, so ties must be counted across leaves.
++  DiscreteKeys keys;
++  for (size_t k = 0; k < 10; ++k) keys.emplace_back(k, 2);
++  std::vector<double> table;
++  for (size_t i = 0; i < 1024; ++i) table.push_back(((i * 37) % 1024) / 2);
++  const DecisionTreeFactor f(keys, table);
++  EXPECT_LONGS_EQUAL(1024, f.nrLeaves());
++
++  std::vector<double> sorted = table;
++  std::sort(sorted.begin(), sorted.end(), std::greater<double>());
++  for (size_t N : {1, 2, 3, 5, 100, 1023, 1024}) {
++    EXPECT_DOUBLES_EQUAL(sorted[N - 1], f.computeThreshold(N), 1e-12);
++  }
++  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(1025), 1e-12);
++}
++
++// Check that pruning a leaf covering 2^30 assignments uses one weighted entry
++// rather than materializing a copy of its value per assignment.
++TEST(DecisionTreeFactor, PruneCompressedLeafWithoutExpanding) {
++  DecisionTreeFactor f(DiscreteKey(0, 2), "0.4 0.4");
++  for (size_t k = 1; k < 30; ++k)
++    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
++  EXPECT_LONGS_EQUAL(1, f.nrLeaves());
++
++  const size_t nrAssignments = size_t(1) << 30;
++  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(nrAssignments), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(nrAssignments + 1), 1e-12);
++  const auto pruned = f.prune(nrAssignments);
++  EXPECT_DOUBLES_EQUAL(0.4, (*pruned)(DiscreteValues{}), 1e-12);
  }
  
  /* ************************************************************************** */

@@ -1,10 +1,18 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~36.gbp6adb4e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~37.gbpce8590) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @ce85904738b0d30ca9b2f1250ec75b98a59041fd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @6adb4e5903fffbce4c0a6e5bf9c1b7083aefe2bf **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 25 Oct 2026 18:06:35 +0000
+  [ Varun Agrawal ]
+  * Fix leaf count when computing pruning threshold
+  * Use new weighted min heap formulation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Oct 2026 10:19:45 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~35.gbpafaa3f) resolute; urgency=medium
 
