@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 26 2026 10:19:47 +0000
+Date: Oct, 26 2026 18:00:01 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -1124,6 +1124,50 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  if(GTSAM_USE_SYSTEM_CCOLAMD)
    target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_CCOLAMD)
    target_link_libraries(gtsam PRIVATE SuiteSparse::CCOLAMD)
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/base/CholeskyCheck.h
+@@ -0,0 +1,41 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++#pragma once
++
++#include <limits>
++
++namespace gtsam::internal {
++
++/** Shared, dimensionless safeguard for normal-equation Cholesky pivots. */
++struct CholeskyCheck {
++  // Empirical safeguard, not a rank or condition-number estimate. This admits
++  // the usable ~1e-8 pivots in #2856 while rejecting the ~2e-10 regression in
++  // #2653. Keep this value shared by every Cholesky implementation.
++  static constexpr double minimumNormalizedPivotSquared = 0x1p-28;
++
++  /** Test a squared pivot against its diagonal at entry to this factorization. */
++  static bool acceptSquared(
++      double pivotSquared, double referenceDiagonal) {
++    return positiveFinite(referenceDiagonal) && positiveFinite(pivotSquared) &&
++           pivotSquared >= minimumNormalizedPivotSquared * referenceDiagonal;
++  }
++
++  /** Test a Cholesky diagonal without overflowing when squaring it. */
++  static bool accept(double pivot,
++                     double referenceDiagonal) {
++    if (!positiveFinite(pivot) || !positiveFinite(referenceDiagonal))
++      return false;
++    // Division before multiplication also handles very small valid systems.
++    return (pivot / referenceDiagonal) * pivot >= minimumNormalizedPivotSquared;
++  }
++
++ private:
++  static bool positiveFinite(double value) {
++    return value > 0.0 && value <= std::numeric_limits<double>::max();
++  }
++};
++
++}  // namespace gtsam::internal
 --- gtsam-no-tbb-4.3.0.orig/gtsam/base/Scheduler.h
 +++ gtsam-no-tbb-4.3.0/gtsam/base/Scheduler.h
 @@ -233,7 +233,12 @@ class Scheduler {
@@ -1223,6 +1267,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        return result;
      } else {
        throw std::invalid_argument(
+--- gtsam-no-tbb-4.3.0.orig/gtsam/base/cholesky.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/base/cholesky.cpp
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <gtsam/base/cholesky.h>
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/base/timing.h>
+ 
+ #include <Eigen/Cholesky>
+@@ -31,13 +32,6 @@ namespace gtsam {
+ static const double negativePivotThreshold = -1e-1;
+ static const double zeroPivotThreshold = 1e-6;
+ static const double underconstrainedPrior = 1e-5;
+-// Reject a Cholesky pivot more than 12 binary exponents below the square root
+-// of its original diagonal entry. This is invariant under diagonal changes of
+-// variable units, although the pivots still depend on elimination ordering.
+-// Compare squared values below to avoid a square root and division per pivot.
+-static constexpr double minimumNormalizedPivotSquared =
+-    1.0 / (4096.0 * 4096.0);
+-
+ /* ************************************************************************* */
+ static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
+   // Get pivot value
+@@ -139,8 +133,8 @@ bool choleskyPartial(Matrix& ABC, size_t
+   const auto upperFactor = llt.matrixU();
+   for (DenseIndex index = 0; index < upperFactor.rows(); ++index) {
+     const double pivot = upperFactor(index, index);
+-    if (!std::isfinite(pivot) ||
+-        pivot * pivot < minimumNormalizedPivotSquared * A(index, index)) {
++    if (!internal::CholeskyCheck::accept(
++            pivot, A(index, index))) {
+       return false;
+     }
+   }
 --- gtsam-no-tbb-4.3.0.orig/gtsam/base/tests/testPriorityScheduler.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/base/tests/testPriorityScheduler.cpp
 @@ -16,7 +16,11 @@
@@ -9809,6 +9888,112 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  using ADT = AlgebraicDecisionTree<Key>;
  BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
  BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/GaussianFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/GaussianFactorGraph.cpp
+@@ -358,19 +358,7 @@ namespace gtsam {
+     Scatter scatter(*this);
+     HessianFactor combined(*this, scatter);
+ 
+-    // TODO(frank): cast to large dynamic matrix :-(
+-    // NOTE(frank): info only valid (I think) in upper triangle. No problem for LLT...
+-    Matrix augmented = combined.info().selfadjointView();
+-
+-    // Do Cholesky Factorization
+-    size_t n = augmented.rows() - 1;
+-    auto AtA = augmented.topLeftCorner(n, n);
+-    auto eta = augmented.topRightCorner(n, 1);
+-    Eigen::LLT<Matrix, Eigen::Upper> llt(AtA);
+-
+-    // Solve and convert, re-using scatter data structure
+-    Vector solution = llt.solve(eta);
+-    return VectorValues(solution, scatter);
++    return combined.solve();
+   }
+ 
+   /* ************************************************************************* */
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/HessianFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/HessianFactor.cpp
+@@ -597,7 +597,11 @@ VectorValues HessianFactor::solve() {
+   // Do Cholesky Factorization
+   const size_t n = size();
+   assert(size_t(info_.nBlocks()) == n + 1);
+-  info_.choleskyPartial(n);
++  try {
++    info_.choleskyPartial(n);
++  } catch (const CholeskyFailed&) {
++    throw IndeterminateSystemException(keys_.front());
++  }
+   auto R = info_.triangularView(0, n);
+   auto eta = linearTerm();
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/MultifrontalClique.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/MultifrontalClique.cpp
+@@ -19,6 +19,7 @@
+ #include <gtsam/base/Matrix.h>
+ #include <gtsam/config.h>
+ #include <gtsam/linear/GaussianConditional.h>
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/linear/HessianFactor.h>
+ #include <gtsam/linear/JacobianFactor.h>
+ #include <gtsam/linear/MultifrontalClique.h>
+@@ -900,23 +901,27 @@ void MultifrontalClique::prepareCompactC
+ }
+ 
+ void MultifrontalClique::factorize() {
+-  if (useQR()) {
+-    // Copy Ab_ to preserve its invariant; QR writes in place.
+-    assert(RSd_.matrix().rows() == Ab_.matrix().rows());
+-    assert(RSd_.matrix().cols() == Ab_.matrix().cols());
+-    RSd_.matrix() = Ab_.matrix();
+-    inplace_QR(RSd_.matrix());
+-    assert(RSd_.rowStart() == 0);
+-    RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
+-  } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
+-    factorizeFusedStarCholesky();
+-  } else if (useCompactCholesky()) {
+-    factorizeCompactCholesky();
+-  } else {
+-    info_.choleskyPartial(numFrontals());
+-    // Split exposes [R S d] while info_ retains the separator Schur complement.
+-    info_.split(numFrontals(), &RSd_);
+-    info_.blockStart() = 0;
++  try {
++    if (useQR()) {
++      // Copy Ab_ to preserve its invariant; QR writes in place.
++      assert(RSd_.matrix().rows() == Ab_.matrix().rows());
++      assert(RSd_.matrix().cols() == Ab_.matrix().cols());
++      RSd_.matrix() = Ab_.matrix();
++      inplace_QR(RSd_.matrix());
++      assert(RSd_.rowStart() == 0);
++      RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
++    } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
++      factorizeFusedStarCholesky();
++    } else if (useCompactCholesky()) {
++      factorizeCompactCholesky();
++    } else {
++      info_.choleskyPartial(numFrontals());
++      // Split exposes [R S d] while info_ retains the separator Schur complement.
++      info_.split(numFrontals(), &RSd_);
++      info_.blockStart() = 0;
++    }
++  } catch (const CholeskyFailed&) {
++    throw IndeterminateSystemException(orderedKeys_.front());
+   }
+   RSdReady_ = true;
+ }
+@@ -938,11 +943,9 @@ void MultifrontalClique::factorizeCompac
+   if (llt.info() != Eigen::Success) throw CholeskyFailed();
+   const Matrix R = llt.matrixU();
+   // Match the scale-normalized pivot guard used by standard Cholesky.
+-  constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
+   for (DenseIndex i = 0; i < n; ++i) {
+     const double pivot = R(i, i);
+-    if (!std::isfinite(pivot) ||
+-        pivot * pivot < kMinimumNormalizedPivotSquared * A(i, i)) {
++    if (!internal::CholeskyCheck::accept(pivot, A(i, i))) {
+       throw CholeskyFailed();
+     }
+   }
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/NoiseModel.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/NoiseModel.cpp
 @@ -844,7 +844,7 @@ Vector Robust::unweightedWhiten(const Ve
@@ -9820,6 +10005,35 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  Robust::shared_ptr Robust::Create(
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/internal/CompactLeafSchurKernel.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/internal/CompactLeafSchurKernel.cpp
+@@ -15,6 +15,7 @@
+  * @author Frank Dellaert
+  */
+ 
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/base/SymmetricBlockMatrix.h>
+ #include <gtsam/base/VerticalBlockMatrix.h>
+ #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
+@@ -27,8 +28,6 @@ namespace gtsam {
+ namespace internal {
+ namespace {
+ 
+-constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
+-
+ bool factorUpper(Matrix* matrix, DenseIndex dimension) {
+   for (DenseIndex column = 0; column < dimension; ++column) {
+     const double originalDiagonal = (*matrix)(column, column);
+@@ -40,8 +39,7 @@ bool factorUpper(Matrix* matrix, DenseIn
+     for (DenseIndex k = 0; k < column; ++k) {
+       pivotSquared -= (*matrix)(k, column) * (*matrix)(k, column);
+     }
+-    if (!std::isfinite(pivotSquared) || pivotSquared <= 0.0 ||
+-        pivotSquared < kMinimumNormalizedPivotSquared * originalDiagonal) {
++    if (!CholeskyCheck::acceptSquared(pivotSquared, originalDiagonal)) {
+       return false;
+     }
+ 
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/linear.i
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/linear.i
 @@ -560,6 +560,7 @@ virtual class HessianFactor : gtsam::Gau
@@ -9852,6 +10066,106 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    const Vector2 b(20, 40), x1(3, 4);
    const double sigma = 0.01;
  
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testGaussianFactorGraph.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testGaussianFactorGraph.cpp
+@@ -554,6 +554,22 @@ TEST(GaussianFactorGraph, InconsistentEl
+   }
+ }
+ /* ************************************************************************* */
++// Dense graph solving uses the same checked Cholesky path as dense factors.
++TEST(GaussianFactorGraph, DenseCholeskySafeguard) {
++  for (double strength : {1e8, 1e10}) {
++    GaussianFactorGraph graph;
++    graph.emplace_shared<HessianFactor>(
++        0, Matrix2{{strength + 1.0, -strength}, {-strength, strength}},
++        Vector2::Zero(), 0.0);
++    if (strength == 1e8) {
++      EXPECT(assert_equal(VectorValues{{0, Vector2::Zero()}},
++                          graph.optimizeDensely()));
++    } else {
++      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
++    }
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testHessianFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testHessianFactor.cpp
+@@ -55,6 +55,17 @@ TEST(HessianFactor, emptyConstructor)
+   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
+ }
+ 
++// Dense factor solves report a graph key when numerical factorization fails.
++TEST(HessianFactor, SolveReportsIndeterminateSystem) {
++  HessianFactor factor(42, Matrix11{0.0}, Vector1{1.0}, 0.0);
++  try {
++    factor.solve();
++    FAIL("Expected an indeterminate system");
++  } catch (const IndeterminateSystemException& exception) {
++    EXPECT_LONGS_EQUAL(42, exception.nearbyVariable());
++  }
++}
++
+ /* ************************************************************************* */
+ // Copying and taking ownership of the same block matrix produce identical
+ // Hessian factors.
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testMultifrontalSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testMultifrontalSolver.cpp
+@@ -1689,6 +1689,52 @@ TEST(MultifrontalSolver, BalancedSmoothe
+ }
+ 
+ /* ************************************************************************* */
++// Ordinary, compact, and fused kernels agree on a weak frontal block.
++TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
++  for (double strength : {1e8, 1e10}) {
++    const double w = std::sqrt(strength);
++    const Matrix A{{1.0, 0.0}, {w, -w}, {0.0, 1.0}};
++    const Matrix3 B{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
++    const Vector3 b{0.1, 0.0, 0.0};
++    for (int mode = 0; mode < 3; ++mode) {
++      GaussianFactorGraph graph;
++      if (mode == 2) {
++        using Batch = BatchJacobianFactor<3, 2, 3>;
++        auto factor = std::make_shared<Batch>(KeyVector{0, 1},
++                                             std::vector<size_t>{2, 3});
++        factor->addRow({0, 1}, {A, B}, b);
++        graph.push_back(factor);
++      } else {
++        graph.emplace_shared<JacobianFactor>(0, A, 1, B, b);
++      }
++      graph.emplace_shared<JacobianFactor>(1, I_3x3, Vector3::Zero());
++      // An extra parent key prevents symbolic amalgamation of the leaf into
++      // the retained clique, independent of the numeric merge cap.
++      graph.emplace_shared<JacobianFactor>(1, I_3x3, 2, -I_3x3, Vector3::Zero());
++      auto params = noMergeParams();
++      params.qrMode = MultifrontalParameters::QRMode::Off;
++      params.compactCholeskySeparatorDimThreshold = mode == 1 ? 1 : 256;
++      MultifrontalSolver solver(graph, Ordering{0, 1, 2}, size_t(1), params);
++      solver.load(graph);
++      LONGS_EQUAL(mode == 0 ? 0 : 1,
++          compact_leaf_fixture::compactCliqueCount(&solver));
++      if (strength == 1e8) {
++        solver.eliminatePartialInPlace();
++        const auto expected = graph.eliminatePartialSequential(Ordering{0}, EliminateQR);
++        EXPECT(assert_equal(expected.second->augmentedHessian(Ordering{1, 2}),
++            solver.remainingFactorGraph().augmentedHessian(Ordering{1, 2}), 1e-7));
++      } else {
++        try {
++          solver.eliminatePartialInPlace();
++          FAIL("Expected an indeterminate system");
++        } catch (const IndeterminateSystemException& exception) {
++          EXPECT_LONGS_EQUAL(0, exception.nearbyVariable());
++        }
++      }
++    }
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/navigation/AttitudeFactor.h
 +++ gtsam-no-tbb-4.3.0/gtsam/navigation/AttitudeFactor.h
 @@ -203,4 +203,11 @@ template <class VALUE>
@@ -29844,6 +30158,86 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  /* ************************************************************************* */
  TEST( NonlinearFactor, linearize_f1 )
  {
+--- gtsam-no-tbb-4.3.0.orig/tests/testNonlinearOptimizer.cpp
++++ gtsam-no-tbb-4.3.0/tests/testNonlinearOptimizer.cpp
+@@ -1217,6 +1217,77 @@ TEST(NonlinearOptimizer, DerivedGraphVir
+ }
+ 
+ /* ************************************************************************* */
++// An anchored graph with a tight relative measurement accepts useful LM steps.
++TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
++      noiseModel::Isotropic::Sigma(1, 1.0));
++  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
++      noiseModel::Isotropic::Sigma(1, 1e-4));
++  Values initial;
++  initial.insert(0, 0.1);
++  initial.insert(1, 0.1);
++  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
++                                  "MULTIFRONTAL_SOLVER", "MULTIFRONTAL_QR"}) {
++    LevenbergMarquardtParams params;
++    params.setOrdering(Ordering{0, 1});
++    params.setLinearSolverType(solver);
++    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
++    for (bool diagonalDamping : {false, true}) {
++      params.setDiagonalDamping(diagonalDamping);
++      LevenbergMarquardtOptimizer lm(graph, initial, params);
++      // The identity-damped solve should accept its first small lambda.
++      if (!diagonalDamping) {
++        lm.iterate();
++        EXPECT(lm.lambda() < params.lambdaInitial);
++      }
++      const Values result = lm.optimize();
++      if (!diagonalDamping) {
++        EXPECT(graph.error(result) < 1e-16);
++        EXPECT(lm.iterations() <= 4);
++      } else {
++        // Diagonal damping can independently slow this graph; check progress.
++        EXPECT(graph.error(result) < graph.error(initial));
++      }
++    }
++    GaussNewtonParams gnParams;
++    gnParams.setOrdering(Ordering{0, 1});
++    gnParams.setLinearSolverType(solver);
++    gnParams.multifrontalParams = params.multifrontalParams;
++    EXPECT(graph.error(GaussNewtonOptimizer(graph, initial, gnParams).optimize()) < 1e-16);
++    DoglegParams dlParams;
++    dlParams.setOrdering(Ordering{0, 1});
++    dlParams.setLinearSolverType(solver);
++    dlParams.multifrontalParams = params.multifrontalParams;
++    EXPECT(graph.error(DoglegOptimizer(graph, initial, dlParams).optimize()) < 1e-16);
++  }
++}
++
++// Undamped optimizers report the same graph exception for a missing gauge.
++TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<BetweenFactor<double>>(
++      0, 1, 0.0, noiseModel::Isotropic::Sigma(1, 1.0));
++  Values initial;
++  initial.insert(0, 0.1);
++  initial.insert(1, 0.2);
++  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
++                                  "MULTIFRONTAL_SOLVER"}) {
++    GaussNewtonParams gnParams;
++    gnParams.setOrdering(Ordering{0, 1});
++    gnParams.setLinearSolverType(solver);
++    gnParams.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
++    CHECK_EXCEPTION(GaussNewtonOptimizer(graph, initial, gnParams).iterate(),
++                    IndeterminateSystemException);
++    DoglegParams dlParams;
++    dlParams.setOrdering(Ordering{0, 1});
++    dlParams.setLinearSolverType(solver);
++    dlParams.multifrontalParams = gnParams.multifrontalParams;
++    CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
++                    IndeterminateSystemException);
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/timing/timeHybridInference.cpp
 +++ gtsam-no-tbb-4.3.0/timing/timeHybridInference.cpp
 @@ -47,6 +47,7 @@ using gtsam::HybridValues;
