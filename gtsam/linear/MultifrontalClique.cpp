@@ -19,6 +19,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
@@ -575,8 +576,9 @@ size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
   assert(blockIt == plan.blockIndices.end());
 
   Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+  const auto& model = factor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
   }
   return plan.rows;
 }
@@ -586,8 +588,9 @@ size_t MultifrontalClique::addBatchJacobianFactor(
     const FactorLoadPlan& plan) {
   const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
       batchFactor, Ab_, rowOffset, plan.blockIndices);
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+  const auto& model = batchFactor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
   }
   return rows;
 }
@@ -900,23 +903,27 @@ void MultifrontalClique::prepareCompactCholesky() {
 }
 
 void MultifrontalClique::factorize() {
-  if (useQR()) {
-    // Copy Ab_ to preserve its invariant; QR writes in place.
-    assert(RSd_.matrix().rows() == Ab_.matrix().rows());
-    assert(RSd_.matrix().cols() == Ab_.matrix().cols());
-    RSd_.matrix() = Ab_.matrix();
-    inplace_QR(RSd_.matrix());
-    assert(RSd_.rowStart() == 0);
-    RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
-  } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
-    factorizeFusedStarCholesky();
-  } else if (useCompactCholesky()) {
-    factorizeCompactCholesky();
-  } else {
-    info_.choleskyPartial(numFrontals());
-    // Split exposes [R S d] while info_ retains the separator Schur complement.
-    info_.split(numFrontals(), &RSd_);
-    info_.blockStart() = 0;
+  try {
+    if (useQR()) {
+      // Copy Ab_ to preserve its invariant; QR writes in place.
+      assert(RSd_.matrix().rows() == Ab_.matrix().rows());
+      assert(RSd_.matrix().cols() == Ab_.matrix().cols());
+      RSd_.matrix() = Ab_.matrix();
+      inplace_QR(RSd_.matrix());
+      assert(RSd_.rowStart() == 0);
+      RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
+    } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
+      factorizeFusedStarCholesky();
+    } else if (useCompactCholesky()) {
+      factorizeCompactCholesky();
+    } else {
+      info_.choleskyPartial(numFrontals());
+      // Split exposes [R S d] while info_ retains the separator Schur complement.
+      info_.split(numFrontals(), &RSd_);
+      info_.blockStart() = 0;
+    }
+  } catch (const CholeskyFailed&) {
+    throw IndeterminateSystemException(orderedKeys_.front());
   }
   RSdReady_ = true;
 }
@@ -938,11 +945,9 @@ void MultifrontalClique::factorizeCompactCholesky() {
   if (llt.info() != Eigen::Success) throw CholeskyFailed();
   const Matrix R = llt.matrixU();
   // Match the scale-normalized pivot guard used by standard Cholesky.
-  constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
   for (DenseIndex i = 0; i < n; ++i) {
     const double pivot = R(i, i);
-    if (!std::isfinite(pivot) ||
-        pivot * pivot < kMinimumNormalizedPivotSquared * A(i, i)) {
+    if (!internal::CholeskyCheck::accept(pivot, A(i, i))) {
       throw CholeskyFailed();
     }
   }

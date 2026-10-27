@@ -1132,6 +1132,41 @@ TEST(MultifrontalSolver, Load) {
 }
 
 /* ************************************************************************* */
+// Reloading compatible factors must use their current numerical noise models.
+TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
+  for (bool batch : {false, true}) {
+    const auto makeGraph = [batch](double sigma) {
+      GaussianFactorGraph graph;
+      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
+      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
+      if (batch) {
+        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
+            KeyVector{0}, std::vector<size_t>{1}, model);
+        factor->addRow({0}, {I_1x1}, Vector1(2.0));
+        graph.push_back(factor);
+      } else {
+        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
+      }
+      return graph;
+    };
+    for (auto mode : {MultifrontalParameters::QRMode::Off,
+                      MultifrontalParameters::QRMode::Force}) {
+      auto params = noMergeParams();
+      params.qrMode = mode;
+      const GaussianFactorGraph initial = makeGraph(1.0);
+      MultifrontalSolver solver(initial, Ordering{0}, params);
+      solver.eliminateInPlace(initial);
+      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
+
+      const GaussianFactorGraph reweighted = makeGraph(0.5);
+      solver.load(reweighted);
+      solver.eliminateInPlace();
+      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
+    }
+  }
+}
+
+/* ************************************************************************* */
 // Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
@@ -1689,6 +1724,52 @@ TEST(MultifrontalSolver, BalancedSmoother) {
 }
 
 /* ************************************************************************* */
+// Ordinary, compact, and fused kernels agree on a weak frontal block.
+TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
+  for (double strength : {1e8, 1e10}) {
+    const double w = std::sqrt(strength);
+    const Matrix A{{1.0, 0.0}, {w, -w}, {0.0, 1.0}};
+    const Matrix3 B{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
+    const Vector3 b{0.1, 0.0, 0.0};
+    for (int mode = 0; mode < 3; ++mode) {
+      GaussianFactorGraph graph;
+      if (mode == 2) {
+        using Batch = BatchJacobianFactor<3, 2, 3>;
+        auto factor = std::make_shared<Batch>(KeyVector{0, 1},
+                                             std::vector<size_t>{2, 3});
+        factor->addRow({0, 1}, {A, B}, b);
+        graph.push_back(factor);
+      } else {
+        graph.emplace_shared<JacobianFactor>(0, A, 1, B, b);
+      }
+      graph.emplace_shared<JacobianFactor>(1, I_3x3, Vector3::Zero());
+      // An extra parent key prevents symbolic amalgamation of the leaf into
+      // the retained clique, independent of the numeric merge cap.
+      graph.emplace_shared<JacobianFactor>(1, I_3x3, 2, -I_3x3, Vector3::Zero());
+      auto params = noMergeParams();
+      params.qrMode = MultifrontalParameters::QRMode::Off;
+      params.compactCholeskySeparatorDimThreshold = mode == 1 ? 1 : 256;
+      MultifrontalSolver solver(graph, Ordering{0, 1, 2}, size_t(1), params);
+      solver.load(graph);
+      LONGS_EQUAL(mode == 0 ? 0 : 1,
+          compact_leaf_fixture::compactCliqueCount(&solver));
+      if (strength == 1e8) {
+        solver.eliminatePartialInPlace();
+        const auto expected = graph.eliminatePartialSequential(Ordering{0}, EliminateQR);
+        EXPECT(assert_equal(expected.second->augmentedHessian(Ordering{1, 2}),
+            solver.remainingFactorGraph().augmentedHessian(Ordering{1, 2}), 1e-7));
+      } else {
+        try {
+          solver.eliminatePartialInPlace();
+          FAIL("Expected an indeterminate system");
+        } catch (const IndeterminateSystemException& exception) {
+          EXPECT_LONGS_EQUAL(0, exception.nearbyVariable());
+        }
+      }
+    }
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
