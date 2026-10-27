@@ -1,10 +1,34 @@
-gtsam (4.3.0-0ubuntu14~36.gbp8a6ca9) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~37.gbp03de22) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @03de22a5740a99862ffde0bd3709d319fefa7efd **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @8a6ca96eea43ceda0c2cc39fb3af72ccb7cae3f0 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 24 Oct 2026 19:19:03 +0000
+  [ Frank Dellaert ]
+  * Unify Cholesky pivot checks around original system diagonals
+  * Declare Gaussian elimination specialization before DLL export
+  * Fix default elimination callback identity and solver exceptions
+  * Keep weighted batch Hessian diagonal accumulation compact
+  * Preserve constrained and zero-row solves and SFM damping retries
+  * Retain Cholesky references across native tree and hybrid elimination
+  * Use current factor noise models when reloading reusable solvers
+  * Accumulate weighted batch Hessian diagonals without dense conversion
+  * Skip structural orphan wrappers while retaining numerical zero-row dimensions
+
+  [ DLuminary ]
+  * Fix TableFactor build with Eigen 5: avoid prune() predicate overload
+  * Use scale-relative tolerance in SmartProjectionPoseFactor HessianWithRotation
+  * Fix BiasedGPSFactor single-Jacobian requests and wrap it for Python
+
+  [ Varun Agrawal ]
+  * Fix leaf count when computing pruning threshold
+  * Use new weighted min heap formulation
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Oct 2026 22:14:54 +0000
 
 gtsam (4.3.0-0ubuntu14~35.gbp62174c) resolute; urgency=medium
 

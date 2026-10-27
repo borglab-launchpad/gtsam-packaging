@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 24 2026 19:16:54 +0000
+Date: Oct, 27 2026 22:14:55 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -1124,6 +1124,50 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  if(GTSAM_USE_SYSTEM_CCOLAMD)
    target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_CCOLAMD)
    target_link_libraries(gtsam PRIVATE SuiteSparse::CCOLAMD)
+--- /dev/null
++++ gtsam-4.3.0/gtsam/base/CholeskyCheck.h
+@@ -0,0 +1,41 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++#pragma once
++
++#include <limits>
++
++namespace gtsam::internal {
++
++/** Shared, dimensionless safeguard for normal-equation Cholesky pivots. */
++struct CholeskyCheck {
++  // Empirical safeguard, not a rank or condition-number estimate. This admits
++  // the usable ~1e-8 pivots in #2856 while rejecting the ~2e-10 regression in
++  // #2653. Keep this value shared by every Cholesky implementation.
++  static constexpr double minimumNormalizedPivotSquared = 0x1p-28;
++
++  /** Test a squared pivot against its diagonal at entry to this factorization. */
++  static bool acceptSquared(
++      double pivotSquared, double referenceDiagonal) {
++    return positiveFinite(referenceDiagonal) && positiveFinite(pivotSquared) &&
++           pivotSquared >= minimumNormalizedPivotSquared * referenceDiagonal;
++  }
++
++  /** Test a Cholesky diagonal without overflowing when squaring it. */
++  static bool accept(double pivot,
++                     double referenceDiagonal) {
++    if (!positiveFinite(pivot) || !positiveFinite(referenceDiagonal))
++      return false;
++    // Division before multiplication also handles very small valid systems.
++    return (pivot / referenceDiagonal) * pivot >= minimumNormalizedPivotSquared;
++  }
++
++ private:
++  static bool positiveFinite(double value) {
++    return value > 0.0 && value <= std::numeric_limits<double>::max();
++  }
++};
++
++}  // namespace gtsam::internal
 --- gtsam-4.3.0.orig/gtsam/base/Scheduler.h
 +++ gtsam-4.3.0/gtsam/base/Scheduler.h
 @@ -233,7 +233,12 @@ class Scheduler {
@@ -1223,6 +1267,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        return result;
      } else {
        throw std::invalid_argument(
+--- gtsam-4.3.0.orig/gtsam/base/cholesky.cpp
++++ gtsam-4.3.0/gtsam/base/cholesky.cpp
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <gtsam/base/cholesky.h>
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/base/timing.h>
+ 
+ #include <Eigen/Cholesky>
+@@ -31,13 +32,6 @@ namespace gtsam {
+ static const double negativePivotThreshold = -1e-1;
+ static const double zeroPivotThreshold = 1e-6;
+ static const double underconstrainedPrior = 1e-5;
+-// Reject a Cholesky pivot more than 12 binary exponents below the square root
+-// of its original diagonal entry. This is invariant under diagonal changes of
+-// variable units, although the pivots still depend on elimination ordering.
+-// Compare squared values below to avoid a square root and division per pivot.
+-static constexpr double minimumNormalizedPivotSquared =
+-    1.0 / (4096.0 * 4096.0);
+-
+ /* ************************************************************************* */
+ static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
+   // Get pivot value
+@@ -139,8 +133,8 @@ bool choleskyPartial(Matrix& ABC, size_t
+   const auto upperFactor = llt.matrixU();
+   for (DenseIndex index = 0; index < upperFactor.rows(); ++index) {
+     const double pivot = upperFactor(index, index);
+-    if (!std::isfinite(pivot) ||
+-        pivot * pivot < minimumNormalizedPivotSquared * A(index, index)) {
++    if (!internal::CholeskyCheck::accept(
++            pivot, A(index, index))) {
+       return false;
+     }
+   }
 --- gtsam-4.3.0.orig/gtsam/base/tests/testPriorityScheduler.cpp
 +++ gtsam-4.3.0/gtsam/base/tests/testPriorityScheduler.cpp
 @@ -16,7 +16,11 @@
@@ -3677,7 +3756,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      throw std::runtime_error("Constraint::error not implemented");
 --- gtsam-4.3.0.orig/gtsam/discrete/DecisionTreeFactor.cpp
 +++ gtsam-4.3.0/gtsam/discrete/DecisionTreeFactor.cpp
-@@ -41,7 +41,13 @@ namespace gtsam {
+@@ -24,7 +24,11 @@
+ #include <gtsam/hybrid/HybridValues.h>
+ #include <gtsam/inference/Ordering.h>
+ 
++#include <functional>
++#include <limits>
++#include <queue>
+ #include <utility>
++#include <vector>
+ 
+ using namespace std;
+ 
+@@ -41,7 +45,13 @@ namespace gtsam {
    /* ************************************************************************ */
    DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
        : DiscreteFactor(c.keys(), c.cardinalities()),
@@ -3692,7 +3783,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /* ************************************************************************ */
    bool DecisionTreeFactor::equals(const DiscreteFactor& other,
-@@ -96,9 +102,10 @@ namespace gtsam {
+@@ -96,9 +106,10 @@ namespace gtsam {
    DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
        const DiscreteFactor::shared_ptr& f) const {
      if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
@@ -3706,7 +3797,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
      } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
        // If `f` is a DecisionTreeFactor, divide normally.
-@@ -233,23 +240,6 @@ namespace gtsam {
+@@ -233,23 +244,6 @@ namespace gtsam {
    }
  
    /* ************************************************************************ */
@@ -3730,10 +3821,32 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    std::vector<double> DecisionTreeFactor::probabilities() const {
      // Set of all keys
      KeySet allKeys(keys().begin(), keys().end());
-@@ -415,14 +405,6 @@ namespace gtsam {
-       std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
-     }
+@@ -398,172 +392,106 @@ namespace gtsam {
+       : DiscreteFactor(keys.indices(), keys.cardinalities()),
+         AlgebraicDecisionTree<Key>(keys, table) {}
  
+-  /**
+-   * @brief Min-Heap class to help with pruning.
+-   * The `top` element is always the smallest value.
++  /** Min-heap of (value, nrAssignments) pairs holding the N largest values.
++   * Each leaf adds one entry weighted by the assignments it covers, rather than
++   * one copy per assignment, and the heap drops its smallest entries once the
++   * rest cover N. It therefore holds at most min(N, #leaves) + 1 entries,
++   * whether N is small or a leaf covers billions of assignments.
+    */
+-  class MinHeap {
+-    std::vector<double> v_;
+-
+-   public:
+-    /// Default constructor
+-    MinHeap() {}
+-
+-    /// Push value onto the heap
+-    void push(double x) {
+-      v_.push_back(x);
+-      std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
+-    }
+-
 -    /// Push value `x`, `n` number of times.
 -    void push(double x, size_t n) {
 -      for (size_t i = 0; i < n; ++i) {
@@ -3742,13 +3855,85 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      }
 -    }
 -
-     /// Pop the top value of the heap.
-     double pop() {
-       std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
-@@ -480,26 +462,18 @@ namespace gtsam {
-         nrAssignments *= cardinalities_.at(k);
-       }
+-    /// Pop the top value of the heap.
+-    double pop() {
+-      std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
+-      double x = v_.back();
+-      v_.pop_back();
+-      return x;
+-    }
+-
+-    /// Return the top value of the heap without popping it.
+-    double top() { return v_.at(0); }
+-
+-    /**
+-     * @brief Print the heap as a sequence.
+-     *
+-     * @param s A string to prologue the output.
+-     */
+-    void print(const std::string& s = "") {
+-      std::cout << (s.empty() ? "" : s + " ");
+-      for (size_t i = 0; i < v_.size(); i++) {
+-        std::cout << v_.at(i);
+-        if (v_.size() > 1 && i < v_.size() - 1) std::cout << ", ";
+-      }
+-      std::cout << std::endl;
+-    }
+-
+-    /// Return true if heap is empty.
+-    bool empty() const { return v_.empty(); }
+-
+-    /// Return the size of the heap.
+-    size_t size() const { return v_.size(); }
+-  };
++  using WeightedValue = std::pair<double, size_t>;
++  using WeightedMinHeap =
++      std::priority_queue<WeightedValue, std::vector<WeightedValue>,
++                          std::greater<WeightedValue>>;
  
+   /* ************************************************************************ */
+   double DecisionTreeFactor::computeThreshold(const size_t N) const {
+-    // Set of all keys
+-    std::set<Key> allKeys = this->labels();
+-    MinHeap min_heap;
++    // With nothing to keep, no value can reach the threshold.
++    if (N == 0) return std::numeric_limits<double>::infinity();
+ 
+-    auto op = [&](const Assignment<Key>& a, double p) {
+-      // Get all the keys in the current assignment
+-      KeySet assignment_keys;
+-      for (auto&& [k, _] : a) {
+-        assignment_keys.insert(k);
+-      }
++    WeightedMinHeap min_heap;
++    // The min_heap's total count is tracked as its gap from N rather than as a
++    // sum, which could overflow when N is close to SIZE_MAX.
++    // While the heap covers fewer than N assignments, nrMissing is the
++    // shortfall; afterwards nrSurplus is the excess, which stays below the
++    // smallest entry's count since that entry could otherwise be dropped.
++    size_t nrMissing = N, nrSurplus = 0;
+ 
+-      // Find the keys missing in the assignment
+-      KeyVector diff;
+-      std::set_difference(allKeys.begin(), allKeys.end(),
+-                          assignment_keys.begin(), assignment_keys.end(),
+-                          std::back_inserter(diff));
++    auto op = [&](const Assignment<Key>& a, double p) {
++      // A full min_heap only takes values above its smallest one.
++      if (nrMissing == 0 && p <= min_heap.top().first) return p;
+ 
+-      // Compute the total number of assignments in the (pruned) subtree
++      // A leaf covers every assignment of the keys missing from its path.
++      // Iterate over the factor's keys rather than the tree's labels():
++      // merging drops keys the values don't depend on from the tree,
++      // but each leaf still stands for all of their assignments.
++      // Counts beyond N don't change the threshold, so saturate at N before
++      // multiplying to keep the count from overflowing.
+       size_t nrAssignments = 1;
+-      for (auto&& k : diff) {
+-        nrAssignments *= cardinalities_.at(k);
+-      }
+-
 -      // If min-heap is empty, fill it initially.
 -      // This is because there is nothing at the top.
 -      if (min_heap.empty()) {
@@ -3769,22 +3954,44 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -            // p is <= min value so move to the next one
 -            break;
 -          }
-+      // Insert one copy of p per assignment in the subtree, keeping only the
-+      // N largest values. Until the heap is full every value belongs in it;
-+      // afterwards p must beat the current smallest value to get in.
-+      for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
-+        if (min_heap.size() < N) {
-+          min_heap.push(p);
-+        } else if (p > min_heap.top()) {
-+          min_heap.pop();
-+          min_heap.push(p);
-+        } else {
-+          // p is <= the smallest kept value, so its remaining copies are too.
-+          break;
-         }
+-        }
++      for (auto&& [key, cardinality] : cardinalities_) {
++        if (a.count(key) > 0) continue;
++        nrAssignments = nrAssignments > N / cardinality
++                            ? N
++                            : nrAssignments * cardinality;
++      }
++
++      min_heap.emplace(p, nrAssignments);
++      if (nrAssignments < nrMissing) {
++        nrMissing -= nrAssignments;
++        return p;
++      }
++
++      // The heap now covers N, with nrSurplus + nrPending to spare. Drop the
++      // smallest entries while the rest still cover N. The new entry is never
++      // dropped: each drop shrinks nrPending below its count.
++      size_t nrPending = nrAssignments - nrMissing;
++      nrMissing = 0;
++      while (nrPending >= min_heap.top().second - nrSurplus) {
++        nrPending -= min_heap.top().second - nrSurplus;
++        nrSurplus = 0;
++        min_heap.pop();
        }
++      // Below the smallest entry's count by the loop condition, so no overflow.
++      nrSurplus += nrPending;
        return p;
-@@ -514,56 +488,36 @@ namespace gtsam {
+     };
+     this->visitWith(op);
+ 
+-    // If total number of hypotheses is less than N, return 0.0
+-    if (min_heap.size() < N) {
+-      return 0.0;
+-    }
+-    return min_heap.top();
++    // The factor has fewer than N assignments in total.
++    if (nrMissing > 0) return 0.0;
++    return min_heap.top().first;
    }
  
    /* ************************************************************************ */
@@ -3871,7 +4078,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      static double safe_div(const double& a, const double& b);
  
      /**
-@@ -266,9 +269,6 @@ namespace gtsam {
+@@ -266,20 +269,19 @@ namespace gtsam {
       */
      shared_ptr combine(const Ordering& keys, Binary op) const;
  
@@ -3881,7 +4088,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      /// Get all the probabilities in order of assignment values
      std::vector<double> probabilities() const;
  
-@@ -287,21 +287,20 @@ namespace gtsam {
+     /**
+-     * @brief Compute the probability value which is the threshold above which
+-     * only `N` leaves are present.
++     * @brief Compute the `N`-th largest value over all assignments, counting
++     * duplicates.
+      *
+-     * This is used for pruning out the smaller probabilities.
++     * This is the threshold used by prune(). A leaf counts once for every
++     * assignment it covers, including assignments of keys the tree no longer
++     * branches on after compression. Returns 0 when the factor has fewer than
++     * `N` assignments, and infinity when `N` is 0.
+      *
+-     * @param N The number of leaves to keep post pruning.
+-     * @return double
++     * @param N The number of assignments to keep post pruning.
+      */
+     double computeThreshold(const size_t N) const;
+ 
+@@ -287,21 +289,20 @@ namespace gtsam {
       * @brief Prune the decision tree of discrete variables.
       *
       * Pruning will set the leaves to be "pruned" to 0 indicating a 0
@@ -5223,7 +5448,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  using namespace std;
  
-@@ -112,6 +116,43 @@ struct ScopePartition {
+@@ -112,6 +116,55 @@ struct ScopePartition {
    }
  };
  
@@ -5264,10 +5489,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  return projection;
 +}
 +
++/**
++ * Remove explicitly stored zeros from a sparse table and release unused
++ * storage. Both prune() arguments are passed on purpose: Eigen 5 adds a
++ * templated prune(F&& keep_predicate) overload that would capture a lone
++ * prune(0.0) and fail to compile, while the two-argument value overload exists
++ * in Eigen 3.4 and 5. With a zero reference, only exact zeros are removed.
++ */
++void removeZeros(SparseVector& table) {
++  table.prune(0.0, 0.0);
++  table.data().squeeze();
++}
++
  }  // namespace
  
  /* ************************************************************************ */
-@@ -128,15 +169,16 @@ TableFactor::TableFactor(const DiscreteK
+@@ -128,15 +181,16 @@ TableFactor::TableFactor(const DiscreteK
  }
  
  /* ************************************************************************ */
@@ -5289,7 +5526,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    sorted_dkeys_ = discreteKeys();
    sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
-@@ -156,17 +198,17 @@ TableFactor::TableFactor(const DiscreteK
+@@ -156,17 +210,17 @@ TableFactor::TableFactor(const DiscreteK
   *  is then used to create the TableFactor.
   *
   * @param dt The DecisionTree
@@ -5311,7 +5548,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t nrValues = 0;
    dt.visit([&nrValues](double x) {
      if (x > 0) nrValues += 1;
-@@ -177,10 +219,10 @@ static Eigen::SparseVector<double> Compu
+@@ -177,10 +231,10 @@ static Eigen::SparseVector<double> Compu
  
    // Compute denominators to be used in computing sparse table indices
    std::map<Key, size_t> denominators;
@@ -5325,7 +5562,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    /**
-@@ -251,11 +293,11 @@ TableFactor::TableFactor(const DecisionT
+@@ -251,11 +305,11 @@ TableFactor::TableFactor(const DecisionT
  
  /* ************************************************************************ */
  TableFactor::TableFactor(const DiscreteConditional& c)
@@ -5340,7 +5577,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    size_t max_size = 1;
    for (auto&& [_, cardinality] : keys.cardinalities()) {
      max_size *= cardinality;
-@@ -266,21 +308,22 @@ Eigen::SparseVector<double> TableFactor:
+@@ -266,21 +320,22 @@ Eigen::SparseVector<double> TableFactor:
          "input.");
    }
  
@@ -5367,7 +5604,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                                                   const std::string& table) {
    // Convert string to doubles.
    std::vector<double> ys;
-@@ -303,13 +346,12 @@ bool TableFactor::equals(const DiscreteF
+@@ -303,13 +358,12 @@ bool TableFactor::equals(const DiscreteF
  
  /* ************************************************************************ */
  double TableFactor::evaluate(const Assignment<Key>& values) const {
@@ -5387,7 +5624,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    return sparse_table_.coeff(idx);
  }
-@@ -343,6 +385,11 @@ DecisionTreeFactor TableFactor::operator
+@@ -343,6 +397,11 @@ DecisionTreeFactor TableFactor::operator
  }
  
  /* ************************************************************************ */
@@ -5399,7 +5636,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  DiscreteFactor::shared_ptr TableFactor::multiply(
      const DiscreteFactor::shared_ptr& f) const {
    DiscreteFactor::shared_ptr result;
-@@ -392,14 +439,50 @@ DecisionTreeFactor TableFactor::toDecisi
+@@ -392,14 +451,50 @@ DecisionTreeFactor TableFactor::toDecisi
      return DecisionTreeFactor(dkeys, tree);
    }
  
@@ -5425,7 +5662,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    entries.emplace_back(std::move(values), it.value());
    }
 +  std::sort(entries.begin(), entries.end());
-+
+ 
+-  AlgebraicDecisionTree<Key> tree(dkeys, table);
+-  DecisionTreeFactor f(dkeys, tree);
+-  return f;
 +  using Tree = DecisionTree<Key, double>;
 +  std::function<Tree(size_t, size_t, size_t)> build =
 +      [&](size_t level, size_t begin, size_t end) -> Tree {
@@ -5442,10 +5682,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    }
 +    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
 +  };
- 
--  AlgebraicDecisionTree<Key> tree(dkeys, table);
--  DecisionTreeFactor f(dkeys, tree);
--  return f;
++
 +  // Build the decision tree
 +  const Tree built = build(0, 0, entries.size());
 +  // Merge identical branches to reduce size of the tree
@@ -5455,7 +5692,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************ */
-@@ -428,7 +511,7 @@ TableFactor TableFactor::choose(const Di
+@@ -428,7 +523,7 @@ TableFactor TableFactor::choose(const Di
    uint64_t child_card = 1;
    for (const DiscreteKey& child_dkey : child_dkeys)
      child_card *= child_dkey.second;
@@ -5464,17 +5701,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    child_sparse_table_.reserve(child_card);
  
    // Populate child sparse table.
-@@ -442,7 +525,8 @@ TableFactor TableFactor::choose(const Di
+@@ -442,8 +537,7 @@ TableFactor TableFactor::choose(const Di
      }
    }
  
 -  child_sparse_table_.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  child_sparse_table_.prune(0.0);
-   child_sparse_table_.data().squeeze();
+-  child_sparse_table_.data().squeeze();
++  removeZeros(child_sparse_table_);
    return TableFactor(child_dkeys, child_sparse_table_);
  }
-@@ -485,14 +569,31 @@ DiscreteFactor::shared_ptr TableFactor::
+ 
+@@ -485,14 +579,31 @@ DiscreteFactor::shared_ptr TableFactor::
  
  /* ************************************************************************ */
  double TableFactor::max() const {
@@ -5508,7 +5745,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
    return combine(nrFrontals, Ring::max);
  }
-@@ -507,7 +608,7 @@ TableFactor TableFactor::apply(Unary op)
+@@ -507,7 +618,7 @@ TableFactor TableFactor::apply(Unary op)
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5517,17 +5754,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -516,7 +617,8 @@ TableFactor TableFactor::apply(Unary op)
+@@ -516,8 +627,7 @@ TableFactor TableFactor::apply(Unary op)
    }
  
    // Free unused memory and return.
 -  sparse_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  sparse_table.prune(0.0);
-   sparse_table.data().squeeze();
+-  sparse_table.data().squeeze();
++  removeZeros(sparse_table);
    return TableFactor(discreteKeys(), sparse_table);
  }
-@@ -526,7 +628,7 @@ TableFactor TableFactor::apply(UnaryAssi
+ 
+@@ -526,7 +636,7 @@ TableFactor TableFactor::apply(UnaryAssi
    // Initialize new factor.
    uint64_t cardi = 1;
    for (auto [key, c] : cardinalities_) cardi *= c;
@@ -5536,14 +5773,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    sparse_table.reserve(sparse_table_.nonZeros());
  
    // Populate
-@@ -536,17 +638,84 @@ TableFactor TableFactor::apply(UnaryAssi
+@@ -536,17 +646,80 @@ TableFactor TableFactor::apply(UnaryAssi
    }
  
    // Free unused memory and return.
 -  sparse_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  sparse_table.prune(0.0);
-   sparse_table.data().squeeze();
+-  sparse_table.data().squeeze();
++  removeZeros(sparse_table);
    return TableFactor(discreteKeys(), sparse_table);
  }
  
@@ -5595,9 +5831,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    else
 +      result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
 +  }
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  result.prune(0.0);
-+  result.data().squeeze();
++  removeZeros(result);
 +  return TableFactor(sorted_dkeys_, result);
 +}
 +
@@ -5624,7 +5858,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // 1. Partition both scopes and compute their cardinalities in one pass.
    const ScopePartition scopes(sorted_dkeys_, f.sorted_dkeys_);
    // 2. Create hash table for input factor f
-@@ -554,7 +723,7 @@ TableFactor TableFactor::apply(const Tab
+@@ -554,7 +727,7 @@ TableFactor TableFactor::apply(const Tab
        f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
    // 3. Initialize the multiplied factor with a scope-aware upper bound on its
    // number of nonzeros.
@@ -5633,17 +5867,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        scopes.unionScope.cardinality);
    multipliedSparseTable.reserve(
        scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
-@@ -571,7 +740,8 @@ TableFactor TableFactor::apply(const Tab
+@@ -571,8 +744,7 @@ TableFactor TableFactor::apply(const Tab
      }
    }
    // 5. Free unused memory.
 -  multipliedSparseTable.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  multipliedSparseTable.prune(0.0);
-   multipliedSparseTable.data().squeeze();
+-  multipliedSparseTable.data().squeeze();
++  removeZeros(multipliedSparseTable);
    // 6. Create union keys and return.
    return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
-@@ -682,7 +852,7 @@ TableFactor::shared_ptr TableFactor::com
+ }
+@@ -682,7 +854,7 @@ TableFactor::shared_ptr TableFactor::com
      card *= cardinality(keys_[i]);
    }
    // Create combined table.
@@ -5652,16 +5886,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -691,7 +861,8 @@ TableFactor::shared_ptr TableFactor::com
+@@ -691,8 +863,7 @@ TableFactor::shared_ptr TableFactor::com
      combined_table.coeffRef(idx) = new_val;
    }
    // Free unused memory.
 -  combined_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  combined_table.prune(0.0);
-   combined_table.data().squeeze();
+-  combined_table.data().squeeze();
++  removeZeros(combined_table);
    return std::make_shared<TableFactor>(remain_dkeys, combined_table);
  }
+ 
 @@ -717,7 +888,7 @@ TableFactor::shared_ptr TableFactor::com
      }
    }
@@ -5671,17 +5905,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    combined_table.reserve(sparse_table_.nonZeros());
    // Populate combined table.
    for (SparseIt it(sparse_table_); it; ++it) {
-@@ -726,7 +897,8 @@ TableFactor::shared_ptr TableFactor::com
+@@ -726,8 +897,7 @@ TableFactor::shared_ptr TableFactor::com
      combined_table.coeffRef(idx) = new_val;
    }
    // Free unused memory.
 -  combined_table.pruned();
-+  // Drop exact zeros, which would otherwise be stored and counted as values.
-+  combined_table.prune(0.0);
-   combined_table.data().squeeze();
+-  combined_table.data().squeeze();
++  removeZeros(combined_table);
    return std::make_shared<TableFactor>(remain_dkeys, combined_table);
  }
-@@ -737,21 +909,6 @@ size_t TableFactor::keyValueForIndex(Key
+ 
+@@ -737,21 +907,6 @@ size_t TableFactor::keyValueForIndex(Key
    return (index / denominators_.at(target_key)) % cardinality(target_key);
  }
  
@@ -5703,7 +5937,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Print out header.
  /* ************************************************************************ */
  string TableFactor::markdown(const KeyFormatter& keyFormatter,
-@@ -817,47 +974,93 @@ string TableFactor::html(const KeyFormat
+@@ -817,47 +972,93 @@ string TableFactor::html(const KeyFormat
  }
  
  /* ************************************************************************ */
@@ -5725,16 +5959,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 -  // The number of probabilities can be lower than max_leaves.
 -  if (probabilities.size() <= N) return *this;
--
++  // The number of values can be lower than N, so there is nothing to prune.
++  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
+ 
 -  // Sort the vector in descending order based on the element values.
 -  sort(probabilities.begin(), probabilities.end(),
 -       [](const std::pair<Eigen::Index, double>& a,
 -          const std::pair<Eigen::Index, double>& b) {
 -         return a.second > b.second;
 -       });
-+  // The number of values can be lower than N, so there is nothing to prune.
-+  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
- 
+-
 -  // Keep the largest N probabilities in the vector.
 -  if (probabilities.size() > N) probabilities.resize(N);
 +  // Keep every value at or above the N-th largest one, as
@@ -6406,7 +6640,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +| Sparse | equal | 1384.51 | 140.43 | 9.86× |
 --- gtsam-4.3.0.orig/gtsam/discrete/tests/testDecisionTreeFactor.cpp
 +++ gtsam-4.3.0/gtsam/discrete/tests/testDecisionTreeFactor.cpp
-@@ -25,6 +25,7 @@
+@@ -25,9 +25,15 @@
  #include <gtsam/discrete/DiscreteDistribution.h>
  #include <gtsam/discrete/DiscreteFactor.h>
  #include <gtsam/discrete/Signature.h>
@@ -6414,7 +6648,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/inference/Key.h>
  #include <gtsam/inference/Ordering.h>
  
-@@ -137,6 +138,17 @@ TEST(DecisionTreeFactor, Divide) {
++#include <algorithm>
++#include <functional>
++#include <limits>
++#include <vector>
++
+ using namespace std;
+ using namespace gtsam;
+ 
+@@ -137,6 +143,17 @@ TEST(DecisionTreeFactor, Divide) {
  }
  
  /* ************************************************************************* */
@@ -6432,7 +6674,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(DecisionTreeFactor, sum_max) {
    DiscreteKey v0(0, 3), v1(1, 2);
    DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
-@@ -256,30 +268,49 @@ TEST(DecisionTreeFactor, Prune) {
+@@ -256,30 +273,127 @@ TEST(DecisionTreeFactor, Prune) {
  
    // Only keep the leaves with the top 5 values.
    size_t maxNrAssignments = 5;
@@ -6487,6 +6729,84 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +  DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
 +  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that each leaf counts all the assignments it covers, including those
++// of keys the tree no longer branches on after compression.
++TEST(DecisionTreeFactor, PruneCompressedKey) {
++  DiscreteKey X(0, 2), Y(1, 2);
++  DecisionTreeFactor f(X & Y, "0.1 0.4 0.1 0.4");
++
++  // The values don't depend on X, so compression removes it from the tree.
++  EXPECT_LONGS_EQUAL(1, f.labels().size());
++
++  // Each 0.4 leaf stands for two assignments, so it alone fills the top 2.
++  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(2), 1e-9);
++
++  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(2));
++  DecisionTreeFactor expected(X & Y, "0 0.4 0 0.4");
++  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that keeping zero assignments prunes everything, as TableFactor does.
++TEST(DecisionTreeFactor, PruneToZero) {
++  DiscreteKey X(0, 3);
++  DecisionTreeFactor f(X, "0.2 0.5 0.3");
++
++  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(0));
++  DecisionTreeFactor expected(X, "0 0 0");
++  EXPECT(assert_equal(expected, *pruned));
++}
++
++// Check that a leaf's assignment count saturates instead of overflowing when
++// compression removes as many binary keys as size_t has bits.
++TEST(DecisionTreeFactor, PruneCompressedMultiplicityOverflow) {
++  const size_t bits = std::numeric_limits<size_t>::digits;
++  const DiscreteKey Y(bits, 2);
++  DecisionTreeFactor f(Y, "0.1 0.9");
++  for (size_t k = 0; k < bits; ++k)
++    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
++
++  EXPECT_LONGS_EQUAL(2, f.nrLeaves());
++  EXPECT_DOUBLES_EQUAL(0.9, f.computeThreshold(1), 1e-12);
++  const auto pruned = f.prune(1);
++  EXPECT_DOUBLES_EQUAL(0.0, (*pruned)(DiscreteValues{{Y.first, 0}}), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.9, (*pruned)(DiscreteValues{{Y.first, 1}}), 1e-12);
++}
++
++// Check that the threshold is the N-th largest value over many leaves, both
++// for small N, where the heap stays bounded, and for N up to the total count.
++TEST(DecisionTreeFactor, ComputeThresholdManyLeaves) {
++  // 1024 assignments over 10 binary keys, where every value appears twice in
++  // branches that don't merge, so ties must be counted across leaves.
++  DiscreteKeys keys;
++  for (size_t k = 0; k < 10; ++k) keys.emplace_back(k, 2);
++  std::vector<double> table;
++  for (size_t i = 0; i < 1024; ++i) table.push_back(((i * 37) % 1024) / 2);
++  const DecisionTreeFactor f(keys, table);
++  EXPECT_LONGS_EQUAL(1024, f.nrLeaves());
++
++  std::vector<double> sorted = table;
++  std::sort(sorted.begin(), sorted.end(), std::greater<double>());
++  for (size_t N : {1, 2, 3, 5, 100, 1023, 1024}) {
++    EXPECT_DOUBLES_EQUAL(sorted[N - 1], f.computeThreshold(N), 1e-12);
++  }
++  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(1025), 1e-12);
++}
++
++// Check that pruning a leaf covering 2^30 assignments uses one weighted entry
++// rather than materializing a copy of its value per assignment.
++TEST(DecisionTreeFactor, PruneCompressedLeafWithoutExpanding) {
++  DecisionTreeFactor f(DiscreteKey(0, 2), "0.4 0.4");
++  for (size_t k = 1; k < 30; ++k)
++    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
++  EXPECT_LONGS_EQUAL(1, f.nrLeaves());
++
++  const size_t nrAssignments = size_t(1) << 30;
++  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(nrAssignments), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(nrAssignments + 1), 1e-12);
++  const auto pruned = f.prune(nrAssignments);
++  EXPECT_DOUBLES_EQUAL(0.4, (*pruned)(DiscreteValues{}), 1e-12);
  }
  
  /* ************************************************************************** */
@@ -9568,6 +9888,200 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  using ADT = AlgebraicDecisionTree<Key>;
  BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
  BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
+--- gtsam-4.3.0.orig/gtsam/linear/BatchJacobianFactor.h
++++ gtsam-4.3.0/gtsam/linear/BatchJacobianFactor.h
+@@ -780,21 +780,23 @@ class BatchJacobianFactor : public Batch
+     (addVectorValuesRowBlock<Slots>(rowIndex, values, residual), ...);
+   }
+ 
+-  /// Add one compact block's column squared norms to a keyed diagonal.
++  /// Add one compact block's weighted column squared norms to a keyed diagonal.
+   template <size_t Slot>
+   void hessianDiagonalVectorRowAdd(size_t rowIndex,
++                                   const RhsVector& weights,
+                                    VectorValues* diagonal) const {
+     const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+     const auto& block = std::get<Slot>(blocks_)[rowIndex];
+-    diagonal->at(keys_[keySlot]).array() +=
+-        block.array().square().colwise().sum().transpose();
++    diagonal->at(keys_[keySlot]).noalias() +=
++        block.array().square().matrix().transpose() * weights;
+   }
+ 
+-  /// Add every compact block's column squared norms to keyed diagonals.
++  /// Add every compact block's weighted column squared norms to keyed diagonals.
+   template <size_t... Slots>
+-  void hessianDiagonalVectorRowAdds(size_t rowIndex, VectorValues* diagonal,
++  void hessianDiagonalVectorRowAdds(size_t rowIndex, const RhsVector& weights,
++                                    VectorValues* diagonal,
+                                     std::index_sequence<Slots...>) const {
+-    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, diagonal), ...);
++    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, weights, diagonal), ...);
+   }
+ 
+   /// Scatter one transposed compact block product into a flat vector.
+@@ -1033,17 +1035,13 @@ class BatchJacobianFactor : public Batch
+ 
+   /** Accumulate the Hessian scalar diagonal directly from compact rows. */
+   void hessianDiagonalAdd(VectorValues& diagonal) const override {
+-    if (model_ && !model_->isUnit()) {
+-      Base::hessianDiagonalAdd(diagonal);
+-      return;
+-    }
+     for (size_t position = 0; position < keys_.size(); ++position) {
+       auto [entry, inserted] =
+           diagonal.emplace(keys_[position], keyDims_[position]);
+       if (inserted) entry->second.setZero();
+     }
+     for (size_t row = 0; row < rowSlots_.size(); ++row) {
+-      hessianDiagonalVectorRowAdds(row, &diagonal,
++      hessianDiagonalVectorRowAdds(row, rowWeights(row), &diagonal,
+                                    std::make_index_sequence<NumSlots>{});
+     }
+   }
+--- gtsam-4.3.0.orig/gtsam/linear/GaussianFactorGraph.cpp
++++ gtsam-4.3.0/gtsam/linear/GaussianFactorGraph.cpp
+@@ -358,19 +358,7 @@ namespace gtsam {
+     Scatter scatter(*this);
+     HessianFactor combined(*this, scatter);
+ 
+-    // TODO(frank): cast to large dynamic matrix :-(
+-    // NOTE(frank): info only valid (I think) in upper triangle. No problem for LLT...
+-    Matrix augmented = combined.info().selfadjointView();
+-
+-    // Do Cholesky Factorization
+-    size_t n = augmented.rows() - 1;
+-    auto AtA = augmented.topLeftCorner(n, n);
+-    auto eta = augmented.topRightCorner(n, 1);
+-    Eigen::LLT<Matrix, Eigen::Upper> llt(AtA);
+-
+-    // Solve and convert, re-using scatter data structure
+-    Vector solution = llt.solve(eta);
+-    return VectorValues(solution, scatter);
++    return combined.solve();
+   }
+ 
+   /* ************************************************************************* */
+--- gtsam-4.3.0.orig/gtsam/linear/HessianFactor.cpp
++++ gtsam-4.3.0/gtsam/linear/HessianFactor.cpp
+@@ -597,7 +597,11 @@ VectorValues HessianFactor::solve() {
+   // Do Cholesky Factorization
+   const size_t n = size();
+   assert(size_t(info_.nBlocks()) == n + 1);
+-  info_.choleskyPartial(n);
++  try {
++    info_.choleskyPartial(n);
++  } catch (const CholeskyFailed&) {
++    throw IndeterminateSystemException(keys_.front());
++  }
+   auto R = info_.triangularView(0, n);
+   auto eta = linearTerm();
+ 
+--- gtsam-4.3.0.orig/gtsam/linear/JacobianFactor.cpp
++++ gtsam-4.3.0/gtsam/linear/JacobianFactor.cpp
+@@ -623,6 +623,10 @@ Matrix JacobianFactor::information() con
+ 
+ /* ************************************************************************* */
+ void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
++  // Structural Bayes-tree orphan wrappers have keys but no matrix blocks.
++  // Real zero-row factors still define variable dimensions and zero diagonals.
++  if (rows() == 0 && Ab_.nBlocks() != static_cast<DenseIndex>(size() + 1))
++    return;
+   for (size_t pos = 0; pos < size(); ++pos) {
+     Key j = keys_[pos];
+     size_t nj = Ab_(pos).cols();
+--- gtsam-4.3.0.orig/gtsam/linear/MultifrontalClique.cpp
++++ gtsam-4.3.0/gtsam/linear/MultifrontalClique.cpp
+@@ -19,6 +19,7 @@
+ #include <gtsam/base/Matrix.h>
+ #include <gtsam/config.h>
+ #include <gtsam/linear/GaussianConditional.h>
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/linear/HessianFactor.h>
+ #include <gtsam/linear/JacobianFactor.h>
+ #include <gtsam/linear/MultifrontalClique.h>
+@@ -575,8 +576,9 @@ size_t MultifrontalClique::addJacobianFa
+   assert(blockIt == plan.blockIndices.end());
+ 
+   Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
+-  if (plan.model && !plan.model->isConstrained()) {
+-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
++  const auto& model = factor.get_model();
++  if (model && !model->isConstrained()) {
++    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+   }
+   return plan.rows;
+ }
+@@ -586,8 +588,9 @@ size_t MultifrontalClique::addBatchJacob
+     const FactorLoadPlan& plan) {
+   const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
+       batchFactor, Ab_, rowOffset, plan.blockIndices);
+-  if (plan.model && !plan.model->isConstrained()) {
+-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
++  const auto& model = batchFactor.get_model();
++  if (model && !model->isConstrained()) {
++    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+   }
+   return rows;
+ }
+@@ -900,23 +903,27 @@ void MultifrontalClique::prepareCompactC
+ }
+ 
+ void MultifrontalClique::factorize() {
+-  if (useQR()) {
+-    // Copy Ab_ to preserve its invariant; QR writes in place.
+-    assert(RSd_.matrix().rows() == Ab_.matrix().rows());
+-    assert(RSd_.matrix().cols() == Ab_.matrix().cols());
+-    RSd_.matrix() = Ab_.matrix();
+-    inplace_QR(RSd_.matrix());
+-    assert(RSd_.rowStart() == 0);
+-    RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
+-  } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
+-    factorizeFusedStarCholesky();
+-  } else if (useCompactCholesky()) {
+-    factorizeCompactCholesky();
+-  } else {
+-    info_.choleskyPartial(numFrontals());
+-    // Split exposes [R S d] while info_ retains the separator Schur complement.
+-    info_.split(numFrontals(), &RSd_);
+-    info_.blockStart() = 0;
++  try {
++    if (useQR()) {
++      // Copy Ab_ to preserve its invariant; QR writes in place.
++      assert(RSd_.matrix().rows() == Ab_.matrix().rows());
++      assert(RSd_.matrix().cols() == Ab_.matrix().cols());
++      RSd_.matrix() = Ab_.matrix();
++      inplace_QR(RSd_.matrix());
++      assert(RSd_.rowStart() == 0);
++      RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
++    } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
++      factorizeFusedStarCholesky();
++    } else if (useCompactCholesky()) {
++      factorizeCompactCholesky();
++    } else {
++      info_.choleskyPartial(numFrontals());
++      // Split exposes [R S d] while info_ retains the separator Schur complement.
++      info_.split(numFrontals(), &RSd_);
++      info_.blockStart() = 0;
++    }
++  } catch (const CholeskyFailed&) {
++    throw IndeterminateSystemException(orderedKeys_.front());
+   }
+   RSdReady_ = true;
+ }
+@@ -938,11 +945,9 @@ void MultifrontalClique::factorizeCompac
+   if (llt.info() != Eigen::Success) throw CholeskyFailed();
+   const Matrix R = llt.matrixU();
+   // Match the scale-normalized pivot guard used by standard Cholesky.
+-  constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
+   for (DenseIndex i = 0; i < n; ++i) {
+     const double pivot = R(i, i);
+-    if (!std::isfinite(pivot) ||
+-        pivot * pivot < kMinimumNormalizedPivotSquared * A(i, i)) {
++    if (!internal::CholeskyCheck::accept(pivot, A(i, i))) {
+       throw CholeskyFailed();
+     }
+   }
 --- gtsam-4.3.0.orig/gtsam/linear/NoiseModel.cpp
 +++ gtsam-4.3.0/gtsam/linear/NoiseModel.cpp
 @@ -844,7 +844,7 @@ Vector Robust::unweightedWhiten(const Ve
@@ -9579,6 +10093,35 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  Robust::shared_ptr Robust::Create(
+--- gtsam-4.3.0.orig/gtsam/linear/internal/CompactLeafSchurKernel.cpp
++++ gtsam-4.3.0/gtsam/linear/internal/CompactLeafSchurKernel.cpp
+@@ -15,6 +15,7 @@
+  * @author Frank Dellaert
+  */
+ 
++#include <gtsam/base/CholeskyCheck.h>
+ #include <gtsam/base/SymmetricBlockMatrix.h>
+ #include <gtsam/base/VerticalBlockMatrix.h>
+ #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
+@@ -27,8 +28,6 @@ namespace gtsam {
+ namespace internal {
+ namespace {
+ 
+-constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
+-
+ bool factorUpper(Matrix* matrix, DenseIndex dimension) {
+   for (DenseIndex column = 0; column < dimension; ++column) {
+     const double originalDiagonal = (*matrix)(column, column);
+@@ -40,8 +39,7 @@ bool factorUpper(Matrix* matrix, DenseIn
+     for (DenseIndex k = 0; k < column; ++k) {
+       pivotSquared -= (*matrix)(k, column) * (*matrix)(k, column);
+     }
+-    if (!std::isfinite(pivotSquared) || pivotSquared <= 0.0 ||
+-        pivotSquared < kMinimumNormalizedPivotSquared * originalDiagonal) {
++    if (!CholeskyCheck::acceptSquared(pivotSquared, originalDiagonal)) {
+       return false;
+     }
+ 
 --- gtsam-4.3.0.orig/gtsam/linear/linear.i
 +++ gtsam-4.3.0/gtsam/linear/linear.i
 @@ -560,6 +560,7 @@ virtual class HessianFactor : gtsam::Gau
@@ -9589,6 +10132,70 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    HessianFactor(const gtsam::GaussianFactorGraph& factors);
  
    //Standard Interface
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testBatchJacobianFactor.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testBatchJacobianFactor.cpp
+@@ -295,7 +295,7 @@ TEST(BatchJacobianFactor, FlatHessianBlo
+ 
+ // Verifies weighted compact error and diagonal operations preserve the dense
+ // compatibility semantics.
+-TEST(BatchJacobianFactor, WeightedErrorAndDiagonalUseDenseFallback) {
++TEST(BatchJacobianFactor, WeightedErrorAndDiagonalMatchDense) {
+   const Factor factor = createWeightedFactor();
+   VectorValues values;
+   values.emplace(0, Vector2{{0.2, -0.4}});
+@@ -336,6 +336,52 @@ TEST(BatchJacobianFactor, UnaryRowAccess
+ }  // namespace update_hessian_fixture
+ /* ************************************************************************* */
+ 
++namespace hessian_diagonal_fixture {
++
++class TrackingFactor : public BatchJacobianFactor<2, 2, 3> {
++ public:
++  using Base = BatchJacobianFactor<2, 2, 3>;
++  using Base::Base;
++  mutable size_t conversions = 0;
++
++  JacobianFactor toJacobianFactor() const override {
++    ++conversions;
++    return Base::toJacobianFactor();
++  }
++};
++
++// Weighted diagonal accumulation preserves dense semantics and compact storage,
++// including repeated additions and constrained rows' whitening convention.
++TEST(BatchJacobianFactor, HessianDiagonalWithoutDenseConversion) {
++  const std::vector<SharedDiagonal> models{
++      nullptr, noiseModel::Unit::Create(4),
++      noiseModel::Diagonal::Sigmas(Vector4{2.0, 3.0, 4.0, 5.0}),
++      noiseModel::Constrained::MixedSigmas(Vector4{0.0, 3.0, 4.0, 0.0})};
++  for (const auto& model : models) {
++    TrackingFactor factor(KeyVector{0, 1, 2}, {2, 2, 3}, model);
++    factor.addRow({0, 2},
++                  {Matrix2{{1.0, 2.0}, {3.0, 4.0}},
++                   Matrix23{{0.5, 1.0, -1.5}, {2.0, -0.5, 0.25}}},
++                  Vector2::Zero());
++    factor.addRow({1, 2},
++                  {Matrix2{{-1.0, 0.5}, {2.0, -0.25}},
++                   Matrix23{{1.5, -2.0, 0.75}, {-1.0, 0.25, 2.5}}},
++                  Vector2::Zero());
++    const JacobianFactor dense = factor.toJacobianFactor();
++    factor.conversions = 0;
++    VectorValues actual, expected;
++    for (size_t repeat = 0; repeat < 2; ++repeat) {
++      factor.hessianDiagonalAdd(actual);
++      dense.hessianDiagonalAdd(expected);
++      EXPECT(assert_equal(expected, actual, 1e-12));
++      EXPECT_LONGS_EQUAL(0, factor.conversions);
++    }
++  }
++}
++
++}  // namespace hessian_diagonal_fixture
++/* ************************************************************************* */
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam/linear/tests/testGaussianBayesNet.cpp
 +++ gtsam-4.3.0/gtsam/linear/tests/testGaussianBayesNet.cpp
 @@ -163,7 +163,7 @@ TEST( GaussianBayesNet, optimize3 )
@@ -9611,6 +10218,189 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    const Vector2 b(20, 40), x1(3, 4);
    const double sigma = 0.01;
  
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testGaussianFactorGraph.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testGaussianFactorGraph.cpp
+@@ -554,6 +554,37 @@ TEST(GaussianFactorGraph, InconsistentEl
+   }
+ }
+ /* ************************************************************************* */
++// Incremental elimination carries structural orphan wrappers with parent keys
++// but no numeric rows. They must not be read as populated Jacobian blocks.
++TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
++  GaussianFactorGraph graph;
++  graph.emplace_shared<JacobianFactor>(0, Matrix11{2.0}, Vector1{0.0});
++  const auto expected = graph.hessianDiagonal();
++  auto orphan = std::make_shared<GaussianBayesTreeClique>();
++  auto conditional = std::make_shared<GaussianConditional>(
++      1, Vector1{0.0}, Matrix11{1.0}, 0, Matrix11{-1.0},
++      noiseModel::Unit::Create(1));
++  orphan->setEliminationResult({conditional, GaussianFactor::shared_ptr()});
++  graph.emplace_shared<BayesTreeOrphanWrapper<GaussianBayesTreeClique>>(orphan);
++  EXPECT(assert_equal(expected, graph.hessianDiagonal()));
++}
++
++// Dense graph solving uses the same checked Cholesky path as dense factors.
++TEST(GaussianFactorGraph, DenseCholeskySafeguard) {
++  for (double strength : {1e8, 1e10}) {
++    GaussianFactorGraph graph;
++    graph.emplace_shared<HessianFactor>(
++        0, Matrix2{{strength + 1.0, -strength}, {-strength, strength}},
++        Vector2::Zero(), 0.0);
++    if (strength == 1e8) {
++      EXPECT(assert_equal(VectorValues{{0, Vector2::Zero()}},
++                          graph.optimizeDensely()));
++    } else {
++      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
++    }
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testHessianFactor.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testHessianFactor.cpp
+@@ -55,6 +55,17 @@ TEST(HessianFactor, emptyConstructor)
+   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
+ }
+ 
++// Dense factor solves report a graph key when numerical factorization fails.
++TEST(HessianFactor, SolveReportsIndeterminateSystem) {
++  HessianFactor factor(42, Matrix11{0.0}, Vector1{1.0}, 0.0);
++  try {
++    factor.solve();
++    FAIL("Expected an indeterminate system");
++  } catch (const IndeterminateSystemException& exception) {
++    EXPECT_LONGS_EQUAL(42, exception.nearbyVariable());
++  }
++}
++
+ /* ************************************************************************* */
+ // Copying and taking ownership of the same block matrix produce identical
+ // Hessian factors.
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testJacobianFactor.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testJacobianFactor.cpp
+@@ -615,6 +615,23 @@ TEST(JacobianFactor, empty )
+ }
+ 
+ /* ************************************************************************* */
++// Zero-row numerical factors retain their variable dimensions in the diagonal.
++TEST(JacobianFactor, ZeroRowsHessianDiagonal) {
++  const JacobianFactor factor(0, Matrix::Zero(0, 2), 1, Matrix::Zero(0, 3),
++                              Vector::Zero(0));
++  VectorValues expected;
++  expected.insert(0, Vector2::Zero());
++  expected.insert(1, Vector3::Zero());
++  EXPECT(assert_equal(expected, factor.hessianDiagonal()));
++
++  expected.at(0) = Vector2::Ones();
++  VectorValues accumulated;
++  accumulated.insert(0, Vector2::Ones());
++  factor.hessianDiagonalAdd(accumulated);
++  EXPECT(assert_equal(expected, accumulated));
++}
++
++/* ************************************************************************* */
+ TEST(JacobianFactor, eliminate)
+ {
+   Matrix A01{//
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testMultifrontalSolver.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testMultifrontalSolver.cpp
+@@ -1132,6 +1132,41 @@ TEST(MultifrontalSolver, Load) {
+ }
+ 
+ /* ************************************************************************* */
++// Reloading compatible factors must use their current numerical noise models.
++TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
++  for (bool batch : {false, true}) {
++    const auto makeGraph = [batch](double sigma) {
++      GaussianFactorGraph graph;
++      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
++      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
++      if (batch) {
++        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
++            KeyVector{0}, std::vector<size_t>{1}, model);
++        factor->addRow({0}, {I_1x1}, Vector1(2.0));
++        graph.push_back(factor);
++      } else {
++        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
++      }
++      return graph;
++    };
++    for (auto mode : {MultifrontalParameters::QRMode::Off,
++                      MultifrontalParameters::QRMode::Force}) {
++      auto params = noMergeParams();
++      params.qrMode = mode;
++      const GaussianFactorGraph initial = makeGraph(1.0);
++      MultifrontalSolver solver(initial, Ordering{0}, params);
++      solver.eliminateInPlace(initial);
++      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
++
++      const GaussianFactorGraph reweighted = makeGraph(0.5);
++      solver.load(reweighted);
++      solver.eliminateInPlace();
++      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
++    }
++  }
++}
++
++/* ************************************************************************* */
+ // Compare solver output against multifrontal elimination baseline.
+ TEST(MultifrontalSolver, Eliminate) {
+   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
+@@ -1689,6 +1724,52 @@ TEST(MultifrontalSolver, BalancedSmoothe
+ }
+ 
+ /* ************************************************************************* */
++// Ordinary, compact, and fused kernels agree on a weak frontal block.
++TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
++  for (double strength : {1e8, 1e10}) {
++    const double w = std::sqrt(strength);
++    const Matrix A{{1.0, 0.0}, {w, -w}, {0.0, 1.0}};
++    const Matrix3 B{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
++    const Vector3 b{0.1, 0.0, 0.0};
++    for (int mode = 0; mode < 3; ++mode) {
++      GaussianFactorGraph graph;
++      if (mode == 2) {
++        using Batch = BatchJacobianFactor<3, 2, 3>;
++        auto factor = std::make_shared<Batch>(KeyVector{0, 1},
++                                             std::vector<size_t>{2, 3});
++        factor->addRow({0, 1}, {A, B}, b);
++        graph.push_back(factor);
++      } else {
++        graph.emplace_shared<JacobianFactor>(0, A, 1, B, b);
++      }
++      graph.emplace_shared<JacobianFactor>(1, I_3x3, Vector3::Zero());
++      // An extra parent key prevents symbolic amalgamation of the leaf into
++      // the retained clique, independent of the numeric merge cap.
++      graph.emplace_shared<JacobianFactor>(1, I_3x3, 2, -I_3x3, Vector3::Zero());
++      auto params = noMergeParams();
++      params.qrMode = MultifrontalParameters::QRMode::Off;
++      params.compactCholeskySeparatorDimThreshold = mode == 1 ? 1 : 256;
++      MultifrontalSolver solver(graph, Ordering{0, 1, 2}, size_t(1), params);
++      solver.load(graph);
++      LONGS_EQUAL(mode == 0 ? 0 : 1,
++          compact_leaf_fixture::compactCliqueCount(&solver));
++      if (strength == 1e8) {
++        solver.eliminatePartialInPlace();
++        const auto expected = graph.eliminatePartialSequential(Ordering{0}, EliminateQR);
++        EXPECT(assert_equal(expected.second->augmentedHessian(Ordering{1, 2}),
++            solver.remainingFactorGraph().augmentedHessian(Ordering{1, 2}), 1e-7));
++      } else {
++        try {
++          solver.eliminatePartialInPlace();
++          FAIL("Expected an indeterminate system");
++        } catch (const IndeterminateSystemException& exception) {
++          EXPECT_LONGS_EQUAL(0, exception.nearbyVariable());
++        }
++      }
++    }
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam/navigation/AttitudeFactor.h
 +++ gtsam-4.3.0/gtsam/navigation/AttitudeFactor.h
 @@ -203,4 +203,11 @@ template <class VALUE>
@@ -14142,6 +14932,62 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  TestResult tr;
 +  return TestRegistry::runAllTests(tr);
 +}
+--- gtsam-4.3.0.orig/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
++++ gtsam-4.3.0/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
+@@ -1105,6 +1105,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+ }
+ 
+ /* *************************************************************************/
++// Verifies that the Hessian is invariant to a rigid motion of all cameras.
+ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
+   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
+ 
+@@ -1127,6 +1128,11 @@ TEST( SmartProjectionPoseFactor, Hessian
+   std::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
+       values);
+ 
++  // Entries are O(1e7), so scale the tolerance with the matrix: a fixed 1e-7
++  // allows only a few dozen ULPs and fails under benign rounding changes.
++  const Matrix information = factor->information();
++  const double tolerance = 1e-12 * information.norm();
++
+   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+ 
+   Values rotValues;
+@@ -1138,7 +1144,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+       rotValues);
+ 
+   // Hessian is invariant to rotations in the nondegenerate case
+-  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
++  EXPECT(assert_equal(information, factorRot->information(), tolerance));
+ 
+   Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+       Point3(10, -4, 5));
+@@ -1152,7 +1158,7 @@ TEST( SmartProjectionPoseFactor, Hessian
+       smartFactorInstance->linearize(tranValues);
+ 
+   // Hessian is invariant to rotations and translations in the nondegenerate case
+-  EXPECT(assert_equal(factor->information(), factorRotTran->information(), 1e-7));
++  EXPECT(assert_equal(information, factorRotTran->information(), tolerance));
+ }
+ 
+ /* *************************************************************************/
+--- gtsam-4.3.0.orig/gtsam_unstable/gtsam_unstable.i
++++ gtsam-4.3.0/gtsam_unstable/gtsam_unstable.i
+@@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: g
+   //void print(string s) const;
+ };
+ 
++#include <gtsam_unstable/slam/BiasedGPSFactor.h>
++virtual class BiasedGPSFactor : gtsam::NoiseModelFactor {
++  BiasedGPSFactor(gtsam::Key posekey, gtsam::Key biaskey, const gtsam::Point3& measured,
++                  const gtsam::noiseModel::Base* model);
++  const gtsam::Point3& measured() const;
++};
++
+ #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
+ virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
+   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 --- gtsam-4.3.0.orig/gtsam_unstable/partition/tests/testFindSeparator.cpp
 +++ gtsam-4.3.0/gtsam_unstable/partition/tests/testFindSeparator.cpp
 @@ -15,6 +15,29 @@ using namespace std;
@@ -14230,6 +15076,78 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    for (int j=1; j<=8; j++)
      LONGS_EQUAL(1, partitionTable[j]);
    for (int j=9; j<=16; j++)
+--- gtsam-4.3.0.orig/gtsam_unstable/slam/BiasedGPSFactor.h
++++ gtsam-4.3.0/gtsam_unstable/slam/BiasedGPSFactor.h
+@@ -26,7 +26,8 @@ namespace gtsam {
+ 
+   /**
+    * A class to model GPS measurements, including a bias term which models
+-   * common-mode errors and that can be partially corrected if other sensors are used
++   * common-mode errors and that can be partially corrected if other sensors are used.
++   * The error is pose.translation() + bias - measured, all in the navigation frame.
+    * @ingroup slam
+    */
+   class BiasedGPSFactor
+@@ -81,18 +82,12 @@ namespace gtsam {
+     Vector3 evaluateError(const Pose3& pose, const Point3& bias,
+                           OptionalMatrixType H1,
+                           OptionalMatrixType H2) const override {
+-
+-      if (H1 || H2){
+-        H1->resize(3,6); // jacobian wrt pose
+-        (*H1) << Z_3x3,  pose.rotation().matrix();
+-        H2->resize(3,3); // jacobian wrt bias
+-        *H2 = I_3x3;
+-      }
+-      return pose.translation() + bias - measured_;
++      if (H2) *H2 = I_3x3;
++      return pose.translation(H1) + bias - measured_;
+     }
+ 
+     /** return the measured */
+-    const Point3 measured() const {
++    const Point3& measured() const {
+       return measured_;
+     }
+ 
+--- gtsam-4.3.0.orig/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
++++ gtsam-4.3.0/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
+@@ -77,6 +77,35 @@ TEST(BiasedGPSFactor, jacobian) {
+ }
+ 
+ /* ************************************************************************* */
++namespace single_jacobian {
++const Pose3 pose(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 0.5, 0.2));
++const Point3 bias(0.3, -0.2, 0.1);
++const BiasedGPSFactor factor(X(1), B(1), Point3(1.5, 0.0, 0.4),
++                             Isotropic::Sigma(3, 0.05));
++
++// Requesting only the pose Jacobian must not touch the absent bias Jacobian.
++TEST(BiasedGPSFactor, poseJacobianOnly) {
++  Matrix expectedH1, expectedH2, actualH1;
++  const Vector3 expectedError =
++      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
++  const Vector3 actualError = factor.evaluateError(pose, bias, &actualH1, nullptr);
++  EXPECT(assert_equal(expectedError, actualError));
++  EXPECT(assert_equal(expectedH1, actualH1));
++}
++
++// Requesting only the bias Jacobian must not touch the absent pose Jacobian.
++TEST(BiasedGPSFactor, biasJacobianOnly) {
++  Matrix expectedH1, expectedH2, actualH2;
++  const Vector3 expectedError =
++      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
++  const Vector3 actualError = factor.evaluateError(pose, bias, nullptr, &actualH2);
++  EXPECT(assert_equal(expectedError, actualError));
++  EXPECT(assert_equal(expectedH2, actualH2));
++  EXPECT(assert_equal(Matrix(I_3x3), actualH2));
++}
++
++}  // namespace single_jacobian
++/* ************************************************************************* */
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam_unstable/timing/timeHybridAllDiff.cpp
 +++ gtsam-4.3.0/gtsam_unstable/timing/timeHybridAllDiff.cpp
 @@ -35,6 +35,7 @@ using gtsam::DecisionTreeFactor;
@@ -29092,6 +30010,63 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #endif
  
  #include "python/gtsam_unstable/preamble.h"
+--- /dev/null
++++ gtsam-4.3.0/python/gtsam_unstable/tests/test_BiasedGPSFactor.py
+@@ -0,0 +1,54 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++
++See LICENSE for the license information.
++
++Unit tests for BiasedGPSFactor.
++"""
++
++# pylint: disable=invalid-name, no-name-in-module, no-member
++
++import unittest
++
++import numpy as np
++
++import gtsam
++import gtsam_unstable
++from gtsam.symbol_shorthand import B, X
++from gtsam.utils.test_case import GtsamTestCase
++
++
++class TestBiasedGPSFactor(GtsamTestCase):
++    """The error is pose.translation() + bias - measured."""
++
++    def setUp(self):
++        self.pose = gtsam.Pose3(gtsam.Rot3.Rodrigues(0.1, 0.2, 0.3),
++                                gtsam.Point3(1.0, 0.5, 0.2))
++        self.bias = np.array([0.3, -0.2, 0.1])
++        self.measured = gtsam.Point3(1.5, 0.0, 0.4)
++        self.factor = gtsam_unstable.BiasedGPSFactor(
++            X(1), B(1), self.measured, gtsam.noiseModel.Isotropic.Sigma(3, 0.5))
++        self.values = gtsam.Values()
++        self.values.insert(X(1), self.pose)
++        self.values.insert(B(1), self.bias)
++
++    def test_error(self):
++        """The error is the biased position minus the measurement."""
++        self.assertIsInstance(self.factor, gtsam.NoiseModelFactor)
++        np.testing.assert_allclose(self.factor.measured(), self.measured)
++        np.testing.assert_allclose(
++            self.factor.unwhitenedError(self.values),
++            self.pose.translation() + self.bias - self.measured)
++
++    def test_jacobians(self):
++        """The whitened Jacobians are [0 R] and I, scaled by 1/sigma."""
++        jacobian, _ = self.factor.linearize(self.values).jacobian()
++        expected = np.hstack([np.zeros((3, 3)), self.pose.rotation().matrix(),
++                              np.eye(3)]) / 0.5
++        np.testing.assert_allclose(jacobian, expected, atol=1e-12)
++
++
++if __name__ == "__main__":
++    unittest.main()
 --- gtsam-4.3.0.orig/python/gtsam_unstable/tests/test_Serialization.py
 +++ gtsam-4.3.0/python/gtsam_unstable/tests/test_Serialization.py
 @@ -1,6 +1,10 @@
@@ -29418,6 +30393,86 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  /* ************************************************************************* */
  TEST( NonlinearFactor, linearize_f1 )
  {
+--- gtsam-4.3.0.orig/tests/testNonlinearOptimizer.cpp
++++ gtsam-4.3.0/tests/testNonlinearOptimizer.cpp
+@@ -1217,6 +1217,77 @@ TEST(NonlinearOptimizer, DerivedGraphVir
+ }
+ 
+ /* ************************************************************************* */
++// An anchored graph with a tight relative measurement accepts useful LM steps.
++TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
++      noiseModel::Isotropic::Sigma(1, 1.0));
++  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
++      noiseModel::Isotropic::Sigma(1, 1e-4));
++  Values initial;
++  initial.insert(0, 0.1);
++  initial.insert(1, 0.1);
++  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
++                                  "MULTIFRONTAL_SOLVER", "MULTIFRONTAL_QR"}) {
++    LevenbergMarquardtParams params;
++    params.setOrdering(Ordering{0, 1});
++    params.setLinearSolverType(solver);
++    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
++    for (bool diagonalDamping : {false, true}) {
++      params.setDiagonalDamping(diagonalDamping);
++      LevenbergMarquardtOptimizer lm(graph, initial, params);
++      // The identity-damped solve should accept its first small lambda.
++      if (!diagonalDamping) {
++        lm.iterate();
++        EXPECT(lm.lambda() < params.lambdaInitial);
++      }
++      const Values result = lm.optimize();
++      if (!diagonalDamping) {
++        EXPECT(graph.error(result) < 1e-16);
++        EXPECT(lm.iterations() <= 4);
++      } else {
++        // Diagonal damping can independently slow this graph; check progress.
++        EXPECT(graph.error(result) < graph.error(initial));
++      }
++    }
++    GaussNewtonParams gnParams;
++    gnParams.setOrdering(Ordering{0, 1});
++    gnParams.setLinearSolverType(solver);
++    gnParams.multifrontalParams = params.multifrontalParams;
++    EXPECT(graph.error(GaussNewtonOptimizer(graph, initial, gnParams).optimize()) < 1e-16);
++    DoglegParams dlParams;
++    dlParams.setOrdering(Ordering{0, 1});
++    dlParams.setLinearSolverType(solver);
++    dlParams.multifrontalParams = params.multifrontalParams;
++    EXPECT(graph.error(DoglegOptimizer(graph, initial, dlParams).optimize()) < 1e-16);
++  }
++}
++
++// Undamped optimizers report the same graph exception for a missing gauge.
++TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<BetweenFactor<double>>(
++      0, 1, 0.0, noiseModel::Isotropic::Sigma(1, 1.0));
++  Values initial;
++  initial.insert(0, 0.1);
++  initial.insert(1, 0.2);
++  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
++                                  "MULTIFRONTAL_SOLVER"}) {
++    GaussNewtonParams gnParams;
++    gnParams.setOrdering(Ordering{0, 1});
++    gnParams.setLinearSolverType(solver);
++    gnParams.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
++    CHECK_EXCEPTION(GaussNewtonOptimizer(graph, initial, gnParams).iterate(),
++                    IndeterminateSystemException);
++    DoglegParams dlParams;
++    dlParams.setOrdering(Ordering{0, 1});
++    dlParams.setLinearSolverType(solver);
++    dlParams.multifrontalParams = gnParams.multifrontalParams;
++    CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
++                    IndeterminateSystemException);
++  }
++}
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/timing/timeHybridInference.cpp
 +++ gtsam-4.3.0/timing/timeHybridInference.cpp
 @@ -47,6 +47,7 @@ using gtsam::HybridValues;
