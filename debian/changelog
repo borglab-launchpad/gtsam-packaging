@@ -1,3 +1,12 @@
+gtsam (4.3.0-0ubuntu14~38.gbpbfa980) resolute; urgency=medium
+
+  ** SNAPSHOT build @bfa9806165a311f0188f2d63fbc7d08423ef8f5f **
+
+  * updated changelog and patch files for snapshot 4.3.0-0ubuntu14~37.gbp03de22
+  * modified changelog for distro noble
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Oct 2026 22:15:29 +0000
+
 gtsam (4.3.0-0ubuntu14~37.gbp03de22) noble; urgency=medium
 
   ** SNAPSHOT build @03de22a5740a99862ffde0bd3709d319fefa7efd **
