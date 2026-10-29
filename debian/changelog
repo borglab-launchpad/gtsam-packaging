@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~45.gbp7edad3) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~46.gbp5845c6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5845c6fae01d717c9979f2d2f463af1cfc3be01c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7edad3f6abe3f1930685485c811b677061d1c000 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 12:14:49 +0000
+  [ Frank Dellaert ]
+  * Check local QR pivots against incoming column norms
+  * Add Bayes-tree substitutions and linear factor residual bindings
+  * Add nonlinear Gradients and a LibTorch training example
+  * Wrap Gradients and add executable Python guides
+  * Validate Errors dot dimensions in Release builds
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 17:18:41 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~44.gbpf041c5) resolute; urgency=medium
 
