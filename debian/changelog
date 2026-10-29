@@ -1,10 +1,34 @@
-gtsam (4.3.0-0ubuntu14~39.gbpcbbb0a) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~40.gbp31ce3f) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @31ce3f49a7b944174dbc0a1064073da21d4e0f85 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @cbbb0af1585818ffa90a3a562f39d61992a8a7c6 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 27 Oct 2026 22:16:54 +0000
+  [ mmporong ]
+  * Fix noise model dimension in TranslationAveragingExample
+
+  [ avinashresearch1 ]
+  * Substitute fixed variables out of the QCQP and SDP
+  * Keep fixed variables in QcqpProblem
+  * Order uncoupled keys before METIS in the chordal SDP
+  * Substitute fixed variables when transcribing the SDP
+
+  [ Frank Dellaert ]
+  * Fix MATLAB wrapper compatibility for fixed QCQP anchors
+  * Check local QR pivots against incoming column norms
+  * Add Bayes-tree substitutions and linear factor residual bindings
+  * Add nonlinear Gradients and a LibTorch training example
+  * Wrap Gradients and add executable Python guides
+  * Support native Hessian factors in the multifrontal solver
+  * Reuse a persistent multifrontal solver and linearizations in ALM
+  * Avoid repeated separator traversals and ALM state allocations
+  * Validate Errors dot dimensions in Release builds
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 17:18:50 +0000
 
 gtsam (4.3.0-0ubuntu14~38.gbpbfa980) resolute; urgency=medium
 
