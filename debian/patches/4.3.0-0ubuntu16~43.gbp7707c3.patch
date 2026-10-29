@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 26 2026 18:00:01 +0000
+Date: Oct, 29 2026 12:12:37 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -1371,6 +1371,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -    }
 -  }
 -  return true;
+-}
+-
+-// Custom QCQPs without explicit unit normalization retain the old formulation.
+-bool canShareHomogeneousCoordinate(const QcqpProblem& problem,
+-                                   const KeyVector& keys) {
+-  KeySet normalized;
+-  for (const auto& factor : problem.eConstraints()) {
+-    const auto* quadratic =
+-        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+-    if (quadratic &&
+-        isUnitHomogeneousConstraint(quadratic->quadraticConstraint())) {
+-      normalized.insert(quadratic->quadraticConstraint().key());
+-    }
+-  }
+-  return !keys.empty() && std::all_of(keys.begin(), keys.end(), [&](Key key) {
+-    return normalized.count(key) != 0;
+-  });
 +// Maps each QCQP key to its lifted vector x_i (row-0 slice) in an SDP
 +// variable.
 +using KeyiToLiftedVectorxiViewInSDPVariableMap = std::map<Key, mf::Variable::t>;
@@ -1392,23 +1409,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  return keyToSDPVariableRanges;
  }
  
--// Custom QCQPs without explicit unit normalization retain the old formulation.
--bool canShareHomogeneousCoordinate(const QcqpProblem& problem,
--                                   const KeyVector& keys) {
--  KeySet normalized;
--  for (const auto& factor : problem.eConstraints()) {
--    const auto* quadratic =
--        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
--    if (quadratic &&
--        isUnitHomogeneousConstraint(quadratic->quadraticConstraint())) {
--      normalized.insert(quadratic->quadraticConstraint().key());
--    }
--  }
--  return !keys.empty() && std::all_of(keys.begin(), keys.end(), [&](Key key) {
--    return normalized.count(key) != 0;
--  });
--}
--
 -// Map original key coordinates to cone indices, optionally sharing index zero.
 -std::map<Key, std::vector<int>> makeConeLayout(
 -    const KeyVector& keys, const std::map<Key, DenseIndex>& dimensions,
@@ -1469,7 +1469,34 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    orderedKeys->assign(costKeys.begin(), costKeys.end());
-@@ -382,55 +339,69 @@ double ComputeBlockRankOneRatio(const Ma
+@@ -279,8 +236,25 @@ SymbolicBayesTree BuildSymbolicBayesTree
+   switch (orderingType) {
+     case ChordalOrderingType::Metis:
+ #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+-      ordering = Ordering::Metis(sfg);
++    {
++      // MetisIndex gives keys without neighbors no adjacency rows, so METIS
++      // would see inconsistent arrays. Order the coupled keys with METIS and
++      // put the uncoupled ones, each its own clique, first. Substituting
++      // fixed variables can leave keys with unary costs only.
++      SymbolicFactorGraph coupled;
++      for (const auto& factor : sfg) {
++        if (factor->size() > 1) coupled.push_back(factor);
++      }
++      const KeySet coupledKeys = coupled.keys();
++      for (Key key : sfg.keys()) {
++        if (!coupledKeys.count(key)) ordering.push_back(key);
++      }
++      if (!coupled.empty()) {
++        const Ordering metis = Ordering::Metis(coupled);
++        ordering.insert(ordering.end(), metis.begin(), metis.end());
++      }
+       break;
++    }
+ #else
+       throw std::runtime_error(
+           "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
+@@ -382,55 +356,69 @@ double ComputeBlockRankOneRatio(const Ma
    return lambdaMax / lambdaSecond;
  }
  
@@ -1565,7 +1592,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    for (Key key_i : H.keys()) {
      std::vector<mf::Expression::t> rowBlocks;
      for (Key key_j : H.keys()) {
-@@ -438,31 +409,42 @@ mf::Expression::t BuildQpCostObjectiveTe
+@@ -438,31 +426,42 @@ mf::Expression::t BuildQpCostObjectiveTe
      }
      blockRows.push_back(
          mf::Expr::hstack(monty::new_array_ptr<mf::Expression::t>(rowBlocks)));
@@ -1617,7 +1644,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    if (objectiveTerms.empty()) {
-@@ -471,15 +453,20 @@ mf::Expression::t BuildObjective(
+@@ -471,15 +470,20 @@ mf::Expression::t BuildObjective(
    return mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(objectiveTerms));
  }
  
@@ -1644,7 +1671,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    switch (constraint.sense()) {
      case QuadraticConstraint::Sense::Equal:
-@@ -494,113 +481,53 @@ void AddQuadraticConstraint(
+@@ -494,113 +498,53 @@ void AddQuadraticConstraint(
    }
  }
  
@@ -1792,7 +1819,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      throw std::runtime_error(
          "LiftedSDPProblem: expected quadratic or linear equality "
          "constraints.");
-@@ -608,23 +535,19 @@ void AddQcqpConstraints(const mf::Model:
+@@ -608,28 +552,155 @@ void AddQcqpConstraints(const mf::Model:
  
    // Inequality factors currently support only quadratic constraints.
    for (const auto& factor : problem.iConstraints()) {
@@ -1822,11 +1849,148 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      throw std::runtime_error(
          "LiftedSDPProblem: expected quadratic inequality constraints.");
    }
-@@ -637,25 +560,33 @@ struct LiftedSDPProblem<MonolithicSDP, M
+ }
+ 
++// Return true if any of the keys is a fixed variable.
++bool InvolvesFixedVariable(const KeyVector& keys,
++                           const Values& fixedVariables) {
++  return std::any_of(keys.begin(), keys.end(), [&fixedVariables](Key key) {
++    return fixedVariables.exists(key);
++  });
++}
++
++// Detect fixed variables: a unary linear equality I x = v, which a hard
++// FrobeniusPrior emits, fixes x to v. Lifting it would pin a rank-one block
++// of the SDP variable and leave the SDP without an interior.
++void DetectFixedVariables(const NonlinearEqualityConstraints& constraints,
++                          Values* fixedVariables) {
++  for (const auto& factor : constraints) {
++    const auto* linear =
++        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
++    if (!linear) continue;
++    const JacobianFactor& jacobian = linear->linearConstraint().factor();
++    if (jacobian.size() != 1) continue;
++    const Matrix A = jacobian.getA(jacobian.begin());
++    // A must be exactly the square identity, so that A x = b reads x = b.
++    // isIdentity() also accepts rectangular [I 0], which pins only part of x,
++    // hence the explicit square check; precision 0 admits no deviation.
++    if (A.rows() != A.cols() || !A.isIdentity(0.0)) continue;
++    // The first constraint on a key sets its value v = b.
++    if (!fixedVariables->exists(jacobian.front())) {
++      fixedVariables->insert(jacobian.front(), Matrix(jacobian.getb()));
++    }
++  }
++}
++
++// Substitute the fixed variables into one QpCost. Its error
++// ½xᵀGx − xᵀg + ½f, split into free positions F and fixed positions K with
++// x_K = v, becomes a cost on x_F with
++//   G' = G_FF,  g' = g_F − G_FK v,  f' = f + vᵀG_KK v − 2g_Kᵀv.
++// A binary cost with a fixed variable thus becomes a unary cost on the other
++// variable, which keeps the gauge fixed. Returns null when no free variable
++// is left, and adds f' to *constant.
++QpCost::shared_ptr SubstituteFixedVariables(const QpCost& cost,
++                                            const Values& fixedVariables,
++                                            double* constant) {
++  const HessianFactor& hessian = cost.hessianFactor();
++  KeyVector freeKeys;
++  std::vector<DenseIndex> freeDims;
++  std::vector<Eigen::Index> F, K;
++  Vector v_K(0);
++  DenseIndex offset = 0;
++  for (auto it = hessian.begin(); it != hessian.end(); ++it) {
++    const DenseIndex dim = hessian.getDim(it);
++    const bool fixed = fixedVariables.exists(*it);
++    for (DenseIndex i = 0; i < dim; ++i) (fixed ? K : F).push_back(offset + i);
++    if (fixed) {
++      const Matrix& value = fixedVariables.at<Matrix>(*it);
++      v_K.conservativeResize(v_K.size() + dim);
++      v_K.tail(dim) = Eigen::Map<const Vector>(value.data(), dim);
++    } else {
++      freeKeys.push_back(*it);
++      freeDims.push_back(dim);
++    }
++    offset += dim;
++  }
++
++  const Matrix G = hessian.information();
++  const Vector g = hessian.linearTerm();
++  const double f = hessian.constantTerm();
++  const double fSubstituted =
++      f + v_K.dot(G(K, K) * v_K) - 2.0 * g(K).dot(v_K);
++  if (freeKeys.empty()) {
++    *constant += fSubstituted;
++    return nullptr;
++  }
++
++  // Augmented [G' g'; g'ᵀ f'] with one block per free variable plus a size-1
++  // block, as in the factors' own QCQP costs.
++  const DenseIndex n = F.size();
++  Matrix Q = Matrix::Zero(n + 1, n + 1);
++  Q.topLeftCorner(n, n) = G(F, F);
++  Q.topRightCorner(n, 1) = g(F) - G(F, K) * v_K;
++  Q.bottomLeftCorner(1, n) = Q.topRightCorner(n, 1).transpose();
++  Q(n, n) = fSubstituted;
++  freeDims.push_back(1);
++  return std::make_shared<QpCost>(
++      HessianFactor(freeKeys, SymmetricBlockMatrix(freeDims, Q)));
++}
++
++// Substitute the fixed variables out of a QCQP before it is lifted. Costs are
++// rewritten on the free variables. The constraints that involve a fixed
++// variable are dropped: from a factor graph these are its unary manifold
++// constraints and its I x = v. The input problem is not modified.
++QcqpProblem SubstituteFixedVariables(const QcqpProblem& problem,
++                                     Values* fixedVariables) {
++  DetectFixedVariables(problem.eConstraints(), fixedVariables);
++  if (fixedVariables->empty()) return problem;
++
++  NonlinearFactorGraph costs;
++  double constant = 0.0;
++  for (const auto& factor : problem.costs()) {
++    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
++    if (!cost || !InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
++      costs.push_back(factor);
++    } else if (auto substituted = SubstituteFixedVariables(
++                   *cost, *fixedVariables, &constant)) {
++      costs.push_back(substituted);
++    }
++  }
++  // Keep the objective exact: fold the constant left by costs on fixed
++  // variables only into the first remaining cost.
++  for (size_t i = 0; constant != 0.0 && i < costs.size(); ++i) {
++    if (const auto* cost = dynamic_cast<const QpCost*>(costs[i].get())) {
++      HessianFactor hessian = cost->hessianFactor();
++      hessian.constantTerm() += constant;
++      costs.replace(i, std::make_shared<QpCost>(hessian));
++      break;
++    }
++  }
++
++  NonlinearEqualityConstraints eqConstraints;
++  for (const auto& factor : problem.eConstraints()) {
++    if (!InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
++      eqConstraints.push_back(factor);
++    }
++  }
++  NonlinearInequalityConstraints ineqConstraints;
++  for (const auto& factor : problem.iConstraints()) {
++    if (!InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
++      ineqConstraints.push_back(factor);
++    }
++  }
++  return QcqpProblem(costs, eqConstraints, ineqConstraints);
++}
++
+ }  // namespace
+ 
+ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
+@@ -637,25 +708,34 @@ struct LiftedSDPProblem<MonolithicSDP, M
    MosekSolveSummary lastSolveSummary;
    KeyVector orderedKeys;
    std::map<Key, DenseIndex> orderedKeyDims;
 -  LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
++  Values fixedVariables;
 +  KeyiToLiftedVectorxiViewInSDPVariableMap
 +      keyiToLiftedVectorxiViewInSDPVariableMap;
 +  KeysijToLiftedVariableXijViewInSDPVariableMap
@@ -1866,9 +2030,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        }
      }
    }
-@@ -667,11 +598,14 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -666,12 +746,16 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+   MosekSolveSummary lastSolveSummary;
    KeyVector orderedKeys;
    std::map<Key, DenseIndex> orderedKeyDims;
++  Values fixedVariables;
    SymbolicBayesTree bayesTree_;
 -  bool shareHomogeneous = false;
 -  LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
@@ -1884,7 +2050,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      DisposeMosekModel(M);
    }
  
-@@ -685,7 +619,7 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -685,7 +769,7 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      return out.str();
    }
  
@@ -1893,7 +2059,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    void addChordalOverlapEquality(const std::pair<Key, Key>& key,
                                   const mf::Variable::t& owner,
                                   const mf::Variable::t& duplicate) {
-@@ -695,22 +629,34 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -695,22 +779,34 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      }
  
      if (key.first == key.second) {
@@ -1937,7 +2103,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      if (!clique) {
        return;
      }
-@@ -718,81 +664,81 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -718,81 +814,83 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      KeyVector indices = clique->conditional()->keys();
      std::sort(indices.begin(), indices.end());
  
@@ -2010,8 +2176,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
 -    const QcqpProblem& problem, bool shareHomogeneousCoordinates)
-+    const QcqpProblem& problem)
++    const QcqpProblem& qcqp)
      : impl_(std::make_unique<Impl>()) {
++  const QcqpProblem problem =
++      SubstituteFixedVariables(qcqp, &impl_->fixedVariables);
    CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                              &impl_->orderedKeyDims);
 -  const bool shareHomogeneous =
@@ -2061,16 +2229,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
-@@ -831,7 +777,7 @@ Values LiftedSDPProblem<MonolithicSDP, M
+@@ -831,8 +929,11 @@ Values LiftedSDPProblem<MonolithicSDP, M
      throw std::runtime_error("qcqpValues: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
 -  return RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
-+  return RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
-                            impl_->orderedKeys, impl_->orderedKeyDims);
+-                           impl_->orderedKeys, impl_->orderedKeyDims);
++  Values recoveredQcqpValues =
++      RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
++                        impl_->orderedKeys, impl_->orderedKeyDims);
++  recoveredQcqpValues.insert(impl_->fixedVariables);
++  return recoveredQcqpValues;
  }
  
-@@ -841,8 +787,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
+ std::vector<double>
+@@ -841,8 +942,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
      throw std::runtime_error("variableEVRs: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -2083,14 +2256,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  const KeyVector& LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys()
-@@ -856,35 +804,23 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
+@@ -856,35 +959,25 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
  }
  
  LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
 -    const QcqpProblem& problem, ChordalOrderingType orderingType,
 -    bool shareHomogeneousCoordinates)
-+    const QcqpProblem& problem, ChordalOrderingType orderingType)
++    const QcqpProblem& qcqp, ChordalOrderingType orderingType)
      : impl_(std::make_unique<Impl>()) {
++  const QcqpProblem problem =
++      SubstituteFixedVariables(qcqp, &impl_->fixedVariables);
    CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                              &impl_->orderedKeyDims);
    impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
@@ -2126,16 +2301,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
-@@ -922,7 +858,7 @@ Values LiftedSDPProblem<ChordalSDP, Mose
+@@ -922,8 +1015,11 @@ Values LiftedSDPProblem<ChordalSDP, Mose
      throw std::runtime_error("qcqpValues: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
 -  return RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
-+  return RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
-                            impl_->orderedKeys, impl_->orderedKeyDims);
+-                           impl_->orderedKeys, impl_->orderedKeyDims);
++  Values recoveredQcqpValues =
++      RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
++                        impl_->orderedKeys, impl_->orderedKeyDims);
++  recoveredQcqpValues.insert(impl_->fixedVariables);
++  return recoveredQcqpValues;
  }
  
-@@ -932,8 +868,10 @@ std::vector<double> LiftedSDPProblem<Cho
+ std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()
+@@ -932,8 +1028,10 @@ std::vector<double> LiftedSDPProblem<Cho
      throw std::runtime_error("variableEVRs: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -2150,12 +2330,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  const KeyVector& LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::orderedKeys()
 --- gtsam-no-tbb-4.3.0.orig/gtsam/certifiable/LiftedSDPProblem.h
 +++ gtsam-no-tbb-4.3.0/gtsam/certifiable/LiftedSDPProblem.h
-@@ -73,12 +73,12 @@ class GTSAM_EXPORT LiftedSDPProblem<Mono
+@@ -73,12 +73,18 @@ class GTSAM_EXPORT LiftedSDPProblem<Mono
    /**
     * Construct the monolithic SDP relaxation of a QCQP problem.
     *
 +   * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
 +   * constant entry.
++   *
++   * Fixed variables are substituted out before lifting: a unary linear
++   * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
++   * costs that involve it are rewritten on the remaining variables, the
++   * constraints that involve it are dropped, and it gets no SDP block, so no
++   * singular rank-one block is pinned. The QCQP itself is unchanged.
 +   *
     * @param problem QCQP to relax.
 -   * @param shareHomogeneousCoordinates Share homogeneous coordinates when every
@@ -2167,12 +2353,37 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// Dispose of the owned MOSEK model.
    ~LiftedSDPProblem();
-@@ -132,14 +132,14 @@ class GTSAM_EXPORT LiftedSDPProblem<Chor
+@@ -100,13 +106,16 @@ class GTSAM_EXPORT LiftedSDPProblem<Mono
+   /// Return MOSEK's optimizer time in seconds after solve().
+   double solveTimeSeconds() const;
+ 
+-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
++  /**
++   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
++   * together with the fixed variables, which are not in the SDP.
++   */
+   Values qcqpValues() const;
+ 
+   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
+   std::vector<double> variableEVRs() const;
+ 
+-  /// Return QCQP variable keys in SDP block order.
++  /// Return QCQP variable keys in SDP block order, without fixed variables.
+   const KeyVector& orderedKeys() const;
+ 
+   /// Return the QCQP dimension associated with each ordered key.
+@@ -132,14 +141,20 @@ class GTSAM_EXPORT LiftedSDPProblem<Chor
    /**
     * Construct the chordal SDP relaxation of a QCQP problem.
     *
 +   * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
 +   * constant entry.
++   *
++   * Fixed variables are substituted out before lifting: a unary linear
++   * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
++   * costs that involve it are rewritten on the remaining variables, the
++   * constraints that involve it are dropped, and it gets no SDP block, so no
++   * singular rank-one block is pinned. The QCQP itself is unchanged.
 +   *
     * @param problem QCQP to relax.
     * @param orderingType Ordering used for symbolic elimination.
@@ -2186,6 +2397,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// Dispose of the owned MOSEK model.
    ~LiftedSDPProblem();
+@@ -161,13 +176,16 @@ class GTSAM_EXPORT LiftedSDPProblem<Chor
+   /// Return MOSEK's optimizer time in seconds after solve().
+   double solveTimeSeconds() const;
+ 
+-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
++  /**
++   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
++   * together with the fixed variables, which are not in the SDP.
++   */
+   Values qcqpValues() const;
+ 
+   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
+   std::vector<double> variableEVRs() const;
+ 
+-  /// Return QCQP variable keys in SDP block order.
++  /// Return QCQP variable keys in SDP block order, without fixed variables.
+   const KeyVector& orderedKeys() const;
+ 
+   /// Return the QCQP dimension associated with each ordered key.
 --- gtsam-no-tbb-4.3.0.orig/gtsam/certifiable/certifiable_mosek.i
 +++ gtsam-no-tbb-4.3.0/gtsam/certifiable/certifiable_mosek.i
 @@ -31,8 +31,7 @@ namespace gtsam {
@@ -2406,7 +2636,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
   "nbformat": 4,
 --- gtsam-no-tbb-4.3.0.orig/gtsam/certifiable/tests/testLiftedSDPs.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/certifiable/tests/testLiftedSDPs.cpp
-@@ -415,15 +415,10 @@ QcqpProblem ApplicationQcqp() {
+@@ -361,6 +361,15 @@ TEST(LiftedSDPs, Pose2_MonolithicAndChor
+   EXPECT(chordalResult.objective < kObjectiveTolerance);
+   EXPECT_DOUBLES_EQUAL(monolithicResult.objective, chordalResult.objective,
+                        kObjectiveTolerance);
++
++  // Pose 0 is a fixed variable: it has no SDP block, but qcqpValues()
++  // returns it.
++  LONGS_EQUAL(kNumPoses - 1, monolithic.orderedKeys().size());
++  LONGS_EQUAL(kNumPoses - 1, chordal.orderedKeys().size());
++  LONGS_EQUAL(kNumPoses - 1, monolithic.variableEVRs().size());
++  EXPECT(!monolithic.orderedKeyDims().count(0));
++  EXPECT(monolithic.qcqpValues().exists(0));
++  EXPECT(chordal.qcqpValues().exists(0));
+ }
+ 
+ // Verifies rank-one Pose3 slices and matching monolithic/chordal solutions.
+@@ -415,15 +424,10 @@ QcqpProblem ApplicationQcqp() {
                                                std::sqrt(2.0), 3.0);
  
    QcqpProblem problem(graph, 1);
@@ -2424,7 +2670,37 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return problem;
  }
  
-@@ -465,15 +460,15 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
+@@ -443,11 +447,19 @@ ApplicationSolution SolveApplication(Sol
+ }
+ 
+ // Both MOSEK formulations solve a D=1 graph containing every new QCQP factor
+-// role added by PR #2713 and recover all six keyed variables.
++// role added by PR #2713 and recover all six keyed variables. The anchors
++// R0 = [1, 0] and T0 = 0 are unary I x = v constraints, so R0 and T0 are fixed
++// variables without SDP blocks.
+ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
+   const QcqpProblem problem = ApplicationQcqp();
+   MosekMonolithicSDP monolithic(problem);
+   MosekChordalSDP chordal(problem, ChordalOrderingType::Metis);
++  for (const KeyVector& keys :
++       {monolithic.orderedKeys(), chordal.orderedKeys()}) {
++    LONGS_EQUAL(4, keys.size());
++    EXPECT(std::find(keys.begin(), keys.end(), kR0) == keys.end());
++    EXPECT(std::find(keys.begin(), keys.end(), kT0) == keys.end());
++  }
+   const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
+   const ApplicationSolution chordalResult = SolveApplication(&chordal);
+   for (const ApplicationSolution* result :
+@@ -455,7 +467,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
+     EXPECT(result->solved);
+     EXPECT(result->objective < 1e-5);
+     EXPECT_LONGS_EQUAL(6, result->valueCount);
+-    EXPECT_LONGS_EQUAL(6, result->evrs.size());
++    EXPECT_LONGS_EQUAL(4, result->evrs.size());
+     EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
+                        [](double evr) { return evr > 1e3; }));
+   }
+@@ -465,15 +477,15 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
  /* ************************************************************************* */
  
  /* ************************************************************************* */
@@ -2445,7 +2721,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
    const double expected = 2.0 * count * (1.0 - std::cos(delta));
    auto check = [&](auto* solver) {
-@@ -481,27 +476,25 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyR
+@@ -481,27 +493,25 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyR
      EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
      const Values values = solver->qcqpValues();
      EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
@@ -2484,7 +2760,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
    NonlinearFactorGraph costs;
    if (connected) {
-@@ -539,11 +532,14 @@ void CheckNormProblem(size_t count, bool
+@@ -539,11 +549,14 @@ void CheckNormProblem(size_t count, bool
      const Values values = solver->qcqpValues();
      EXPECT_LONGS_EQUAL(count, values.size());
      for (size_t key = 0; key < count; ++key) {
@@ -2503,7 +2779,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      }
    };
    MosekMonolithicSDP monolithic(problem);
-@@ -555,23 +551,74 @@ void CheckNormProblem(size_t count, bool
+@@ -555,23 +568,171 @@ void CheckNormProblem(size_t count, bool
    }
  }
  
@@ -2584,6 +2860,103 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 +
 +}  // namespace natural_form_fixture
++/* ************************************************************************* */
++namespace fixed_variable_fixture {
++
++constexpr size_t kCount = 4;
++constexpr double kDelta = 0.2;
++const Key x0 = Symbol('x', 0), x1 = Symbol('x', 1);
++
++// A noisy Rot2 ring, so the optimum is nonzero.
++NonlinearFactorGraph RingWithHardPriors(
++    const std::vector<std::pair<Key, Rot2>>& priors) {
++  NonlinearFactorGraph graph = lifted_sdp_tests::Rot2RingGraph(kCount, kDelta);
++  for (const auto& [key, value] : priors) {
++    graph.emplace_shared<FrobeniusPrior<Rot2>>(
++        key, value.matrix(), noiseModel::Constrained::All(4));
++  }
++  return graph;
++}
++
++// Solve both formulations and check that the SDP objective equals the QCQP
++// cost of the recovered values, i.e. that substitution kept the objective
++// exact, and that the fixed variables are recovered but not lifted.
++void CheckFixedVariables(const QcqpProblem& problem,
++                         const std::vector<std::pair<Key, Rot2>>& fixed,
++                         double expectedObjective, TestResult& result_,
++                         const std::string& name_) {
++  auto check = [&](auto* solver) {
++    const KeyVector& keys = solver->orderedKeys();
++    LONGS_EQUAL(kCount - fixed.size(), keys.size());
++    LONGS_EQUAL(kCount - fixed.size(), solver->orderedKeyDims().size());
++    for (const auto& [key, value] : fixed) {
++      EXPECT(std::find(keys.begin(), keys.end(), key) == keys.end());
++    }
++    EXPECT(solver->solve());
++    LONGS_EQUAL(kCount - fixed.size(), solver->variableEVRs().size());
++    const Values values = solver->qcqpValues();
++    LONGS_EQUAL(kCount, values.size());
++    for (const auto& [key, value] : fixed) {
++      EXPECT(assert_equal(qcqpValue(value), values.at<Matrix>(key), 1e-12));
++    }
++    EXPECT_DOUBLES_EQUAL(expectedObjective, solver->objectiveValue(), 1e-6);
++    EXPECT_DOUBLES_EQUAL(problem.costs().error(values),
++                         solver->objectiveValue(), 1e-6);
++  };
++  MosekMonolithicSDP monolithic(problem);
++  check(&monolithic);
++  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
++  check(&chordal);
++}
++
++// A hard FrobeniusPrior stays the QCQP constraint x0 = v; the SDP substitutes
++// x0 out, and its two ring edges become unary costs on x1 and x3.
++TEST(LiftedSDPs, HardFrobeniusPriorIsFixedVariable) {
++  const std::vector<std::pair<Key, Rot2>> fixed{{x0, Rot2::fromAngle(0.3)}};
++  const QcqpProblem problem(RingWithHardPriors(fixed));
++  const bool hasAnchorConstraint = std::any_of(
++      problem.eConstraints().begin(), problem.eConstraints().end(),
++      [](const auto& factor) {
++        return dynamic_cast<const LinearEqualityConstraintFactor*>(
++                   factor.get()) != nullptr;
++      });
++  EXPECT(hasAnchorConstraint);
++  // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
++  CheckFixedVariables(problem, fixed, 2.0 * kCount * (1.0 - std::cos(kDelta)),
++                      result_, name_);
++}
++
++// With x0 and x1 both fixed, their edge involves fixed variables only. Its
++// cost is a constant that the SDP objective keeps: the edge measures kDelta,
++// but the anchors differ by 0.5.
++TEST(LiftedSDPs, FixedVariableConstantIsKept) {
++  const std::vector<std::pair<Key, Rot2>> fixed{{x0, Rot2::fromAngle(0.0)},
++                                                {x1, Rot2::fromAngle(0.5)}};
++  const QcqpProblem problem(RingWithHardPriors(fixed));
++  // An edge with angle error e costs 2*(1-cos(e)). The errors around the ring
++  // sum to -kCount*kDelta = -0.8. The fixed edge x0-x1 has error
++  // 0.5 - kDelta = 0.3, so the three free edges share -1.1 equally.
++  const double fixedError = 0.5 - kDelta;
++  const double freeError = (kCount * kDelta + fixedError) / 3.0;
++  const double expected = 2.0 * (1.0 - std::cos(fixedError)) +
++                          3.0 * 2.0 * (1.0 - std::cos(freeError));
++  CheckFixedVariables(problem, fixed, expected, result_, name_);
++}
++
++// Only an identity I x = v fixes a variable: 2 x = 2v is lifted as before.
++TEST(LiftedSDPs, NonIdentityUnaryEqualityIsNotFixed) {
++  QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(kCount, kDelta), 1);
++  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
++      x0, Matrix(2.0 * Matrix2::Identity()), Vector2(1.2, 1.6))));
++  MosekMonolithicSDP solver(problem);
++  LONGS_EQUAL(kCount, solver.orderedKeys().size());
++  EXPECT(solver.solve());
++  EXPECT(assert_equal(Vector2(0.6, 0.8),
++                      Vector(solver.qcqpValues().at<Matrix>(x0).col(0)),
++                      1e-6));
++}
++
++}  // namespace fixed_variable_fixture
  /* ************************************************************************* */
  #endif
  
@@ -2599,6 +2972,597 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      qcqp.addConstraint(QuadraticConstraint::Equal(key, A, b, sigma));
    }
    return qcqp;
+--- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/AugmentedLagrangianOptimizer.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/constrained/AugmentedLagrangianOptimizer.cpp
+@@ -19,6 +19,10 @@
+ 
+ #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+ #include <gtsam/linear/GaussianFactorGraph.h>
++#include <gtsam/linear/JacobianFactor.h>
++#include <gtsam/linear/linearExceptions.h>
++#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
++#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
+ 
+ #include <algorithm>
+ #include <chrono>
+@@ -51,7 +55,9 @@ class BiasedFactor : public NoiseModelFa
+ 
+   // Original factor whose raw error and Jacobians are reused.
+   Base::shared_ptr originalFactor_;
++  Vector sigmas_;
+   Vector bias_;
++  double penalty_ = 0.0;
+ 
+  public:
+   using shared_ptr = std::shared_ptr<This>;
+@@ -63,12 +69,26 @@ class BiasedFactor : public NoiseModelFa
+    * Construct a biased view of an existing factor.
+    *
+    * @param originalFactor Original factor on x.
+-   * @param bias Constant added to its unwhitened error.
++   * @param sigmas Constraint sigmas before penalty scaling.
++   * @param lambda Multiplier in whitened constraint coordinates.
++   * @param penalty Direct penalty rho.
+    */
+-  BiasedFactor(const Base::shared_ptr& originalFactor, const Vector& bias)
++  BiasedFactor(const Base::shared_ptr& originalFactor, const Vector& sigmas,
++               const Vector& lambda, double penalty)
+       : Base(originalFactor->noiseModel(), originalFactor->keys()),
+         originalFactor_(originalFactor),
+-        bias_(bias) {}
++        sigmas_(sigmas) {
++    setParameters(lambda, penalty);
++  }
++
++  /// Update numerical parameters while preserving factor structure.
++  void setParameters(const Vector& lambda, double penalty) {
++    bias_ = (lambda / penalty).cwiseProduct(sigmas_);
++    if (penalty != penalty_) {
++      noiseModel_ = noiseModel::Diagonal::Sigmas(sigmas_ / std::sqrt(penalty));
++      penalty_ = penalty;
++    }
++  }
+ 
+   /**
+    * Error function *without* the noise model, conventionally z-h(x). Override
+@@ -136,6 +156,12 @@ class PhrInequalityFactor : public Noise
+     }
+   }
+ 
++  /// Update numerical parameters while preserving factor structure.
++  void setParameters(double lambda, double penalty) {
++    lambda_ = lambda;
++    penalty_ = penalty;
++  }
++
+   /// Evaluate the exact shifted-ramp residual and its piecewise Jacobians.
+   Vector unwhitenedError(
+       const Values& values,
+@@ -184,6 +210,10 @@ struct Diagnostics {
+   double generalizedConstraintViolation = 0.0;
+   double primalInequalityViolation = 0.0;
+   double complementarity = 0.0;
++  double squaredEqualityViolation = 0.0;
++  double squaredInequalityViolation = 0.0;
++  std::vector<Vector> equalityMultipliers;
++  std::vector<double> projectedMultipliers;
+ };
+ 
+ /* ************************************************************************* */
+@@ -192,11 +222,27 @@ double InfinityNorm(const Vector& vector
+ }
+ 
+ /* ************************************************************************* */
+-double AugmentedLagrangianStationarity(const NonlinearFactorGraph& graph,
+-                                       const Values& values) {
+-  const VectorValues gradient = graph.linearize(values)->gradientAtZero();
++double AugmentedLagrangianStationarity(const GaussianFactorGraph& linear,
++                                      VectorValues* gradient) {
++  // Keep the keyed gradient storage across inner and outer iterations. For
++  // ordinary Jacobians, accumulate directly instead of allocating a temporary
++  // VectorValues for every factor and then merging it into another map.
++  gradient->setZero();
++  for (const auto& factor : linear) {
++    if (!factor) continue;
++    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(factor.get())) {
++      Vector rhs = jacobian->getb();
++      if (jacobian->get_model()) jacobian->get_model()->whitenInPlace(rhs);
++      jacobian->transposeMultiplyAdd(-1.0, rhs, *gradient);
++    } else {
++      gradient->addInPlace_(factor->gradientAtZero());
++    }
++  }
+   double infinityNorm = 0.0;
+-  for (const auto& keyGradient : gradient) {
++  for (const auto& keyGradient : *gradient) {
++    if (!keyGradient.second.allFinite()) {
++      return std::numeric_limits<double>::infinity();
++    }
+     infinityNorm = std::max(infinityNorm, InfinityNorm(keyGradient.second));
+   }
+   return infinityNorm;
+@@ -204,29 +250,46 @@ double AugmentedLagrangianStationarity(c
+ 
+ /* ************************************************************************* */
+ Diagnostics EvaluateDiagnostics(const ConstrainedOptProblem& problem,
+-                                const Values& values,
++                                const GaussianFactorGraph& linear,
+                                 const AugmentedLagrangianState& subproblem) {
+   Diagnostics diagnostics;
+-
+-  // Equality feasibility contributes ||h(x)||_inf to theta.
+-  for (const auto& constraint : problem.eConstraints()) {
+-    diagnostics.generalizedConstraintViolation =
+-        std::max(diagnostics.generalizedConstraintViolation,
+-                 InfinityNorm(constraint->whitenedError(values)));
++  size_t slot = problem.costs().size();
++  const double sqrtEqualityPenalty = std::sqrt(subproblem.muEq);
++  const double sqrtInequalityPenalty = std::sqrt(subproblem.muIneq);
++
++  // Our augmented factors produce whitened Jacobian factors with b=-r.
++  // Recover h from r=sqrt(rho)*(h+lambda/rho), without evaluating h again.
++  for (size_t i = 0; i < problem.eConstraints().size(); ++i) {
++    const auto& factor = static_cast<const JacobianFactor&>(*linear.at(slot++));
++    diagnostics.equalityMultipliers.push_back(-sqrtEqualityPenalty *
++                                              factor.getb());
++    const Vector residual =
++        (diagnostics.equalityMultipliers.back() - subproblem.lambdaEq.at(i)) /
++        subproblem.muEq;
++    diagnostics.squaredEqualityViolation += residual.squaredNorm();
++    diagnostics.generalizedConstraintViolation = std::max(
++        diagnostics.generalizedConstraintViolation, InfinityNorm(residual));
+   }
+ 
+   const auto& inequalities = problem.iConstraints();
+   for (size_t i = 0; i < inequalities.size(); ++i) {
+-    const double expression = inequalities.at(i)->whitenedExpr(values)(0);
++    const auto& factor = static_cast<const JacobianFactor&>(*linear.at(slot++));
+     const double lambda = subproblem.lambdaIneq.at(i);
+ 
+     // q=max(g,-lambda/rho) makes the projected multiplier update
+     // lambda^+=max(0,lambda+rho*g)=lambda+rho*q. Thus q=0 encodes primal
+     // feasibility and complementarity, including inactive inequalities.
+-    const double projectedResidual =
+-        std::max(expression, -lambda / subproblem.muIneq);
+     const double projectedLambda =
+-        std::max(0.0, lambda + subproblem.muIneq * expression);
++        std::max(0.0, -sqrtInequalityPenalty * factor.getb()(0));
++    const double projectedResidual =
++        (projectedLambda - lambda) / subproblem.muIneq;
++    diagnostics.projectedMultipliers.push_back(projectedLambda);
++
++    // On the active PHR branch q=g. Otherwise g is not recoverable, but
++    // primal violation and projected complementarity are both zero.
++    const double expression = projectedLambda > 0.0 ? projectedResidual : 0.0;
++    const double violation = std::max(0.0, expression);
++    diagnostics.squaredInequalityViolation += violation * violation;
+ 
+     // BCL accepts a multiplier update using
+     // theta=max(||h||_inf,||q||_inf), not merely max(g,0).
+@@ -234,8 +297,8 @@ Diagnostics EvaluateDiagnostics(const Co
+         std::max(diagnostics.generalizedConstraintViolation,
+                  std::abs(projectedResidual));
+     // Report primal violation and complementarity separately for diagnosis.
+-    diagnostics.primalInequalityViolation = std::max(
+-        diagnostics.primalInequalityViolation, std::max(0.0, expression));
++    diagnostics.primalInequalityViolation =
++        std::max(diagnostics.primalInequalityViolation, violation);
+     diagnostics.complementarity = std::max(
+         diagnostics.complementarity, std::abs(projectedLambda * expression));
+   }
+@@ -249,23 +312,24 @@ void InitializeBclSchedule(const Augment
+   // Conn--Gould--Toint use an inverse penalty mu. With rho=1/mu, their
+   // alpha=min(mu,gamma_1) becomes alpha=min(1/rho,gamma_1).
+   state->bclAlpha = std::min(1.0 / penalty, params.bclGamma1);
+-  state->bclOmega =
+-      params.bclOmega0 * std::pow(state->bclAlpha, params.bclAlphaOmega);
++  state->bclOmega = std::max(
++      params.absoluteStationarityTolerance,
++      params.bclOmega0 * std::pow(state->bclAlpha, params.bclAlphaOmega));
+   state->bclEta =
+       params.bclEta0 * std::pow(state->bclAlpha, params.bclAlphaEta);
+ }
+ 
+ /* ************************************************************************* */
+ bool AggressiveConverged(const AugmentedLagrangianState& state,
+-                         const AugmentedLagrangianState& previousState,
++                         double previousViolation, double previousCost,
+                          const AugmentedLagrangianParams& params) {
+   if (state.violation() < params.absoluteViolationTolerance &&
+       state.cost < params.absoluteCostTolerance) {
+     return true;
+   }
+-  return std::abs(state.violation() - previousState.violation()) <
++  return std::abs(state.violation() - previousViolation) <
+              params.relativeViolationTolerance &&
+-         std::abs(state.cost - previousState.cost) <
++         std::abs(state.cost - previousCost) <
+              params.relativeCostTolerance;
+ }
+ 
+@@ -287,6 +351,132 @@ AugmentedLagrangianUpdateType CombinedUp
+ }  // namespace
+ 
+ /* ************************************************************************* */
++struct AugmentedLagrangianOptimizer::Workspace {
++  NonlinearFactorGraph graph;
++  std::unique_ptr<NonlinearMultifrontalSolver> solver;
++  VectorValues gradient;
++
++  struct Result {
++    Values values;
++    GaussianFactorGraph::shared_ptr linear;
++    size_t iterations = 0;
++    double stationarity = std::numeric_limits<double>::infinity();
++  };
++
++  explicit Workspace(NonlinearFactorGraph merit) : graph(std::move(merit)) {}
++
++  // Only numerical parameters change between subproblems. In particular, PHR
++  // activity never removes a factor or changes its keys or row count.
++  void update(const ConstrainedOptProblem& problem, const State& state) {
++    size_t slot = problem.costs().size();
++    for (const Vector& lambda : state.lambdaEq) {
++      static_cast<BiasedFactor&>(*graph.at(slot++))
++          .setParameters(lambda, state.muEq);
++    }
++    for (double lambda : state.lambdaIneq) {
++      static_cast<PhrInequalityFactor&>(*graph.at(slot++))
++          .setParameters(lambda, state.muIneq);
++    }
++  }
++
++  // Retry damping against the same loaded linearization. Return false when
++  // no acceptable step can be found; values and error then remain unchanged.
++  bool step(const LevenbergMarquardtParams& params, Values* values,
++            double* error, double* damping, double* dampingFactor) {
++    while (true) {
++      bool stopSearching = false;
++      try {
++        solver->eliminateInPlace(*damping);
++        const VectorValues& delta = solver->updateSolution();
++        double oldLinearError = 0.0;
++        const double predictedDecrease = solver->deltaError(&oldLinearError);
++        if (predictedDecrease >= 0.0) {
++          Values candidate = values->retract(delta);
++          const double candidateError = graph.error(candidate);
++          const double decrease = *error - candidateError;
++          if (std::isfinite(candidateError) &&
++              predictedDecrease > std::numeric_limits<double>::epsilon() *
++                                      std::abs(oldLinearError)) {
++            const double fidelity = decrease / predictedDecrease;
++            if (fidelity > params.minModelFidelity) {
++              *values = std::move(candidate);
++              *error = candidateError;
++              internal::decreaseLevenbergMarquardtLambda(
++                  params, fidelity, damping, dampingFactor);
++              return true;
++            }
++          }
++          stopSearching = std::abs(decrease) < params.relativeErrorTol * *error;
++        }
++      } catch (const IndeterminateSystemException&) {
++        // Retry with more damping, using the same numerical model.
++      }
++      if (stopSearching) return false;
++      internal::increaseLevenbergMarquardtLambda(params, damping,
++                                                 dampingFactor);
++      // A long sequence of accepted steps can underflow zero-bounded damping.
++      // A rejected step must still be able to restart the damping search.
++      if (*damping == 0.0) *damping = std::numeric_limits<double>::epsilon();
++      if (!std::isfinite(*damping) || *damping >= params.lambdaUpperBound) {
++        return false;
++      }
++    }
++  }
++
++  Result solve(Values initialValues, const State& state, const Params& params) {
++    const auto& lm = params.lmParams;
++    const bool bcl =
++        params.updatePolicy == AugmentedLagrangianUpdatePolicy::BCL;
++    Result result;
++    result.values = std::move(initialValues);
++    double error = graph.error(result.values);
++    double damping = lm.lambdaInitial;
++    double dampingFactor = lm.lambdaFactor;
++    bool converged = !bcl && error <= lm.errorTol;
++
++    while (true) {
++      // BCL tests the actual gradient at the current point, then uses this
++      // very same linearization for the next step. The terminal model also
++      // supplies the outer feasibility test and projected multiplier update.
++      result.linear = graph.linearize(result.values);
++      const bool stopping = converged ||
++                            result.iterations >= lm.maxIterations ||
++                            !std::isfinite(error);
++      if (bcl || stopping) {
++        result.stationarity =
++            AugmentedLagrangianStationarity(*result.linear, &gradient);
++      }
++      if ((bcl && result.stationarity <= state.bclOmega) || stopping ||
++          (bcl && !std::isfinite(result.stationarity))) {
++        return result;
++      }
++      if (!solver) {
++        const Ordering ordering =
++            lm.ordering ? *lm.ordering
++                        : Ordering::Create(lm.orderingType, graph);
++        solver = std::make_unique<NonlinearMultifrontalSolver>(
++            graph, result.values, ordering, lm.multifrontalParams,
++            lm.dampingParams);
++      }
++      solver->load(*result.linear);
++      const double previousError = error;
++      if (!step(lm, &result.values, &error, &damping, &dampingFactor)) {
++        // The point did not change: its stationarity/model are still valid.
++        if (!bcl) {
++          result.stationarity =
++              AugmentedLagrangianStationarity(*result.linear, &gradient);
++        }
++        return result;
++      }
++      ++result.iterations;
++      converged = !bcl && gtsam::checkConvergence(
++                              lm.relativeErrorTol, lm.absoluteErrorTol,
++                              lm.errorTol, previousError, error);
++    }
++  }
++};
++
++/* ************************************************************************* */
+ void AugmentedLagrangianState::initializeLagrangeMultipliers(
+     const ConstrainedOptProblem& problem) {
+   lambdaEq.clear();
+@@ -301,6 +491,15 @@ void AugmentedLagrangianState::initializ
+ std::tuple<AugmentedLagrangianOptimizer::State, double, double>
+ AugmentedLagrangianOptimizer::iterate(const State& state, double muEq,
+                                       double muIneq) const {
++  std::unique_ptr<Workspace> workspace;
++  return iterate(state, muEq, muIneq, workspace);
++}
++
++/* ************************************************************************* */
++std::tuple<AugmentedLagrangianOptimizer::State, double, double>
++AugmentedLagrangianOptimizer::iterate(
++    const State& state, double muEq, double muIneq,
++    std::unique_ptr<Workspace>& workspace) const {
+   // Validate the fixed-parameter augmented-Lagrangian subproblem.
+   validateConfiguration();
+   if (muEq <= 0.0 || muIneq <= 0.0) {
+@@ -339,51 +538,41 @@ AugmentedLagrangianOptimizer::iterate(co
+     // Initialize omega_k and eta_k when iterate() is called directly.
+     InitializeBclSchedule(*p_, muEq, &subproblemState);
+   }
++  // Do not demand inner accuracy beyond the requested final stationarity.
++  // On badly scaled problems omega can otherwise fall below rounding error
++  // while feasibility still needs additional outer multiplier updates.
++  subproblemState.bclOmega =
++      std::max(subproblemState.bclOmega, p_->absoluteStationarityTolerance);
+ 
+   const auto start = std::chrono::steady_clock::now();
+ 
+-  // Construct the merit function at (lambda_k,rho_k), then run unconstrained
+-  // LM from x_k. Multiplier updates happen only after x_{k+1} is available.
+-  const NonlinearFactorGraph augmentedLagrangian =
+-      augmentedLagrangianFunction(subproblemState);
+-  const SharedOptimizer optimizer =
+-      createUnconstrainedOptimizer(augmentedLagrangian, state.values);
+-
+-  double stationarity =
+-      AugmentedLagrangianStationarity(augmentedLagrangian, optimizer->values());
+-  if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
+-    // The paper stops its projected inner solve when the projected gradient is
+-    // at most omega_k. Because this implementation substitutes unconstrained
+-    // LM, it uses s_k=||grad_x L_rho(x,lambda_k)||_inf <= omega_k.
+-    while (stationarity > subproblemState.bclOmega &&
+-           optimizer->iterations() < p_->lmParams.maxIterations) {
+-      const size_t previousIterations = optimizer->iterations();
+-      optimizer->iterate();
+-      stationarity = AugmentedLagrangianStationarity(augmentedLagrangian,
+-                                                     optimizer->values());
+-      if (optimizer->iterations() == previousIterations) {
+-        break;
+-      }
+-    }
+-  } else {
+-    // Preserve the historical Aggressive behavior of letting LM use its own
+-    // convergence checks and iteration cap for every outer subproblem.
+-    optimizer->optimize();
+-    stationarity = AugmentedLagrangianStationarity(augmentedLagrangian,
+-                                                   optimizer->values());
+-  }
++  if (!workspace) {
++    workspace = std::make_unique<Workspace>(
++        augmentedLagrangianFunction(subproblemState));
++  }
++  workspace->update(problem_, subproblemState);
++  Workspace::Result inner = workspace->solve(
++      std::move(subproblemState.values), subproblemState, *p_);
++  const double stationarity = inner.stationarity;
+ 
+   // Evaluate objective and all policy diagnostics at the returned point
+   // x_{k+1}; evaluating at x_k was the old sequencing error.
++  // The subproblem's Values have moved into the inner solve. This copies only
++  // its primal-dual metadata; keep the old multipliers for diagnostics/updates.
+   State solvedState = subproblemState;
+   solvedState.iteration = state.iteration + 1;
+-  solvedState.setValues(optimizer->values(), problem_);
+-  solvedState.unconstrainedIterations = optimizer->iterations();
++  solvedState.values = std::move(inner.values);
++  solvedState.cost = problem_.costs().error(solvedState.values);
++  solvedState.unconstrainedIterations = inner.iterations;
+   solvedState.totalUnconstrainedIterations =
+       state.totalUnconstrainedIterations + solvedState.unconstrainedIterations;
+   solvedState.augmentedLagrangianStationarity = stationarity;
+   const Diagnostics diagnostics =
+-      EvaluateDiagnostics(problem_, solvedState.values, subproblemState);
++      EvaluateDiagnostics(problem_, *inner.linear, subproblemState);
++  solvedState.eqConstraintViolation =
++      std::sqrt(diagnostics.squaredEqualityViolation);
++  solvedState.ineqConstraintViolation =
++      std::sqrt(diagnostics.squaredInequalityViolation);
+   solvedState.generalizedConstraintViolation =
+       diagnostics.generalizedConstraintViolation;
+   solvedState.primalInequalityViolation = diagnostics.primalInequalityViolation;
+@@ -418,23 +607,19 @@ AugmentedLagrangianOptimizer::iterate(co
+         //   lambda_g^+ = max(0,lambda_g + rho*g),
+         // while rho stays fixed.
+         for (size_t i = 0; i < problem_.eConstraints().size(); ++i) {
+-          solvedState.lambdaEq.at(i) +=
+-              muEq *
+-              problem_.eConstraints().at(i)->whitenedError(solvedState.values);
++          solvedState.lambdaEq.at(i) = diagnostics.equalityMultipliers.at(i);
+         }
+         for (size_t i = 0; i < problem_.iConstraints().size(); ++i) {
+-          const double expression = problem_.iConstraints().at(i)->whitenedExpr(
+-              solvedState.values)(0);
+-          solvedState.lambdaIneq.at(i) =
+-              std::max(0.0, solvedState.lambdaIneq.at(i) + muEq * expression);
++          solvedState.lambdaIneq.at(i) = diagnostics.projectedMultipliers.at(i);
+         }
+         solvedState.updateType = AugmentedLagrangianUpdateType::Multiplier;
+ 
+         // Tighten the next inner and feasibility targets using the unchanged
+         // alpha_k, as in the accepted branch of Algorithm 1.
+         solvedState.bclOmega =
+-            subproblemState.bclOmega *
+-            std::pow(subproblemState.bclAlpha, p_->bclBetaOmega);
++            std::max(p_->absoluteStationarityTolerance,
++                     subproblemState.bclOmega *
++                         std::pow(subproblemState.bclAlpha, p_->bclBetaOmega));
+         solvedState.bclEta = subproblemState.bclEta *
+                              std::pow(subproblemState.bclAlpha, p_->bclBetaEta);
+       } else {
+@@ -451,13 +636,16 @@ AugmentedLagrangianOptimizer::iterate(co
+   solvedState.time =
+       std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
+           .count();
+-  return {solvedState, nextMuEq, nextMuIneq};
++  return {std::move(solvedState), nextMuEq, nextMuIneq};
+ }
+ 
+ /* ************************************************************************* */
+ Values AugmentedLagrangianOptimizer::optimize() const {
+   validateConfiguration();
+   progress_.clear();
++  // Growing this vector can copy every saved Values snapshot because Values'
++  // move constructor is not noexcept. The outer iteration cap is known.
++  if (p_->storeOptProgress) progress_.reserve(p_->maxIterations + 1);
+ 
+   // Construct the initial primal-dual state with zero multipliers.
+   State state(0, initialValues_, problem_);
+@@ -477,9 +665,12 @@ Values AugmentedLagrangianOptimizer::opt
+   logInitialState(state);
+ 
+   // Solve fixed-parameter subproblems and apply the selected outer policy.
++  std::unique_ptr<Workspace> workspace;
+   while (true) {
+-    const State previousState = state;
+-    std::tie(state, muEq, muIneq) = iterate(previousState, muEq, muIneq);
++    const double previousViolation = state.violation();
++    const double previousCost = state.cost;
++    std::tie(state, muEq, muIneq) =
++        iterate(state, muEq, muIneq, workspace);
+ 
+     if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
+       state.converged = state.innerConverged &&
+@@ -488,7 +679,8 @@ Values AugmentedLagrangianOptimizer::opt
+                         state.generalizedConstraintViolation <=
+                             p_->absoluteViolationTolerance;
+     } else {
+-      state.converged = AggressiveConverged(state, previousState, *p_);
++      state.converged = AggressiveConverged(
++          state, previousViolation, previousCost, *p_);
+     }
+     logIteration(state);
+ 
+@@ -524,10 +716,9 @@ NonlinearFactorGraph AugmentedLagrangian
+   const auto& equalities = problem_.eConstraints();
+   for (size_t i = 0; i < equalities.size(); ++i) {
+     const auto& constraint = equalities.at(i);
+-    Vector bias = state.lambdaEq.at(i) / state.muEq;
+-    bias = bias.cwiseProduct(constraint->sigmas());
+-    graph.emplace_shared<BiasedFactor>(constraint->penaltyFactor(state.muEq),
+-                                       bias);
++    graph.emplace_shared<BiasedFactor>(constraint->penaltyFactor(1.0),
++                                       constraint->sigmas(),
++                                       state.lambdaEq.at(i), state.muEq);
+   }
+ 
+   // Add exact PHR factors for scalar g<=0. Each graph error is
+@@ -595,19 +786,16 @@ std::pair<double, double> AugmentedLagra
+ }
+ 
+ /* ************************************************************************* */
+-ConstrainedOptimizer::SharedOptimizer
+-AugmentedLagrangianOptimizer::createUnconstrainedOptimizer(
+-    const NonlinearFactorGraph& graph, const Values& values) const {
+-  // TODO(yetong): make compatible with all NonlinearOptimizers.
+-  return std::make_shared<LevenbergMarquardtOptimizer>(graph, values,
+-                                                       p_->lmParams);
+-}
+-
+-/* ************************************************************************* */
+ void AugmentedLagrangianOptimizer::validateConfiguration() const {
+   if (!p_) {
+     throw std::invalid_argument("AugmentedLagrangianParams must not be null");
+   }
++  if (!(p_->lmParams.lambdaInitial > 0.0) ||
++      !(p_->lmParams.lambdaFactor > 1.0) ||
++      !(p_->lmParams.lambdaUpperBound > 0.0)) {
++    throw std::invalid_argument(
++        "ALM requires positive LM damping and factor > 1");
++  }
+   if (p_->ineqConstraintPenaltyFunction) {
+     throw std::invalid_argument(
+         "AugmentedLagrangianOptimizer requires exact PHR inequalities; custom "
+--- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/AugmentedLagrangianOptimizer.h
++++ gtsam-no-tbb-4.3.0/gtsam/constrained/AugmentedLagrangianOptimizer.h
+@@ -59,7 +59,11 @@ class GTSAM_EXPORT AugmentedLagrangianPa
+   /// Required violation reduction before Aggressive keeps its penalty fixed.
+   double muIncreaseThreshold = 0.25;
+ 
+-  /// Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
++  /**
++   * Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
++   * Also bounds the inner stationarity target from below, so feasibility
++   * updates do not require solving subproblems beyond the final accuracy.
++   */
+   double absoluteStationarityTolerance = 1e-5;
+ 
+   /**
+@@ -154,6 +158,14 @@ class GTSAM_EXPORT AugmentedLagrangianSt
+  *
+  * Custom smoothed inequality penalties are intentionally unsupported because
+  * they invalidate the projected PHR multiplier identity.
++ *
++ * Each optimize() call owns a persistent NonlinearMultifrontalSolver and merit
++ * graph. Inner solves share their linearization with the BCL stationarity test
++ * and terminal multiplier update. Costs must linearize to Gaussian factors
++ * supported by that solver, with fixed factor slots, keys, and dimensions.
++ * lmParams controls damping, ordering, multifrontal storage, iteration limits,
++ * and Aggressive convergence tolerances; its linearSolverType, iterationHook,
++ * verbosity, and logFile settings are not used.
+  */
+ class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
+  public:
+@@ -209,9 +221,13 @@ class GTSAM_EXPORT AugmentedLagrangianOp
+                                                    double epsilon = 1.0) const;
+ 
+  protected:
+-  /// Create the LM optimizer used for an augmented-Lagrangian subproblem.
+-  SharedOptimizer createUnconstrainedOptimizer(
+-      const NonlinearFactorGraph& graph, const Values& values) const;
++  /// Private workspace shared by all subproblems in one optimize() call.
++  struct Workspace;
++
++  /** Solve and update using a lazily initialized, persistent workspace. */
++  std::tuple<State, double, double> iterate(
++      const State& state, double muEq, double muIneq,
++      std::unique_ptr<Workspace>& workspace) const;
+ 
+   /// Update Aggressive multipliers from the newly solved point.
+   void updateLagrangeMultiplier(const State& subproblemState,
 --- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/QcqpProblem.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/QcqpProblem.cpp
 @@ -31,7 +31,8 @@ using QuadraticConstraintIndex =
@@ -2906,6 +3870,51 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  (`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
  common right-$O(D)$ gauge. Matrix-form priors are intentionally unsupported: a
  fixed target $\|X-[M^\top\;0]\|_F^2$ breaks that gauge and cannot be represented
+@@ -88,6 +93,44 @@ which controls behavior near the active
+ inequality terms and rejects custom smooth penalties so its projected
+ multiplier update remains mathematically consistent.
+ 
++ALM keeps one augmented graph and one `NonlinearMultifrontalSolver` workspace
++throughout each `optimize()` call. Multipliers and penalties update the graph's
++numerical parameters in place; the ordering, symbolic structure, and solve
++storage persist across outer iterations. Costs may produce Jacobian, batch
++Jacobian, or Hessian factors, with fixed factor slots, keys, and dimensions.
++`lmParams` supplies damping, ordering, multifrontal settings, and iteration
++limits; ALM always uses the imperative solver and does not use the optimizer's
++backend selection, logging, verbosity, or iteration hook. A standalone
++`iterate()` call creates its own workspace.
++
++The workspace also reuses keyed gradient storage, accumulates ordinary
++Jacobian gradients without per-factor gradient maps, and moves intermediate
++`Values` instead of copying them. When progress recording is enabled, its
++snapshot vector is reserved up front. Symbolic clique merging caches external
++separators, which remain invariant when children are absorbed; this avoids
++quadratic subtree traversal on long chains.
++
++BCL uses each linearization both to test stationarity and to compute the next
++step. For a model `A delta - b`, the gradient at the current point is
++`-A.transpose() * b`. The terminal constraint rows also give the candidate
++multipliers directly: `lambdaEqPlus = -sqrt(rhoEq) * bEq` and
++`lambdaIneqPlus = -sqrt(rhoIneq) * bIneq`. Thus the whitened equality residual
++and generalized inequality residual are `(lambdaPlus - lambda) / rho`, with
++no further constraint evaluation. Inactive PHR rows have zero residual and
++Jacobian, so their factor slots remain intact. On an accepted multiplier
++update, the terminal augmented gradient is also the ordinary Lagrangian
++gradient at the updated multipliers; it is **not** the gradient of the next
++augmented subproblem. That next subproblem must be relinearized after its
++parameters change.
++
++The BCL inner stationarity schedule is bounded below by
++`absoluteStationarityTolerance`. This lets feasibility updates continue
++without demanding inner accuracy beyond the requested final tolerance.
++
++`timeAugmentedLagrangianPolicies --warmup 3 --repeats 21` benchmarks the policy
++examples and sparse inequality chains with 512 and 2,048 variables, reporting
++time, iteration counts, success, and final KKT residuals.
++
+ ### 1) Build the Problem
+ 
+ This stage is about modeling: you separate what you want to minimize
 --- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/doc/QcqpProblem.ipynb
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/doc/QcqpProblem.ipynb
 @@ -7,7 +7,7 @@
@@ -3072,6 +4081,198 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
   },
   "nbformat": 4,
+--- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/tests/testAugmentedLagrangianOptimizer.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/constrained/tests/testAugmentedLagrangianOptimizer.cpp
+@@ -21,6 +21,7 @@
+ #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+ #include <gtsam/inference/Symbol.h>
+ #include <gtsam/linear/GaussianFactorGraph.h>
++#include <gtsam/nonlinear/LinearContainerFactor.h>
+ #include <gtsam/nonlinear/expressions.h>
+ 
+ #include <cmath>
+@@ -435,6 +436,181 @@ TEST(AugmentedLagrangianBCL, MixedChangi
+ /* ************************************************************************* */
+ 
+ /* ************************************************************************* */
++namespace persistent_solver_tests {
++
++// Direct gradient accumulation must apply both noise-whitening factors when
++// a cost supplies an unwhitened Jacobian rather than the usual unit model.
++TEST(AugmentedLagrangianBCL, StationarityWithUnwhitenedJacobian) {
++  using namespace scalar_problem;
++  NonlinearFactorGraph costs;
++  costs.emplace_shared<LinearContainerFactor>(
++      JacobianFactor(kX, Matrix11::Constant(2.0), Vector1(4.0),
++                     noiseModel::Isotropic::Sigma(1, 2.0)),
++      ValuesAt(0.0));
++  const auto problem = Problem(costs, {}, {});
++  auto params = BclParams();
++  params->lmParams.maxIterations = 0;
++  const auto state = StateAt(problem, 0.0, 10.0);
++  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
++  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
++  EXPECT_DOUBLES_EQUAL(2.0, result.augmentedLagrangianStationarity, 1e-12);
++  EXPECT(assert_equal(state.values, result.values));
++}
++
++class CountingCost : public NoiseModelFactor1<double> {
++ public:
++  mutable size_t linearizations = 0;
++
++  CountingCost()
++      : NoiseModelFactor1<double>(noiseModel::Unit::Create(1),
++                                  scalar_problem::kX) {}
++
++  Vector evaluateError(const double& x, OptionalMatrixType H) const override {
++    if (H) {
++      ++linearizations;
++      *H = Matrix11::Constant(2.0 * x);
++    }
++    return Vector1(x * x - 1.0);
++  }
++};
++
++// Nonlinear steps, damping retries, and BCL stationarity share one Jacobian
++// evaluation per visited point, including the terminal point.
++TEST(AugmentedLagrangianBCL, SharesStationarityLinearization) {
++  using namespace scalar_problem;
++  auto cost = std::make_shared<CountingCost>();
++  NonlinearFactorGraph costs;
++  costs.push_back(cost);
++  const auto problem = Problem(costs, {}, {});
++  auto params = BclParams();
++  auto state = StateAt(problem, 0.1, 10.0);
++  state.bclOmega = 1e-8;
++  state.bclEta = 1.0;
++  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
++  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
++  EXPECT(result.innerConverged);
++  EXPECT_DOUBLES_EQUAL(1.0, result.values.at<double>(kX), 1e-7);
++  EXPECT_LONGS_EQUAL(result.unconstrainedIterations + 1, cost->linearizations);
++  const double x = result.values.at<double>(kX);
++  EXPECT_DOUBLES_EQUAL(std::abs(2.0 * x * (x * x - 1.0)),
++                       result.augmentedLagrangianStationarity, 1e-12);
++}
++
++// Terminal residuals recover vector equality updates with unequal sigmas.
++// The terminal AL gradient is the ordinary Lagrangian gradient at lambda+.
++TEST(AugmentedLagrangianBCL, VectorMultiplierFromTerminalModel) {
++  const Symbol key('v', 0);
++  const Vector3 sigmas(1.0, 2.0, 4.0);
++  NonlinearEqualityConstraints equalities;
++  equalities.emplace_shared<ExpressionEqualityConstraint<Vector3>>(
++      Vector3_(key), Vector3::Zero(), sigmas);
++  NonlinearFactorGraph costs;
++  const Vector3 target(1.0, -2.0, 3.0);
++  costs.addPrior(key, target, noiseModel::Unit::Create(3));
++  const ConstrainedOptProblem problem(costs, equalities, {});
++  Values initial;
++  initial.insert(key, Vector3(2.0, 1.0, -1.0));
++  auto params = scalar_problem::BclParams();
++  AugmentedLagrangianState state(0, initial, problem);
++  state.initializeLagrangeMultipliers(problem);
++  state.lambdaEq[0] = Vector3(0.3, -0.5, 1.2);
++  state.bclOmega = 1e-6;
++  state.bclEta = 100.0;
++  const AugmentedLagrangianOptimizer optimizer(problem, initial, params);
++  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
++  EXPECT(result.innerConverged);
++  const Vector3 x = result.values.at<Vector3>(key);
++  EXPECT(
++      assert_equal(Vector(state.lambdaEq[0] + 10.0 * x.cwiseQuotient(sigmas)),
++                   result.lambdaEq[0], 1e-10));
++  const Vector3 lagrangianGradient =
++      x - target + result.lambdaEq[0].cwiseQuotient(sigmas);
++  EXPECT_DOUBLES_EQUAL(lagrangianGradient.lpNorm<Eigen::Infinity>(),
++                       result.augmentedLagrangianStationarity, 1e-10);
++}
++
++// Reusing numerical storage across changed penalties and multipliers must
++// match independently constructed solves, including changing PHR activity.
++TEST(AugmentedLagrangianBCL, PersistentMatchesFreshSubproblems) {
++  using namespace constrained_example2;
++  for (bool diagonal : {false, true}) {
++    auto params = scalar_problem::BclParams();
++    params->maxIterations = 40;
++    params->lmParams.dampingParams.diagonalDamping = diagonal;
++    params->lmParams.dampingParams.exactHessianDiagonal = diagonal;
++    params->lmParams.useFixedLambdaFactor = false;
++    params->lmParams.ordering = Ordering{x2_key, x1_key};
++    const AugmentedLagrangianOptimizer optimizer(problem, init_values, params);
++    const Values result = optimizer.optimize();
++    const auto progress = optimizer.progress();
++    EXPECT(assert_equal(optimal_values, result, 5e-4));
++    EXPECT(progress.size() > 2);
++    for (size_t i = 1; i < progress.size(); ++i) {
++      const auto& expected = progress[i];
++      const auto fresh = std::get<0>(
++          optimizer.iterate(progress[i - 1], expected.muEq, expected.muIneq));
++      EXPECT(assert_equal(expected.values, fresh.values, 1e-9));
++      EXPECT_DOUBLES_EQUAL(expected.augmentedLagrangianStationarity,
++                           fresh.augmentedLagrangianStationarity, 1e-9);
++      EXPECT(expected.updateType == fresh.updateType);
++    }
++    // A second optimize() starts from the original primal/dual state.
++    EXPECT(assert_equal(result, optimizer.optimize(), 1e-9));
++  }
++}
++
++// A failed damping search leaves the current point/model intact and cannot
++// authorize a BCL multiplier update merely because the cost stopped changing.
++TEST(AugmentedLagrangianBCL, RejectedStepKeepsTerminalModel) {
++  using namespace scalar_problem;
++  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
++  auto params = BclParams();
++  params->lmParams.minModelFidelity = 2.0;
++  params->lmParams.lambdaUpperBound = 1.0;
++  auto state = StateAt(problem, 1.0, 10.0);
++  state.bclOmega = 1e-12;
++  state.bclEta = 100.0;
++  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
++  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
++  EXPECT(!result.innerConverged);
++  EXPECT(result.updateType == AugmentedLagrangianUpdateType::None);
++  EXPECT_LONGS_EQUAL(0, result.unconstrainedIterations);
++  EXPECT(assert_equal(state.values, result.values));
++  EXPECT_DOUBLES_EQUAL(9.0, result.augmentedLagrangianStationarity, 1e-12);
++}
++
++// Once the inner gradient is accurate enough for the requested final result,
++// BCL must continue feasibility updates rather than demand sub-roundoff steps.
++TEST(AugmentedLagrangianBCL, PoorScalingRespectsFinalStationarityTolerance) {
++  using namespace constrained_example;
++  NonlinearFactorGraph costs;
++  costs.addPrior(x1_key, 1.5, noiseModel::Unit::Create(1));
++  costs.addPrior(x2_key, 1.2, noiseModel::Unit::Create(1));
++  NonlinearEqualityConstraints equalities;
++  equalities.emplace_shared<ExpressionEqualityConstraint<double>>(
++      x1 + x2, 1.0, Vector1(0.01));
++  NonlinearInequalityConstraints inequalities;
++  inequalities.emplace_shared<ScalarExpressionInequalityConstraint>(
++      x1 - Double_(0.4), 10.0);
++  const ConstrainedOptProblem problem(costs, equalities, inequalities);
++  Values initial;
++  initial.insert(x1_key, 2.0);
++  initial.insert(x2_key, -1.0);
++  auto params = scalar_problem::BclParams();
++  const AugmentedLagrangianOptimizer optimizer(problem, initial, params);
++  const Values result = optimizer.optimize();
++  EXPECT(optimizer.progress().back().converged);
++  EXPECT_DOUBLES_EQUAL(0.4, result.at<double>(x1_key), 1e-5);
++  EXPECT_DOUBLES_EQUAL(0.6, result.at<double>(x2_key), 1e-5);
++  for (const auto& state : optimizer.progress()) {
++    EXPECT(state.bclOmega >= params->absoluteStationarityTolerance);
++  }
++}
++
++}  // namespace persistent_solver_tests
++/* ************************************************************************* */
++
++/* ************************************************************************* */
+ int main() {
+   TestResult result;
+   return TestRegistry::runAllTests(result);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/tests/testQcqpProblem.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/tests/testQcqpProblem.cpp
 @@ -41,8 +41,8 @@ using namespace gtsam;
@@ -9888,6 +11089,57 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  using ADT = AlgebraicDecisionTree<Key>;
  BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
  BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/BatchJacobianFactor.h
++++ gtsam-no-tbb-4.3.0/gtsam/linear/BatchJacobianFactor.h
+@@ -780,21 +780,23 @@ class BatchJacobianFactor : public Batch
+     (addVectorValuesRowBlock<Slots>(rowIndex, values, residual), ...);
+   }
+ 
+-  /// Add one compact block's column squared norms to a keyed diagonal.
++  /// Add one compact block's weighted column squared norms to a keyed diagonal.
+   template <size_t Slot>
+   void hessianDiagonalVectorRowAdd(size_t rowIndex,
++                                   const RhsVector& weights,
+                                    VectorValues* diagonal) const {
+     const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+     const auto& block = std::get<Slot>(blocks_)[rowIndex];
+-    diagonal->at(keys_[keySlot]).array() +=
+-        block.array().square().colwise().sum().transpose();
++    diagonal->at(keys_[keySlot]).noalias() +=
++        block.array().square().matrix().transpose() * weights;
+   }
+ 
+-  /// Add every compact block's column squared norms to keyed diagonals.
++  /// Add every compact block's weighted column squared norms to keyed diagonals.
+   template <size_t... Slots>
+-  void hessianDiagonalVectorRowAdds(size_t rowIndex, VectorValues* diagonal,
++  void hessianDiagonalVectorRowAdds(size_t rowIndex, const RhsVector& weights,
++                                    VectorValues* diagonal,
+                                     std::index_sequence<Slots...>) const {
+-    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, diagonal), ...);
++    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, weights, diagonal), ...);
+   }
+ 
+   /// Scatter one transposed compact block product into a flat vector.
+@@ -1033,17 +1035,13 @@ class BatchJacobianFactor : public Batch
+ 
+   /** Accumulate the Hessian scalar diagonal directly from compact rows. */
+   void hessianDiagonalAdd(VectorValues& diagonal) const override {
+-    if (model_ && !model_->isUnit()) {
+-      Base::hessianDiagonalAdd(diagonal);
+-      return;
+-    }
+     for (size_t position = 0; position < keys_.size(); ++position) {
+       auto [entry, inserted] =
+           diagonal.emplace(keys_[position], keyDims_[position]);
+       if (inserted) entry->second.setZero();
+     }
+     for (size_t row = 0; row < rowSlots_.size(); ++row) {
+-      hessianDiagonalVectorRowAdds(row, &diagonal,
++      hessianDiagonalVectorRowAdds(row, rowWeights(row), &diagonal,
+                                    std::make_index_sequence<NumSlots>{});
+     }
+   }
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/GaussianFactorGraph.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/GaussianFactorGraph.cpp
 @@ -358,19 +358,7 @@ namespace gtsam {
@@ -9926,6 +11178,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    auto R = info_.triangularView(0, n);
    auto eta = linearTerm();
  
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/JacobianFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/JacobianFactor.cpp
+@@ -623,6 +623,10 @@ Matrix JacobianFactor::information() con
+ 
+ /* ************************************************************************* */
+ void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
++  // Structural Bayes-tree orphan wrappers have keys but no matrix blocks.
++  // Real zero-row factors still define variable dimensions and zero diagonals.
++  if (rows() == 0 && Ab_.nBlocks() != static_cast<DenseIndex>(size() + 1))
++    return;
+   for (size_t pos = 0; pos < size(); ++pos) {
+     Key j = keys_[pos];
+     size_t nj = Ab_(pos).cols();
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/MultifrontalClique.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/MultifrontalClique.cpp
 @@ -19,6 +19,7 @@
@@ -9936,7 +11201,133 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/linear/HessianFactor.h>
  #include <gtsam/linear/JacobianFactor.h>
  #include <gtsam/linear/MultifrontalClique.h>
-@@ -900,23 +901,27 @@ void MultifrontalClique::prepareCompactC
+@@ -419,6 +420,16 @@ MultifrontalClique::FactorLoadPlan::forJ
+   return plan;
+ }
+ 
++MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forHessian(
++    size_t factorIndex, const HessianFactor& factor,
++    const MultifrontalClique& clique) {
++  FactorLoadPlan plan;
++  plan.kind = FactorLoadKind::Hessian;
++  plan.factorIndex = factorIndex;
++  plan.mapKeys(factor.keys(), clique);
++  return plan;
++}
++
+ MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forBatch(
+     size_t factorIndex, const BatchJacobianFactorBase& factor,
+     const MultifrontalClique& clique) {
+@@ -439,7 +450,7 @@ MultifrontalClique::FactorLoadPlan Multi
+ 
+ bool MultifrontalClique::FactorLoadPlan::needsMaterializedRows(
+     const MultifrontalClique& clique) const {
+-  if (kind == FactorLoadKind::Empty) return false;
++  if (kind == FactorLoadKind::Empty || kind == FactorLoadKind::Hessian) return false;
+   if (kind == FactorLoadKind::Jacobian) return true;
+   return clique.useQR() || !canDirectUpdate || !kUseDirectBatchHessianUpdate;
+ }
+@@ -575,8 +586,9 @@ size_t MultifrontalClique::addJacobianFa
+   assert(blockIt == plan.blockIndices.end());
+ 
+   Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
+-  if (plan.model && !plan.model->isConstrained()) {
+-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
++  const auto& model = factor.get_model();
++  if (model && !model->isConstrained()) {
++    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+   }
+   return plan.rows;
+ }
+@@ -586,13 +598,26 @@ size_t MultifrontalClique::addBatchJacob
+     const FactorLoadPlan& plan) {
+   const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
+       batchFactor, Ab_, rowOffset, plan.blockIndices);
+-  if (plan.model && !plan.model->isConstrained()) {
+-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
++  const auto& model = batchFactor.get_model();
++  if (model && !model->isConstrained()) {
++    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+   }
+   return rows;
+ }
+ 
+ void MultifrontalClique::resolveLeafSolveMode() {
++  // Hessians need no square root and may be individually indefinite. Assemble
++  // them directly with the other contributions before factoring the clique.
++  if (hasHessianFactors_) {
++    if (solveMode_ != SolveMode::Cholesky || RSd_.nBlocks() == 0) {
++      solveMode_ = SolveMode::Cholesky;
++      RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
++                                true);
++    }
++    if (info_.nBlocks() == 0) info_ = SymmetricBlockMatrix(blockDims_, true);
++    deferredSingleFactorAutoQr_ = false;
++    return;
++  }
+   // Auto-QR defers allocation until the sole factor's representation is known.
+   const bool needsDeferredStorage = deferredSingleFactorAutoQr_;
+   if (deferredSingleFactorAutoQr_) {
+@@ -654,9 +679,13 @@ void MultifrontalClique::buildLoadPlans(
+     } else if (const auto* batchFactor =
+                    dynamic_cast<const BatchJacobianFactorBase*>(factor.get())) {
+       plan = FactorLoadPlan::forBatch(factorIndex, *batchFactor, *this);
++    } else if (const auto* hessianFactor =
++                   dynamic_cast<const HessianFactor*>(factor.get())) {
++      plan = FactorLoadPlan::forHessian(factorIndex, *hessianFactor, *this);
++      hasHessianFactors_ = true;
+     } else {
+       throw MultifrontalSolverNotSupported(
+-          "only JacobianFactor or BatchJacobianFactor inputs are supported");
++          "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
+     }
+ 
+     allBatchFactors_ &= plan.isDirectBatch();
+@@ -749,6 +778,7 @@ void MultifrontalClique::fillAb(const Ga
+   for (const FactorLoadPlan& plan : loadPlans_) {
+     const auto* factor = graph[plan.factorIndex].get();
+     if (!factor) continue;
++    if (plan.kind == FactorLoadKind::Hessian) continue;
+     if (plan.kind == FactorLoadKind::Jacobian) {
+       auto* jacobianFactor = dynamic_cast<const JacobianFactor*>(factor);
+       assert(jacobianFactor);
+@@ -769,7 +799,7 @@ void MultifrontalClique::fillAb(const Ga
+       continue;
+     }
+     throw MultifrontalSolverNotSupported(
+-        "only JacobianFactor or BatchJacobianFactor inputs are supported");
++        "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
+   }
+ 
+   assert((useQR() && RSd_.matrix().rows() ==
+@@ -826,6 +856,26 @@ void MultifrontalClique::prepareForElimi
+         Ab_.matrix().topRows(static_cast<DenseIndex>(fillRows_)).transpose());
+   }
+ 
++  if (hasHessianFactors_) {
++    for (const FactorLoadPlan& plan : loadPlans_) {
++      if (plan.kind != FactorLoadKind::Hessian) continue;
++      const auto& factor = static_cast<const HessianFactor&>(
++          *activeLoadGraph_->at(plan.factorIndex));
++      const size_t size = factor.size();
++      const DenseIndex rhs = info_.nBlocks() - 1;
++      for (size_t i = 0; i <= size; ++i) {
++        const DenseIndex I = i == size ? rhs : plan.blockIndices[i];
++        if (I < 0) continue;  // Fixed variables have zero delta.
++        info_.updateDiagonalBlock(I, factor.info().block(i, i));
++        for (size_t j = i + 1; j <= size; ++j) {
++          const DenseIndex J = j == size ? rhs : plan.blockIndices[j];
++          if (J < 0) continue;
++          info_.updateOffDiagonalBlock(I, J, factor.info().block(i, j));
++        }
++      }
++    }
++  }
++
+   // Heuristic: avoid parallel overhead on small cliques.
+   const size_t minChildren =
+       std::max<size_t>(1024, 4 * static_cast<size_t>(info_.rows()));
+@@ -900,23 +950,27 @@ void MultifrontalClique::prepareCompactC
  }
  
  void MultifrontalClique::factorize() {
@@ -9981,7 +11372,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
    RSdReady_ = true;
  }
-@@ -938,11 +943,9 @@ void MultifrontalClique::factorizeCompac
+@@ -938,11 +992,9 @@ void MultifrontalClique::factorizeCompac
    if (llt.info() != Eigen::Success) throw CholeskyFailed();
    const Matrix R = llt.matrixU();
    // Match the scale-normalized pivot guard used by standard Cholesky.
@@ -9994,6 +11385,150 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        throw CholeskyFailed();
      }
    }
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/MultifrontalClique.h
++++ gtsam-no-tbb-4.3.0/gtsam/linear/MultifrontalClique.h
+@@ -117,8 +117,8 @@ class GTSAM_EXPORT MultifrontalClique {
+    * Load factor values into a lazily allocated, reusable Ab matrix.
+    * @param graph The factor graph with updated values (structure must match
+    *              the graph used to build this clique, apart from updated
+-   *              numerical values). Only JacobianFactor and BatchJacobianFactor
+-   *              inputs are supported.
++   *              numerical values). JacobianFactor, BatchJacobianFactor, and
++   *              HessianFactor inputs are supported.
+    */
+   void fillAb(const GaussianFactorGraph& graph);
+ 
+@@ -279,7 +279,7 @@ class GTSAM_EXPORT MultifrontalClique {
+   /// Linear lookup for block index in small cliques.
+   DenseIndex blockIndex(Key key) const;
+ 
+-  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch };
++  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch, Hessian };
+ 
+   struct FactorLoadPlan {
+     FactorLoadKind kind = FactorLoadKind::Empty;
+@@ -307,6 +307,11 @@ class GTSAM_EXPORT MultifrontalClique {
+                                       const JacobianFactor& factor,
+                                       const MultifrontalClique& clique);
+ 
++    /// Construct a plan for direct Hessian assembly into a Cholesky clique.
++    static FactorLoadPlan forHessian(size_t factorIndex,
++                                     const HessianFactor& factor,
++                                     const MultifrontalClique& clique);
++
+     /// Construct a plan for a compact batch Jacobian factor.
+     static FactorLoadPlan forBatch(size_t factorIndex,
+                                    const BatchJacobianFactorBase& factor,
+@@ -464,6 +469,7 @@ class GTSAM_EXPORT MultifrontalClique {
+   mutable bool hasDirectBatchFactors_ = false;
+   mutable std::vector<FactorLoadPlan> loadPlans_;
+   mutable bool loadPlansBuilt_ = false;
++  bool hasHessianFactors_ = false;
+   mutable size_t materializedRows_ = 0;  ///< Packed fallback rows in Ab_.
+   mutable size_t fillRows_ = 0;
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/MultifrontalSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/MultifrontalSolver.cpp
+@@ -24,6 +24,7 @@
+ #include <gtsam/linear/GaussianConditional.h>
+ #include <gtsam/linear/GaussianFactor.h>
+ #include <gtsam/linear/JacobianFactor.h>
++#include <gtsam/linear/HessianFactor.h>
+ #include <gtsam/linear/MultifrontalClique.h>
+ #include <gtsam/linear/MultifrontalSolver.h>
+ #include <gtsam/linear/NoiseModel.h>
+@@ -101,13 +102,21 @@ PrecomputeScratch precomputeFromGraph(co
+     const auto& factor = graph[i];
+     if (!factor) continue;
+ 
++    if (const auto* hessian = dynamic_cast<const HessianFactor*>(factor.get())) {
++      // Hessians are assembled directly and consume no packed Jacobian rows.
++      for (auto it = hessian->begin(); it != hessian->end(); ++it) {
++        out.dims[*it] = hessian->getDim(it);
++      }
++      continue;
++    }
++
+     auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(factor);
+     if (!jacobianFactor) {
+       auto batchFactor =
+           std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor);
+       if (!batchFactor) {
+         throw MultifrontalSolverNotSupported(
+-            "only JacobianFactor or BatchJacobianFactor inputs are supported");
++            "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
+       }
+       if (auto model = batchFactor->get_model()) {
+         if (model->isConstrained()) {
+@@ -404,15 +413,16 @@ void mergeLeafChildren(const SymbolicJun
+ // Bottom-up merge of child clusters whose merged total dimension stays below
+ // a threshold.
+ void mergeSmallClusters(const SymbolicJunctionTree::sharedNode& cluster,
+-                        const std::map<Key, size_t>& dims, size_t mergeDimCap) {
++                        const std::map<Key, size_t>& dims, size_t mergeDimCap,
++                        SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
+   if (!cluster) return;
+   for (const auto& child : cluster->children) {
+-    mergeSmallClusters(child, dims, mergeDimCap);
++    mergeSmallClusters(child, dims, mergeDimCap, separatorCache);
+   }
+   if (cluster->children.empty()) return;
+ 
+   const size_t parentTotalDim =
+-      totalDimForSymbolicCluster(cluster, dims, nullptr);
++      totalDimForSymbolicCluster(cluster, dims, separatorCache);
+   std::vector<bool> merge(cluster->children.size(), false);
+   bool any = false;
+   for (size_t i = 0; i < cluster->children.size(); ++i) {
+@@ -588,8 +598,12 @@ MultifrontalSolver::MultifrontalSolver(P
+ 
+   // If applicable, merge small child cliques bottom-up.
+   if (params_.mergeDimCap > 0) {
++    // Absorbing children changes frontal keys but not a cluster's external
++    // separator. Cache separators across the bottom-up pass to avoid visiting
++    // every descendant again at every ancestor (quadratic work on chains).
++    SymbolicJunctionTree::Cluster::KeySetMap separatorCache;
+     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
+-      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
++      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap, &separatorCache);
+     }
+     reportStructure(data.indexedJunctionTree, dims_,
+                     "Clique structure after merge", params_.reportStream);
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/MultifrontalSolver.h
++++ gtsam-no-tbb-4.3.0/gtsam/linear/MultifrontalSolver.h
+@@ -67,8 +67,9 @@ class GTSAM_EXPORT MultifrontalSolverNot
+  * packed Jacobian fallback rows on the first compatible load and reuses that
+  * storage thereafter.
+  *
+- * @note Only JacobianFactor and BatchJacobianFactor inputs are supported. Other
+- * Gaussian factor types will throw during construction/precompute or load.
++ * @note JacobianFactor, BatchJacobianFactor, and HessianFactor inputs are
++ * supported. Cliques containing Hessian factors use ordinary Cholesky storage
++ * and assemble those contributions directly, without taking a square root.
+  *
+  * @note Clique merging has two symbolic phases. First, leafMergeDimCap merges
+  * compatible multi-factor leaf siblings with identical separators into
+@@ -122,7 +123,7 @@ class GTSAM_EXPORT MultifrontalSolver
+    * load.
+    * Call load() before eliminating to populate numerical values.
+    * @param graph The factor graph to solve.
+-   *              Must contain only JacobianFactor or BatchJacobianFactor
++   *              Must contain only JacobianFactor, BatchJacobianFactor, or HessianFactor
+    *              instances.
+    * @param ordering The variable ordering to use for elimination.
+    * @param params Tunable parameters for traversal and reporting.
+@@ -158,9 +159,9 @@ class GTSAM_EXPORT MultifrontalSolver
+    * Precompute symbolic structure and sizing data from a factor graph.
+    * This builds an IndexedJunctionTree that can be reused across multiple
+    * solver instances when the graph structure and ordering remain unchanged.
+-   * Only JacobianFactor and BatchJacobianFactor inputs are supported.
++   * JacobianFactor, BatchJacobianFactor, and HessianFactor inputs are supported.
+    *
+-   * @param graph The factor graph (must contain only supported Jacobian-style
++   * @param graph The factor graph (must contain only supported Gaussian
+    *              factor instances)
+    * @param ordering The variable elimination ordering
+    * @return PrecomputedData containing the indexed junction tree and sizing
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/NoiseModel.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/NoiseModel.cpp
 @@ -844,7 +844,7 @@ Vector Robust::unweightedWhiten(const Ve
@@ -10044,6 +11579,70 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    HessianFactor(const gtsam::GaussianFactorGraph& factors);
  
    //Standard Interface
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testBatchJacobianFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testBatchJacobianFactor.cpp
+@@ -295,7 +295,7 @@ TEST(BatchJacobianFactor, FlatHessianBlo
+ 
+ // Verifies weighted compact error and diagonal operations preserve the dense
+ // compatibility semantics.
+-TEST(BatchJacobianFactor, WeightedErrorAndDiagonalUseDenseFallback) {
++TEST(BatchJacobianFactor, WeightedErrorAndDiagonalMatchDense) {
+   const Factor factor = createWeightedFactor();
+   VectorValues values;
+   values.emplace(0, Vector2{{0.2, -0.4}});
+@@ -336,6 +336,52 @@ TEST(BatchJacobianFactor, UnaryRowAccess
+ }  // namespace update_hessian_fixture
+ /* ************************************************************************* */
+ 
++namespace hessian_diagonal_fixture {
++
++class TrackingFactor : public BatchJacobianFactor<2, 2, 3> {
++ public:
++  using Base = BatchJacobianFactor<2, 2, 3>;
++  using Base::Base;
++  mutable size_t conversions = 0;
++
++  JacobianFactor toJacobianFactor() const override {
++    ++conversions;
++    return Base::toJacobianFactor();
++  }
++};
++
++// Weighted diagonal accumulation preserves dense semantics and compact storage,
++// including repeated additions and constrained rows' whitening convention.
++TEST(BatchJacobianFactor, HessianDiagonalWithoutDenseConversion) {
++  const std::vector<SharedDiagonal> models{
++      nullptr, noiseModel::Unit::Create(4),
++      noiseModel::Diagonal::Sigmas(Vector4{2.0, 3.0, 4.0, 5.0}),
++      noiseModel::Constrained::MixedSigmas(Vector4{0.0, 3.0, 4.0, 0.0})};
++  for (const auto& model : models) {
++    TrackingFactor factor(KeyVector{0, 1, 2}, {2, 2, 3}, model);
++    factor.addRow({0, 2},
++                  {Matrix2{{1.0, 2.0}, {3.0, 4.0}},
++                   Matrix23{{0.5, 1.0, -1.5}, {2.0, -0.5, 0.25}}},
++                  Vector2::Zero());
++    factor.addRow({1, 2},
++                  {Matrix2{{-1.0, 0.5}, {2.0, -0.25}},
++                   Matrix23{{1.5, -2.0, 0.75}, {-1.0, 0.25, 2.5}}},
++                  Vector2::Zero());
++    const JacobianFactor dense = factor.toJacobianFactor();
++    factor.conversions = 0;
++    VectorValues actual, expected;
++    for (size_t repeat = 0; repeat < 2; ++repeat) {
++      factor.hessianDiagonalAdd(actual);
++      dense.hessianDiagonalAdd(expected);
++      EXPECT(assert_equal(expected, actual, 1e-12));
++      EXPECT_LONGS_EQUAL(0, factor.conversions);
++    }
++  }
++}
++
++}  // namespace hessian_diagonal_fixture
++/* ************************************************************************* */
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testGaussianBayesNet.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testGaussianBayesNet.cpp
 @@ -163,7 +163,7 @@ TEST( GaussianBayesNet, optimize3 )
@@ -10068,10 +11667,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testGaussianFactorGraph.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testGaussianFactorGraph.cpp
-@@ -554,6 +554,22 @@ TEST(GaussianFactorGraph, InconsistentEl
+@@ -554,6 +554,37 @@ TEST(GaussianFactorGraph, InconsistentEl
    }
  }
  /* ************************************************************************* */
++// Incremental elimination carries structural orphan wrappers with parent keys
++// but no numeric rows. They must not be read as populated Jacobian blocks.
++TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
++  GaussianFactorGraph graph;
++  graph.emplace_shared<JacobianFactor>(0, Matrix11{2.0}, Vector1{0.0});
++  const auto expected = graph.hessianDiagonal();
++  auto orphan = std::make_shared<GaussianBayesTreeClique>();
++  auto conditional = std::make_shared<GaussianConditional>(
++      1, Vector1{0.0}, Matrix11{1.0}, 0, Matrix11{-1.0},
++      noiseModel::Unit::Create(1));
++  orphan->setEliminationResult({conditional, GaussianFactor::shared_ptr()});
++  graph.emplace_shared<BayesTreeOrphanWrapper<GaussianBayesTreeClique>>(orphan);
++  EXPECT(assert_equal(expected, graph.hessianDiagonal()));
++}
++
 +// Dense graph solving uses the same checked Cholesky path as dense factors.
 +TEST(GaussianFactorGraph, DenseCholeskySafeguard) {
 +  for (double strength : {1e8, 1e10}) {
@@ -10111,9 +11725,179 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  /* ************************************************************************* */
  // Copying and taking ownership of the same block matrix produce identical
  // Hessian factors.
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testJacobianFactor.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testJacobianFactor.cpp
+@@ -615,6 +615,23 @@ TEST(JacobianFactor, empty )
+ }
+ 
+ /* ************************************************************************* */
++// Zero-row numerical factors retain their variable dimensions in the diagonal.
++TEST(JacobianFactor, ZeroRowsHessianDiagonal) {
++  const JacobianFactor factor(0, Matrix::Zero(0, 2), 1, Matrix::Zero(0, 3),
++                              Vector::Zero(0));
++  VectorValues expected;
++  expected.insert(0, Vector2::Zero());
++  expected.insert(1, Vector3::Zero());
++  EXPECT(assert_equal(expected, factor.hessianDiagonal()));
++
++  expected.at(0) = Vector2::Ones();
++  VectorValues accumulated;
++  accumulated.insert(0, Vector2::Ones());
++  factor.hessianDiagonalAdd(accumulated);
++  EXPECT(assert_equal(expected, accumulated));
++}
++
++/* ************************************************************************* */
+ TEST(JacobianFactor, eliminate)
+ {
+   Matrix A01{//
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testMultifrontalSolver.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testMultifrontalSolver.cpp
-@@ -1689,6 +1689,52 @@ TEST(MultifrontalSolver, BalancedSmoothe
+@@ -1132,6 +1132,41 @@ TEST(MultifrontalSolver, Load) {
+ }
+ 
+ /* ************************************************************************* */
++// Reloading compatible factors must use their current numerical noise models.
++TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
++  for (bool batch : {false, true}) {
++    const auto makeGraph = [batch](double sigma) {
++      GaussianFactorGraph graph;
++      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
++      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
++      if (batch) {
++        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
++            KeyVector{0}, std::vector<size_t>{1}, model);
++        factor->addRow({0}, {I_1x1}, Vector1(2.0));
++        graph.push_back(factor);
++      } else {
++        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
++      }
++      return graph;
++    };
++    for (auto mode : {MultifrontalParameters::QRMode::Off,
++                      MultifrontalParameters::QRMode::Force}) {
++      auto params = noMergeParams();
++      params.qrMode = mode;
++      const GaussianFactorGraph initial = makeGraph(1.0);
++      MultifrontalSolver solver(initial, Ordering{0}, params);
++      solver.eliminateInPlace(initial);
++      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
++
++      const GaussianFactorGraph reweighted = makeGraph(0.5);
++      solver.load(reweighted);
++      solver.eliminateInPlace();
++      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
++    }
++  }
++}
++
++/* ************************************************************************* */
+ // Compare solver output against multifrontal elimination baseline.
+ TEST(MultifrontalSolver, Eliminate) {
+   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
+@@ -1590,20 +1625,26 @@ TEST(MultifrontalSolver, BatchJacobianFa
+ }
+ 
+ /* ************************************************************************* */
+-// Hessian factors are rejected by the multifrontal solver.
++// Direct Hessian assembly preserves affine terms, including negative minima.
+ TEST(MultifrontalSolver, HessianFactors) {
+   GaussianFactorGraph graph;
+   graph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}}, 0.0);
+ 
+   const Ordering ordering{x1};
+-  CHECK_EXCEPTION(
+-      { MultifrontalSolver solver(graph, ordering, noMergeParams()); },
+-      std::runtime_error);
++  MultifrontalSolver solver(graph, ordering, noMergeParams());
++  solver.eliminateInPlace(graph);
++  const auto& result = solver.updateSolution();
++  EXPECT_DOUBLES_EQUAL(2.0, result.at(x1)(0), 1e-12);
++  double oldError, newError;
++  EXPECT_DOUBLES_EQUAL(8.0, solver.deltaError(&oldError, &newError), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.0, oldError, 1e-12);
++  EXPECT_DOUBLES_EQUAL(-8.0, newError, 1e-12);
+ }
+ 
+ /* ************************************************************************* */
+-// Loading a HessianFactor into precomputed Jacobian-only structure is rejected.
+-TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
++// Symbolic structure can come from nonlinear row counts; the first load
++// selects Hessian assembly even if the initial leaf was configured for QR.
++TEST(MultifrontalSolver, LoadHessianIntoPrecomputedStructure) {
+   GaussianFactorGraph jacobianGraph;
+   jacobianGraph.emplace_shared<JacobianFactor>(
+       x1, I_1x1, Vector{{2.0}}, noiseModel::Isotropic::Sigma(1, 1.0));
+@@ -1614,11 +1655,66 @@ TEST(MultifrontalSolver, LoadRejectsHess
+ 
+   const Ordering ordering{x1};
+   auto data = MultifrontalSolver::Precompute(jacobianGraph, ordering);
+-  MultifrontalSolver solver(std::move(data), ordering, noMergeParams());
++  auto params = noMergeParams();
++  params.qrMode = MultifrontalParameters::QRMode::Force;
++  MultifrontalSolver solver(std::move(data), ordering, params);
+ 
+-  CHECK_EXCEPTION(solver.load(hessianGraph), MultifrontalSolverNotSupported);
++  solver.eliminateInPlace(hessianGraph);
++  EXPECT_DOUBLES_EQUAL(2.0, solver.updateSolution().at(x1)(0), 1e-12);
++}
++
++/* ************************************************************************* */
++namespace hessian_reload_tests {
++
++// Individual Hessians can be indefinite: only their assembled sum needs to
++// be positive definite. Check permuted block mappings, mixed rows, and reload.
++TEST(MultifrontalSolver, MixedIndefiniteHessianReload) {
++  GaussianFactorGraph graph;
++  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{-1.0}}, Matrix{{0.3}},
++                                      Vector{{0.5}}, Matrix{{-2.0}},
++                                      Vector{{-0.2}}, -3.0);
++  graph.emplace_shared<JacobianFactor>(x1, Matrix{{2.0}}, x2, Matrix{{0.5}},
++                                       Vector{{1.0}});
++  graph.emplace_shared<JacobianFactor>(x2, Matrix{{2.0}}, Vector{{0.0}});
++  const Ordering ordering{x1, x2};
++  auto params = noMergeParams();
++  params.compactCholeskySeparatorDimThreshold = 0;
++  MultifrontalSolver solver(graph, ordering, params);
++  for (double scale : {1.0, 2.0}) {
++    graph[0] = std::make_shared<HessianFactor>(
++        x2, x1, Matrix{{-1.0}}, Matrix{{0.3}}, Vector{{0.5 * scale}},
++        Matrix{{-2.0}}, Vector{{-0.2 * scale}}, -3.0);
++    solver.eliminateInPlace(graph);
++    const auto& result = solver.updateSolution();
++    const VectorValues expected = graph.optimize(ordering, EliminateCholesky);
++    EXPECT(assert_equal(expected, result, 1e-10));
++    VectorValues zero = result;
++    zero.setZero();
++    EXPECT_DOUBLES_EQUAL(graph.error(zero) - graph.error(result),
++                         solver.deltaError(), 1e-10);
++  }
++}
++
++// Fixed deltas contribute no Hessian columns, including when factor key order
++// differs from elimination order.
++TEST(MultifrontalSolver, HessianWithFixedKey) {
++  GaussianFactorGraph graph;
++  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{4.0}}, Matrix{{1.0}},
++                                      Vector{{8.0}}, Matrix{{3.0}},
++                                      Vector{{7.0}}, 20.0);
++  graph.emplace_shared<JacobianFactor>(
++      x1, I_1x1, Vector{{0.0}}, noiseModel::Constrained::All(1));
++  const Ordering ordering{x1, x2};
++  MultifrontalSolver solver(graph, ordering, noMergeParams());
++  solver.eliminateInPlace(graph);
++  const auto& result = solver.updateSolution();
++  EXPECT_DOUBLES_EQUAL(0.0, result.at(x1)(0), 1e-12);
++  EXPECT_DOUBLES_EQUAL(2.0, result.at(x2)(0), 1e-12);
+ }
+ 
++}  // namespace hessian_reload_tests
++/* ************************************************************************* */
++
+ /* ************************************************************************* */
+ // Merge threshold changes the clique count.
+ TEST(MultifrontalSolver, MergeDimCap) {
+@@ -1689,6 +1785,90 @@ TEST(MultifrontalSolver, BalancedSmoothe
  }
  
  /* ************************************************************************* */
@@ -10162,6 +11946,44 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    }
 +  }
 +}
++
++/* ************************************************************************* */
++namespace deep_chain_merging_tests {
++
++// Separators remain valid as descendants are absorbed bottom-up. Exercise
++// several merge boundaries and reload the same deeply nested chain.
++TEST(MultifrontalSolver, DeepChainMergingPreservesSeparators) {
++  constexpr size_t count = 128;
++  GaussianFactorGraph graph;
++  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1::Zero());
++  Ordering ordering;
++  for (size_t i = 0; i < count; ++i) {
++    ordering.push_back(i);
++    if (i > 0) {
++      graph.emplace_shared<JacobianFactor>(
++          i - 1, -Matrix11::Identity(), i, Matrix11::Identity(), Vector1::Ones());
++    }
++  }
++  for (size_t cap : {4, 16, 32}) {
++    auto params = noMergeParams();
++    params.mergeDimCap = cap;
++    MultifrontalSolver solver(graph, ordering, params);
++    EXPECT(solver.cliqueCount() < count);
++    for (double increment : {1.0, 2.0}) {
++      for (size_t i = 1; i < count; ++i) {
++        std::static_pointer_cast<JacobianFactor>(graph[i])->getb()(0) = increment;
++      }
++      solver.eliminateInPlace(graph);
++      const VectorValues& result = solver.updateSolution();
++      for (size_t i = 0; i < count; ++i) {
++        EXPECT_DOUBLES_EQUAL(increment * i, result.at(i)(0), 1e-8);
++      }
++    }
++  }
++}
++
++}  // namespace deep_chain_merging_tests
++/* ************************************************************************* */
 +
  int main() {
    TestResult tr;
@@ -12572,6 +14394,49 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-no-tbb-4.3.0.orig/gtsam/nonlinear/tests/testNonlinearMultifrontalSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/nonlinear/tests/testNonlinearMultifrontalSolver.cpp
+@@ -23,6 +23,8 @@
+ #include <gtsam/linear/JacobianFactor.h>
+ #include <gtsam/linear/NoiseModel.h>
+ #include <gtsam/constrained/NonlinearEquality.h>
++#include <gtsam/constrained/QpCost.h>
++#include <gtsam/linear/linearExceptions.h>
+ #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
+ #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+ #include <gtsam/nonlinear/Values.h>
+@@ -434,6 +436,31 @@ TEST(NonlinearMultifrontalSolver, Bal16E
+ #endif
+ 
+ /* ************************************************************************* */
++namespace quadratic_damping_tests {
++
++// Damping can regularize a loaded indefinite quadratic, and retrying must
++// reassemble the original Hessian rather than accumulate previous damping.
++TEST(NonlinearMultifrontalSolver, IndefiniteHessianDampingRetries) {
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<QpCost>(
++      HessianFactor(0, Matrix{{-2.0}}, Vector{{1.0}}, 0.0));
++  Values values;
++  values.insert<Vector>(0, Vector::Zero(1));
++  const Ordering ordering{0};
++  NonlinearMultifrontalSolver solver(graph, values, ordering);
++  const auto linear = graph.linearize(values);
++  solver.load(*linear);
++  CHECK_EXCEPTION(solver.eliminateInPlace(1.0), IndeterminateSystemException);
++  for (double damping : {3.0, 4.0, 3.0}) {
++    solver.eliminateInPlace(damping);
++    EXPECT_DOUBLES_EQUAL(1.0 / (damping - 2.0),
++                         solver.updateSolution().at(0)(0), 1e-12);
++  }
++}
++
++}  // namespace quadratic_damping_tests
++/* ************************************************************************* */
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/sam/QuadraticRangeFactor.h
 +++ gtsam-no-tbb-4.3.0/gtsam/sam/QuadraticRangeFactor.h
 @@ -193,7 +193,7 @@ class QuadraticRangeFactor
@@ -14977,8 +16842,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  solver.solve();
  values = solver.qcqpValues();
  ```
-@@ -95,8 +94,24 @@ solver.solve(params);
+@@ -93,10 +92,31 @@ params.emplace('intpntCoTolRelGap', 1e-8
+ solver.solve(params);
+ ```
  
++A hard `FrobeniusPrior` fixes its variable: the SDP solvers substitute it out
++before lifting. `orderedKeys()`, `orderedKeyDims()`, and `variableEVRs()`
++describe only the free SDP variables; `qcqpValues()` also returns the fixed
++values after solving.
++
  `orderedKeyDims()` returns a wrapped map with `size()` and `at(key)` methods.
  `variableEVRs()` returns a wrapped vector with `size()` and zero-based `at(i)`
 -access. Running `test_gtsam` exercises both formulations and the sharing option
@@ -15118,7 +16990,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  function testMosekSDP
  import gtsam.*
  if exist('gtsam.MosekMonolithicSDP', 'class') ~= 8
-@@ -19,40 +19,66 @@ end
+@@ -19,40 +19,69 @@ end
  problem = QcqpProblem(graph);
  expected = 8 * (1 - cos(0.2));
  solvers = {MosekMonolithicSDP(problem), ...
@@ -15153,14 +17025,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    anchor = values.atMatrix(keys(1));
 +    CHECK('Natural anchor size', isequal(size(anchor), [2, 1]));
 +    CHECK('Recovered anchor', norm(anchor - [1; 0]) < 1e-6);
++    CHECK('All QCQP values recovered', values.size() == 4);
      CHECK('Repeated retrieval', values.equals(solver.qcqpValues(), 1e-9));
-     CHECK('Ordered keys', solver.orderedKeys().size() == 4);
+-    CHECK('Ordered keys', solver.orderedKeys().size() == 4);
++    orderedKeys = solver.orderedKeys();
++    CHECK('Only free keys are ordered', orderedKeys.size() == 3);
      dimensions = solver.orderedKeyDims();
      evrs = solver.variableEVRs();
-     CHECK('Diagnostic sizes', dimensions.size() == 4 && evrs.size() == 4);
-     for j = 1:4
+-    CHECK('Diagnostic sizes', dimensions.size() == 4 && evrs.size() == 4);
+-    for j = 1:4
 -        CHECK('Dimension at symbolic key', dimensions.at(keys(j)) == 3);
-+        CHECK('Dimension at symbolic key', dimensions.at(keys(j)) == 2);
++    CHECK('Diagnostics exclude anchor', dimensions.size() == 3 && evrs.size() == 3);
++    for j = 1:3
++        CHECK('Ordered key is free', orderedKeys.at(j - 1) ~= keys(1));
++        CHECK('Free key dimension', dimensions.at(keys(j + 1)) == 2);
          CHECK('Eigenvalue ratio', evrs.at(j - 1) > 1e4);
      end
      CHECK('Solver timing', solver.solveTimeSeconds() >= 0);
@@ -22846,6 +24724,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    ```
    If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
  - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
+--- gtsam-no-tbb-4.3.0.orig/python/gtsam/examples/TranslationAveragingExample.py
++++ gtsam-no-tbb-4.3.0/python/gtsam/examples/TranslationAveragingExample.py
+@@ -50,7 +50,7 @@ def get_data() -> Tuple[gtsam.Values, Li
+             # Compute the normalized unit translation direction.
+             i_iZj = gtsam.Unit3(i_itj)
+             i_iZj_list.append(gtsam.BinaryMeasurementUnit3(
+-                i, j, i_iZj, gtsam.noiseModel.Isotropic.Sigma(3, 0.01)))
++                i, j, i_iZj, gtsam.noiseModel.Isotropic.Sigma(2, 0.01)))
+     # Add the last two rotations.
+     wRc_values.insert(len(wTc_list) - 1, wTc_list[-1].rotation())
+     wRc_values.insert(len(wTc_list) - 2, wTc_list[-2].rotation())
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam/examples/certifiable/CertifiableLocalizationExample.ipynb
 +++ gtsam-no-tbb-4.3.0/python/gtsam/examples/certifiable/CertifiableLocalizationExample.ipynb
 @@ -310,16 +310,16 @@
@@ -29626,7 +31515,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          """
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam/tests/test_certifiable.py
 +++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_certifiable.py
-@@ -205,7 +205,7 @@ class TestMosekCertifiableWrappers(unitt
+@@ -200,12 +200,15 @@ class TestMosekCertifiableWrappers(unitt
+         self.assertTrue(np.isfinite(solver.objectiveValue()))
+         self.assertGreaterEqual(solver.solveTimeSeconds(), 0.0)
+ 
+-        expected_keys = [X(index) for index in range(len(ground_truth))]
++        # X(0) is fixed by its hard FrobeniusPrior: it has no SDP block, but
++        # qcqpValues() returns it.
++        all_keys = [X(index) for index in range(len(ground_truth))]
++        expected_keys = all_keys[1:]
+         self.assertEqual(list(solver.orderedKeys()), expected_keys)
          ordered_key_dims = solver.orderedKeyDims()
          self.assertIsInstance(ordered_key_dims, dict)
          self.assertEqual(set(ordered_key_dims), set(expected_keys))
@@ -29635,16 +31533,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
          variable_evrs = solver.variableEVRs()
          self.assertIsInstance(variable_evrs, list)
-@@ -217,7 +217,7 @@ class TestMosekCertifiableWrappers(unitt
+@@ -213,11 +216,11 @@ class TestMosekCertifiableWrappers(unitt
+         repeated_qcqp_values = solver.qcqpValues()
+         repeated_variable_evrs = solver.variableEVRs()
+         self.assertEqual(qcqp_values.size(), len(ground_truth))
+-        self.assertEqual(len(variable_evrs), len(ground_truth))
++        self.assertEqual(len(variable_evrs), len(expected_keys))
          self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
          np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
-         for key in expected_keys:
+-        for key in expected_keys:
 -            self.assertEqual(qcqp_values.atMatrix(key).shape, (3, 1))
++        for key in all_keys:
 +            self.assertEqual(qcqp_values.atMatrix(key).shape, (2, 1))
              np.testing.assert_allclose(
                  qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)
              )
-@@ -249,15 +249,6 @@ class TestMosekCertifiableWrappers(unitt
+@@ -249,15 +252,6 @@ class TestMosekCertifiableWrappers(unitt
          self.assertGreater(solver.bayesTree().size(), 0)
          self.assert_solver_solution(solver, ground_truth)
  
@@ -30238,6 +32142,122 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-no-tbb-4.3.0.orig/timing/timeAugmentedLagrangianPolicies.cpp
++++ gtsam-no-tbb-4.3.0/timing/timeAugmentedLagrangianPolicies.cpp
+@@ -194,6 +194,27 @@ Scenario DifficultStartScenario() {
+           PairValues(-3.0, 3.0)};
+ }
+ 
++// Coupled sparse problems expose symbolic setup and storage costs that the
++// scalar policy examples cannot measure. The constrained solution is x=0.
++Scenario ChainScenario(size_t count) {
++  NonlinearFactorGraph costs;
++  NonlinearInequalityConstraints inequalities;
++  Values initial;
++  for (size_t i = 0; i < count; ++i) {
++    const Symbol key('x', i);
++    const Double_ x(key);
++    costs.addPrior(key, 2.0, gtsam::noiseModel::Unit::Create(1));
++    if (i > 0) {
++      costs.addExpressionFactor(gtsam::noiseModel::Unit::Create(1), 0.0,
++                                x - Double_(Symbol('x', i - 1)));
++    }
++    inequalities.emplace_shared<ScalarExpressionInequalityConstraint>(x, 1.0);
++    initial.insert(key, i % 2 == 0 ? 2.0 : -1.0);
++  }
++  return {"chain_" + std::to_string(count),
++          ConstrainedOptProblem(costs, {}, inequalities), initial};
++}
++
+ /* ************************************************************************* */
+ std::vector<Scenario> Scenarios() {
+   std::vector<Scenario> scenarios;
+@@ -203,6 +224,8 @@ std::vector<Scenario> Scenarios() {
+   scenarios.push_back(MixedScenario("mixed", 1.0, 1.0));
+   scenarios.push_back(MixedScenario("poorly_scaled", 0.01, 10.0));
+   scenarios.push_back(DifficultStartScenario());
++  scenarios.push_back(ChainScenario(512));
++  scenarios.push_back(ChainScenario(2048));
+   return scenarios;
+ }
+ 
+@@ -241,29 +264,54 @@ double InfinityNorm(const gtsam::Vector&
+ 
+ /* ************************************************************************* */
+ KktDiagnostics EvaluateFinalKkt(const Scenario& scenario,
+-                                const AugmentedLagrangianOptimizer& optimizer,
+                                 const AugmentedLagrangianState& final) {
+   KktDiagnostics diagnostics;
+-  const auto gradient = optimizer.augmentedLagrangianFunction(final)
+-                            .linearize(final.values)
+-                            ->gradientAtZero();
+-  for (const auto& keyGradient : gradient) {
+-    diagnostics.stationarity =
+-        std::max(diagnostics.stationarity, InfinityNorm(keyGradient.second));
+-  }
+-  for (const auto& equality : scenario.problem.eConstraints()) {
++  auto gradient =
++      scenario.problem.costs().linearize(final.values)->gradientAtZero();
++  // KKT uses the ordinary Lagrangian at the returned multipliers, not a new
++  // augmented objective that adds another rho*constraint term to its gradient.
++  const auto addMultiplierGradient =
++      [&](const gtsam::KeyVector& keys,
++          const std::vector<gtsam::Matrix>& jacobians,
++          const gtsam::Vector& multiplier) {
++        for (size_t j = 0; j < keys.size(); ++j) {
++          const gtsam::Vector contribution =
++              jacobians[j].transpose() * multiplier;
++          if (gradient.exists(keys[j])) {
++            gradient.at(keys[j]) += contribution;
++          } else {
++            gradient.insert(keys[j], contribution);
++          }
++        }
++      };
++  for (size_t i = 0; i < scenario.problem.eConstraints().size(); ++i) {
++    const auto& equality = scenario.problem.eConstraints()[i];
++    std::vector<gtsam::Matrix> jacobians(equality->size());
++    gtsam::Vector residual =
++        equality->unwhitenedError(final.values, &jacobians);
++    equality->noiseModel()->WhitenSystem(jacobians, residual);
++    addMultiplierGradient(equality->keys(), jacobians, final.lambdaEq[i]);
+     diagnostics.generalizedResidual =
+-        std::max(diagnostics.generalizedResidual,
+-                 InfinityNorm(equality->whitenedError(final.values)));
++        std::max(diagnostics.generalizedResidual, InfinityNorm(residual));
+   }
+   for (size_t i = 0; i < scenario.problem.iConstraints().size(); ++i) {
+-    const double expression =
+-        scenario.problem.iConstraints().at(i)->whitenedExpr(final.values)(0);
++    const auto& inequality = scenario.problem.iConstraints()[i];
++    std::vector<gtsam::Matrix> jacobians(inequality->size());
++    gtsam::Vector residual =
++        inequality->unwhitenedExpr(final.values, &jacobians);
++    inequality->noiseModel()->WhitenSystem(jacobians, residual);
++    addMultiplierGradient(inequality->keys(), jacobians,
++                          Vector1(final.lambdaIneq[i]));
++    const double expression = residual(0);
+     const double projectedResidual =
+         std::max(expression, -final.lambdaIneq.at(i) / final.muIneq);
+     diagnostics.generalizedResidual =
+         std::max(diagnostics.generalizedResidual, std::abs(projectedResidual));
+   }
++  for (const auto& keyGradient : gradient) {
++    diagnostics.stationarity =
++        std::max(diagnostics.stationarity, InfinityNorm(keyGradient.second));
++  }
+   return diagnostics;
+ }
+ 
+@@ -287,7 +335,7 @@ RunResult RunOnce(const Scenario& scenar
+     }
+     const AugmentedLagrangianState& final = progress.back();
+     const KktDiagnostics diagnostics =
+-        EvaluateFinalKkt(scenario, optimizer, final);
++        EvaluateFinalKkt(scenario, final);
+     result.stationarity = diagnostics.stationarity;
+     result.generalizedResidual = diagnostics.generalizedResidual;
+     result.kktResidual =
 --- gtsam-no-tbb-4.3.0.orig/timing/timeHybridInference.cpp
 +++ gtsam-no-tbb-4.3.0/timing/timeHybridInference.cpp
 @@ -47,6 +47,7 @@ using gtsam::HybridValues;

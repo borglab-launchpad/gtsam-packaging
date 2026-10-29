@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~42.gbp86c29c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~43.gbp7707c3) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7707c3732ce45e2a1787b6b92c7ad5ad51515bed **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @86c29cce8ec1661d2aaf03af1a7b59217cae5638 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 26 Oct 2026 18:02:06 +0000
+  [ Frank Dellaert ]
+  * Use current factor noise models when reloading reusable solvers
+  * Accumulate weighted batch Hessian diagonals without dense conversion
+  * Skip structural orphan wrappers while retaining numerical zero-row dimensions
+  * Fix MATLAB wrapper compatibility for fixed QCQP anchors
+  * Support native Hessian factors in the multifrontal solver
+  * Reuse a persistent multifrontal solver and linearizations in ALM
+  * Avoid repeated separator traversals and ALM state allocations
+
+  [ mmporong ]
+  * Fix noise model dimension in TranslationAveragingExample
+
+  [ avinashresearch1 ]
+  * Substitute fixed variables out of the QCQP and SDP
+  * Keep fixed variables in QcqpProblem
+  * Order uncoupled keys before METIS in the chordal SDP
+  * Substitute fixed variables when transcribing the SDP
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 12:12:35 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~41.gbp98c458) resolute; urgency=medium
 
