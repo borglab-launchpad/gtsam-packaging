@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 29 2026 17:18:52 +0000
+Date: Oct, 29 2026 19:07:52 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -20183,6 +20183,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
  virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
    InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+@@ -415,6 +422,14 @@ virtual class InvDepthFactorVariant3b :
+   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+ };
+ 
++#include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
++template <VALUE = {gtsam::Vector, gtsam::Point3}>
++virtual class GaussMarkov1stOrderFactor : gtsam::NoiseModelFactor {
++  GaussMarkov1stOrderFactor(gtsam::Key key1, gtsam::Key key2, double delta_t,
++                            const gtsam::Vector& tau,
++                            const gtsam::noiseModel::Gaussian* model);
++};
++
+ 
+ // Tectonic SAM Factors
+ 
 --- gtsam-4.3.0.orig/gtsam_unstable/partition/tests/testFindSeparator.cpp
 +++ gtsam-4.3.0/gtsam_unstable/partition/tests/testFindSeparator.cpp
 @@ -15,6 +15,29 @@ using namespace std;
@@ -20305,6 +20320,111 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        return measured_;
      }
  
+--- gtsam-4.3.0.orig/gtsam_unstable/slam/GaussMarkov1stOrderFactor.h
++++ gtsam-4.3.0/gtsam_unstable/slam/GaussMarkov1stOrderFactor.h
+@@ -23,7 +23,9 @@
+ #include <gtsam/base/Testable.h>
+ #include <gtsam/base/Lie.h>
+ 
++#include <cmath>
+ #include <ostream>
++#include <stdexcept>
+ 
+ namespace gtsam {
+ 
+@@ -31,8 +33,9 @@ namespace gtsam {
+  * - The 1st order GaussMarkov factor relates two keys of the same type. This relation is given via
+  *          key_2 = exp(-1/tau*delta_t) * key1 + w_d
+  *     where tau is the time constant and delta_t is the time difference between the two keys.
+- *     w_d is the equivalent discrete noise, whose covariance is calculated from the continuous noise model and delta_t.
+- * - w_d is approximated as a Gaussian noise.
++ *     w_d is the equivalent discrete noise: the continuous noise model
++ *     (spectral density Q) integrated exactly over delta_t. For a stationary
++ *     standard deviation sigma, use Q = 2 sigma^2 / tau.
+  * - In the multi-dimensional case, tau is a vector, and the above equation is applied on each element
+  *      in the state (represented by keys), using the appropriate time constant in the vector tau.
+  */
+@@ -69,10 +72,11 @@ public:
+   GaussMarkov1stOrderFactor() {}
+ 
+   /** Constructor */
+-  GaussMarkov1stOrderFactor(const Key& key1, const Key& key2, double delta_t, Vector tau,
+-      const SharedGaussian& model) :
+-        Base(calcDiscreteNoiseModel(model, delta_t), key1, key2), dt_(delta_t), tau_(tau) {
+-  }
++  GaussMarkov1stOrderFactor(const Key& key1, const Key& key2, double delta_t,
++                            Vector tau, const SharedGaussian& model)
++      : Base(calcDiscreteNoiseModel(model, delta_t, tau), key1, key2),
++        dt_(delta_t),
++        tau_(tau) {}
+ 
+   ~GaussMarkov1stOrderFactor() override {}
+ 
+@@ -130,14 +134,56 @@ private:
+   }
+ #endif
+ 
+-  SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t){
+-    /* Q_d (approx)= Q * delta_t */
+-    /* In practice, square root of the information matrix is represented, so that:
+-     *  R_d (approx)= R / sqrt(delta_t)
+-     * */
+-    noiseModel::Gaussian::shared_ptr gaussian_model = std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+-    SharedGaussian model_d(noiseModel::Gaussian::SqrtInformation(gaussian_model->R()/sqrt(delta_t)));
+-    return model_d;
++  /**
++   * Exact covariance of the noise that the continuous-time model accumulates
++   * over delta_t.
++   *
++   * Integrating dx/dt = -x / tau + w, with white noise w of spectral density Q,
++   * gives
++   *   Q_d(i, j) = Q(i, j) (1 - exp(-(1/tau_i + 1/tau_j) delta_t))
++   *               / (1/tau_i + 1/tau_j),
++   * which tends to Q delta_t for delta_t << tau and to the stationary
++   * covariance Q tau / 2 for delta_t >> tau. Each tau must be positive; an
++   * infinite tau is a random walk, Q delta_t.
++   */
++  static SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model,
++                                               double delta_t,
++                                               const Vector& tau) {
++    if (!(delta_t > 0.0) || static_cast<size_t>(tau.size()) != model->dim()) {
++      throw std::invalid_argument(
++          "GaussMarkov1stOrderFactor: delta_t must be positive and tau must "
++          "match the noise model dimension");
++    }
++    // Written so that NaN fails too; +infinity (a random walk) passes.
++    if (!(tau.array() > 0.0).all()) {
++      throw std::invalid_argument(
++          "GaussMarkov1stOrderFactor: time constants must be positive "
++          "(infinity for a random walk)");
++    }
++    // covariance() is NaN on a constrained axis, so it cannot be integrated.
++    if (model->isConstrained()) {
++      throw std::invalid_argument(
++          "GaussMarkov1stOrderFactor: constrained noise models are not "
++          "supported");
++    }
++    const Matrix continuous = model->covariance();
++    Matrix discrete(continuous.rows(), continuous.cols());
++    for (Eigen::Index i = 0; i < discrete.rows(); ++i) {
++      for (Eigen::Index j = 0; j < discrete.cols(); ++j) {
++        const double rate = 1.0 / tau(i) + 1.0 / tau(j);
++        discrete(i, j) =
++            continuous(i, j) *
++            (rate != 0.0 ? -std::expm1(-rate * delta_t) / rate : delta_t);
++      }
++    }
++    // Take the structure from the continuous model, not from the size of the
++    // entries: Q_d(i, j) is zero exactly where Q(i, j) is, whereas the smart
++    // constructor drops off-diagonal entries below an absolute 1e-9, which
++    // discards the correlation of a small Q.
++    if (std::dynamic_pointer_cast<noiseModel::Diagonal>(model)) {
++      return noiseModel::Diagonal::Variances(discrete.diagonal());
++    }
++    return noiseModel::Gaussian::Covariance(discrete, false);
+   }
+ 
+ }; // \class GaussMarkov1stOrderFactor
 --- gtsam-4.3.0.orig/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
 +++ gtsam-4.3.0/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
 @@ -77,6 +77,35 @@ TEST(BiasedGPSFactor, jacobian) {
@@ -20343,6 +20463,122 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-4.3.0.orig/gtsam_unstable/slam/tests/testGaussMarkov1stOrderFactor.cpp
++++ gtsam-4.3.0/gtsam_unstable/slam/tests/testGaussMarkov1stOrderFactor.cpp
+@@ -23,6 +23,8 @@
+ #include <gtsam/nonlinear/Values.h>
+ #include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
+ 
++#include <limits>
++
+ using namespace std::placeholders;
+ using namespace std;
+ using namespace gtsam;
+@@ -121,6 +123,104 @@ TEST (GaussMarkovFactor, jacobian ) {
+ }
+ 
+ /* ************************************************************************* */
++namespace discrete_noise {
++Matrix discreteCovariance(double delta_t, const Vector& tau,
++                          const SharedGaussian& model) {
++  const GaussMarkov1stOrderFactor<Vector> factor(1, 2, delta_t, tau, model);
++  return std::dynamic_pointer_cast<noiseModel::Gaussian>(factor.noiseModel())
++      ->covariance();
++}
++
++// The discrete noise is the continuous noise integrated exactly over delta_t.
++TEST(GaussMarkovFactor, exactDiscreteNoise) {
++  const Vector3 tau(100.0, 150.0, 10.0);
++  const double delta_t = 2.0, variance = 0.25;
++  const Matrix actual = discreteCovariance(
++      delta_t, tau, noiseModel::Isotropic::Variance(3, variance));
++
++  Vector3 expected;
++  for (int i = 0; i < 3; i++)
++    expected(i) =
++        variance * tau(i) / 2.0 * (1.0 - exp(-2.0 * delta_t / tau(i)));
++  EXPECT(assert_equal(Matrix(expected.asDiagonal()), actual, 1e-12));
++}
++
++// Short intervals recover Q delta_t, long ones the stationary Q tau / 2, and an
++// infinite time constant is a random walk.
++TEST(GaussMarkovFactor, discreteNoiseLimits) {
++  const Vector1 tau(10.0);
++  const SharedGaussian model = noiseModel::Isotropic::Variance(1, 0.25);
++  EXPECT_DOUBLES_EQUAL(
++      1.0, discreteCovariance(1e-4, tau, model)(0, 0) / (0.25 * 1e-4), 1e-4);
++  EXPECT_DOUBLES_EQUAL(0.25 * 10.0 / 2.0,
++                       discreteCovariance(1000.0, tau, model)(0, 0), 1e-12);
++  const Vector1 randomWalk(numeric_limits<double>::infinity());
++  EXPECT_DOUBLES_EQUAL(0.25 * 3.0,
++                       discreteCovariance(3.0, randomWalk, model)(0, 0), 1e-12);
++}
++
++// Correlated continuous noise decays with the sum of the two axes' rates.
++TEST(GaussMarkovFactor, correlatedDiscreteNoise) {
++  const Vector2 tau(20.0, 5.0);
++  const Matrix2 continuous{{1.0, 0.3}, {0.3, 2.0}};
++  const double delta_t = 3.0;
++  const Matrix actual = discreteCovariance(
++      delta_t, tau, noiseModel::Gaussian::Covariance(continuous));
++
++  const double rate = 1.0 / tau(0) + 1.0 / tau(1);
++  EXPECT_DOUBLES_EQUAL(0.3 * (1.0 - exp(-rate * delta_t)) / rate, actual(0, 1),
++                       1e-12);
++  EXPECT_DOUBLES_EQUAL(actual(0, 1), actual(1, 0), 1e-12);
++}
++
++// Regression: a small correlated covariance keeps its correlation, although
++// its cross-covariance (about 5e-10) is below the threshold for treating a
++// covariance as diagonal.
++TEST(GaussMarkovFactor, smallCorrelatedDiscreteNoise) {
++  const Vector2 tau(10.0, 10.0);
++  const Matrix2 continuous{{1e-6, 5e-7}, {5e-7, 1e-6}};
++  const double delta_t = 1e-3;
++  const Matrix actual = discreteCovariance(
++      delta_t, tau, noiseModel::Gaussian::Covariance(continuous));
++
++  const double rate = 2.0 / tau(0);
++  const double expected = 5e-7 * -expm1(-rate * delta_t) / rate;
++  EXPECT_DOUBLES_EQUAL(1.0, actual(0, 1) / expected, 1e-9);
++  // Equal time constants scale every entry alike, so the correlation stays.
++  EXPECT_DOUBLES_EQUAL(0.5, actual(0, 1) / sqrt(actual(0, 0) * actual(1, 1)),
++                       1e-9);
++}
++
++// A diagonal continuous noise model gives a diagonal discrete one.
++TEST(GaussMarkovFactor, diagonalDiscreteNoise) {
++  const GaussMarkov1stOrderFactor<Vector> factor(
++      1, 2, 2.0, Vector2(100.0, 10.0),
++      noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.2)));
++  const auto diagonal =
++      std::dynamic_pointer_cast<noiseModel::Diagonal>(factor.noiseModel());
++  EXPECT(diagonal != nullptr);
++}
++
++// A non-positive interval, a time constant of the wrong size, a zero,
++// negative or NaN time constant, or a constrained noise model is rejected.
++TEST(GaussMarkovFactor, invalidArguments) {
++  const SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
++  CHECK_EXCEPTION(discreteCovariance(0.0, Vector3(1.0, 1.0, 1.0), model),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(discreteCovariance(1.0, Vector2(1.0, 1.0), model),
++                  std::invalid_argument);
++  for (const double badTau : {0.0, -1.0, numeric_limits<double>::quiet_NaN()}) {
++    CHECK_EXCEPTION(discreteCovariance(1.0, Vector3(1.0, badTau, 1.0), model),
++                    std::invalid_argument);
++  }
++  const SharedGaussian constrained =
++      noiseModel::Constrained::MixedSigmas(Vector3(0.0, 1.0, 1.0));
++  CHECK_EXCEPTION(discreteCovariance(1.0, Vector3(1.0, 1.0, 1.0), constrained),
++                  std::invalid_argument);
++}
++
++}  // namespace discrete_noise
++/* ************************************************************************* */
+ int main()
+ {
+   TestResult tr; return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam_unstable/timing/timeHybridAllDiff.cpp
 +++ gtsam-4.3.0/gtsam_unstable/timing/timeHybridAllDiff.cpp
 @@ -35,6 +35,7 @@ using gtsam::DecisionTreeFactor;
@@ -40495,6 +40731,65 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        expected = np.hstack([np.zeros((3, 3)), self.pose.rotation().matrix(),
 +                              np.eye(3)]) / 0.5
 +        np.testing.assert_allclose(jacobian, expected, atol=1e-12)
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- /dev/null
++++ gtsam-4.3.0/python/gtsam_unstable/tests/test_GaussMarkov1stOrderFactor.py
+@@ -0,0 +1,56 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++
++See LICENSE for the license information.
++
++Unit tests for GaussMarkov1stOrderFactor.
++"""
++
++# pylint: disable=invalid-name, no-name-in-module, no-member
++
++import unittest
++
++import numpy as np
++
++import gtsam
++import gtsam_unstable
++from gtsam.utils.test_case import GtsamTestCase
++
++
++class TestGaussMarkov1stOrderFactor(GtsamTestCase):
++    """x2 = exp(-delta_t / tau) x1 + w, with w the exactly discretized noise."""
++
++    def test_error_and_discrete_noise(self):
++        """The error decays x1 per axis and the noise is the exact discrete covariance."""
++        tau, delta_t, sigma = np.array([100.0, 150.0, 10.0]), 2.0, 0.5
++        factor = gtsam_unstable.GaussMarkov1stOrderFactorVector(
++            1, 2, delta_t, tau, gtsam.noiseModel.Isotropic.Sigma(3, sigma))
++        x1, x2 = np.array([10.0, 12.0, 13.0]), np.array([10.0, 15.0, 14.0])
++        values = gtsam.Values()
++        values.insert(1, x1)
++        values.insert(2, x2)
++
++        self.assertIsInstance(factor, gtsam.NoiseModelFactor)
++        np.testing.assert_allclose(factor.unwhitenedError(values),
++                                   x2 - np.exp(-delta_t / tau) * x1)
++        np.testing.assert_allclose(
++            factor.noiseModel().sigmas()**2,
++            sigma**2 * tau / 2 * -np.expm1(-2 * delta_t / tau))
++
++    def test_point3(self):
++        """Point3 states give the same error as dynamic vectors."""
++        tau = np.array([5.0, 5.0, 5.0])
++        factor = gtsam_unstable.GaussMarkov1stOrderFactorPoint3(
++            1, 2, 1.0, tau, gtsam.noiseModel.Isotropic.Sigma(3, 1.0))
++        values = gtsam.Values()
++        values.insert(1, gtsam.Point3(1.0, 2.0, 3.0))
++        values.insert(2, gtsam.Point3(0.0, 0.0, 0.0))
++
++        np.testing.assert_allclose(factor.unwhitenedError(values),
++                                   -np.exp(-1.0 / 5.0) * np.array([1.0, 2.0, 3.0]))
 +
 +
 +if __name__ == "__main__":

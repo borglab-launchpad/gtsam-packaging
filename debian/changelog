@@ -1,10 +1,20 @@
-gtsam (4.3.0-0ubuntu14~42.gbp910398) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~43.gbp6b039c) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @6b039c2f93aa2693fa6900ca4691a9b23eeacde0 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9103987428964fdc21289e438f328ff2c2eaed06 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 17:21:07 +0000
+  [ DLuminary ]
+  * Use the exact discrete noise in GaussMarkov1stOrderFactor and wrap it for Python
+  * Wrap GaussMarkov1stOrderFactor changes to 80 columns
+  * Keep small correlations and reject invalid taus in GaussMarkov1stOrderFactor
+  * Reject constrained noise models in GaussMarkov1stOrderFactor
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 19:07:51 +0000
 
 gtsam (4.3.0-0ubuntu14~41.gbp38ac79) resolute; urgency=medium
 
