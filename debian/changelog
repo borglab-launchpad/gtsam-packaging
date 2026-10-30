@@ -1,10 +1,29 @@
-gtsam (4.3.0-0ubuntu14~45.gbpa8ea05) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~46.gbpd745d2) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @d745d2ba5b8b0211f802cb8acfdc983ee105a98c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @a8ea05c67f517851e366554203cce6db36b59a94 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 19:09:54 +0000
+  [ Varun Agrawal ]
+  * Fix cardinality-1 issue in DTF construction
+  * Update the GTSAM_BUILD_WITH_MARCH_NATIVE to OFF to be ABI compatible
+  * Revert "Update the GTSAM_BUILD_WITH_MARCH_NATIVE to OFF to be ABI compatible"
+
+  [ dellaert ]
+  * Update pixi lockfile
+
+  [ avinashresearch1 ]
+  * Add redundant SO(3) constraints to the Rot3 and Pose3 QCQP traits
+  * Add redundant constraints to the QCQP on request
+
+  [ dellaert@gmail.com ]
+  * Expose final augmented Lagrangian state without retaining history
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Oct 2026 04:47:15 +0000
 
 gtsam (4.3.0-0ubuntu14~44.gbpcb9b2f) resolute; urgency=medium
 

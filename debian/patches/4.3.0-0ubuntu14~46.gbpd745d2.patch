@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 29 2026 19:07:52 +0000
+Date: Oct, 30 2026 04:47:17 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -3009,7 +3009,43 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  // Verifies rank-one Pose3 slices and matching monolithic/chordal solutions.
-@@ -415,15 +424,10 @@ QcqpProblem ApplicationQcqp() {
+@@ -391,6 +400,35 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChor
+                        kObjectiveTolerance);
+ }
+ 
++// Redundant constraints added to the QCQP are lifted like the others: the
++// exact Pose3 ring stays rank one and recovered, with the same objective as the
++// plain relaxation.
++TEST(LiftedSDPs, Pose3_RedundantConstraints) {
++  const std::vector<Pose3> groundTruth =
++      lifted_sdp_tests::Pose3RingPoses(kNumPoses);
++  const NonlinearFactorGraph graph = ExactPoseRingGraph(groundTruth, 16);
++  const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
++  LONGS_EQUAL(QcqpProblem(graph).eConstraints().size() + 11 * kNumPoses,
++              problem.eConstraints().size());
++
++  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> monolithic(problem);
++  LiftedSDPProblem<ChordalSDP, MosekSDPSolver> chordal(
++      problem, ChordalOrderingType::Metis);
++  const SdpSolutionSummary monolithicResult =
++      SolveAndSummarize(&monolithic, groundTruth);
++  const SdpSolutionSummary chordalResult =
++      SolveAndSummarize(&chordal, groundTruth);
++
++  EXPECT(monolithicResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
++  EXPECT(chordalResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
++  EXPECT(monolithicResult.maximumPoseError < kPoseErrorTolerance);
++  EXPECT(chordalResult.maximumPoseError < kPoseErrorTolerance);
++  EXPECT(monolithicResult.objective < kObjectiveTolerance);
++  EXPECT(chordalResult.objective < kObjectiveTolerance);
++  EXPECT_DOUBLES_EQUAL(monolithicResult.objective, chordalResult.objective,
++                       kObjectiveTolerance);
++}
++
+ }  // namespace pose_ring_sdp_fixture
+ /* ************************************************************************* */
+ 
+@@ -415,15 +453,10 @@ QcqpProblem ApplicationQcqp() {
                                                std::sqrt(2.0), 3.0);
  
    QcqpProblem problem(graph, 1);
@@ -3027,7 +3063,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return problem;
  }
  
-@@ -443,11 +447,19 @@ ApplicationSolution SolveApplication(Sol
+@@ -443,11 +476,19 @@ ApplicationSolution SolveApplication(Sol
  }
  
  // Both MOSEK formulations solve a D=1 graph containing every new QCQP factor
@@ -3048,7 +3084,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
    const ApplicationSolution chordalResult = SolveApplication(&chordal);
    for (const ApplicationSolution* result :
-@@ -455,7 +467,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
+@@ -455,7 +496,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
      EXPECT(result->solved);
      EXPECT(result->objective < 1e-5);
      EXPECT_LONGS_EQUAL(6, result->valueCount);
@@ -3057,7 +3093,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
                         [](double evr) { return evr > 1e3; }));
    }
-@@ -465,15 +477,15 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
+@@ -465,15 +506,15 @@ TEST(LiftedSDPs, Pr2713ApplicationFactor
  /* ************************************************************************* */
  
  /* ************************************************************************* */
@@ -3078,7 +3114,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
    const double expected = 2.0 * count * (1.0 - std::cos(delta));
    auto check = [&](auto* solver) {
-@@ -481,27 +493,25 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyR
+@@ -481,27 +522,25 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyR
      EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
      const Values values = solver->qcqpValues();
      EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
@@ -3117,7 +3153,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
    NonlinearFactorGraph costs;
    if (connected) {
-@@ -539,11 +549,14 @@ void CheckNormProblem(size_t count, bool
+@@ -539,11 +578,14 @@ void CheckNormProblem(size_t count, bool
      const Values values = solver->qcqpValues();
      EXPECT_LONGS_EQUAL(count, values.size());
      for (size_t key = 0; key < count; ++key) {
@@ -3136,7 +3172,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      }
    };
    MosekMonolithicSDP monolithic(problem);
-@@ -555,23 +568,171 @@ void CheckNormProblem(size_t count, bool
+@@ -555,23 +597,171 @@ void CheckNormProblem(size_t count, bool
    }
  }
  
@@ -3319,7 +3355,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
 --- gtsam-4.3.0.orig/gtsam/certifiable/tests/testRiemannianStaircase.cpp
 +++ gtsam-4.3.0/gtsam/certifiable/tests/testRiemannianStaircase.cpp
-@@ -858,7 +858,8 @@ QcqpProblem OneVariableProblem(const Mat
+@@ -91,9 +91,11 @@ class CountingFrobeniusBetweenFactor : p
+ 
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension) const override {
+     ++*buildCount_;
+-    Base::qcqpFactors(costs, constraints, columnDimension);
++    Base::qcqpFactors(costs, constraints, redundantConstraints,
++                      columnDimension);
+   }
+ 
+  private:
+@@ -858,7 +860,8 @@ QcqpProblem OneVariableProblem(const Mat
                        SymmetricBlockMatrix(std::vector<DenseIndex>{2},
                                             Matrix(Q)),
                        3));
@@ -3790,7 +3839,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          solvedState.bclEta = subproblemState.bclEta *
                               std::pow(subproblemState.bclAlpha, p_->bclBetaEta);
        } else {
-@@ -451,13 +636,16 @@ AugmentedLagrangianOptimizer::iterate(co
+@@ -451,13 +636,22 @@ AugmentedLagrangianOptimizer::iterate(co
    solvedState.time =
        std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
            .count();
@@ -3800,6 +3849,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  /* ************************************************************************* */
  Values AugmentedLagrangianOptimizer::optimize() const {
++  return optimizeWithState().values;
++}
++
++/* ************************************************************************* */
++AugmentedLagrangianOptimizer::State
++AugmentedLagrangianOptimizer::optimizeWithState() const {
    validateConfiguration();
    progress_.clear();
 +  // Growing this vector can copy every saved Values snapshot because Values'
@@ -3808,7 +3863,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    // Construct the initial primal-dual state with zero multipliers.
    State state(0, initialValues_, problem_);
-@@ -477,9 +665,12 @@ Values AugmentedLagrangianOptimizer::opt
+@@ -477,9 +671,12 @@ Values AugmentedLagrangianOptimizer::opt
    logInitialState(state);
  
    // Solve fixed-parameter subproblems and apply the selected outer policy.
@@ -3823,7 +3878,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
      if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
        state.converged = state.innerConverged &&
-@@ -488,7 +679,8 @@ Values AugmentedLagrangianOptimizer::opt
+@@ -488,7 +685,8 @@ Values AugmentedLagrangianOptimizer::opt
                          state.generalizedConstraintViolation <=
                              p_->absoluteViolationTolerance;
      } else {
@@ -3833,7 +3888,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      }
      logIteration(state);
  
-@@ -524,10 +716,9 @@ NonlinearFactorGraph AugmentedLagrangian
+@@ -498,7 +696,7 @@ Values AugmentedLagrangianOptimizer::opt
+     }
+   }
+ 
+-  return state.values;
++  return state;
+ }
+ 
+ /* ************************************************************************* */
+@@ -524,10 +722,9 @@ NonlinearFactorGraph AugmentedLagrangian
    const auto& equalities = problem_.eConstraints();
    for (size_t i = 0; i < equalities.size(); ++i) {
      const auto& constraint = equalities.at(i);
@@ -3847,7 +3911,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    // Add exact PHR factors for scalar g<=0. Each graph error is
-@@ -595,19 +786,16 @@ std::pair<double, double> AugmentedLagra
+@@ -595,19 +792,16 @@ std::pair<double, double> AugmentedLagra
  }
  
  /* ************************************************************************* */
@@ -3903,7 +3967,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
   */
  class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
   public:
-@@ -209,9 +221,13 @@ class GTSAM_EXPORT AugmentedLagrangianOp
+@@ -182,9 +194,17 @@ class GTSAM_EXPORT AugmentedLagrangianOp
+       Params::shared_ptr p = std::make_shared<Params>())
+       : Base(graph, initialValues), p_(p), progress_() {}
+ 
+-  /// Run the selected augmented-Lagrangian update policy.
++  /// Run the selected augmented-Lagrangian update policy and return its values.
+   Values optimize() const override;
+ 
++  /** Run the same optimization and return its final values and diagnostics.
++   * Each call starts from initialValues_ with fresh multipliers and retains one
++   * workspace across its outer iterations. The returned state describes either
++   * convergence or the stopping condition; callers must check converged.
++   * No iteration history is stored unless storeOptProgress is enabled.
++   */
++  State optimizeWithState() const;
++
+   /**
+    * Solve one fixed-multiplier subproblem and perform one outer update.
+    * `muEq` and `muIneq` are the direct penalties used for this subproblem and
+@@ -209,9 +229,13 @@ class GTSAM_EXPORT AugmentedLagrangianOp
                                                     double epsilon = 1.0) const;
  
   protected:
@@ -3932,9 +4015,86 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************* */
+@@ -65,7 +66,8 @@ void MergeEqualityConstraints(
+ 
+ /* ************************************************************************* */
+ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
+-                         size_t columnDimension) {
++                         size_t columnDimension,
++                         bool useRedundantConstraints) {
+   if (columnDimension == 0) {
+     throw std::invalid_argument(
+         "QcqpProblem: columnDimension must be positive.");
+@@ -77,10 +79,16 @@ QcqpProblem::QcqpProblem(const Nonlinear
+ 
+     NonlinearFactorGraph factorCosts;
+     NonlinearEqualityConstraints factorConstraints;
+-    factor->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
++    NonlinearEqualityConstraints factorRedundantConstraints;
++    factor->qcqpFactors(
++        &factorCosts, &factorConstraints,
++        useRedundantConstraints ? &factorRedundantConstraints : nullptr,
++        columnDimension);
+     costs_.add(factorCosts);
+     MergeEqualityConstraints(factorConstraints, &eqConstraints_,
+                              &quadraticConstraintIndex);
++    MergeEqualityConstraints(factorRedundantConstraints, &eqConstraints_,
++                             &quadraticConstraintIndex);
+   }
+ }
+ 
 --- gtsam-4.3.0.orig/gtsam/constrained/QcqpProblem.h
 +++ gtsam-4.3.0/gtsam/constrained/QcqpProblem.h
-@@ -94,9 +94,12 @@ void InsertQcqpValue(Key key, const T& v
+@@ -25,6 +25,7 @@
+ #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+ 
+ #include <stdexcept>
++#include <tuple>
+ #include <type_traits>
+ #include <utility>
+ #include <vector>
+@@ -60,6 +61,40 @@ template <typename T>
+ struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
+     : std::true_type {};
+ 
++template <typename T, typename = void>
++struct HasQcqpRedundantConstraints : std::false_type {};
++
++template <typename T>
++struct HasQcqpRedundantConstraints<
++    T, std::void_t<decltype(traits<T>::QcqpRedundantConstraints())>>
++    : std::true_type {};
++
++/// Insert (A, a, b) quadratic equalities on one key, skipping exact duplicates.
++inline void InsertQuadraticEqualities(
++    Key key, const std::vector<std::tuple<Matrix, Vector, double>>& triples,
++    NonlinearEqualityConstraints* constraints) {
++  for (const auto& [A, a, b] : triples) {
++    const QuadraticConstraint candidate =
++        QuadraticConstraint::Equal(key, A, a, b);
++    bool alreadyPresent = false;
++    for (const auto& factor : *constraints) {
++      const auto* quadratic =
++          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
++      if (!quadratic) continue;
++      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
++      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
++          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
++          existing.sigma() == 1.0) {
++        alreadyPresent = true;
++        break;
++      }
++    }
++    if (!alreadyPresent) {
++      constraints->push_back(candidate.createEqualityFactor());
++    }
++  }
++}
++
+ }  // namespace internal
+ 
+ /**
+@@ -94,12 +129,22 @@ void InsertQcqpValue(Key key, const T& v
  /**
   * Insert the QCQP equality constraints for one variable.
   *
@@ -3947,39 +4107,50 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + * already-present quadratic equality with the same key, matrix, linear term,
 + * and right-hand side is considered a duplicate. Other unary constraints on
 + * the key are preserved and do not suppress the manifold constraints.
++ *
++ * At D=1, types whose traits define QcqpRedundantConstraints() also have
++ * redundant constraints: identities implied by the manifold constraints, so
++ * they add nothing to the QCQP, but not implied after the SDP relaxation,
++ * which they tighten. They go to redundantConstraints, with the same
++ * duplicate check, unless it is nullptr.
   */
  template <typename T, int D = 1>
- void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
-@@ -107,7 +110,9 @@ void InsertQcqpConstraints(Key key, Nonl
+-void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
++void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints,
++                           NonlinearEqualityConstraints* redundantConstraints) {
+   static_assert(internal::HasQcqpVariableTraits<T, D>::value,
+                 "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
+                 "traits<T>::QcqpConstraints<D>.");
+@@ -107,22 +152,12 @@ void InsertQcqpConstraints(Key key, Nonl
      throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
    }
  
 -  for (const auto& [A, b] : traits<T>::template QcqpConstraints<D>()) {
-+  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
-+    const QuadraticConstraint candidate =
-+        QuadraticConstraint::Equal(key, A, a, b);
-     bool alreadyPresent = false;
-     for (const auto& factor : *constraints) {
-       const auto* quadratic =
-@@ -115,14 +120,14 @@ void InsertQcqpConstraints(Key key, Nonl
-       if (!quadratic) continue;
-       const QuadraticConstraint& existing = quadratic->quadraticConstraint();
-       if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
+-    bool alreadyPresent = false;
+-    for (const auto& factor : *constraints) {
+-      const auto* quadratic =
+-          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+-      if (!quadratic) continue;
+-      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
+-      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
 -          existing.b() == b && existing.sigma() == 1.0) {
-+          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
-+          existing.sigma() == 1.0) {
-         alreadyPresent = true;
-         break;
-       }
-     }
-     if (!alreadyPresent) {
+-        alreadyPresent = true;
+-        break;
+-      }
+-    }
+-    if (!alreadyPresent) {
 -      constraints->push_back(
 -          QuadraticConstraint::Equal(key, A, b).createEqualityFactor());
-+      constraints->push_back(candidate.createEqualityFactor());
++  internal::InsertQuadraticEqualities(
++      key, traits<T>::template QcqpConstraints<D>(), constraints);
++  if constexpr (D == 1 && internal::HasQcqpRedundantConstraints<T>::value) {
++    if (redundantConstraints) {
++      internal::InsertQuadraticEqualities(
++          key, traits<T>::QcqpRedundantConstraints(), redundantConstraints);
      }
    }
  }
-@@ -130,7 +135,7 @@ void InsertQcqpConstraints(Key key, Nonl
+@@ -130,7 +165,7 @@ void InsertQcqpConstraints(Key key, Nonl
  /**
   * Project QCQP variables back into typed values.
   *
@@ -3988,6 +4159,28 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
   * exact N-by-D matrix slices, where N is the intrinsic matrix row dimension
   * of T. Selection is shape-only: types with identical lift dimensions (for
   * example, compact Rot2 and Vector2 at D=1) cannot be distinguished in a
+@@ -235,9 +270,19 @@ class GTSAM_EXPORT QcqpProblem : public
+               const NonlinearInequalityConstraints& ineqConstraints)
+       : Base(costs, eqConstraints, ineqConstraints) {}
+ 
+-  /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
++  /**
++   * Convert a supported nonlinear factor graph into QCQP costs/constraints.
++   *
++   * With useRedundantConstraints, the variables' redundant constraints, such
++   * as the eleven of Rot3 and Pose3 at columnDimension 1, are added to the
++   * equality constraints. They are implied by the manifold constraints, so
++   * they leave the feasible set unchanged, but the QCQP then violates LICQ,
++   * which local QCQP solvers may not handle. They tighten the SDP
++   * relaxations, which lift them like any other equality constraint.
++   */
+   explicit QcqpProblem(const NonlinearFactorGraph& graph,
+-                       size_t columnDimension = 1);
++                       size_t columnDimension = 1,
++                       bool useRedundantConstraints = false);
+ 
+   /** Add a quadratic cost. */
+   void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }
 --- gtsam-4.3.0.orig/gtsam/constrained/QuadraticConstraint.cpp
 +++ gtsam-4.3.0/gtsam/constrained/QuadraticConstraint.cpp
 @@ -54,15 +54,23 @@ Vector ConstraintError(const QuadraticCo
@@ -4177,7 +4370,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    double b() const;
    gtsam::QuadraticConstraint::Sense sense() const;
    bool isEquality() const;
-@@ -307,7 +323,7 @@ virtual class AugmentedLagrangianOptimiz
+@@ -228,7 +244,8 @@ class QpProblem : gtsam::ConstrainedOptP
+ class QcqpProblem : gtsam::ConstrainedOptProblem {
+   QcqpProblem();
+   QcqpProblem(const gtsam::NonlinearFactorGraph& graph,
+-               size_t columnDimension = 1);
++               size_t columnDimension = 1,
++               bool useRedundantConstraints = false);
+ 
+   void addCost(const gtsam::QpCost& cost);
+   void addConstraint(const gtsam::LinearConstraint& constraint);
+@@ -307,7 +324,7 @@ virtual class AugmentedLagrangianOptimiz
    AugmentedLagrangianOptimizer(
        const gtsam::ConstrainedOptProblem& problem,
        const gtsam::Values& initialValues,
@@ -4193,8 +4396,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
  - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
 -- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
+-- `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 +- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
- - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
++- `QcqpProblem(graph, columnDim, useRedundantConstraints)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables. With `useRedundantConstraints`, it also adds redundant constraints implied by the manifold constraints, at D=1 the column-orthonormality and cyclic cross-product identities of SO(3) for Rot3 and Pose3: they tighten SDP relaxations, but the QCQP then violates LICQ.
  - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
 -- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 homogeneous vectors
 -  or matrix slices back to manifold values. Absolute results from unanchored
@@ -4448,7 +4652,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/nonlinear/expressions.h>
  
  #include <cmath>
-@@ -435,6 +436,181 @@ TEST(AugmentedLagrangianBCL, MixedChangi
+@@ -435,6 +436,248 @@ TEST(AugmentedLagrangianBCL, MixedChangi
  /* ************************************************************************* */
  
  /* ************************************************************************* */
@@ -4545,6 +4749,73 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +                       result.augmentedLagrangianStationarity, 1e-10);
 +}
 +
++// Final diagnostics remain available without retaining intermediate Values,
++// and both public optimization entry points start a fresh identical solve.
++TEST(AugmentedLagrangianBCL, FinalStateWithoutHistory) {
++  using namespace scalar_problem;
++  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
++  auto params = BclParams();
++  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
++  const Values expectedValues = optimizer.optimize();
++  const auto expected = optimizer.progress().back();
++  EXPECT(expected.converged);
++  EXPECT(expected.iteration > 1);
++
++  params->storeOptProgress = false;
++  const auto result = optimizer.optimizeWithState();
++  EXPECT(optimizer.progress().empty());
++  EXPECT(result.converged);
++  EXPECT(result.innerConverged);
++  EXPECT(assert_equal(expectedValues, result.values, 1e-12));
++  EXPECT_LONGS_EQUAL(expected.iteration, result.iteration);
++  EXPECT_LONGS_EQUAL(expected.totalUnconstrainedIterations,
++                    result.totalUnconstrainedIterations);
++  EXPECT_DOUBLES_EQUAL(expected.augmentedLagrangianStationarity,
++                       result.augmentedLagrangianStationarity, 1e-12);
++  EXPECT_DOUBLES_EQUAL(expected.generalizedConstraintViolation,
++                       result.generalizedConstraintViolation, 1e-12);
++  EXPECT_DOUBLES_EQUAL(expected.lambdaIneq[0], result.lambdaIneq[0], 1e-12);
++  EXPECT(assert_equal(result.values, optimizer.optimize(), 1e-12));
++  EXPECT(optimizer.progress().empty());
++}
++
++// A feasible initial point with an unmet inner target must be reported as
++// nonconverged even though optimize() can return its Values normally.
++TEST(AugmentedLagrangianBCL, FinalStateReportsInnerFailure) {
++  using namespace scalar_problem;
++  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
++  auto params = BclParams();
++  params->storeOptProgress = false;
++  params->lmParams.maxIterations = 0;
++  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(0.0), params);
++  const auto result = optimizer.optimizeWithState();
++  EXPECT(!result.converged);
++  EXPECT(!result.innerConverged);
++  EXPECT_LONGS_EQUAL(1, result.iteration);
++  EXPECT_LONGS_EQUAL(0, result.totalUnconstrainedIterations);
++  EXPECT_DOUBLES_EQUAL(0.0, result.values.at<double>(kX), 0.0);
++  EXPECT(result.augmentedLagrangianStationarity >
++         params->absoluteStationarityTolerance);
++  EXPECT(optimizer.progress().empty());
++}
++
++// Exhausting the outer budget returns diagnostics rather than claiming success.
++TEST(AugmentedLagrangianBCL, FinalStateReportsOuterLimit) {
++  using namespace scalar_problem;
++  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
++  auto params = BclParams();
++  params->storeOptProgress = false;
++  params->maxIterations = 1;
++  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
++  const auto result = optimizer.optimizeWithState();
++  EXPECT(!result.converged);
++  EXPECT(result.innerConverged);
++  EXPECT_LONGS_EQUAL(1, result.iteration);
++  EXPECT(result.generalizedConstraintViolation >
++         params->absoluteViolationTolerance);
++  EXPECT(optimizer.progress().empty());
++}
++
 +// Reusing numerical storage across changed penalties and multipliers must
 +// match independently constructed solves, including changing PHR activity.
 +TEST(AugmentedLagrangianBCL, PersistentMatchesFreshSubproblems) {
@@ -4632,7 +4903,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return TestRegistry::runAllTests(result);
 --- gtsam-4.3.0.orig/gtsam/constrained/tests/testQcqpProblem.cpp
 +++ gtsam-4.3.0/gtsam/constrained/tests/testQcqpProblem.cpp
-@@ -41,8 +41,8 @@ using namespace gtsam;
+@@ -31,6 +31,7 @@
+ #include <gtsam/slam/BetweenFactor.h>
+ #include <gtsam/slam/FrobeniusFactor.h>
+ 
++#include <algorithm>
+ #include <array>
+ #include <cmath>
+ #include <string>
+@@ -41,8 +42,8 @@ using namespace gtsam;
  // Mathematical reading guide:
  // 1. RowSpaceQpCostFixture and QuadraticConstraintFixture establish the
  //    trace-form primitives used by both tracks.
@@ -4643,7 +4922,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // 3. QcqpRot2VariableFixture and QcqpTraitExtensionsFixture develop the
  //    D>=N Stiefel track, right-O(D) gauge, and supported factor boundary.
  // 4. QcqpConstraintInsertionFixture and QcqpExtractionFixture document the
-@@ -225,6 +225,61 @@ TEST(QuadraticConstraint, GreaterEqualVi
+@@ -225,6 +226,61 @@ TEST(QuadraticConstraint, GreaterEqualVi
        1e-12);
  }
  
@@ -4705,7 +4984,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }  // namespace QuadraticConstraintFixture
  /* ************************************************************************* */
  namespace QcqpProblemFixture {
-@@ -376,8 +431,8 @@ TEST(QcqpProblem, MissingQcqpTraitsThrow
+@@ -376,8 +432,8 @@ TEST(QcqpProblem, MissingQcqpTraitsThrow
    EXPECT(ThrowsMissingQcqpTraits(graph));
  }
  
@@ -4716,7 +4995,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
    NonlinearFactorGraph graph;
    graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
-@@ -472,8 +527,8 @@ TEST(QcqpProblem, FrobeniusBetweenFactor
+@@ -472,8 +528,8 @@ TEST(QcqpProblem, FrobeniusBetweenFactor
    EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
  }
  
@@ -4727,7 +5006,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
    const Rot2 measured = Rot2::fromAngle(0.25);
    const auto hardNoise = noiseModel::Constrained::All(4);
-@@ -496,10 +551,10 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2
+@@ -496,10 +552,10 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2
    EXPECT(priorConstraint != nullptr);
    if (!priorConstraint) return;
  
@@ -4740,7 +5019,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                        1e-12));
    EXPECT(assert_equal(Vector(expectedTarget), Vector(priorJacobian.getb()),
                        1e-12));
-@@ -511,7 +566,7 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2
+@@ -511,7 +567,7 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2
  
    Values negatedQcqpValues;
    negatedQcqpValues.insert(x0, -traits<Rot2>::QcqpValue<1>(measured));
@@ -4749,7 +5028,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                         problem.eConstraints().violationNorm(negatedQcqpValues),
                         1e-12);
  }
-@@ -571,7 +626,7 @@ TEST(QcqpProblem, HardFrobeniusPriorRot3
+@@ -571,7 +627,7 @@ TEST(QcqpProblem, HardFrobeniusPriorRot3
        HardFrobeniusPriorD1(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}));
    LONGS_EQUAL(0, result.costCount);
    EXPECT(result.foundPrior);
@@ -4758,7 +5037,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
    EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
  }
-@@ -581,7 +636,7 @@ TEST(QcqpProblem, HardFrobeniusPriorPose
+@@ -581,7 +637,7 @@ TEST(QcqpProblem, HardFrobeniusPriorPose
        HardFrobeniusPriorD1(Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)));
    LONGS_EQUAL(0, result.costCount);
    EXPECT(result.foundPrior);
@@ -4767,7 +5046,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
    EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
  }
-@@ -591,7 +646,7 @@ TEST(QcqpProblem, HardFrobeniusPriorPose
+@@ -591,7 +647,7 @@ TEST(QcqpProblem, HardFrobeniusPriorPose
        Pose3(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}), Point3(1.0, -2.0, 0.5)));
    LONGS_EQUAL(0, result.costCount);
    EXPECT(result.foundPrior);
@@ -4776,7 +5055,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
    EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
  }
-@@ -809,8 +864,8 @@ TEST(QcqpProblem, HardPriorPinsRot2RingS
+@@ -809,8 +865,40 @@ TEST(QcqpProblem, HardPriorPinsRot2RingS
                         problem.costs().error(negated), 1e-12);
    EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(canonical),
                         1e-12);
@@ -4784,10 +5063,51 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -                       problem.eConstraints().violationNorm(negated), 1e-12);
 +  EXPECT_DOUBLES_EQUAL(2.0, problem.eConstraints().violationNorm(negated),
 +                       1e-12);
++}
++
++// Redundant constraints join the equality constraints only on request: each
++// Rot3 key then has its eleven, once despite two factors per key, next to its
++// nine manifold constraints. D > 1 has none, and a hard FrobeniusPrior keeps
++// its variable's constraints in the QCQP.
++TEST(QcqpProblem, RedundantConstraintsRot3Ring) {
++  constexpr size_t N = 3;
++  NonlinearFactorGraph graph;
++  Values qcqpValues;
++  for (size_t i = 0; i < N; ++i) {
++    graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
++        Symbol('x', i), Symbol('x', (i + 1) % N), Rot3::Rz(2.0 * M_PI / N));
++    InsertQcqpValue<Rot3, 1>(Symbol('x', i), Rot3::Rz(2.0 * M_PI * i / N),
++                             &qcqpValues);
++  }
++
++  LONGS_EQUAL(9 * N, QcqpProblem(graph).eConstraints().size());
++  const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
++  LONGS_EQUAL(20 * N, problem.eConstraints().size());
++  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
++                       1e-12);
++
++  const QcqpProblem stiefel(graph, 3, /*useRedundantConstraints=*/true);
++  LONGS_EQUAL(QcqpProblem(graph, 3).eConstraints().size(),
++              stiefel.eConstraints().size());
++
++  graph.emplace_shared<FrobeniusPrior<Rot3>>(Symbol('x', 0),
++                                             Matrix3::Identity(),
++                                             noiseModel::Constrained::All(9));
++  const QcqpProblem anchored(graph, 1, /*useRedundantConstraints=*/true);
++  LONGS_EQUAL(20 * N + 1, anchored.eConstraints().size());
  }
  
  }  // namespace QcqpRingFixture
-@@ -867,9 +922,10 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstra
+@@ -847,7 +935,7 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstra
+   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
+ 
+   NonlinearEqualityConstraints constraints;
+-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
++  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+   Values values;
+   values.insert(x0, X);
+ 
+@@ -867,13 +955,14 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstra
    const auto constraintsD3 = traits<Rot2>::QcqpConstraints<3>();
    LONGS_EQUAL(constraintsD2.size(), constraintsD3.size());
    for (size_t i = 0; i < constraintsD2.size(); ++i) {
@@ -4801,7 +5121,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    NonlinearEqualityConstraints constraints;
-@@ -936,6 +992,11 @@ namespace QcqpTraitExtensionsFixture {
+-  InsertQcqpConstraints<Rot2, 3>(x0, &constraints);
++  InsertQcqpConstraints<Rot2, 3>(x0, &constraints, nullptr);
+   Values values;
+   values.insert(x0, X);
+ 
+@@ -936,6 +1025,11 @@ namespace QcqpTraitExtensionsFixture {
  const Key x0 = Symbol('x', 0);
  const Key x1 = Symbol('x', 1);
  
@@ -4813,7 +5138,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  // Verifies Rot2 QcqpValue at D=4 zero-pads beyond the intrinsic dim.
  TEST(QcqpProblem, Rot2QcqpValueD4Padding) {
    const Rot2 R = Rot2::fromAngle(0.7);
-@@ -958,45 +1019,43 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAre
+@@ -958,45 +1052,43 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAre
    LONGS_EQUAL(cs2.size(), cs3.size());
    LONGS_EQUAL(cs2.size(), cs5.size());
    for (size_t i = 0; i < cs2.size(); ++i) {
@@ -4880,7 +5205,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    const Matrix3 RRt = raw * raw.transpose();
-@@ -1004,9 +1063,8 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstra
+@@ -1004,144 +1096,138 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstra
        std::pair<int, int>{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}};
    for (size_t k = 0; k < upperTriangle.size(); ++k) {
      const auto [row, col] = upperTriangle[k];
@@ -4892,7 +5217,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    NonlinearEqualityConstraints insertedConstraints;
-@@ -1015,68 +1073,64 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstra
+-  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints);
++  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints, nullptr);
+   Values values;
    values.insert(x0, X);
    EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
  
@@ -4991,7 +5318,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    NonlinearEqualityConstraints insertedConstraints;
-@@ -1085,63 +1139,62 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstr
+-  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints);
++  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints, nullptr);
+   Values values;
    values.insert(x0, X);
    EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
  
@@ -5084,7 +5413,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    const Matrix3 RRt = rawR * rawR.transpose();
-@@ -1149,18 +1202,16 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstr
+@@ -1149,41 +1235,132 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstr
        std::pair<int, int>{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}};
    for (size_t k = 0; k < upperTriangle.size(); ++k) {
      const auto [row, col] = upperTriangle[k];
@@ -5109,7 +5438,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    NonlinearEqualityConstraints insertedConstraints;
-@@ -1169,21 +1220,20 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstr
+-  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints);
++  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints, nullptr);
+   Values values;
    values.insert(x0, X);
    EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
  
@@ -5120,6 +5451,53 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -                       1e-12);
 +  negatedValues.insert(x0, Matrix(-X));
 +  EXPECT(insertedConstraints.violationNorm(negatedValues) > 1.0);
++
++  Vector12 reflectedX{1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
++                      0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
++  {
++    const auto& [A, a, b] = constraints[0];
++    EXPECT(std::abs(ConstraintForm(A, a, reflectedX) - b) > 1e-12);
++  }
++  for (size_t k = 3; k < constraints.size(); ++k) {
++    const auto& [A, a, b] = constraints[k];
++    EXPECT_DOUBLES_EQUAL(b, ConstraintForm(A, a, reflectedX), 1e-12);
++  }
++}
++
++// The eleven redundant Rot3 constraints hold on SO(3). At any 3x3 matrix they
++// evaluate to the entries of R'R (without the last diagonal one) and to the
++// residuals of the cyclic cross products c2 x c0 = c1 and c0 x c1 = c2.
++TEST(QcqpProblem, Rot3D1RedundantConstraints) {
++  const auto constraints = traits<Rot3>::QcqpRedundantConstraints();
++  LONGS_EQUAL(11, constraints.size());
++
++  const Rot3 R = Rot3::Expmap(Vector3{0.4, -0.1, 0.7});
++  const Matrix X = traits<Rot3>::template QcqpValue<1>(R);
++  for (const auto& [A, a, b] : constraints) {
++    LONGS_EQUAL(9, A.rows());
++    LONGS_EQUAL(9, A.cols());
++    EXPECT(assert_equal(A, Matrix(A.transpose()), 1e-12));
++    EXPECT_DOUBLES_EQUAL(b, ConstraintForm(A, a, X.col(0)), 1e-12);
++  }
++
++  Matrix3 raw{{1.0, 2.0, 3.0}, {4.0, 5.0, 7.0}, {8.0, 9.0, 11.0}};
++  const Vector9 rawX = Eigen::Map<const Vector9>(raw.data());
++  const Matrix3 RtR = raw.transpose() * raw;
++  const std::array<std::pair<int, int>, 5> upperTriangle = {
++      std::pair<int, int>{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}};
++  for (size_t k = 0; k < upperTriangle.size(); ++k) {
++    const auto [i, j] = upperTriangle[k];
++    const auto& [A, a, b] = constraints[k];
++    EXPECT_DOUBLES_EQUAL(RtR(i, j), ConstraintForm(A, a, rawX), 1e-12);
++  }
++  const Vector3 residual1 = raw.col(2).cross(raw.col(0)) - raw.col(1);
++  const Vector3 residual2 = raw.col(0).cross(raw.col(1)) - raw.col(2);
++  for (int row = 0; row < 3; ++row) {
++    const auto& [A1, a1, b1] = constraints[5 + row];
++    EXPECT_DOUBLES_EQUAL(residual1(row), ConstraintForm(A1, a1, rawX), 1e-12);
++    const auto& [A2, a2, b2] = constraints[8 + row];
++    EXPECT_DOUBLES_EQUAL(residual2(row), ConstraintForm(A2, a2, rawX), 1e-12);
++  }
  
 -  Eigen::Matrix<double, 13, 1> reflectedX{1.0, 1.0, 0.0,  0.0, 0.0,  1.0, 0.0,
 -                                          0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
@@ -5131,19 +5509,105 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -        constraints[k].second,
 -        (reflectedX.transpose() * constraints[k].first * reflectedX)(0, 0),
 -        1e-12);
-+  Vector12 reflectedX{1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-+                      0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
-+  {
-+    const auto& [A, a, b] = constraints[0];
-+    EXPECT(std::abs(ConstraintForm(A, a, reflectedX) - b) > 1e-12);
++  // A reflection has orthonormal columns but violates the cross products.
++  Matrix3 reflection = Matrix3::Identity();
++  reflection(2, 2) = -1.0;
++  const Vector9 reflectedX = Eigen::Map<const Vector9>(reflection.data());
++  double largestViolation = 0.0;
++  for (const auto& [A, a, b] : constraints) {
++    largestViolation = std::max(largestViolation,
++                                std::abs(ConstraintForm(A, a, reflectedX) - b));
 +  }
-+  for (size_t k = 3; k < constraints.size(); ++k) {
-+    const auto& [A, a, b] = constraints[k];
-+    EXPECT_DOUBLES_EQUAL(b, ConstraintForm(A, a, reflectedX), 1e-12);
++  EXPECT(largestViolation > 0.5);
++}
++
++// After lifting, the redundant constraints are linearly independent of the
++// nine manifold constraints: [vec(A); a; b] of all twenty has rank 20. The
++// omitted ||c2||^2 = 1 would not raise the rank, as the trace implies it.
++TEST(QcqpProblem, Rot3D1RedundantConstraintsIndependent) {
++  auto triples = traits<Rot3>::template QcqpConstraints<1>();
++  for (const auto& triple : traits<Rot3>::QcqpRedundantConstraints()) {
++    triples.push_back(triple);
++  }
++  Matrix lastColumnNorm = Matrix::Zero(9, 9);
++  lastColumnNorm.bottomRightCorner<3, 3>() = Matrix3::Identity();
++  triples.emplace_back(lastColumnNorm, Vector(), 1.0);
++
++  Matrix stacked = Matrix::Zero(triples.size(), 81 + 9 + 1);
++  for (size_t k = 0; k < triples.size(); ++k) {
++    const auto& [A, a, b] = triples[k];
++    stacked.block(k, 0, 1, 81) = Eigen::Map<const Matrix>(A.data(), 1, 81);
++    if (a.size() > 0) stacked.block(k, 81, 1, 9) = a.transpose();
++    stacked(k, 90) = b;
++  }
++  LONGS_EQUAL(20, Eigen::FullPivLU<Matrix>(stacked.topRows(20)).rank());
++  LONGS_EQUAL(20, Eigen::FullPivLU<Matrix>(stacked).rank());
++}
++
++// The Pose3 redundant constraints are the Rot3 ones with zero translation
++// rows and columns.
++TEST(QcqpProblem, Pose3D1RedundantConstraints) {
++  const auto rotation = traits<Rot3>::QcqpRedundantConstraints();
++  const auto pose = traits<Pose3>::QcqpRedundantConstraints();
++  LONGS_EQUAL(11, pose.size());
++  const Matrix X = traits<Pose3>::template QcqpValue<1>(
++      Pose3(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}), Point3(1.0, -2.0, 0.5)));
++  for (size_t k = 0; k < pose.size(); ++k) {
++    const auto& [A, a, b] = pose[k];
++    const auto& [rotationA, rotationLinear, rotationB] = rotation[k];
++    EXPECT(assert_equal(rotationA, Matrix(A.topLeftCorner<9, 9>()), 0.0));
++    EXPECT(A.bottomRows(3).isZero(0.0));
++    EXPECT(A.rightCols(3).isZero(0.0));
++    LONGS_EQUAL(rotationLinear.size() == 0 ? 0 : 12, a.size());
++    if (a.size() > 0) {
++      EXPECT(assert_equal(rotationLinear, Vector(a.head<9>()), 0.0));
++      EXPECT(a.tail<3>().isZero(0.0));
++    }
++    EXPECT_DOUBLES_EQUAL(rotationB, b, 0.0);
++    EXPECT_DOUBLES_EQUAL(b, ConstraintForm(A, a, X.col(0)), 1e-12);
    }
  }
  
-@@ -1470,102 +1520,79 @@ namespace QcqpExtractionFixture {
+@@ -1201,7 +1378,7 @@ TEST(QcqpProblem, Rot3D3QcqpValueConstra
+   LONGS_EQUAL(6, cs.size());
+ 
+   NonlinearEqualityConstraints constraints;
+-  InsertQcqpConstraints<Rot3, 3>(x0, &constraints);
++  InsertQcqpConstraints<Rot3, 3>(x0, &constraints, nullptr);
+   Values values;
+   values.insert(x0, X);
+   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
+@@ -1317,9 +1494,9 @@ TEST(QcqpProblem, InsertQcqpConstraintsM
+       LinearConstraint::Equal(JacobianFactor(x0, selector, Vector1(1.0)))
+           .createEqualityFactor());
+ 
+-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
++  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+   LONGS_EQUAL(4, constraints.size());
+-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
++  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+   LONGS_EQUAL(4, constraints.size());
+ }
+ 
+@@ -1373,7 +1550,7 @@ class QuadraticConstraintEmitter : publi
+ 
+   void qcqpFactors(NonlinearFactorGraph*,
+                    NonlinearEqualityConstraints* constraints,
+-                   size_t) const override {
++                   NonlinearEqualityConstraints*, size_t) const override {
+     for (const auto& constraint : constraints_) {
+       constraints->push_back(constraint.createEqualityFactor());
+     }
+@@ -1401,7 +1578,7 @@ class NonquadraticConstraintEmitter : pu
+ 
+   void qcqpFactors(NonlinearFactorGraph*,
+                    NonlinearEqualityConstraints* constraints,
+-                   size_t) const override {
++                   NonlinearEqualityConstraints*, size_t) const override {
+     constraints->push_back(constraint_);
+   }
+ 
+@@ -1470,102 +1647,79 @@ namespace QcqpExtractionFixture {
  
  // Verify the published D=1 QCQP vector dimensions for each supported group.
  TEST(QcqpProblem, QcqpVectorDimensions) {
@@ -5242,12 +5706,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +// D=1 recovery rejects vectors of incorrect dimension.
  TEST(QcqpProblem, D1QcqpValueRecoveryRejectsInvalidVectors) {
 -  CHECK_EXCEPTION(traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(4, 1)),
--                  std::invalid_argument);
++  CHECK_EXCEPTION(traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(3, 1)),
+                   std::invalid_argument);
 -  CHECK_EXCEPTION(traits<Rot3>::template FromQcqpValue<1>(Matrix::Zero(9, 1)),
 -                  std::invalid_argument);
 -  CHECK_EXCEPTION(traits<Pose2>::template FromQcqpValue<1>(Matrix::Zero(6, 1)),
-+  CHECK_EXCEPTION(traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(3, 1)),
-                   std::invalid_argument);
+-                  std::invalid_argument);
 -  CHECK_EXCEPTION(traits<Pose3>::template FromQcqpValue<1>(Matrix::Zero(12, 1)),
 -                  std::invalid_argument);
 -
@@ -5278,7 +5742,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(QcqpProblem, ExtractD1QcqpValues) {
    Values values;
    const Rot2 rot2 = Rot2::fromAngle(0.4);
-@@ -1576,7 +1603,7 @@ TEST(QcqpProblem, ExtractD1QcqpValues) {
+@@ -1576,7 +1730,7 @@ TEST(QcqpProblem, ExtractD1QcqpValues) {
    InsertQcqpValue<Rot3, 1>(Symbol('r', 3), rot3, &values);
    InsertQcqpValue<Pose2, 1>(Symbol('p', 2), pose2, &values);
    InsertQcqpValue<Pose3, 1>(Symbol('p', 3), pose3, &values);
@@ -5312,6 +5776,31 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /// Compute error for each assignment and return as a tree
    AlgebraicDecisionTree<Key> errorTree() const override {
      throw std::runtime_error("Constraint::error not implemented");
+--- gtsam-4.3.0.orig/gtsam/discrete/DecisionTree-inl.h
++++ gtsam-4.3.0/gtsam/discrete/DecisionTree-inl.h
+@@ -192,7 +192,8 @@ namespace gtsam {
+     /**
+      * @brief Merge branches with equal leaf values for every choice node in a
+      * decision tree. If all branches are the same (i.e. have the same leaf
+-     * value), replace the choice node with the equivalent leaf node.
++     * value), replace the choice node with the equivalent leaf node. A choice
++     * node with a single branch is replaced by that branch.
+      *
+      * This function applies the branch merging (if enabled) recursively on the
+      * decision tree represented by the root node passed in as the argument. It
+@@ -220,6 +221,12 @@ namespace gtsam {
+         f->push_back(Unique(branch));
+       }
+ 
++      // A label with a single choice doesn't split anything, so its branch,
++      // leaf or subtree replaces it. This must come before the allSame_ check:
++      // allSame_ is only updated from the second branch onward, so it stays
++      // true here even when the one branch is a Choice, not a Leaf.
++      if (f->nrChoices() == 1) return f->branches_[0];
++
+       // If all the branches are the same, we can merge them into one
+       if (f->allSame_) {
+         assert(f->branches().size() > 0);
 --- gtsam-4.3.0.orig/gtsam/discrete/DecisionTreeFactor.cpp
 +++ gtsam-4.3.0/gtsam/discrete/DecisionTreeFactor.cpp
 @@ -24,7 +24,11 @@
@@ -8196,6 +8685,40 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +| Sparse | suffix | 1366.66 | 164.25 | 8.32× |
 +| Sparse | middle | 1254.16 | 158.22 | 7.93× |
 +| Sparse | equal | 1384.51 | 140.43 | 9.86× |
+--- gtsam-4.3.0.orig/gtsam/discrete/tests/testDecisionTree.cpp
++++ gtsam-4.3.0/gtsam/discrete/tests/testDecisionTree.cpp
+@@ -155,6 +155,31 @@ TEST(DecisionTree, ConstructorOrder) {
+ }
+ 
+ /* ************************************************************************** */
++// Check that a label with a single choice keeps the values of the labels below
++// it, wherever it appears in the label order.
++TEST(DecisionTree, ConstructorSingleChoiceLabel) {
++  string A("A"), B("B"), C("C");
++
++  // B has one choice, so the values only depend on A and C.
++  const std::vector<int> ys = {1, 2, 3, 4};
++  const DT trees[] = {DT({{C, 2}, {A, 2}, {B, 1}}, ys),
++                      DT({{C, 2}, {B, 1}, {A, 2}}, ys),
++                      DT({{B, 1}, {C, 2}, {A, 2}}, ys)};
++
++  for (const DT& tree : trees) {
++    EXPECT_LONGS_EQUAL(4, tree.nrLeaves());
++    EXPECT_LONGS_EQUAL(1, tree({{A, 0}, {B, 0}, {C, 0}}));
++    EXPECT_LONGS_EQUAL(2, tree({{A, 1}, {B, 0}, {C, 0}}));
++    EXPECT_LONGS_EQUAL(3, tree({{A, 0}, {B, 0}, {C, 1}}));
++    EXPECT_LONGS_EQUAL(4, tree({{A, 1}, {B, 0}, {C, 1}}));
++#ifdef GTSAM_DT_MERGING
++    // Merging drops B from the tree entirely.
++    EXPECT(assert_equal(DT({{C, 2}, {A, 2}}, ys), tree));
++#endif
++  }
++}
++
++/* ************************************************************************** */
+ // test DT
+ TEST(DecisionTree, Example) {
+   // Create labels
 --- gtsam-4.3.0.orig/gtsam/discrete/tests/testDecisionTreeFactor.cpp
 +++ gtsam-4.3.0/gtsam/discrete/tests/testDecisionTreeFactor.cpp
 @@ -25,9 +25,15 @@
@@ -9778,6 +10301,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      A(5, 7) = -0.5;
 +      A(7, 5) = -0.5;
 +      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 0), 0.0);
++
++      A.setZero();
++      A(5, 6) = 0.5;
++      A(6, 5) = 0.5;
++      A(3, 8) = -0.5;
++      A(8, 3) = -0.5;
++      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 1), 0.0);
  
 -      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
        A.setZero();
@@ -9788,27 +10318,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      A(0, 1) = -0.5;
 -      A(1, 0) = -0.5;
 -      constraints.emplace_back(A, 0.0);
-+      A(5, 6) = 0.5;
-+      A(6, 5) = 0.5;
-+      A(3, 8) = -0.5;
-+      A(8, 3) = -0.5;
-+      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 1), 0.0);
-+
-+      A.setZero();
 +      A(3, 7) = 0.5;
 +      A(7, 3) = 0.5;
 +      A(4, 6) = -0.5;
 +      A(6, 4) = -0.5;
 +      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 2), 0.0);
-+
+ 
 +      // RR^T = I.
-+      A.setZero();
+       A.setZero();
 +      A(0, 0) = 1.0;
 +      A(3, 3) = 1.0;
 +      A(6, 6) = 1.0;
 +      constraints.emplace_back(A, Vector(), 1.0);
- 
-       A.setZero();
++
++      A.setZero();
 +      A(0, 1) = 0.5;
 +      A(1, 0) = 0.5;
 +      A(3, 4) = 0.5;
@@ -9888,11 +10411,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
        return constraints;
      } else {
-@@ -484,22 +474,20 @@ struct traits<Pose3> : public internal::
+@@ -484,22 +474,42 @@ struct traits<Pose3> : public internal::
      }
    }
  
 -  /** Project a D=1 homogenized QCQP vector back to Pose3. */
++  /**
++   * Return the eleven D=1 redundant constraints of the embedded rotation:
++   * traits<Rot3>::QcqpRedundantConstraints() with zero translation rows and
++   * columns.
++   */
++  static std::vector<std::tuple<Matrix, Vector, double>>
++  QcqpRedundantConstraints() {
++    std::vector<std::tuple<Matrix, Vector, double>> constraints;
++    constraints.reserve(11);
++    for (const auto& [A, a, b] : traits<Rot3>::QcqpRedundantConstraints()) {
++      Matrix paddedA = Matrix::Zero(12, 12);
++      paddedA.topLeftCorner<9, 9>() = A;
++      Vector paddedLinear;
++      if (a.size() > 0) {
++        paddedLinear = Vector::Zero(12);
++        paddedLinear.head<9>() = a;
++      }
++      constraints.emplace_back(paddedA, paddedLinear, b);
++    }
++    return constraints;
++  }
++
 +  /** Project a D=1 QCQP vector back to Pose3. */
    template <int D>
    static Pose3 FromQcqpValue(const Matrix& X) {
@@ -10118,23 +10663,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      A(5, 7) = -0.5;
 +      A(7, 5) = -0.5;
 +      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 0), 0.0);
-+
-+      A.setZero();
-+      A(5, 6) = 0.5;
-+      A(6, 5) = 0.5;
-+      A(3, 8) = -0.5;
-+      A(8, 3) = -0.5;
-+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 1), 0.0);
-+
-+      A.setZero();
-+      A(3, 7) = 0.5;
-+      A(7, 3) = 0.5;
-+      A(4, 6) = -0.5;
-+      A(6, 4) = -0.5;
-+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 2), 0.0);
  
 -      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
-+      // RR^T = I supplies the six row-orthonormality constraints.
        A.setZero();
 -      A(5, 9) = 0.5;
 -      A(9, 5) = 0.5;
@@ -10143,12 +10673,27 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      A(0, 1) = -0.5;
 -      A(1, 0) = -0.5;
 -      constraints.emplace_back(A, 0.0);
++      A(5, 6) = 0.5;
++      A(6, 5) = 0.5;
++      A(3, 8) = -0.5;
++      A(8, 3) = -0.5;
++      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 1), 0.0);
+ 
+       A.setZero();
++      A(3, 7) = 0.5;
++      A(7, 3) = 0.5;
++      A(4, 6) = -0.5;
++      A(6, 4) = -0.5;
++      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 2), 0.0);
++
++      // RR^T = I supplies the six row-orthonormality constraints.
++      A.setZero();
 +      A(0, 0) = 1.0;
 +      A(3, 3) = 1.0;
 +      A(6, 6) = 1.0;
 +      constraints.emplace_back(A, Vector(), 1.0);
- 
-       A.setZero();
++
++      A.setZero();
 +      A(0, 1) = 0.5;
 +      A(1, 0) = 0.5;
 +      A(3, 4) = 0.5;
@@ -10250,7 +10795,61 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          }
        }
        return constraints;
-@@ -763,18 +752,11 @@ struct traits<Rot3> : public internal::M
+@@ -754,6 +743,53 @@ struct traits<Rot3> : public internal::M
+   }
+ 
+   /**
++   * Return the eleven D=1 redundant SO(3) constraints (A, a, b), in the form
++   * of QcqpConstraints<1>(). Every rotation satisfies them, so they are
++   * implied by the nine manifold constraints and add nothing to the QCQP, but
++   * they tighten its SDP relaxation. They are five column-orthonormality
++   * equations of R'R = I (the last column norm follows from the trace) and
++   * the cyclic cross products cross(c2, c0) = c1 and cross(c0, c1) = c2,
++   * which complete the right-handedness rows cross(c1, c2) = c0.
++   */
++  static std::vector<std::tuple<Matrix, Vector, double>>
++  QcqpRedundantConstraints() {
++    // Index of R(row, column) in the column-major x = vec(R).
++    const auto index = [](int row, int column) { return row + 3 * column; };
++    std::vector<std::tuple<Matrix, Vector, double>> constraints;
++    constraints.reserve(11);
++
++    // R'R = I: dot(c_i, c_j) = delta_ij, omitting the implied ||c_2||^2 = 1.
++    for (int i = 0; i < 3; ++i) {
++      for (int j = i; j < 3; ++j) {
++        if (i == 2 && j == 2) continue;
++        Matrix A = Matrix::Zero(9, 9);
++        for (int row = 0; row < 3; ++row) {
++          A(index(row, i), index(row, j)) += 0.5;
++          A(index(row, j), index(row, i)) += 0.5;
++        }
++        constraints.emplace_back(A, Vector(), i == j ? 1.0 : 0.0);
++      }
++    }
++
++    // cross(c_j, c_k) = c_i for (i, j, k) = (1, 2, 0) and (2, 0, 1), with
++    // c_i as the linear term 2 a' x, so a = -e / 2.
++    for (int i = 1; i < 3; ++i) {
++      const int j = (i + 1) % 3, k = (i + 2) % 3;
++      for (int row = 0; row < 3; ++row) {
++        const int next = (row + 1) % 3, last = (row + 2) % 3;
++        Matrix A = Matrix::Zero(9, 9);
++        A(index(next, j), index(last, k)) += 0.5;
++        A(index(last, k), index(next, j)) += 0.5;
++        A(index(last, j), index(next, k)) -= 0.5;
++        A(index(next, k), index(last, j)) -= 0.5;
++        constraints.emplace_back(A, -0.5 * Vector::Unit(9, index(row, i)),
++                                 0.0);
++      }
++    }
++    return constraints;
++  }
++
++  /**
+    * Project a D=1 vector or canonical 3-by-D lift back to Rot3.
+    *
+    * Matrix-form QCQP solutions have a right-O(D) gauge, making this
+@@ -763,18 +799,11 @@ struct traits<Rot3> : public internal::M
    template <int D>
    static Rot3 FromQcqpValue(const Matrix& X) {
      if constexpr (D == 1) {
@@ -14779,6 +15378,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /** Erase any keys associated with timestamps before the provided time */
    void eraseKeysBefore(double timestamp);
  
+--- gtsam-4.3.0.orig/gtsam/nonlinear/NonlinearFactor.cpp
++++ gtsam-4.3.0/gtsam/nonlinear/NonlinearFactor.cpp
+@@ -37,6 +37,7 @@ double NonlinearFactor::error(const Hybr
+ void NonlinearFactor::qcqpFactors(
+     NonlinearFactorGraph* /*costs*/,
+     NonlinearEqualityConstraints* /*constraints*/,
++    NonlinearEqualityConstraints* /*redundantConstraints*/,
+     size_t /*columnDimension*/) const {
+   throw std::runtime_error("NonlinearFactor::qcqpFactors is not implemented");
+ }
 --- gtsam-4.3.0.orig/gtsam/nonlinear/NonlinearFactor.h
 +++ gtsam-4.3.0/gtsam/nonlinear/NonlinearFactor.h
 @@ -22,6 +22,7 @@
@@ -14797,7 +15406,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  namespace gtsam {
  
-@@ -278,6 +280,30 @@ public:
+@@ -148,11 +150,14 @@ public:
+ 
+   /**
+    * Add this factor's QCQP cost and constraints over matrix-valued QCQP
+-   * variables with the given column dimension. The default implementation
+-   * throws for unsupported factors.
++   * variables with the given column dimension. Redundant constraints, implied
++   * by the others on the QCQP but tightening its SDP relaxation, go to
++   * redundantConstraints; pass nullptr to skip them. The default
++   * implementation throws for unsupported factors.
+    */
+   virtual void qcqpFactors(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints,
++                           NonlinearEqualityConstraints* redundantConstraints,
+                            size_t columnDimension = 1) const;
+ 
+   /**
+@@ -278,6 +283,30 @@ public:
    }
  
    /**
@@ -18004,16 +18630,48 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam/sam/QuadraticRangeFactor.h
 +++ gtsam-4.3.0/gtsam/sam/QuadraticRangeFactor.h
-@@ -193,7 +193,7 @@ class QuadraticRangeFactor
+@@ -154,6 +154,7 @@ class QuadraticRangeFactor
+   /// Add this range factor as a QCQP cost when traits exist.
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension == 0) {
+       throw std::invalid_argument(
+@@ -161,7 +162,7 @@ class QuadraticRangeFactor
+           "columnDimension.");
+     }
+     if (columnDimension == 1) {
+-      qcqpFactorsForVector(costs, constraints);
++      qcqpFactorsForVector(costs, constraints, redundantConstraints);
+       return;
+     }
+     if (columnDimension < static_cast<size_t>(d)) {
+@@ -174,7 +175,8 @@ class QuadraticRangeFactor
+           "QuadraticRangeFactor::qcqpFactors: costs is null.");
+     }
+ 
+-    InsertQcqpConstraints<Direction, d>(this->key3(), constraints);
++    InsertQcqpConstraints<Direction, d>(this->key3(), constraints,
++                                        redundantConstraints);
+ 
+     // The direction is a Rot2 in 2D, which takes 2 rows, and a Unit3 in 3D,
+     // which takes 1. Only the first row is used; any others stay zero.
+@@ -193,9 +195,10 @@ class QuadraticRangeFactor
    }
  
   private:
 -  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+-  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
+-                            NonlinearEqualityConstraints* constraints) const {
 +  /// Add the exact D=1 vector cost and variable constraints.
-   void qcqpFactorsForVector(NonlinearFactorGraph* costs,
-                             NonlinearEqualityConstraints* constraints) const {
++  void qcqpFactorsForVector(
++      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
++      NonlinearEqualityConstraints* redundantConstraints) const {
      if (!costs) {
-@@ -205,16 +205,14 @@ class QuadraticRangeFactor
+       throw std::invalid_argument(
+           "QuadraticRangeFactor::qcqpFactors: costs is null.");
+@@ -205,20 +208,21 @@ class QuadraticRangeFactor
      constexpr int kDirectionDim = traits<Direction>::QcqpVectorDim;
      const double sw = std::sqrt(weight_);
  
@@ -18030,14 +18688,43 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -    B.block(0, kPointDim + 1, d, d) = sw * Matrix::Identity(d, d);
 -    B.block(0, 2 * kPointDim, d, kDirectionDim) =
 -        -sw * range_ * directionSelector;
+-
+-    InsertQcqpConstraints<Point, 1>(this->key1(), constraints);
+-    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+-    InsertQcqpConstraints<Direction, 1>(this->key3(), constraints);
 +    B.block(0, 0, d, d) = -sw * Matrix::Identity(d, d);
 +    B.block(0, kPointDim, d, d) = sw * Matrix::Identity(d, d);
 +    B.block(0, 2 * kPointDim, d, d) = -sw * range_ * Matrix::Identity(d, d);
++
++    InsertQcqpConstraints<Point, 1>(this->key1(), constraints,
++                                    redundantConstraints);
++    InsertQcqpConstraints<Point, 1>(this->key2(), constraints,
++                                    redundantConstraints);
++    InsertQcqpConstraints<Direction, 1>(this->key3(), constraints,
++                                        redundantConstraints);
  
-     InsertQcqpConstraints<Point, 1>(this->key1(), constraints);
-     InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+     const Matrix Q = B.transpose() * B;
+     const SymmetricBlockMatrix blockQ(
 --- gtsam-4.3.0.orig/gtsam/sam/tests/testQuadraticRangeFactor.cpp
 +++ gtsam-4.3.0/gtsam/sam/tests/testQuadraticRangeFactor.cpp
+@@ -230,7 +230,7 @@ TEST(QuadraticRangeFactor, QcqpCostMatch
+ 
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2);
++  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/2);
+   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
+ 
+   Values Y;
+@@ -274,7 +274,7 @@ TEST(QuadraticRangeFactor, EmitsItsAuxil
+ 
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  factor.qcqpFactors(&costs, &constraints, 2);
++  factor.qcqpFactors(&costs, &constraints, nullptr, 2);
+ 
+   const auto expected = traits<Rot2>::QcqpConstraints<2>();
+   EXPECT_LONGS_EQUAL(static_cast<long>(expected.size()),
 @@ -286,8 +286,9 @@ TEST(QuadraticRangeFactor, EmitsItsAuxil
      CHECK(quadratic);
      const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
@@ -18050,9 +18737,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  }
  
+@@ -315,7 +316,7 @@ TEST(QuadraticRangeFactor, QcqpCostMatch
+ 
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/3);
++  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/3);
+   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
+ 
+   Values Y;
+@@ -362,7 +363,7 @@ TEST(QuadraticRangeFactor, QcqpCostIsUnc
+   for (int p : {2, 3, 5}) {
+     NonlinearFactorGraph costs;
+     NonlinearEqualityConstraints constraints;
+-    factor.qcqpFactors(&costs, &constraints, static_cast<size_t>(p));
++    factor.qcqpFactors(&costs, &constraints, nullptr, static_cast<size_t>(p));
+ 
+     Matrix translation = Matrix::Zero(1, p), landmark = Matrix::Zero(1, p);
+     translation.leftCols<2>() = ti.transpose();
+@@ -383,7 +384,7 @@ TEST(QuadraticRangeFactor, QcqpFactorsRe
+   const QuadraticRangeFactor3 factor(kTi, kTarget, kU, 1.0, 1.0);
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
++  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
+                   std::invalid_argument);
+ }
+ 
 --- gtsam-4.3.0.orig/gtsam/slam/FrobeniusFactor.h
 +++ gtsam-4.3.0/gtsam/slam/FrobeniusFactor.h
-@@ -134,7 +134,7 @@ class FrobeniusPrior : public NoiseModel
+@@ -134,21 +134,23 @@ class FrobeniusPrior : public NoiseModel
     * Add this Frobenius prior to the QCQP graph.
     *
     * D=1 supports hard constrained Rot2, Rot3, Pose2, and Pose3 priors in their
@@ -18061,7 +18775,54 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     * fixed lifted target breaks the right-orthogonal gauge required by the
     * Burer--Monteiro formulation.
     */
-@@ -180,16 +180,15 @@ class FrobeniusPrior : public NoiseModel
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension == 0) {
+       throw std::invalid_argument(
+           "FrobeniusPrior::qcqpFactors: columnDimension must be >= 1");
+     }
+     if (columnDimension == 1) {
+-      qcqpFactorsForVec(costs, constraints);
++      qcqpFactorsForVec(costs, constraints, redundantConstraints);
+     } else {
+-      qcqpFactorsForMatrix(costs, constraints, columnDimension);
++      qcqpFactorsForMatrix(costs, constraints, redundantConstraints,
++                           columnDimension);
+     }
+   }
+ 
+@@ -157,11 +159,13 @@ class FrobeniusPrior : public NoiseModel
+   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
+   /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
+   /// rows of M; Rot3 retains the full matrix and compact Rot2 retains c,s.
+-  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+-                         NonlinearEqualityConstraints* constraints) const {
++  void qcqpFactorsForVec(
++      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
++      NonlinearEqualityConstraints* redundantConstraints) const {
+     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
+           "type and column dimension 1.");
+@@ -170,26 +174,27 @@ class FrobeniusPrior : public NoiseModel
+                            std::is_same_v<T, Pose3>)) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
+           "Rot3, Pose2, and Pose3.");
+     } else {
+       (void)costs;
+       if (this->noiseModel_->isConstrained()) {
+-        InsertQcqpConstraints<T, 1>(this->key(), constraints);
++        InsertQcqpConstraints<T, 1>(this->key(), constraints,
++                                    redundantConstraints);
  
          constexpr int LiftedDim = traits<T>::QcqpVectorDim;
          Vector target = Vector::Zero(LiftedDim);
@@ -18083,7 +18844,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
                  vecM_.template segment<M>(column * N);
            }
          }
-@@ -396,7 +395,7 @@ class FrobeniusBetweenFactor : public Fr
+@@ -214,9 +219,11 @@ class FrobeniusPrior : public NoiseModel
+    */
+   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
+                             NonlinearEqualityConstraints* constraints,
++                            NonlinearEqualityConstraints* redundantConstraints,
+                             size_t columnDimension) const {
+     (void)costs;
+     (void)constraints;
++    (void)redundantConstraints;
+     (void)columnDimension;
+     throw std::runtime_error(
+         "FrobeniusPrior::qcqpFactors does not support matrix-form priors; "
+@@ -396,21 +403,23 @@ class FrobeniusBetweenFactor : public Fr
    /**
     * Add this Frobenius between factor as a QCQP cost when traits exist.
     *
@@ -18092,7 +18865,49 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     * and Rot3, D>=N takes the N-by-D row-Stiefel form, where N is the intrinsic
     * rotation-matrix dimension.
     */
-@@ -463,19 +462,19 @@ class FrobeniusBetweenFactor : public Fr
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension == 0) {
+       throw std::invalid_argument(
+           "FrobeniusBetweenFactor::qcqpFactors: columnDimension must be >= 1");
+     }
+     if (columnDimension == 1) {
+-      qcqpFactorsForVec(costs, constraints);
++      qcqpFactorsForVec(costs, constraints, redundantConstraints);
+     } else {
+-      qcqpFactorsForMatrix(costs, constraints, columnDimension);
++      qcqpFactorsForMatrix(costs, constraints, redundantConstraints,
++                           columnDimension);
+     }
+   }
+ 
+@@ -434,11 +443,13 @@ class FrobeniusBetweenFactor : public Fr
+ 
+   /// D=1 retained-row vector form: build the full Frobenius residual for
+   /// whitening, then embed its quadratic matrix in the lifted coordinates.
+-  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+-                         NonlinearEqualityConstraints* constraints) const {
++  void qcqpFactorsForVec(
++      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
++      NonlinearEqualityConstraints* redundantConstraints) const {
+     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
+           "for this type and column dimension 1.");
+@@ -447,6 +458,7 @@ class FrobeniusBetweenFactor : public Fr
+                            std::is_same_v<T, Pose3>)) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusBetweenFactor::qcqpFactors D=1 is implemented only for "
+           "Rot2, Rot3, Pose2, and Pose3.");
+@@ -463,19 +475,19 @@ class FrobeniusBetweenFactor : public Fr
        }
  
        constexpr int LiftedDim = traits<T>::QcqpVectorDim;
@@ -18117,7 +18932,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          static_assert(MN % N == 0);
          constexpr int M = MN / N;
          using MatrixM = Eigen::Matrix<double, M, M>;
-@@ -496,20 +495,14 @@ class FrobeniusBetweenFactor : public Fr
+@@ -496,20 +508,16 @@ class FrobeniusBetweenFactor : public Fr
          }
  
          const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
@@ -18131,8 +18946,12 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        Q_trunc = whitenedB.transpose() * whitenedB;
        }
  
-       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
-       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+-      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+-      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
++      InsertQcqpConstraints<T, 1>(this->key1(), constraints,
++                                  redundantConstraints);
++      InsertQcqpConstraints<T, 1>(this->key2(), constraints,
++                                  redundantConstraints);
  
        const SymmetricBlockMatrix blockQ(
 -          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
@@ -18140,7 +18959,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        costs->push_back(std::make_shared<QpCost>(
            KeyVector{this->key1(), this->key2()}, blockQ));
      }
-@@ -640,7 +633,7 @@ class FrobeniusLeftBetweenFactor : publi
+@@ -518,10 +526,12 @@ class FrobeniusBetweenFactor : public Fr
+   /// Matrix form (D>=N): N-by-D row-Stiefel variables and isotropic noise.
+   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
+                             NonlinearEqualityConstraints* constraints,
++                            NonlinearEqualityConstraints* redundantConstraints,
+                             size_t columnDimension) const {
+     if constexpr (!internal::HasQcqpVariableTraits<T, N>::value) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       (void)columnDimension;
+       throw std::runtime_error(
+           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
+@@ -550,8 +560,10 @@ class FrobeniusBetweenFactor : public Fr
+             "requires an isotropic noise model");
+       }
+ 
+-      InsertQcqpConstraints<T, N>(this->key1(), constraints);
+-      InsertQcqpConstraints<T, N>(this->key2(), constraints);
++      InsertQcqpConstraints<T, N>(this->key1(), constraints,
++                                  redundantConstraints);
++      InsertQcqpConstraints<T, N>(this->key2(), constraints,
++                                  redundantConstraints);
+ 
+       const MatrixN measurement = this->T12_.matrix();
+       const MatrixN I = MatrixN::Identity();
+@@ -640,17 +652,18 @@ class FrobeniusLeftBetweenFactor : publi
    }
  
    /**
@@ -18149,16 +18994,45 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     */
    void qcqpFactors(NonlinearFactorGraph* costs,
                     NonlinearEqualityConstraints* constraints,
-@@ -682,7 +675,7 @@ class FrobeniusLeftBetweenFactor : publi
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension != 1) {
+       throw std::invalid_argument(
+           "FrobeniusLeftBetweenFactor::qcqpFactors only supports column "
+           "dimension 1");
+     }
+-    qcqpFactorsForVec(costs, constraints);
++    qcqpFactorsForVec(costs, constraints, redundantConstraints);
+   }
+ 
+  private:
+@@ -682,12 +695,14 @@ class FrobeniusLeftBetweenFactor : publi
      return result;
    }
  
 -  /// Build the exact retained-row D=1 homogeneous QCQP cost.
+-  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+-                         NonlinearEqualityConstraints* constraints) const {
 +  /// Build the exact retained-row D=1 QCQP cost.
-   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
-                          NonlinearEqualityConstraints* constraints) const {
++  void qcqpFactorsForVec(
++      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
++      NonlinearEqualityConstraints* redundantConstraints) const {
      if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
-@@ -712,17 +705,20 @@ class FrobeniusLeftBetweenFactor : publi
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusLeftBetweenFactor::qcqpFactors requires QCQP variable "
+           "traits for this type and column dimension 1.");
+@@ -696,6 +711,7 @@ class FrobeniusLeftBetweenFactor : publi
+                            std::is_same_v<T, Pose3>)) {
+       (void)costs;
+       (void)constraints;
++      (void)redundantConstraints;
+       throw std::runtime_error(
+           "FrobeniusLeftBetweenFactor::qcqpFactors D=1 is implemented only "
+           "for Rot2, Rot3, Pose2, and Pose3.");
+@@ -712,17 +728,20 @@ class FrobeniusLeftBetweenFactor : publi
        }
  
        constexpr int LiftedDim = traits<T>::QcqpVectorDim;
@@ -18183,7 +19057,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          static_assert(MN % N == 0);
          constexpr int M = MN / N;
          using MatrixM = Eigen::Matrix<double, M, M>;
-@@ -737,15 +733,15 @@ class FrobeniusLeftBetweenFactor : publi
+@@ -737,28 +756,30 @@ class FrobeniusLeftBetweenFactor : publi
            offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
          }
  
@@ -18206,8 +19080,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          }
  
          const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-@@ -756,9 +752,9 @@ class FrobeniusLeftBetweenFactor : publi
-       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+         Q = whitenedB.transpose() * whitenedB;
+       }
+ 
+-      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+-      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
++      InsertQcqpConstraints<T, 1>(this->key1(), constraints,
++                                  redundantConstraints);
++      InsertQcqpConstraints<T, 1>(this->key2(), constraints,
++                                  redundantConstraints);
  
        const SymmetricBlockMatrix blockQ(
 -          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
@@ -18220,7 +19101,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  };
 --- gtsam-4.3.0.orig/gtsam/slam/KnownLandmarkFactor.h
 +++ gtsam-4.3.0/gtsam/slam/KnownLandmarkFactor.h
-@@ -140,7 +140,7 @@ class KnownLandmarkFactor2 : public Nois
+@@ -140,9 +140,10 @@ class KnownLandmarkFactor2 : public Nois
      return predicted_kP - measured_kP_;
    }
  
@@ -18228,8 +19109,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  /** Add the exact D=1 known-landmark cost to a QCQP. */
    void qcqpFactors(NonlinearFactorGraph* costs,
                     NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
                     size_t columnDimension = 1) const override {
-@@ -163,15 +163,17 @@ class KnownLandmarkFactor2 : public Nois
+     if (columnDimension != 1) {
+       throw std::invalid_argument(
+@@ -163,15 +164,17 @@ class KnownLandmarkFactor2 : public Nois
  
      constexpr int PointDim = Point::RowsAtCompileTime;
      constexpr int N = T::LieAlgebra::RowsAtCompileTime;
@@ -18251,12 +19135,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
            .diagonal()
            .setConstant(coefficient);
      }
-@@ -180,8 +182,9 @@ class KnownLandmarkFactor2 : public Nois
+@@ -179,9 +182,10 @@ class KnownLandmarkFactor2 : public Nois
+     const Matrix whitenedB = this->noiseModel_->Whiten(B);
      const Matrix Q = whitenedB.transpose() * whitenedB;
  
-     InsertQcqpConstraints<T, 1>(this->key(), constraints);
+-    InsertQcqpConstraints<T, 1>(this->key(), constraints);
 -    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
 -    costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
++    InsertQcqpConstraints<T, 1>(this->key(), constraints, redundantConstraints);
 +    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
 +    costs->push_back(std::make_shared<QpCost>(
 +        HessianFactor(KeyVector{this->key()}, blockQ)));
@@ -18461,16 +19347,38 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace gtsam
 --- gtsam-4.3.0.orig/gtsam/slam/RelativeTranslationFactor.h
 +++ gtsam-4.3.0/gtsam/slam/RelativeTranslationFactor.h
-@@ -158,7 +158,7 @@ class RelativeTranslationFactor
+@@ -124,6 +124,7 @@ class RelativeTranslationFactor
+   /// Add this translation factor as a QCQP cost when traits exist.
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension == 0) {
+       throw std::invalid_argument(
+@@ -131,7 +132,7 @@ class RelativeTranslationFactor
+           "columnDimension.");
+     }
+     if (columnDimension == 1) {
+-      qcqpFactorsForVector(costs, constraints);
++      qcqpFactorsForVector(costs, constraints, redundantConstraints);
+       return;
+     }
+     if (columnDimension < static_cast<size_t>(d)) {
+@@ -158,9 +159,10 @@ class RelativeTranslationFactor
    }
  
   private:
 -  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+-  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
+-                            NonlinearEqualityConstraints* constraints) const {
 +  /// Add the exact D=1 vector cost and variable constraints.
-   void qcqpFactorsForVector(NonlinearFactorGraph* costs,
-                             NonlinearEqualityConstraints* constraints) const {
++  void qcqpFactorsForVector(
++      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
++      NonlinearEqualityConstraints* redundantConstraints) const {
      if (!costs) {
-@@ -170,7 +170,7 @@ class RelativeTranslationFactor
+       throw std::invalid_argument(
+           "RelativeTranslationFactor::qcqpFactors: costs is null.");
+@@ -170,7 +172,7 @@ class RelativeTranslationFactor
      constexpr int kPointDim = traits<Point>::QcqpVectorDim;
      const double sw = std::sqrt(weight_);
  
@@ -18479,7 +19387,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      Matrix rotateMeasurement;
      if constexpr (d == 2) {
        // [[mx,-my],[my,mx]] [c,s]' = R(c,s)*measured.
-@@ -187,10 +187,9 @@ class RelativeTranslationFactor
+@@ -187,14 +189,16 @@ class RelativeTranslationFactor
      }
  
      Matrix B = Matrix::Zero(d, kRotationDim + 2 * kPointDim);
@@ -18487,15 +19395,34 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -    B.block(0, kRotationDim + 1, d, d) = -sw * Matrix::Identity(d, d);
 -    B.block(0, kRotationDim + kPointDim + 1, d, d) =
 -        sw * Matrix::Identity(d, d);
+-
+-    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
+-    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+-    InsertQcqpConstraints<Point, 1>(this->key3(), constraints);
 +    B.block(0, 0, d, kRotationDim) = -sw * rotateMeasurement;
 +    B.block(0, kRotationDim, d, d) = -sw * Matrix::Identity(d, d);
 +    B.block(0, kRotationDim + kPointDim, d, d) = sw * Matrix::Identity(d, d);
++
++    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints,
++                                  redundantConstraints);
++    InsertQcqpConstraints<Point, 1>(this->key2(), constraints,
++                                    redundantConstraints);
++    InsertQcqpConstraints<Point, 1>(this->key3(), constraints,
++                                    redundantConstraints);
  
-     InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
-     InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+     const Matrix Q = B.transpose() * B;
+     const SymmetricBlockMatrix blockQ(
 --- gtsam-4.3.0.orig/gtsam/slam/WahbaFactor.h
 +++ gtsam-4.3.0/gtsam/slam/WahbaFactor.h
-@@ -106,13 +106,15 @@ class WahbaFactor : public NoiseModelFac
+@@ -88,6 +88,7 @@ class WahbaFactor : public NoiseModelFac
+   /** Add the exact D=1 chordal Wahba cost to a QCQP. */
+   void qcqpFactors(NonlinearFactorGraph* costs,
+                    NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
+                    size_t columnDimension = 1) const override {
+     if (columnDimension != 1) {
+       throw std::invalid_argument(
+@@ -106,13 +107,15 @@ class WahbaFactor : public NoiseModelFac
  
      constexpr int PointDim = 3;
      constexpr int N = 3;
@@ -18515,12 +19442,15 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
            .diagonal()
            .setConstant(bDirection(column));
      }
-@@ -121,8 +123,9 @@ class WahbaFactor : public NoiseModelFac
+@@ -120,9 +123,11 @@ class WahbaFactor : public NoiseModelFac
+     const Matrix whitenedB = this->noiseModel_->Whiten(B);
      const Matrix Q = whitenedB.transpose() * whitenedB;
  
-     InsertQcqpConstraints<Rot3, 1>(this->key(), constraints);
+-    InsertQcqpConstraints<Rot3, 1>(this->key(), constraints);
 -    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
 -    costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
++    InsertQcqpConstraints<Rot3, 1>(this->key(), constraints,
++                                   redundantConstraints);
 +    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
 +    costs->push_back(std::make_shared<QpCost>(
 +        HessianFactor(KeyVector{this->key()}, blockQ)));
@@ -20127,6 +21057,35 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  TestResult tr;
 +  return TestRegistry::runAllTests(tr);
 +}
+--- gtsam-4.3.0.orig/gtsam/slam/tests/testRelativeTranslationFactor.cpp
++++ gtsam-4.3.0/gtsam/slam/tests/testRelativeTranslationFactor.cpp
+@@ -97,7 +97,7 @@ TEST(RelativeTranslationFactor, QcqpFact
+ 
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/3);
++  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/3);
+   EXPECT(constraints.empty());
+   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
+ 
+@@ -153,7 +153,7 @@ TEST(RelativeTranslationFactor, QcqpFact
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+   CHECK_EXCEPTION(
+-      factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2),
++      factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/2),
+       std::invalid_argument);
+ }
+ 
+@@ -174,7 +174,7 @@ TEST(RelativeTranslationFactor, QcqpFact
+ 
+   NonlinearFactorGraph costs;
+   NonlinearEqualityConstraints constraints;
+-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2);
++  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/2);
+ 
+   Values Y;
+   Y.insert(kR, Matrix(Ri.matrix().transpose()));
 --- gtsam-4.3.0.orig/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
 +++ gtsam-4.3.0/gtsam/slam/tests/testSmartProjectionPoseFactor.cpp
 @@ -1105,6 +1105,7 @@ TEST( SmartProjectionPoseFactor, Hessian
@@ -20167,6 +21126,43 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* *************************************************************************/
+--- gtsam-4.3.0.orig/gtsam/slam/tests/testWahbaFactor.cpp
++++ gtsam-4.3.0/gtsam/slam/tests/testWahbaFactor.cpp
+@@ -95,27 +95,28 @@ TEST(WahbaFactor, QcqpValidation) {
+   NonlinearEqualityConstraints constraints;
+   const WahbaFactor factor(kKey, bDirection, measured_aDirection,
+                            noiseModel::Unit::Create(3));
+-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
++  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
+                   std::invalid_argument);
+-  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, 1),
++  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr, 1),
+                   std::invalid_argument);
+ 
+   const WahbaFactor nullModelFactor(kKey, bDirection, measured_aDirection,
+                                     nullptr);
+-  CHECK_EXCEPTION(nullModelFactor.qcqpFactors(&costs, &constraints, 1),
++  CHECK_EXCEPTION(nullModelFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
+                   std::runtime_error);
+ 
+   const auto robustModel = noiseModel::Robust::Create(
+       noiseModel::mEstimator::Huber::Create(1.0), noiseModel::Unit::Create(3));
+   const WahbaFactor robustFactor(kKey, bDirection, measured_aDirection,
+                                  robustModel);
+-  CHECK_EXCEPTION(robustFactor.qcqpFactors(&costs, &constraints, 1),
++  CHECK_EXCEPTION(robustFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
+                   std::runtime_error);
+ 
+   const WahbaFactor constrainedFactor(kKey, bDirection, measured_aDirection,
+                                       noiseModel::Constrained::All(3));
+-  CHECK_EXCEPTION(constrainedFactor.qcqpFactors(&costs, &constraints, 1),
+-                  std::runtime_error);
++  CHECK_EXCEPTION(
++      constrainedFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
++      std::runtime_error);
+ }
+ 
+ // Verifies polymorphic cloning and measurement-aware equality.
 --- gtsam-4.3.0.orig/gtsam_unstable/gtsam_unstable.i
 +++ gtsam-4.3.0/gtsam_unstable/gtsam_unstable.i
 @@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: g
@@ -21294,7 +22290,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.46.1-default_hfdba357_103.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.9-hebe6cf0_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/c-compiler-2.0.0-ha29393d_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/ccache-4.14.1-h420ae53_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/cmake-4.4.4-hff7ac6b_0.conda
@@ -21343,7 +22339,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/libopenblas-0.3.34-pthreads_hf13c14d_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/libparu-1.0.0-hc6afc67_7100101.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/libpsl-0.23.1-hd9e3e90_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.15.0-hdc7f604_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.15.1-hdc7f604_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/librbio-4.3.4-hf02c80a_7100101.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/libsanitizer-15.3.0-h54950a5_7.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/libspex-3.2.3-h9226d62_7100101.conda
@@ -21364,7 +22360,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/ninja-1.13.2-h171cf75_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.4-py315h11958a5_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.5-h781a0a9_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.15.0-h6e52b48_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.15.1-h6e52b48_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.6-hb03c661_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/suitesparse-7.10.1-h5b2951e_7100101.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/tbb-2023.1.0-haa8c3ee_2.conda
@@ -21372,7 +22368,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/xxhash-0.8.3-hec8ed23_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-hbd8a1cb_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.1-pyhd8ed1ab_0.conda
@@ -21381,7 +22377,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libgcc-devel_linux-64-15.3.0-h2b852eb_107.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libstdcxx-devel_linux-64-15.3.0-hb2c5482_107.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
@@ -21389,16 +22385,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.3-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-h4ee821c_9.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.5.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
 +      linux-aarch64:
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/_openmp_mutex-4.5-20_gnu.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/binutils_impl_linux-aarch64-2.46.1-default_h5f4c503_103.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/bzip2-1.0.8-h4777abc_10.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-ares-1.34.8-h29ee22c_2.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-ares-1.34.9-h29ee22c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-compiler-2.0.0-h1f08cd5_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ccache-4.14.1-h2327310_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/cmake-4.4.4-hcbeb305_0.conda
@@ -21447,7 +22443,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libopenblas-0.3.34-pthreads_h4148b7d_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libparu-1.0.0-h3c4952c_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libpsl-0.23.1-hb8431ed_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libpython-3.15.0-hc71fabe_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libpython-3.15.1-hc71fabe_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/librbio-4.3.4-h6ed72c6_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libsanitizer-15.3.0-he541324_7.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libspex-3.2.3-h7e0e133_7100102.conda
@@ -21468,7 +22464,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ninja-1.13.2-hdc560ac_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/numpy-2.5.4-py315h8050b43_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/openssl-3.6.5-he6ad1d5_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.15.0-h0c7c799_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.15.1-h0c7c799_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/rhash-1.4.6-he30d5cf_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/suitesparse-7.10.1-h2fdf28c_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tbb-2023.1.0-hdaecc9b_2.conda
@@ -21476,7 +22472,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tk-8.6.13-noxft_hf03c496_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/xxhash-0.8.3-hdc50dc5_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/zstd-1.5.7-h9d15635_7.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-hbd8a1cb_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.1-pyhd8ed1ab_0.conda
@@ -21485,7 +22481,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libgcc-devel_linux-aarch64-15.3.0-h6e7e4e0_107.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libstdcxx-devel_linux-aarch64-15.3.0-h0e8df58_107.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
@@ -21493,13 +22489,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.3-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-aarch64-2.28-h585391f_9.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.5.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
 +      osx-64:
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-hbd8a1cb_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt21_osx-64-21.1.8-h8d5f570_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt_osx-64-21.1.8-h694c41f_2.conda
@@ -21508,7 +22504,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libboost-headers-1.92.0-h707e725_3.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libcxx-headers-21.1.8-h707e725_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
@@ -21516,13 +22512,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.3-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.5.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/_openmp_mutex-4.5-8_kmp_llvm.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/bzip2-1.0.8-h374f1ed_10.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.8-had63097_2.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.9-had63097_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/c-compiler-2.0.0-h819f056_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/ccache-4.14.1-hfd753c7_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/cctools-1030.6.3-llvm21_1_he201b2c_6.conda
@@ -21554,13 +22550,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libccolamd-3.3.4-hca54c18_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcholmod-5.3.1-h7ea7d7c_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp21.1-21.1.8-default_h0a1f3f9_7.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.3-default_h6e863b9_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.3-default_h3732b42_1.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.4-default_hae96fce_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.4-default_h6445c37_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcolamd-3.3.4-hca54c18_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcompiler-rt-21.1.8-h8c1e6b9_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcurl-8.23.0-h5318221_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcxsparse-4.4.1-h3868ee3_7100102.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-23.1.3-h19cb2f5_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-23.1.4-h19cb2f5_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-devel-21.1.8-h7c275be_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libedit-3.1.20260512-pl5321hba2e2ab_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libev-4.33-ha3d0635_3.conda
@@ -21576,14 +22572,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/liblapack-3.11.0-11_h859234e_openblas.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libldl-3.3.2-hca54c18_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libllvm21-21.1.8-hd11396f_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libllvm23-23.1.3-hd11396f_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/libllvm23-23.1.4-hd11396f_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/liblzma-5.8.3-hbb4bfdb_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libmpdec-4.0.0-ha1e9b39_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libnghttp2-1.68.1-h1e30255_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libopenblas-0.3.34-openmp_h5c7ac21_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libparu-1.0.0-hf1a04d7_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libpsl-0.23.1-h7ff43d8_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libpython-3.15.0-h8544b6a_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/libpython-3.15.1-h8544b6a_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/librbio-4.3.4-hca54c18_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libsigtool-0.1.3-h8c25ef7_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libspex-3.2.3-hc5c4b0d_7100102.conda
@@ -21596,7 +22592,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libxml2-16-2.15.4-h8376fb4_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libxml2-2.15.4-hb56241c_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.3.2-hbb4bfdb_3.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-23.1.3-h8c1e6b9_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-23.1.4-h8c1e6b9_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-tools-21-21.1.8-h36529c3_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-tools-21.1.8-h8c1e6b9_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/metis-5.1.0-h2b992f8_1008.conda
@@ -21605,7 +22601,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/ninja-1.13.2-hebe015c_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/numpy-2.5.4-py315h498e5b8_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/openssl-3.6.5-h332eb6d_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.15.0-h0abcc05_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.15.1-h0abcc05_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.6-ha1e9b39_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/sigtool-codesign-0.1.3-h8c25ef7_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/suitesparse-7.10.1-h033788e_7100102.conda
@@ -21616,7 +22612,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/xxhash-0.8.3-hd5b56d2_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
 +      osx-arm64:
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-hbd8a1cb_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt21_osx-arm64-21.1.8-hb8825d9_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt_osx-arm64-21.1.8-hce30654_2.conda
@@ -21625,7 +22621,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libboost-headers-1.92.0-h707e725_3.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libcxx-headers-21.1.8-h707e725_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
@@ -21633,13 +22629,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.3-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.5.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/_openmp_mutex-4.5-8_kmp_llvm.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.8-h74c22ad_2.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.9-h74c22ad_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-compiler-2.0.0-h39478f8_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ccache-4.14.1-h0e49cae_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cctools-1030.6.3-llvm21_1_h8e84c17_6.conda
@@ -21671,13 +22667,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libccolamd-3.3.4-h99b4a89_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcholmod-5.3.1-hbba04d7_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang-cpp21.1-21.1.8-default_h4399b93_7.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang-cpp23.1-23.1.3-default_h79071a4_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang13-23.1.3-default_h885965d_1.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang-cpp23.1-23.1.4-default_h8bbc02d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang13-23.1.4-default_h63627a2_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcolamd-3.3.4-h99b4a89_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcompiler-rt-21.1.8-hdb3d66b_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcurl-8.23.0-h6651222_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxsparse-4.4.1-h9e79f82_7100102.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.3-h55c6f16_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.4-h55c6f16_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-devel-21.1.8-h6dc3340_4.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libedit-3.1.20260512-pl5321h26f1114_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libev-4.33-h1a92334_3.conda
@@ -21693,14 +22689,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblapack-3.11.0-11_hd9741b5_openblas.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libldl-3.3.2-h99b4a89_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libllvm21-21.1.8-h759d1ac_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libllvm23-23.1.3-h759d1ac_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libllvm23-23.1.4-h759d1ac_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libmpdec-4.0.0-h84a0fba_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libnghttp2-1.68.1-h435687b_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libopenblas-0.3.34-openmp_h5e6e99c_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libparu-1.0.0-h317a14d_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpsl-0.23.1-hdb0c161_1.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.15.0-hb350d79_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.15.1-hb350d79_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/librbio-4.3.4-h99b4a89_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsigtool-0.1.3-h98dc951_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libspex-3.2.3-h15d103f_7100102.conda
@@ -21713,7 +22709,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxml2-16-2.15.4-heb56d2d_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxml2-2.15.4-h550178d_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.3-hdb3d66b_1.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.4-hdb3d66b_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-tools-21-21.1.8-h79441dc_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-tools-21.1.8-hdb3d66b_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/metis-5.1.0-h4fd61ea_1008.conda
@@ -21722,7 +22718,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ninja-1.13.2-h3feff0a_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.5.4-py315h39cfc7d_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.5-h55eecbc_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.15.0-h2e4dbab_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.15.1-h2e4dbab_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rhash-1.4.6-h84a0fba_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/sigtool-codesign-0.1.3-h98dc951_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/suitesparse-7.10.1-h3071b36_7100102.conda
@@ -21733,13 +22729,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xxhash-0.8.3-h579eaed_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
 +      win-64:
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-h4c7d964_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-h4c7d964_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.1-pyhd8ed1ab_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/libboost-headers-1.92.0-h7428d3b_3.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.3-pyhc364b38_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
@@ -21747,10 +22743,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.3-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.5.0-pyh5ded981_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
++      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/noarch/vswhere-3.1.7-h40126e0_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/_openmp_mutex-4.5-20_gnu.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_10.conda
@@ -21801,14 +22797,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/libxml2-16-2.15.4-h3cfd58e_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/libxml2-2.15.4-he095d88_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_3.conda
-+      - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.3-h49e36cd_1.conda
++      - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.4-h49e36cd_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/metis-5.1.0-h91a0a1d_1008.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2026.1.0-hac47afa_235.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/mpfr-4.2.2-hb393127_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/ninja-1.13.2-h477610d_1.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.5.4-py315hb1344af_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.5-hf411b9b_0.conda
-+      - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.15.0-h53f6dd8_101_cp315.conda
++      - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.15.1-h53f6dd8_100_cp315.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/sccache-0.18.0-h18a1a76_0.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/suitesparse-7.10.1-hfa24a04_7100102.conda
 +      - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2023.1.0-h272cf33_2.conda
@@ -21863,19 +22859,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - bzip2 >=1.0.8,<2.0a0
 +  size: 257808
 +  timestamp: 1785906269155
-+- conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
-+  sha256: 9c37cc233238adf366ea75b0e845662a5be07ceadf62e458183516369340274b
-+  md5: 3ad2b403be8fc5612b9159e2ce621f69
++- conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.9-hebe6cf0_0.conda
++  sha256: bd95dd25b80b5c4faf5349542377bf89b2794e23d0f7aa7f1c431e4f3b633f3c
++  md5: 78b505af04bf7a87ca957ef0cb5946f5
 +  depends:
-+  - libgcc >=15
 +  - __glibc >=2.17,<3.0.a0
++  - libgcc >=15
 +  license: MIT
 +  license_family: MIT
 +  run_exports:
 +    weak:
-+    - c-ares >=1.34.8,<2.0a0
-+  size: 228700
-+  timestamp: 1787169971173
++    - c-ares >=1.34.9,<2.0a0
++  size: 233759
++  timestamp: 1792507024648
 +- conda: https://conda.anaconda.org/conda-forge/linux-64/c-compiler-2.0.0-ha29393d_0.conda
 +  sha256: a54488d2b00380f542a2e1aa00dee3d878803a8c2c025dfce852a23685584dc6
 +  md5: b08763a8d93f2ba35bbf956dab90950b
@@ -22579,20 +23575,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libpsl >=0.23.1,<0.24.0a0
 +  size: 72519
 +  timestamp: 1786970753847
-+- conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.15.0-hdc7f604_101_cp315.conda
-+  build_number: 101
-+  sha256: ebbad0e52b2b009a54a0f49c0a6871ea2b4ae7792c04f63f0f882e99b0975a94
-+  md5: 908a263e58cc913914a698ece11365f4
++- conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.15.1-hdc7f604_100_cp315.conda
++  build_number: 100
++  sha256: f360d627c4b26c8741a7bd4dd3d6cb7a4e18db190ccdee8b4c4fd8215f3177af
++  md5: 35546ff52ede55ee4e8ccb6aa5ceb015
 +  depends:
 +  - __glibc >=2.17,<3.0.a0
 +  - libgcc >=15
-+  - python >=3.15,<3.16.0a0 h6e52b48_101_cp315
++  - python >=3.15,<3.16.0a0 h6e52b48_100_cp315
 +  license: Python-2.0
 +  run_exports:
 +    weak:
 +    - libpython >=3.15,<4.0a0
-+  size: 11532833
-+  timestamp: 1791827552330
++  size: 11543805
++  timestamp: 1792611749818
 +- conda: https://conda.anaconda.org/conda-forge/linux-64/librbio-4.3.4-hf02c80a_7100101.conda
 +  sha256: c502b4203cc0d38f49005994b5c80c89660bcd40ff170c529cda90827ec6b1f4
 +  md5: 4b3a3d711d1c1f76f7f440e51458f512
@@ -22898,10 +23894,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - openssl >=3.6.5,<4.0a0
 +  size: 3195299
 +  timestamp: 1791098052301
-+- conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.15.0-h6e52b48_101_cp315.conda
-+  build_number: 101
-+  sha256: cc0ffb9c7f141f4fb5e0dda57f10bad49bb222b30f39f400c1d84f2dd9733d06
-+  md5: dd71852d6d8f54a925029fed1dff8c61
++- conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.15.1-h6e52b48_100_cp315.conda
++  build_number: 100
++  sha256: 4e6119d277912509cfb7d68788533ca6d53e30322ff0fdcf4d8bafd60b0d6f2d
++  md5: ede49672861e43f320ca8d2a6ac03d5f
 +  depends:
 +  - __glibc >=2.17,<3.0.a0
 +  - bzip2 >=1.0.8,<2.0a0
@@ -22912,7 +23908,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  - libgcc >=15
 +  - liblzma >=5.8.3,<6.0a0
 +  - libmpdec >=4.0.0,<5.0a0
-+  - libsqlite >=3.54.0,<4.0a0
++  - libsqlite >=3.54.1,<4.0a0
 +  - libuuid >=2.42.4,<3.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - ncurses >=6.6,<7.0a0
@@ -22927,8 +23923,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - python_abi 3.15.* *_cp315
 +    noarch:
 +    - python
-+  size: 29084368
-+  timestamp: 1791827503430
++  size: 29208444
++  timestamp: 1792611696047
 +  python_site_packages_path: lib/python3.15/site-packages
 +- conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.6-hb03c661_2.conda
 +  sha256: 186a5b225077ad5f4656966da947d43307101950751ef4a239b455588756b4e1
@@ -23092,18 +24088,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - bzip2 >=1.0.8,<2.0a0
 +  size: 194694
 +  timestamp: 1785906301397
-+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-ares-1.34.8-h29ee22c_2.conda
-+  sha256: 3838d10a78c206a1a4ec7ff041880b4f9b8ecde3520c911daae9e06baeb8858e
-+  md5: eb80eb38625b8552a099aa88f8ba5db7
++- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-ares-1.34.9-h29ee22c_0.conda
++  sha256: 76683c88b796b7d72ef5d675e86d3b9959d2af1c78343e9ba2ff041d5029e06d
++  md5: c61dc9d27115dab06c3310cc29e07df2
 +  depends:
 +  - libgcc >=15
 +  license: MIT
 +  license_family: MIT
 +  run_exports:
 +    weak:
-+    - c-ares >=1.34.8,<2.0a0
-+  size: 241210
-+  timestamp: 1787169968125
++    - c-ares >=1.34.9,<2.0a0
++  size: 246798
++  timestamp: 1792507030564
 +- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/c-compiler-2.0.0-h1f08cd5_0.conda
 +  sha256: f48a9cb26eaf043e59a76933a61a62e73e360b2ce7c2045581540e31f826f8a6
 +  md5: 111808f8dee7e11e1ebe2461d4301edd
@@ -23770,19 +24766,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libpsl >=0.23.1,<0.24.0a0
 +  size: 73118
 +  timestamp: 1786970733378
-+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libpython-3.15.0-hc71fabe_101_cp315.conda
-+  build_number: 101
-+  sha256: f8dd1d313c4e4e313f3ae6cc3f97061fbafd28c10787a5f336958cf2fbbb81ad
-+  md5: 94d88e763d59498752a7fbcea106fadf
++- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libpython-3.15.1-hc71fabe_100_cp315.conda
++  build_number: 100
++  sha256: b0179e66620043383375cfaadf8ec3d7c4f490c0baffce0070339e1d410e7196
++  md5: e19416b98f05b49bba772f0cc468d53d
 +  depends:
 +  - libgcc >=15
-+  - python >=3.15,<3.16.0a0 h0c7c799_101_cp315
++  - python >=3.15,<3.16.0a0 h0c7c799_100_cp315
 +  license: Python-2.0
 +  run_exports:
 +    weak:
 +    - libpython >=3.15,<4.0a0
-+  size: 10305831
-+  timestamp: 1791827162028
++  size: 10315608
++  timestamp: 1792655427227
 +- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/librbio-4.3.4-h6ed72c6_7100102.conda
 +  sha256: 6555d3237c8e79f7adf856a160eb4bc5b152d442d13ee3a5b958ad85ec2a1efc
 +  md5: 3d56fe1e2eeb27a8e7eaabba35447363
@@ -24067,10 +25063,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - openssl >=3.6.5,<4.0a0
 +  size: 3716078
 +  timestamp: 1791097887829
-+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.15.0-h0c7c799_101_cp315.conda
-+  build_number: 101
-+  sha256: a7a55e46ed50dac58ce101580d17466919f70b60e7b020c87b5918ca95ff0873
-+  md5: b7cd3585cfbac87e7607fd79719df86a
++- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.15.1-h0c7c799_100_cp315.conda
++  build_number: 100
++  sha256: 06d875253aa1e46a5ba23c62ff4426ac2b45f7c1bdcc9637528f398241a59fe3
++  md5: 8912bcb24a0fdd850d5f25f8993edd35
 +  depends:
 +  - bzip2 >=1.0.8,<2.0a0
 +  - ld_impl_linux-aarch64 >=2.36.1
@@ -24080,7 +25076,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  - libgcc >=15
 +  - liblzma >=5.8.3,<6.0a0
 +  - libmpdec >=4.0.0,<5.0a0
-+  - libsqlite >=3.54.0,<4.0a0
++  - libsqlite >=3.54.1,<4.0a0
 +  - libuuid >=2.42.4,<3.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - ncurses >=6.6,<7.0a0
@@ -24095,8 +25091,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - python_abi 3.15.* *_cp315
 +    noarch:
 +    - python
-+  size: 27724246
-+  timestamp: 1791827112935
++  size: 27742939
++  timestamp: 1792655378409
 +  python_site_packages_path: lib/python3.15/site-packages
 +- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/rhash-1.4.6-he30d5cf_2.conda
 +  sha256: b4e49255aa581788c28f0a4a19ba49756cea968998c599f40feadcfeb80d15fb
@@ -24215,24 +25211,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - zstd >=1.5.7,<1.6.0a0
 +  size: 615477
 +  timestamp: 1786599613561
-+- conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-h4c7d964_0.conda
-+  sha256: 98300e7f768f580eb903796888f20e456330169815a542c36996b2ed5369b4e3
-+  md5: 0416ef1932906ea53a4bdfb0d52e0710
++- conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-h4c7d964_0.conda
++  sha256: f1d280d2618de987204102090e83733089c092dc2dd45686fd3dcbe809034f6a
++  md5: ea9dc39dcd2815202749c1e5bc2a8973
 +  depends:
 +  - __win
 +  license: ISC
 +  run_exports: {}
-+  size: 129522
-+  timestamp: 1792347291209
-+- conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.18-hbd8a1cb_0.conda
-+  sha256: d65aa0c8990f34e1e86e6b505c8a149fea6cfbfcccef087a77c0bcb0b4fbe159
-+  md5: f9f6a9cf041f31438b034dac016e6429
++  size: 130423
++  timestamp: 1792772460189
++- conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
++  sha256: 95619b9c1184be7175392eeb0ee7eeb5ccf25d280951f4225f2d62e725790be3
++  md5: 3fd02989038a1e1cee627c14c2d73f29
 +  depends:
 +  - __unix
 +  license: ISC
 +  run_exports: {}
-+  size: 129191
-+  timestamp: 1792347285941
++  size: 130057
++  timestamp: 1792772446739
 +- conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
 +  sha256: ab29d57dc70786c1269633ba3dff20288b81664d3ff8d21af995742e2bb03287
 +  md5: 962b9857ee8e7018c22f2776ffa0b2d7
@@ -24412,16 +25408,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  run_exports: {}
 +  size: 116363
 +  timestamp: 1785888127370
-+- conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.1-pyh145f28c_0.conda
-+  sha256: 0f7021cfb3ff454c91a5e28e1f5060906a52c6d1cde3f879a7d03ac33c28b1c3
-+  md5: 573cb3ed111004230ed3de650653cd4d
++- conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.2.2-pyh145f28c_0.conda
++  sha256: 5edc68a9d14102ba90d5d41e871163a90c6fa0a60b10fc8b66e44c99b92ae9ae
++  md5: 39d4f1dfe506a870f6be9047f0b31246
 +  depends:
 +  - python >=3.13.0a0
 +  license: MIT
 +  license_family: MIT
 +  run_exports: {}
-+  size: 1198163
-+  timestamp: 1785914482439
++  size: 1199840
++  timestamp: 1792524294936
 +- conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.7.0-pyh5ded981_0.conda
 +  sha256: 34c40106bc3172b3a47656e84837e13a5d4829d413d65f30fb214e7568a09cea
 +  md5: 50c6bcd41b7ceaaeeea8852e3198663e
@@ -24528,16 +25524,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  run_exports: {}
 +  size: 6800
 +  timestamp: 1788302827589
-+- conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
-+  sha256: 9e200ee5f9ff19a4d94e4b51c4856d53dec849f91032f345cf0c6bc3d51a7183
-+  md5: 62ac906f1cd582c6c264c95625cb9d6f
++- conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-84.2.1-pyhe730653_0.conda
++  sha256: 17add609d1a31c874e39a03935072be59bcafb06d42383eceabea746d12e6025
++  md5: d41f95b8f1553165b2cc2f37162dac9c
 +  depends:
-+  - python >=3.10
++  - python >=3.11
 +  license: MIT
 +  license_family: MIT
 +  run_exports: {}
-+  size: 524488
-+  timestamp: 1786282924579
++  size: 567436
++  timestamp: 1792571495729
 +- conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-h4ee821c_9.conda
 +  sha256: c47299fe37aebb0fcf674b3be588e67e4afb86225be4b0d452c7eb75c086b851
 +  md5: 13dc3adbc692664cd3beabd216434749
@@ -24588,13 +25584,13 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  run_exports: {}
 +  size: 52631
 +  timestamp: 1783002732887
-+- conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-+  sha256: b928c30ddcb0e3f544c6eade8352737e6e610e263276b90232db6a578ef899d8
-+  md5: fcb489df604d100968b737f2cb6076c6
++- conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
++  sha256: 2b7ca858879f183ce2dcc65b300f48a0133d5430550f35b23d80d405a0788dbf
++  md5: abccc3810d2b97e570dee487f2b46e38
 +  license: LicenseRef-Public-Domain
 +  run_exports: {}
-+  size: 118849
-+  timestamp: 1784250406640
++  size: 119208
++  timestamp: 1792758382821
 +- conda: https://conda.anaconda.org/conda-forge/noarch/vswhere-3.1.7-h40126e0_1.conda
 +  sha256: b72270395326dc56de9bd6ca82f63791b3c8c9e2b98e25242a9869a4ca821895
 +  md5: f622897afff347b715d046178ad745a5
@@ -24630,18 +25626,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - bzip2 >=1.0.8,<2.0a0
 +  size: 133271
 +  timestamp: 1785906721507
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.8-had63097_2.conda
-+  sha256: a00162ac4b2f68a6ddf23905e9d2fdb3ecd5abad51659f512539952a780d53ed
-+  md5: 925ff9ab74f4b9262a28842766e9e7b1
++- conda: https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.9-had63097_0.conda
++  sha256: 20d7f8249439164d0af1ffc9efbb7dc462b80a275e9dbc0476c51a72f52a5683
++  md5: 41c450e89c9ba9ce32b9b264796d98c4
 +  depends:
 +  - __osx >=11.0
 +  license: MIT
 +  license_family: MIT
 +  run_exports:
 +    weak:
-+    - c-ares >=1.34.8,<2.0a0
-+  size: 205559
-+  timestamp: 1787170041830
++    - c-ares >=1.34.9,<2.0a0
++  size: 210374
++  timestamp: 1792507129690
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/c-compiler-2.0.0-h819f056_0.conda
 +  sha256: 53ede1a7dc260285c1ef1b3e6ac9e3c870d6705b11376be86b449e78faa78c7d
 +  md5: ca3fce9d8fa391dffd7231e03715e7b6
@@ -25084,43 +26080,43 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libclang-cpp21.1 >=21.1.8,<21.2.0a0
 +  size: 14497051
 +  timestamp: 1791496180704
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.3-default_h6e863b9_1.conda
-+  sha256: 03382786be31253b07e45a1e11e257fe903cdd093a19e676d4e993d8479cf639
-+  md5: c114e0e8c44374268bbd81473ac604b4
++- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang-cpp23.1-23.1.4-default_hae96fce_0.conda
++  sha256: 06f151e4bdfdfb9c5a2bde6a3f770bb9be6ce0f915ede6bb216e15ca65e37454
++  md5: 27b683002d5993310fc2db7a95f96d9d
 +  depends:
-+  - libcxx >=23.1.3
++  - libcxx >=23.1.4
 +  - __osx >=11.0
 +  - zstd >=1.5.7,<1.6.0a0
 +  - libxml2
 +  - libxml2-16 >=2.15.4
 +  - libzlib >=1.3.2,<2.0a0
-+  - libllvm23 >=23.1.3,<23.2.0a0
++  - libllvm23 >=23.1.4,<23.2.0a0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    weak:
-+    - libclang-cpp23.1 >=23.1.3,<23.2.0a0
-+  size: 17903029
-+  timestamp: 1791933774801
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.3-default_h3732b42_1.conda
-+  sha256: 7ed02905fa747e9bd9b32e1807b3bd97de215c7efb11153aab59fd84122aa777
-+  md5: 98c12ddfdb04ce60ae016583e450c4b6
++    - libclang-cpp23.1 >=23.1.4,<23.2.0a0
++  size: 17903174
++  timestamp: 1792647679909
++- conda: https://conda.anaconda.org/conda-forge/osx-64/libclang13-23.1.4-default_h6445c37_0.conda
++  sha256: 43771013e326e70c3b791c3f84b325733364c43219325bef534597d7a7771ff2
++  md5: b5a8e8dd1e44d9f2b3994734fac30e5b
 +  depends:
-+  - libclang-cpp23.1 ==23.1.3 default_h6e863b9_1
-+  - libcxx >=23.1.3
++  - libclang-cpp23.1 ==23.1.4 default_hae96fce_0
++  - libcxx >=23.1.4
 +  - __osx >=11.0
 +  - zstd >=1.5.7,<1.6.0a0
 +  - libxml2
 +  - libxml2-16 >=2.15.4
 +  - libzlib >=1.3.2,<2.0a0
-+  - libllvm23 >=23.1.3,<23.2.0a0
++  - libllvm23 >=23.1.4,<23.2.0a0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    weak:
-+    - libclang13 >=23.1.3
-+  size: 11366523
-+  timestamp: 1791933774801
++    - libclang13 >=23.1.4
++  size: 11367761
++  timestamp: 1792647679909
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/libcolamd-3.3.4-hca54c18_7100102.conda
 +  sha256: 47a8dd30b0a4fe2f447929e8f7551d6bd2996e613a037a3ccf48e8483bcb41b1
 +  md5: 18483b40f7a10a34b93000cf2c284f39
@@ -25180,16 +26176,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libcxsparse >=4.4.1,<5.0a0
 +  size: 115534
 +  timestamp: 1742289016222
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-23.1.3-h19cb2f5_0.conda
-+  sha256: 19ec3adf903c04aac6f31b180d283f0beb6d0393c5c1603f1d57355eb3a8fd66
-+  md5: 55664c771bbae09ac41bd7c940c3a7e1
++- conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-23.1.4-h19cb2f5_2.conda
++  sha256: 5d66e121f30c4b3792480de92230ec05d024106df5c031452bba356153df8c65
++  md5: f2a679a70cf584c6886579155fd7ee8f
 +  depends:
 +  - __osx >=11.0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: Apache
 +  run_exports: {}
-+  size: 573303
-+  timestamp: 1791337833929
++  size: 577045
++  timestamp: 1792749345117
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/libcxx-devel-21.1.8-h7c275be_4.conda
 +  sha256: 387556f7b09234f08dcd9a55b6b07c168f1b4060aabf0e5f1de58798632c57ed
 +  md5: 3e895be4f48daba7afd5cab935cccd5d
@@ -25396,9 +26392,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libllvm21 >=21.1.8,<21.2.0a0
 +  size: 31593190
 +  timestamp: 1787371754765
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/libllvm23-23.1.3-hd11396f_0.conda
-+  sha256: f490ade9e9ecce88a292c6c26d212e7ae758b92982b5cf4275af75acba87a40b
-+  md5: c647e7cd7e7324c6dd0f151d0b73cab0
++- conda: https://conda.anaconda.org/conda-forge/osx-64/libllvm23-23.1.4-hd11396f_1.conda
++  sha256: bd70294eeaa02453cc70d72f0e7cba643a0eb5a6f786d8373cbb9b3bb052191b
++  md5: e697e71977772ecf436447d467befc39
 +  depends:
 +  - __osx >=11.0
 +  - libcxx >=21
@@ -25410,9 +26406,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  license_family: Apache
 +  run_exports:
 +    weak:
-+    - libllvm23 >=23.1.3,<23.2.0a0
-+  size: 33411306
-+  timestamp: 1791344373618
++    - libllvm23 >=23.1.4,<23.2.0a0
++  size: 33410085
++  timestamp: 1792564296817
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/liblzma-5.8.3-hbb4bfdb_1.conda
 +  sha256: 7915dac7c71c208e40e716e2f6d3eff41a8d5584e0e7c2d46f9bf9bd5f9aa739
 +  md5: daf49067580fbfeae3ac7f9535400494
@@ -25503,19 +26499,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libpsl >=0.23.1,<0.24.0a0
 +  size: 72605
 +  timestamp: 1786970907332
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/libpython-3.15.0-h8544b6a_101_cp315.conda
-+  build_number: 101
-+  sha256: 1522b6532e2b840351d5b32c513c28eb8978c1c31ded5b72c48afde1bc64058b
-+  md5: ee0abd716cb101d2ae7faee5f3603aa6
++- conda: https://conda.anaconda.org/conda-forge/osx-64/libpython-3.15.1-h8544b6a_100_cp315.conda
++  build_number: 100
++  sha256: 57e311ba3935c79a0bf1bbc79383a4cfb34bb3d19a52a9805862f8d87ffa1220
++  md5: 0389be27f0740218f00f16d3b96cda97
 +  depends:
 +  - __osx >=11.0
-+  - python >=3.15,<3.16.0a0 h0abcc05_101_cp315
++  - python >=3.15,<3.16.0a0 h0abcc05_100_cp315
 +  license: Python-2.0
 +  run_exports:
 +    weak:
 +    - libpython >=3.15,<4.0a0
-+  size: 2270851
-+  timestamp: 1791832442829
++  size: 2285642
++  timestamp: 1792614931106
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/librbio-4.3.4-hca54c18_7100102.conda
 +  sha256: aed5d43c2e699f470655d627c1a2c2eef2aad186832fe72b424f3afe0cbd69b4
 +  md5: 8cbd3b4e3aae3590f87352fb7f947a6d
@@ -25693,21 +26689,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libzlib >=1.3.2,<2.0a0
 +  size: 58993
 +  timestamp: 1785276808631
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-23.1.3-h8c1e6b9_0.conda
-+  sha256: 7a94db37d2389c65366e820308f1c8964a2264a8ca3b0bab96ec8ca20083e677
-+  md5: 85edbb56b37fc44b823f32d126214059
++- conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-23.1.4-h8c1e6b9_0.conda
++  sha256: 6841e307728ddad340380b0e5b4434f051c5650f8d394fcaf364464672005f5d
++  md5: 45a8bc0f4a73361247b83eccdeb8ada5
 +  depends:
 +  - __osx >=11.0
 +  constrains:
 +  - intel-openmp <0.0a0
-+  - openmp 23.1.3|23.1.3.*
++  - openmp 23.1.4|23.1.4.*
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    strong:
-+    - llvm-openmp >=23.1.3
-+  size: 311780
-+  timestamp: 1791368961053
++    - llvm-openmp >=23.1.4
++  size: 311845
++  timestamp: 1792567072774
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-tools-21-21.1.8-h36529c3_1.conda
 +  sha256: 496d2f82ea522f5252e4f5b2fba8ecaf8a235376b88ba9beac1052d42d65aa33
 +  md5: 428d5d0dde69e631b8e6263fc292ecda
@@ -25819,10 +26815,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - openssl >=3.6.5,<4.0a0
 +  size: 2786968
 +  timestamp: 1791099439455
-+- conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.15.0-h0abcc05_101_cp315.conda
-+  build_number: 101
-+  sha256: 87419e87a6d91f90d49f251f51e6195cd2e960d65138ea72818aec6fd047c432
-+  md5: 14b05e77b8fbf0ecbe6223a4353324bb
++- conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.15.1-h0abcc05_100_cp315.conda
++  build_number: 100
++  sha256: 4ffe03dc2d64acce9b03b164f77a32fee02456baef37d2a63bb55d191f710597
++  md5: 3b9214dcc07b4822d5e61eac9fc5ebeb
 +  depends:
 +  - __osx >=11.0
 +  - bzip2 >=1.0.8,<2.0a0
@@ -25831,7 +26827,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  - libffi >=3.7.0,<3.8.0a0
 +  - liblzma >=5.8.3,<6.0a0
 +  - libmpdec >=4.0.0,<5.0a0
-+  - libsqlite >=3.54.0,<4.0a0
++  - libsqlite >=3.54.1,<4.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - ncurses >=6.6,<7.0a0
 +  - openssl >=3.5.9,<4.0a0
@@ -25845,8 +26841,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - python_abi 3.15.* *_cp315
 +    noarch:
 +    - python
-+  size: 13582979
-+  timestamp: 1791832204019
++  size: 13651924
++  timestamp: 1792614735621
 +  python_site_packages_path: lib/python3.15/site-packages
 +- conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.6-ha1e9b39_2.conda
 +  sha256: 4045a9fd2a79741bd149a5a93293bc335557bea0ad9660035a33e652a3843e3a
@@ -26011,18 +27007,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - bzip2 >=1.0.8,<2.0a0
 +  size: 124965
 +  timestamp: 1785906749812
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.8-h74c22ad_2.conda
-+  sha256: 82bdd5a3fcada6afef6255a9bf41172f07b362f36e04a354dc2abc0a29bfb756
-+  md5: 4cc01a374215de38387d45e19c8c5c9c
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.9-h74c22ad_0.conda
++  sha256: 74b52d784b3576643da3aea1240a4120c1f25ee057f14ae5a89e8a7b3fb2e69f
++  md5: 84dac5da92970cdde9789fcbfe63cb3a
 +  depends:
 +  - __osx >=11.0
 +  license: MIT
 +  license_family: MIT
 +  run_exports:
 +    weak:
-+    - c-ares >=1.34.8,<2.0a0
-+  size: 197819
-+  timestamp: 1787169996553
++    - c-ares >=1.34.9,<2.0a0
++  size: 201979
++  timestamp: 1792507050139
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-compiler-2.0.0-h39478f8_0.conda
 +  sha256: 5ffde45e6a825e82a0cdd73aa2e23cec5febcd7b6953e37037bdab38343203bb
 +  md5: 124b89a32eeeea68a3016366de507ee5
@@ -26465,43 +27461,43 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libclang-cpp21.1 >=21.1.8,<21.2.0a0
 +  size: 13704221
 +  timestamp: 1791490371270
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang-cpp23.1-23.1.3-default_h79071a4_1.conda
-+  sha256: 2ee57db24f1477cf54e84dc81dcab584cd067e2d08f41d66a6c8744009127b04
-+  md5: 65beee51b4a0c3a5d0da62616f93074d
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang-cpp23.1-23.1.4-default_h8bbc02d_0.conda
++  sha256: 7787dffff68a5e73b667bb9e077c722a652d331a8d06336aa97ac95dace3a104
++  md5: 7a2d061f28f70200423f3e4da1056aea
 +  depends:
-+  - libcxx >=23.1.3
++  - libcxx >=23.1.4
 +  - __osx >=11.0
++  - zstd >=1.5.7,<1.6.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - libxml2
 +  - libxml2-16 >=2.15.4
-+  - zstd >=1.5.7,<1.6.0a0
-+  - libllvm23 >=23.1.3,<23.2.0a0
++  - libllvm23 >=23.1.4,<23.2.0a0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    weak:
-+    - libclang-cpp23.1 >=23.1.3,<23.2.0a0
-+  size: 16606123
-+  timestamp: 1791933708010
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang13-23.1.3-default_h885965d_1.conda
-+  sha256: 3e4622334f2a93fdd078a0f9cbe37c47ff85ed1618c898edeffb471f86b1120a
-+  md5: a8f0712f9b10308be27674ae1f690108
++    - libclang-cpp23.1 >=23.1.4,<23.2.0a0
++  size: 16607001
++  timestamp: 1792647648570
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libclang13-23.1.4-default_h63627a2_0.conda
++  sha256: c6c9b9f5a25a6f89a0a139e5f178b0895b5feffe34c4d5b01ae2cf9c25d5d461
++  md5: 47cd7f341d3fd4305c75700acc4c2858
 +  depends:
-+  - libclang-cpp23.1 ==23.1.3 default_h79071a4_1
-+  - libcxx >=23.1.3
++  - libclang-cpp23.1 ==23.1.4 default_h8bbc02d_0
++  - libcxx >=23.1.4
 +  - __osx >=11.0
++  - zstd >=1.5.7,<1.6.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - libxml2
 +  - libxml2-16 >=2.15.4
-+  - zstd >=1.5.7,<1.6.0a0
-+  - libllvm23 >=23.1.3,<23.2.0a0
++  - libllvm23 >=23.1.4,<23.2.0a0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    weak:
-+    - libclang13 >=23.1.3
-+  size: 10617250
-+  timestamp: 1791933708010
++    - libclang13 >=23.1.4
++  size: 10617013
++  timestamp: 1792647648570
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcolamd-3.3.4-h99b4a89_7100102.conda
 +  sha256: 3c4467faf60994dd095a66ba5a4508b9d610487ed89458084d87ad3e4b0fe53f
 +  md5: 89673c8b6f5efcce6e92f5269996cc40
@@ -26561,16 +27557,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libcxsparse >=4.4.1,<5.0a0
 +  size: 89459
 +  timestamp: 1742288952862
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.3-h55c6f16_0.conda
-+  sha256: 2d9d31172d7919bd276a8d1be338de567dd5afdd181e8d3d3d8c2d8695e09de2
-+  md5: 424521e52e65ef7f6cf957c4966e6386
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.4-h55c6f16_2.conda
++  sha256: 9c390b4f403db32346754ccef6b84b7e5d9b70cb6d76258fd23b05f2db2ab216
++  md5: 08f01709cd5f8fd7af2c29e4e3ce1846
 +  depends:
 +  - __osx >=11.0
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: Apache
 +  run_exports: {}
-+  size: 577501
-+  timestamp: 1791337239735
++  size: 577255
++  timestamp: 1792748855178
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-devel-21.1.8-h6dc3340_4.conda
 +  sha256: 3171a5e250032338210bf63eae862de2cf96287bef1c8e35e1fff3c3e1a91706
 +  md5: f6a6c5792714f24f81aceff0a2f8035f
@@ -26777,9 +27773,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libllvm21 >=21.1.8,<21.2.0a0
 +  size: 29629677
 +  timestamp: 1787364227487
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libllvm23-23.1.3-h759d1ac_0.conda
-+  sha256: e1a0f238487d15d018b9e5a75b937164d25fd28b4408e96b1a4af321f4f73181
-+  md5: 25eeae19cac6af1b9d28cf229855551d
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libllvm23-23.1.4-h759d1ac_1.conda
++  sha256: 09bbb7a95c4187d406b96f3f43a5061c537bbe38ed199fec74bdd59016dd9cdf
++  md5: e7b4681725890a63792da70c67e4e026
 +  depends:
 +  - __osx >=11.0
 +  - libcxx >=21
@@ -26791,9 +27787,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  license_family: Apache
 +  run_exports:
 +    weak:
-+    - libllvm23 >=23.1.3,<23.2.0a0
-+  size: 31579504
-+  timestamp: 1791337321683
++    - libllvm23 >=23.1.4,<23.2.0a0
++  size: 31580468
++  timestamp: 1792564352724
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/liblzma-5.8.3-h8088a28_1.conda
 +  sha256: 23d0630046a3e8b164d8f80f2b74ed2605af2e7050ab9913018056402fae4311
 +  md5: 8ab10323068b107661a4b9a4af84f3b5
@@ -26884,19 +27880,19 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libpsl >=0.23.1,<0.24.0a0
 +  size: 72673
 +  timestamp: 1786970928205
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.15.0-hb350d79_101_cp315.conda
-+  build_number: 101
-+  sha256: c11f62b9607cea599a39577004b28952eb8d617593c400823fda04615258863f
-+  md5: 499bd613807c20b45ea892f0848e9299
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpython-3.15.1-hb350d79_100_cp315.conda
++  build_number: 100
++  sha256: f4b99e9b625892132b6e8f816eb5308f1fc694d749c99793b863b3e99f0b97d8
++  md5: 038a45ac6e2f96a84ae7134061729eb7
 +  depends:
 +  - __osx >=11.0
-+  - python >=3.15,<3.16.0a0 h2e4dbab_101_cp315
++  - python >=3.15,<3.16.0a0 h2e4dbab_100_cp315
 +  license: Python-2.0
 +  run_exports:
 +    weak:
 +    - libpython >=3.15,<4.0a0
-+  size: 1975487
-+  timestamp: 1791826537008
++  size: 1986335
++  timestamp: 1792611059089
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/librbio-4.3.4-h99b4a89_7100102.conda
 +  sha256: 098994f7c6993c1239027e84c547106cc8aaac4542802ba9fb05bb00d6c8c4ef
 +  md5: fa40dbe91ad646bf5abed56855a8b631
@@ -27073,21 +28069,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libzlib >=1.3.2,<2.0a0
 +  size: 47822
 +  timestamp: 1785277049190
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.3-hdb3d66b_1.conda
-+  sha256: eec66f3d0a0c428411e22a59c4726069ccef81a46864876b6e270c8c254d4045
-+  md5: 5b7efd98534e6722de8d223b8654185b
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.4-hdb3d66b_0.conda
++  sha256: cc6d67df56d4ea967e17d938d3108cdf7d971531350df9e7fc5e18cb89066a70
++  md5: 9a6ec2a53da5d75951b88c51018c27fa
 +  depends:
 +  - __osx >=11.0
 +  constrains:
 +  - intel-openmp <0.0a0
-+  - openmp 23.1.3|23.1.3.*
++  - openmp 23.1.4|23.1.4.*
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    strong:
-+    - llvm-openmp >=23.1.3
-+  size: 287944
-+  timestamp: 1791950643503
++    - llvm-openmp >=23.1.4
++  size: 287495
++  timestamp: 1792567065537
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-tools-21-21.1.8-h79441dc_1.conda
 +  sha256: 758cf9c842b4a3678f52c768b66bbfdb812a715601edb9b75c577249d448e33c
 +  md5: 269fcdde9a200135f812c74785c08615
@@ -27199,10 +28195,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - openssl >=3.6.5,<4.0a0
 +  size: 3111573
 +  timestamp: 1791097959641
-+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.15.0-h2e4dbab_101_cp315.conda
-+  build_number: 101
-+  sha256: eaef2e5416070e10c806d57f9a314b2af4a618c2dd38cd0e03a702ec7385c7be
-+  md5: 808b52a6f6035f3c392d9893a552c5cf
++- conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.15.1-h2e4dbab_100_cp315.conda
++  build_number: 100
++  sha256: 995d263c5816d3592fa6822d5c4f601701fd5cefffcd3c831ed6424c2a3edb5e
++  md5: e854f87e3514c76d1dce1a10a5b00b96
 +  depends:
 +  - __osx >=11.0
 +  - bzip2 >=1.0.8,<2.0a0
@@ -27211,7 +28207,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  - libffi >=3.7.0,<3.8.0a0
 +  - liblzma >=5.8.3,<6.0a0
 +  - libmpdec >=4.0.0,<5.0a0
-+  - libsqlite >=3.54.0,<4.0a0
++  - libsqlite >=3.54.1,<4.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - ncurses >=6.6,<7.0a0
 +  - openssl >=3.5.9,<4.0a0
@@ -27225,8 +28221,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - python_abi 3.15.* *_cp315
 +    noarch:
 +    - python
-+  size: 13323212
-+  timestamp: 1791826509200
++  size: 13231205
++  timestamp: 1792611025816
 +  python_site_packages_path: lib/python3.15/site-packages
 +- conda: https://conda.anaconda.org/conda-forge/osx-arm64/rhash-1.4.6-h84a0fba_2.conda
 +  sha256: b4da3ab88c407b4133d39512b3b615d6fb020c89d39f54491862e6731528ab95
@@ -28165,23 +29161,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - libzlib >=1.3.2,<2.0a0
 +  size: 58529
 +  timestamp: 1785276664143
-+- conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.3-h49e36cd_1.conda
-+  sha256: 3eed860d303cff84c3ab771312ebb3e0b26ad10d92b38ed98a33f3bef7edd01b
-+  md5: 9a59330f44f2ad04123dda3f6fcc7bd3
++- conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.4-h49e36cd_0.conda
++  sha256: a3012ff7e6ec5e0a0a19ea8df76a504f3c2bea2d5b12a94f8aa5a50ac9eeab3c
++  md5: 2674733d6b58428f90f7afb0132d4202
 +  depends:
 +  - ucrt >=10.0.20348.0
 +  - vc >=14.3,<15
 +  - vc14_runtime >=14.44.35208
 +  constrains:
 +  - intel-openmp <0.0a0
-+  - openmp 23.1.3|23.1.3.*
++  - openmp 23.1.4|23.1.4.*
 +  license: Apache-2.0 WITH LLVM-exception
 +  license_family: APACHE
 +  run_exports:
 +    strong:
-+    - llvm-openmp >=23.1.3
-+  size: 343582
-+  timestamp: 1791951366925
++    - llvm-openmp >=23.1.4
++  size: 344047
++  timestamp: 1792567436843
 +- conda: https://conda.anaconda.org/conda-forge/win-64/metis-5.1.0-h91a0a1d_1008.conda
 +  sha256: c16469194995184fb74580cd3b596e51859b372da14fd4226fc29803e152fa3b
 +  md5: be135a7f1dc7a78f79a432484b4ebc79
@@ -28273,17 +29269,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - openssl >=3.6.5,<4.0a0
 +  size: 9402647
 +  timestamp: 1791099870810
-+- conda: https://conda.anaconda.org/conda-forge/win-64/python-3.15.0-h53f6dd8_101_cp315.conda
-+  build_number: 101
-+  sha256: 3317969df32a384c6281fdf5d53e7f33700f529e77a856e47787618164cf4339
-+  md5: c865caa79e1f8985f41e1eb453ee43c4
++- conda: https://conda.anaconda.org/conda-forge/win-64/python-3.15.1-h53f6dd8_100_cp315.conda
++  build_number: 100
++  sha256: c1086f7562010f4d588344cb2a3774e6414338ef76659ee5d424e9d410880051
++  md5: b056330ce834cbe72557386047596989
 +  depends:
 +  - bzip2 >=1.0.8,<2.0a0
 +  - libexpat >=2.8.5,<3.0a0
 +  - libffi >=3.7.0,<3.8.0a0
 +  - liblzma >=5.8.3,<6.0a0
 +  - libmpdec >=4.0.0,<5.0a0
-+  - libsqlite >=3.54.0,<4.0a0
++  - libsqlite >=3.54.1,<4.0a0
 +  - libzlib >=1.3.2,<2.0a0
 +  - openssl >=3.5.9,<4.0a0
 +  - python_abi 3.15.* *_cp315
@@ -28299,8 +29295,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    - python_abi 3.15.* *_cp315
 +    noarch:
 +    - python
-+  size: 18299716
-+  timestamp: 1791826529239
++  size: 18545667
++  timestamp: 1792610702638
 +  python_site_packages_path: lib/python/site-packages
 +- conda: https://conda.anaconda.org/conda-forge/win-64/sccache-0.18.0-h18a1a76_0.conda
 +  sha256: 9453920ddcd48d3fe3676dcdcc40974d7c6eca39b07babc22af5950042c43dde
@@ -40565,7 +41561,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      unittest.main()
 --- gtsam-4.3.0.orig/python/gtsam/tests/test_constrained.py
 +++ gtsam-4.3.0/python/gtsam/tests/test_constrained.py
-@@ -100,6 +100,38 @@ class TestConstrainedWrappers(unittest.T
+@@ -100,6 +100,49 @@ class TestConstrainedWrappers(unittest.T
          self.assertEqual(problem.dim(), (1, 1, 0))
          self.assertEqual(problem.evaluate(values), (0.5, 0.0, 0.0))
  
@@ -40601,10 +41597,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        )
 +        self.assertAlmostEqual(constraint.sigma(), 1.0)
 +
++    def test_qcqp_redundant_constraints(self):
++        """useRedundantConstraints adds eleven equalities per Rot3 variable."""
++        graph = gtsam.NonlinearFactorGraph()
++        graph.add(
++            gtsam.FrobeniusBetweenFactorRot3(X(0), X(1), gtsam.Rot3.Rz(0.3))
++        )
++        plain = gtsam.QcqpProblem(graph)
++        redundant = gtsam.QcqpProblem(graph, useRedundantConstraints=True)
++        self.assertEqual(plain.dim()[1], 2 * 9)
++        self.assertEqual(redundant.dim()[1], 2 * (9 + 11))
++
      def test_exact_qcqp_value_conversion_wrappers(self):
          """Insert and recover every supported exact D=1 manifold value."""
          typed_values = [
-@@ -145,7 +177,11 @@ class TestConstrainedWrappers(unittest.T
+@@ -145,7 +188,11 @@ class TestConstrainedWrappers(unittest.T
          ]
  
          qcqp_values = gtsam.Values()
