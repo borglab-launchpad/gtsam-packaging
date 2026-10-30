@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 30 2026 04:47:17 +0000
+Date: Oct, 30 2026 17:02:16 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -1826,34 +1826,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    orderedKeys->assign(costKeys.begin(), costKeys.end());
-@@ -279,8 +236,25 @@ SymbolicBayesTree BuildSymbolicBayesTree
-   switch (orderingType) {
-     case ChordalOrderingType::Metis:
- #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
--      ordering = Ordering::Metis(sfg);
-+    {
-+      // MetisIndex gives keys without neighbors no adjacency rows, so METIS
-+      // would see inconsistent arrays. Order the coupled keys with METIS and
-+      // put the uncoupled ones, each its own clique, first. Substituting
-+      // fixed variables can leave keys with unary costs only.
-+      SymbolicFactorGraph coupled;
-+      for (const auto& factor : sfg) {
-+        if (factor->size() > 1) coupled.push_back(factor);
-+      }
-+      const KeySet coupledKeys = coupled.keys();
-+      for (Key key : sfg.keys()) {
-+        if (!coupledKeys.count(key)) ordering.push_back(key);
-+      }
-+      if (!coupled.empty()) {
-+        const Ordering metis = Ordering::Metis(coupled);
-+        ordering.insert(ordering.end(), metis.begin(), metis.end());
-+      }
-       break;
-+    }
- #else
-       throw std::runtime_error(
-           "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
-@@ -382,55 +356,69 @@ double ComputeBlockRankOneRatio(const Ma
+@@ -382,55 +339,69 @@ double ComputeBlockRankOneRatio(const Ma
    return lambdaMax / lambdaSecond;
  }
  
@@ -1949,7 +1922,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    for (Key key_i : H.keys()) {
      std::vector<mf::Expression::t> rowBlocks;
      for (Key key_j : H.keys()) {
-@@ -438,31 +426,42 @@ mf::Expression::t BuildQpCostObjectiveTe
+@@ -438,31 +409,42 @@ mf::Expression::t BuildQpCostObjectiveTe
      }
      blockRows.push_back(
          mf::Expr::hstack(monty::new_array_ptr<mf::Expression::t>(rowBlocks)));
@@ -2001,15 +1974,18 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    if (objectiveTerms.empty()) {
-@@ -471,15 +470,20 @@ mf::Expression::t BuildObjective(
+@@ -471,136 +453,79 @@ mf::Expression::t BuildObjective(
    return mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(objectiveTerms));
  }
  
 -// Lower a unary quadratic QCQP constraint to an affine SDP constraint.
 +// Lower x'Ax + 2a'x ~ b to the affine SDP constraint <A, X> + 2a'y ~ b.
++// Equality factors enforce the boundary even when the descriptor is an
++// inequality.
  void AddQuadraticConstraint(
-     const mf::Model::t& M, const QuadraticConstraint& constraint,
+-    const mf::Model::t& M, const QuadraticConstraint& constraint,
 -    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
++    const mf::Model::t& M, const QuadraticConstraint& constraint, bool isEquality,
 +    const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
 +    const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
    const Key key = constraint.key();
@@ -2017,6 +1993,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -  const auto Xii = xijMap.at({key, key})->asExpr();
 -  const auto lhs =
 -      mf::Expr::dot(convertToMosekDenseMatrix(constraint.A()), Xii);
+-
+-  switch (constraint.sense()) {
+-    case QuadraticConstraint::Sense::Equal:
+-      M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
+-      break;
+-    case QuadraticConstraint::Sense::LessEqual:
+-      M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
+-      break;
+-    case QuadraticConstraint::Sense::GreaterEqual:
+-      M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
+-      break;
 +  auto lhs = mf::Expr::dot(convertToMosekDenseMatrix(constraint.A()),
 +                           xijMap.at({key, key})->asExpr());
 +  if (constraint.hasLinearTerm()) {
@@ -2024,17 +2011,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        lhs, mf::Expr::dot(convertToMosekDenseMatrix(
 +                               Matrix(2.0 * constraint.a().transpose())),
 +                           xiMap.at(key)->asExpr()));
-+  }
- 
-   switch (constraint.sense()) {
-     case QuadraticConstraint::Sense::Equal:
-@@ -494,113 +498,53 @@ void AddQuadraticConstraint(
    }
- }
+-}
  
 -// Lower a supported unary linear equality to its first-column SDP constraint.
-+// Lower Ax = b on one key to both rows of [-b A] [1 y'; y X] = 0.
- void AddLinearEqualityConstraint(
+-void AddLinearEqualityConstraint(
 -    const mf::Model::t& M, const LinearConstraint& constraint,
 -    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
 -  const JacobianFactor& J = constraint.factor();
@@ -2060,16 +2041,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -    const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), Xii->asExpr());
 -    const auto rhs = mf::Expr::mul(convertToMosekDenseMatrix(b), xTranspose);
 -    M->constraint(mf::Expr::sub(lhs, rhs), mf::Domain::equalsTo(0.0));
--  } else {
++  if (isEquality) {
++    M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
++  } else if (constraint.sense() == QuadraticConstraint::Sense::GreaterEqual) {
++    M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
+   } else {
+-    throw std::runtime_error(
+-        "MonolithicSDP: only unary linear equality QCQP constraints are "
+-        "supported.");
++    M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
+   }
+ }
+ 
+-// Tie each monolithic block's homogenization entry to the reference block.
+-void AddHomogenizationConsistencyConstraints(
+-    const mf::Model::t& M, const KeyVector& orderedKeys,
+-    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+-  if (orderedKeys.empty()) {
+-    return;
+-  }
+-
+-  const Key referenceKey = orderedKeys.front();
+-  for (size_t index = 1; index < orderedKeys.size(); ++index) {
+-    const Key key = orderedKeys[index];
+-    M->constraint(xijMap.at({referenceKey, key})->index(0, 0),
+-                  mf::Domain::equalsTo(1.0));
++// Lower Ax = b on one key to both rows of [-b A] [1 y'; y X] = 0.
++void AddLinearEqualityConstraint(
 +    const mf::Model::t& M, const LinearConstraint& equality,
 +    const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
 +    const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
 +  const JacobianFactor& J = equality.factor();
 +  if (J.size() != 1) {
-     throw std::runtime_error(
--        "MonolithicSDP: only unary linear equality QCQP constraints are "
++    throw std::runtime_error(
 +        "LiftedSDPProblem: only unary linear equality QCQP constraints are "
-         "supported.");
++        "supported.");
    }
 +  const Key key = *J.begin();
 +  const auto y = xiMap.at(key)->asExpr();
@@ -2086,22 +2092,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +                mf::Domain::equalsTo(0.0));
  }
  
--// Tie each monolithic block's homogenization entry to the reference block.
--void AddHomogenizationConsistencyConstraints(
--    const mf::Model::t& M, const KeyVector& orderedKeys,
--    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
--  if (orderedKeys.empty()) {
--    return;
--  }
--
--  const Key referenceKey = orderedKeys.front();
--  for (size_t index = 1; index < orderedKeys.size(); ++index) {
--    const Key key = orderedKeys[index];
--    M->constraint(xijMap.at({referenceKey, key})->index(0, 0),
--                  mf::Domain::equalsTo(1.0));
--  }
--}
--
 -// Tie homogenization entries shared by adjacent chordal blocks.
 -void AddChordalHomogenizationConsistencyConstraints(
 +// Add all QCQP equality and inequality constraints to a Fusion model.
@@ -2142,8 +2132,14 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    // Equality factors may be quadratic or linear.
    for (const auto& factor : problem.eConstraints()) {
 -    if (!factor) {
--      continue;
--    }
++    if (!factor) continue;
++    if (const auto* quadratic =
++            dynamic_cast<const QuadraticEqualityConstraintFactor*>(
++                factor.get())) {
++      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), true,
++                             xiMap, xijMap);
+       continue;
+     }
 -
 -    const auto* quadratic =
 -        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
@@ -2153,19 +2149,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -        continue;
 -      }
 -      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xijMap);
-+    if (!factor) continue;
-+    if (const auto* quadratic =
-+            dynamic_cast<const QuadraticEqualityConstraintFactor*>(
-+                factor.get())) {
-+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
-+                             xiMap, xijMap);
-       continue;
-     }
--
--    const auto* linear =
--        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
--    if (linear) {
--      AddLinearEqualityConstraint(M, linear->linearConstraint(), xijMap);
 +    if (const auto* linear =
 +            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
 +      AddLinearEqualityConstraint(M, linear->linearConstraint(), xiMap,
@@ -2173,29 +2156,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        continue;
      }
 -
+-    const auto* linear =
+-        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
+-    if (linear) {
+-      AddLinearEqualityConstraint(M, linear->linearConstraint(), xijMap);
+-      continue;
+-    }
+-
      throw std::runtime_error(
          "LiftedSDPProblem: expected quadratic or linear equality "
          "constraints.");
-@@ -608,28 +552,155 @@ void AddQcqpConstraints(const mf::Model:
+@@ -608,28 +533,155 @@ void AddQcqpConstraints(const mf::Model:
  
    // Inequality factors currently support only quadratic constraints.
    for (const auto& factor : problem.iConstraints()) {
 -    if (!factor) {
--      continue;
--    }
++    if (!factor) continue;
++    if (const auto* quadratic =
++            dynamic_cast<const QuadraticInequalityConstraintFactor*>(
++                factor.get())) {
++      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), false,
++                             xiMap, xijMap);
+       continue;
+     }
 -
 -    const auto* quadratic =
 -        dynamic_cast<const QuadraticInequalityConstraintFactor*>(factor.get());
 -    if (quadratic) {
 -      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xijMap);
-+    if (!factor) continue;
-+    if (const auto* quadratic =
-+            dynamic_cast<const QuadraticInequalityConstraintFactor*>(
-+                factor.get())) {
-+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
-+                             xiMap, xijMap);
-       continue;
-     }
+-      continue;
+-    }
 -
      if (dynamic_cast<const LinearInequalityConstraintFactor*>(factor.get())) {
        throw std::runtime_error(
@@ -2342,7 +2332,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }  // namespace
  
  struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
-@@ -637,25 +708,34 @@ struct LiftedSDPProblem<MonolithicSDP, M
+@@ -637,25 +689,34 @@ struct LiftedSDPProblem<MonolithicSDP, M
    MosekSolveSummary lastSolveSummary;
    KeyVector orderedKeys;
    std::map<Key, DenseIndex> orderedKeyDims;
@@ -2387,7 +2377,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        }
      }
    }
-@@ -666,12 +746,16 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -666,12 +727,16 @@ struct LiftedSDPProblem<ChordalSDP, Mose
    MosekSolveSummary lastSolveSummary;
    KeyVector orderedKeys;
    std::map<Key, DenseIndex> orderedKeyDims;
@@ -2407,7 +2397,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      DisposeMosekModel(M);
    }
  
-@@ -685,7 +769,7 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -685,7 +750,7 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      return out.str();
    }
  
@@ -2416,7 +2406,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    void addChordalOverlapEquality(const std::pair<Key, Key>& key,
                                   const mf::Variable::t& owner,
                                   const mf::Variable::t& duplicate) {
-@@ -695,22 +779,34 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -695,22 +760,34 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      }
  
      if (key.first == key.second) {
@@ -2460,7 +2450,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      if (!clique) {
        return;
      }
-@@ -718,81 +814,83 @@ struct LiftedSDPProblem<ChordalSDP, Mose
+@@ -718,81 +795,83 @@ struct LiftedSDPProblem<ChordalSDP, Mose
      KeyVector indices = clique->conditional()->keys();
      std::sort(indices.begin(), indices.end());
  
@@ -2555,9 +2545,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -  impl_->populateXijMap(Y, layout, shareHomogeneous);
 +  auto Y = impl_->M->variable("Y", mf::Domain::inPSDCone(sdpVariableDimension));
 +  impl_->populateXijMap(Y, keyToSDPVariableRanges);
-+
-+  // Set homogenization term for entire monolithic SDP.
-+  impl_->M->constraint(Y->index(0, 0), mf::Domain::equalsTo(1.0));
  
 -  // PSD and X(hi,hi)=X(hj,hj)=X(hi,hj)=1 imply X*(e_hi-e_hj)=0.
 -  // Thus homogeneous rows coincide even without rank one; views can alias them.
@@ -2568,7 +2555,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -        impl_->M, impl_->orderedKeys,
 -        impl_->liftedVariableXijToSDPVariableViewMap);
 -  }
--
++  // Set homogenization term for entire monolithic SDP.
++  impl_->M->constraint(Y->index(0, 0), mf::Domain::equalsTo(1.0));
+ 
 -  const auto objective =
 -      BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
 -  impl_->M->objective(mf::ObjectiveSense::Minimize,
@@ -2586,7 +2575,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
-@@ -831,8 +929,11 @@ Values LiftedSDPProblem<MonolithicSDP, M
+@@ -831,8 +910,11 @@ Values LiftedSDPProblem<MonolithicSDP, M
      throw std::runtime_error("qcqpValues: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -2600,7 +2589,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  std::vector<double>
-@@ -841,8 +942,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
+@@ -841,8 +923,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
      throw std::runtime_error("variableEVRs: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -2613,7 +2602,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  const KeyVector& LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys()
-@@ -856,35 +959,25 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
+@@ -856,35 +940,25 @@ LiftedSDPProblem<MonolithicSDP, MosekSDP
  }
  
  LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
@@ -2658,7 +2647,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
-@@ -922,8 +1015,11 @@ Values LiftedSDPProblem<ChordalSDP, Mose
+@@ -922,8 +996,11 @@ Values LiftedSDPProblem<ChordalSDP, Mose
      throw std::runtime_error("qcqpValues: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -2672,7 +2661,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()
-@@ -932,8 +1028,10 @@ std::vector<double> LiftedSDPProblem<Cho
+@@ -932,8 +1009,10 @@ std::vector<double> LiftedSDPProblem<Cho
      throw std::runtime_error("variableEVRs: solve() has not been called.");
    }
    impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
@@ -3172,7 +3161,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      }
    };
    MosekMonolithicSDP monolithic(problem);
-@@ -555,23 +597,171 @@ void CheckNormProblem(size_t count, bool
+@@ -555,23 +597,207 @@ void CheckNormProblem(size_t count, bool
    }
  }
  
@@ -3250,6 +3239,42 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  check(&monolithic);
 +  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
 +  check(&chordal);
++}
++
++// Boundary equalities retain the descriptor's inequality sense, but both SDP
++// formulations must enforce equality, including for negated coefficients.
++TEST(LiftedSDPs, QuadraticBoundaryEquality) {
++  const Matrix A = Matrix2::Identity();
++  for (double sign : {1.0, -1.0}) {
++    for (bool greaterEqual : {false, true}) {
++      const auto constraint = greaterEqual
++                                  ? QuadraticConstraint::GreaterEqual(
++                                        0, Matrix(sign * A), sign)
++                                  : QuadraticConstraint::LessEqual(
++                                        0, Matrix(sign * A), sign);
++      // Choose a target strictly inside the original inequality, so leaving
++      // it as an inequality would give objective zero instead of one half.
++      const bool exterior = greaterEqual == (sign > 0.0);
++      const Vector2 target{exterior ? 2.0 : 0.0, 0.0};
++      NonlinearFactorGraph costs;
++      costs.emplace_shared<QpCost>(HessianFactor(
++          0, A, Vector(target), target.squaredNorm()));
++      NonlinearEqualityConstraints equalities;
++      equalities.push_back(
++          greaterEqual
++              ? constraint.createInequalityFactor()->createEqualityConstraint()
++              : constraint.createEqualityFactor());
++      const QcqpProblem problem(costs, equalities);
++      auto check = [&](auto* solver) {
++        EXPECT(solver->solve());
++        EXPECT_DOUBLES_EQUAL(0.5, solver->objectiveValue(), 1e-6);
++      };
++      MosekMonolithicSDP monolithic(problem);
++      check(&monolithic);
++      MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
++      check(&chordal);
++    }
++  }
 +}
 +
 +}  // namespace natural_form_fixture
@@ -12045,6 +12070,81 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  using ADT = AlgebraicDecisionTree<Key>;
  BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
  BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
+--- gtsam-4.3.0.orig/gtsam/inference/MetisIndex-inl.h
++++ gtsam-4.3.0/gtsam/inference/MetisIndex-inl.h
+@@ -47,6 +47,8 @@ void MetisIndex::augment(const FactorGra
+         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
+         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()) {
+           intKeyBMap_.insert(key, keyCounter);
++          // Isolated keys still need an empty CSR row.
++          iAdjMap.try_emplace(keyCounter);
+           keyCounter++;
+         }
+       }
+--- gtsam-4.3.0.orig/gtsam/inference/tests/testOrdering.cpp
++++ gtsam-4.3.0/gtsam/inference/tests/testOrdering.cpp
+@@ -17,6 +17,7 @@
+ 
+ #include <gtsam/inference/Symbol.h>
+ #include <gtsam/symbolic/SymbolicFactorGraph.h>
++#include <gtsam/symbolic/SymbolicBayesTree.h>
+ #include <gtsam/inference/Ordering.h>
+ #include <gtsam/inference/MetisIndex.h>
+ #include <gtsam/base/TestableAssertions.h>
+@@ -301,6 +302,7 @@ TEST(Ordering, MetisEdgelessGraph) {
+   symbolicGraph.push_factor(0);
+   symbolicGraph.push_factor(1);
+ 
++  EXPECT((vector<int32_t>{0, 0, 0}) == MetisIndex(symbolicGraph).xadj());
+   const Ordering metis = Ordering::Metis(symbolicGraph);
+ 
+   EXPECT_LONGS_EQUAL(2, metis.size());
+@@ -309,6 +311,45 @@ TEST(Ordering, MetisEdgelessGraph) {
+ }
+ 
+ /* ************************************************************************* */
++namespace isolated_keys_fixture {
++
++// Interleave isolated keys with a connected component in internal index order.
++SymbolicFactorGraph MixedGraph() {
++  SymbolicFactorGraph graph;
++  graph.push_factor(100);
++  graph.push_factor(10, 30);
++  graph.push_factor(200);
++  graph.push_factor(30, 20);
++  graph.push_factor(300);
++  return graph;
++}
++
++// Every vertex needs a CSR row, including isolated vertices at any position.
++TEST(Ordering, MetisIsolatedKeysCsr) {
++  const MetisIndex index(MixedGraph());
++  EXPECT_LONGS_EQUAL(6, index.nValues());
++  EXPECT((vector<int32_t>{0, 0, 1, 3, 3, 4, 4}) == index.xadj());
++  EXPECT((vector<int32_t>{2, 1, 4, 2}) == index.adj());
++}
++
++// Mixed connected and isolated keys must order and eliminate into all components.
++TEST(Ordering, MetisIsolatedKeysElimination) {
++  const SymbolicFactorGraph graph = MixedGraph();
++  for (int seed : {0, 42, 4321}) {
++    const Ordering ordering = Ordering::Metis(graph, seed);
++    EXPECT_LONGS_EQUAL(6, ordering.size());
++    for (Key key : graph.keys()) EXPECT(ordering.contains(key));
++    const auto tree = graph.eliminateMultifrontal(ordering);
++    EXPECT_LONGS_EQUAL(6, tree->nodes().size());
++    EXPECT_LONGS_EQUAL(4, tree->roots().size());
++    for (Key key : {100, 200, 300}) {
++      EXPECT_LONGS_EQUAL(1, (*tree)[key]->conditional()->size());
++    }
++  }
++}
++
++}  // namespace isolated_keys_fixture
++/* ************************************************************************* */
+ namespace {
+ // 3x5 grid from the METIS manual (same graph as the csr_format test).
+ SymbolicFactorGraph metisManualExampleGraph() {
 --- gtsam-4.3.0.orig/gtsam/linear/BatchJacobianFactor.h
 +++ gtsam-4.3.0/gtsam/linear/BatchJacobianFactor.h
 @@ -780,21 +780,23 @@ class BatchJacobianFactor : public Batch
