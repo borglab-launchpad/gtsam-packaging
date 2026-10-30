@@ -1,10 +1,39 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~48.gbp83ea54) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~49.gbpc48adf) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @c48adf882e95d67226e50ad00d4014b340f5935f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @83ea54ab3e8b4efb250c96a246b0aad445c60895 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 29 Oct 2026 17:21:01 +0000
+  [ DLuminary ]
+  * Use the exact discrete noise in GaussMarkov1stOrderFactor and wrap it for Python
+  * Wrap GaussMarkov1stOrderFactor changes to 80 columns
+  * Keep small correlations and reject invalid taus in GaussMarkov1stOrderFactor
+  * Reject constrained noise models in GaussMarkov1stOrderFactor
+
+  [ Varun Agrawal ]
+  * Fix cardinality-1 issue in DTF construction
+  * Update the GTSAM_BUILD_WITH_MARCH_NATIVE to OFF to be ABI compatible
+  * Revert "Update the GTSAM_BUILD_WITH_MARCH_NATIVE to OFF to be ABI compatible"
+
+  [ dellaert ]
+  * Update pixi lockfile
+
+  [ Frank Dellaert ]
+  * Fix SDP enforcement of quadratic boundary equalities
+  * Preserve isolated vertices in METIS adjacency indices
+
+  [ avinashresearch1 ]
+  * Add redundant SO(3) constraints to the Rot3 and Pose3 QCQP traits
+  * Add redundant constraints to the QCQP on request
+
+  [ dellaert@gmail.com ]
+  * Expose final augmented Lagrangian state without retaining history
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Oct 2026 17:02:15 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~47.gbp0d3125) resolute; urgency=medium
 
