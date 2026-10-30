@@ -1,4 +1,4 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~49.gbpc48adf) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~49.gbpc48adf) noble; urgency=medium
 
   ** SNAPSHOT build @c48adf882e95d67226e50ad00d4014b340f5935f **
 
