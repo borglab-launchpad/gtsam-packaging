@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Oct, 30 2026 17:02:17 +0000
+Date: Nov, 04 2026 23:35:59 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -17571,8 +17571,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  parameter.block<2, 2>(2, 0) = Matrix2{{1., 2.}, {-1., .5}};
 +  parameter.block<2, 2>(6, 0) = Matrix2{{.5, 1.}, {1., -1.}};
 +  const Vector2 direct{.3, -.2}, direction{.7, -.4};
-+  const Vector parameterGradient = parameter.transpose() * stack(gradients.pullback(source())) + direct;
-+  const Vector expected =
++  const Vector2 parameterGradient = parameter.transpose() * stack(gradients.pullback(source())) + direct;
++  const Vector2 expected =
 +      -parameter.transpose() * jacobian *
 +          (jacobian.transpose() * jacobian).ldlt().solve(source().vector()) + direct;
 +  EXPECT(assert_equal(expected, parameterGradient, 1e-10));
@@ -19249,202 +19249,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  };
  
---- /dev/null
-+++ gtsam-no-tbb-4.3.0/gtsam/slam/KnownLandmarkSquaredRangeFactor.h
-@@ -0,0 +1,193 @@
-+/* ----------------------------------------------------------------------------
-+
-+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
-+ * Atlanta, Georgia 30332-0415
-+ * All Rights Reserved
-+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-+
-+ * See LICENSE for the license information
-+
-+ * -------------------------------------------------------------------------- */
-+
-+/**
-+ * @file KnownLandmarkSquaredRangeFactor.h
-+ * @brief Factor for range-only observation of a known landmark from an unknown
-+ * position.
-+ * @author Oluwatodimu Afolayan
-+ * @author Frederike Dümbgen
-+ * @author Frank Dellaert
-+ */
-+
-+#pragma once
-+
-+#include <gtsam/nonlinear/NoiseModelFactorN.h>
-+
-+#include <Eigen/Core>
-+#include <cmath>
-+#include <iostream>
-+#include <memory>
-+#include <stdexcept>
-+#include <string>
-+
-+namespace gtsam {
-+
-+/**
-+ * Unary factor on an N-dimensional Euclidean point using squared range to a
-+ * fixed known landmark.
-+ *
-+ * For a point wX, known world landmark wL, and measured range d,
-+ * the residual is
-+ *
-+ *   e(wX) = ||wX - wL||^2 - d^2.
-+ *
-+ * Squaring the range eliminates the square root present in an ordinary range
-+ * residual and gives a polynomial form suitable for future lifted QCQP and
-+ * semidefinite programming formulations.
-+ *
-+ * Unlike KnownLandmarkFactor, which constrains a pose using a relative
-+ * landmark-position measurement, this factor constrains an N-dimensional
-+ * Euclidean point using only a scalar range measurement.
-+ *
-+ * The known landmark is fixed data, and the supplied noise model weights the
-+ * scalar squared-range residual.
-+ *
-+ * @tparam N Dimension of the Euclidean point state and known landmark.
-+ * @ingroup slam
-+ *
-+ * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details
-+ * regarding usage.
-+ */
-+template <int N>
-+class KnownLandmarkSquaredRangeFactor
-+    : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
-+ public:
-+  static_assert(N > 0, "KnownLandmarkSquaredRangeFactor requires N > 0");
-+
-+  using Point = Eigen::Matrix<double, N, 1>;
-+  using Base = NoiseModelFactorN<Point>;
-+  using This = KnownLandmarkSquaredRangeFactor<N>;
-+
-+ private:
-+  Point wL_;  ///< Known landmark expressed in the world frame.
-+  double measuredRangeSquared_;  ///< Squared measured range to wL_ (d^2).
-+
-+  /**
-+   * Validate the landmark dimension before converting to a fixed-size Point.
-+   *
-+   * @throws std::invalid_argument if the landmark dimension is incorrect.
-+   */
-+  static Point checkedLandmark(const Vector& wL) {
-+    if (wL.size() != N) {
-+      throw std::invalid_argument(
-+          "KnownLandmarkSquaredRangeFactor: invalid landmark dimension.");
-+    }
-+    return Point(wL);
-+  }
-+
-+ public:
-+  /// Expose the base-class evaluateError overloads.
-+  using Base::evaluateError;
-+
-+  /**
-+   * Construct from a key, world landmark, range measurement, and noise model.
-+   *
-+   * @param key Key associated with the unknown position.
-+   * @param wL Known landmark expressed in the world frame.
-+   * @param measuredRange Measured range to the landmark.
-+   * @param model Noise model for the scalar squared-range residual.
-+   * @throws std::invalid_argument if measuredRange is negative.
-+   */
-+  KnownLandmarkSquaredRangeFactor(Key key, const Point& wL,
-+                                  double measuredRange,
-+                                  const SharedNoiseModel& model)
-+      : Base(model, key),
-+        wL_(wL),
-+        measuredRangeSquared_(measuredRange * measuredRange) {
-+    if (measuredRange < 0.0) {
-+      throw std::invalid_argument(
-+          "KnownLandmarkSquaredRangeFactor: range must be non-negative.");
-+    }
-+  }
-+
-+  /**
-+   * Construct from a dynamically sized landmark vector.
-+   *
-+   * Validates the landmark dimension before converting it to a fixed-size
-+   * Point.
-+   *
-+   * @param key Key associated with the unknown position.
-+   * @param wL Known landmark expressed in the world frame.
-+   * @param measuredRange Measured range to the landmark.
-+   * @param model Noise model for the scalar squared-range residual.
-+   * @throws std::invalid_argument if the landmark dimension is incorrect
-+   *         or measuredRange is negative.
-+   */
-+  KnownLandmarkSquaredRangeFactor(Key key, const Vector& wL,
-+                                  double measuredRange,
-+                                  const SharedNoiseModel& model)
-+      : KnownLandmarkSquaredRangeFactor(key, checkedLandmark(wL), measuredRange,
-+                                        model) {}
-+
-+  /** Return a deep copy of this factor. */
-+  NonlinearFactor::shared_ptr clone() const override {
-+    return std::make_shared<This>(*this);
-+  }
-+
-+  /**
-+   * Print the factor.
-+   *
-+   * @param s Optional string printed before the factor.
-+   * @param keyFormatter Formatter used to display the variable key.
-+   */
-+  void print(
-+      const std::string& s = "",
-+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-+    std::cout << s << "KnownLandmarkSquaredRangeFactor<" << N << "> on "
-+              << keyFormatter(this->key1()) << "\n";
-+    traits<Point>::Print(wL_, "  landmark: ");
-+    std::cout << "  measured range squared: " << measuredRangeSquared_ << "\n";
-+
-+    if (this->noiseModel_) {
-+      this->noiseModel_->print("  noise model: ");
-+    } else {
-+      std::cout << "  no noise model\n";
-+    }
-+  }
-+
-+  /**
-+   * Check whether this factor equals another factor within a tolerance.
-+   *
-+   * @param expected Factor to compare against.
-+   * @param tol Numerical comparison tolerance.
-+   * @return True if the factors are equal within tol.
-+   */
-+  bool equals(const NonlinearFactor& expected,
-+              double tol = 1e-9) const override {
-+    const auto* e = dynamic_cast<const This*>(&expected);
-+    return e != nullptr && Base::equals(*e, tol) &&
-+           traits<Point>::Equals(wL_, e->wL_, tol) &&
-+           traits<double>::Equals(measuredRangeSquared_,
-+                                  e->measuredRangeSquared_, tol);
-+  }
-+
-+  /**
-+   * Evaluate the squared-range residual and optionally its Jacobian.
-+   *
-+   * @param wX Current value of the unknown point in the world frame.
-+   * @param H Optional 1-by-N Jacobian of the residual with respect to wX.
-+   * @return One-dimensional residual vector containing
-+   *         ||wX - wL||^2 - d^2.
-+   */
-+  Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
-+    const Point difference = wX - wL_;
-+    const double predictedRangeSquared = difference.squaredNorm();
-+
-+    const double error = predictedRangeSquared - measuredRangeSquared_;
-+    if (H) {
-+      *H = 2.0 * difference.transpose();
-+    }
-+    return Vector1(error);
-+  }
-+};
-+
-+}  // namespace gtsam
 --- gtsam-no-tbb-4.3.0.orig/gtsam/slam/RelativeTranslationFactor.h
 +++ gtsam-no-tbb-4.3.0/gtsam/slam/RelativeTranslationFactor.h
 @@ -124,6 +124,7 @@ class RelativeTranslationFactor
@@ -19557,218 +19361,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  };
  
---- /dev/null
-+++ gtsam-no-tbb-4.3.0/gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb
-@@ -0,0 +1,209 @@
-+{
-+ "cells": [
-+  {
-+   "cell_type": "markdown",
-+   "id": "693582c1",
-+   "metadata": {},
-+   "source": [
-+    "# KnownLandmarkSquaredRangeFactor\n",
-+    "\n",
-+    "`KnownLandmarkSquaredRangeFactor` models a range measurement between an $N$-dimensional Euclidean point $x$ and a fixed known landmark $L$. Unlike `KnownLandmarkFactor`, it operates directly on a Euclidean point state and does not involve pose or orientation.\n",
-+    "\n",
-+    "A conventional range residual is\n",
-+    "\n",
-+    "$$\n",
-+    "e_{\\text{range}}(x) = \\|x - L\\| - d,\n",
-+    "$$\n",
-+    "\n",
-+    "where $d$ is the measured range. Note the residual is not polynomial in the state because the Euclidean norm contains a square root. Instead, `KnownLandmarkSquaredRangeFactor` uses the squared-range residual\n",
-+    "\n",
-+    "$$\n",
-+    "e_{\\text{squared}}(x) = \\|x - L\\|^2 - d^2,\n",
-+    "$$\n",
-+    "\n",
-+    "which is quadratic in $x$.\n",
-+    "\n",
-+    "The squared-range form is suitable for lifted QCQP formulations and subsequent semidefinite relaxations. If the semidefinite relaxation is tight, meaning that the lifted solution has the required rank, the relaxed problem recovers a globally optimal solution to the original QCQP.\n",
-+    "\n",
-+    "This factor currently provides the squared-range residual for standard GTSAM nonlinear optimization. QCQP/certifiable conversion is not yet implemented for this factor.\n",
-+    "\n",
-+    "For additional information on GTSAM's QCQP-to-SDP and chordal-sparsity framework, refer to *Exploiting Chordal Sparsity for Globally Optimal Estimation with Factor Graphs*.\n"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "fa13d829",
-+   "metadata": {
-+    "tags": [
-+     "remove-cell"
-+    ]
-+   },
-+   "source": [
-+    "GTSAM Copyright 2010-2026, Georgia Tech Research Corporation, Atlanta, Georgia 30332-0415\n",
-+    "All Rights Reserved\n",
-+    "Authors: Frank Dellaert, et al. (see THANKS for the full author list)\n",
-+    "See LICENSE for the license information"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "f871beec",
-+   "metadata": {},
-+   "source": [
-+    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb)"
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 5,
-+   "id": "979dd2b2",
-+   "metadata": {
-+    "tags": [
-+     "remove-cell"
-+    ]
-+   },
-+   "outputs": [],
-+   "source": [
-+    "try:\n",
-+    "    import google.colab\n",
-+    "    %pip install --quiet gtsam-develop\n",
-+    "except ImportError:\n",
-+    "    pass"
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 6,
-+   "id": "ec5f6c85",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "import numpy as np\n",
-+    "import gtsam"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "b59f9b17",
-+   "metadata": {},
-+   "source": [
-+    "## Wrapper names\n",
-+    "\n",
-+    "The C++ factor is templated on the Euclidean point dimension `N`. Python exposes the 2D and 3D instantiations `KnownLandmarkSquaredRangeFactor2` and `KnownLandmarkSquaredRangeFactor3`, respectively."
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "f5f6e07c",
-+   "metadata": {},
-+   "source": [
-+    "## Prepare one known-landmark range measurement\n",
-+    "\n",
-+    "Each factor needs four inputs:\n",
-+    "\n",
-+    "1. the point key `k`;\n",
-+    "2. a fixed world-frame landmark `wL`;\n",
-+    "3. the measured range `R`; and\n",
-+    "4. a noise model describing uncertainty in the squared-range residual.\n",
-+    "\n",
-+    "The residual $e$ is a scalar, so the corresponding noise model is one-dimensional, with scalar standard deviation $\\sigma$ and covariance $\\sigma^2$.\n"
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 7,
-+   "id": "6e719445",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "k = 0\n",
-+    "wL = np.array([2.0, 3.0, 6.0])\n",
-+    "R = 7.1\n",
-+    "\n",
-+    "sigma = 0.1  # squared-range residual standard deviation [m^2]\n",
-+    "model = gtsam.noiseModel.Isotropic.Sigma(1, sigma)"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "ef50107e",
-+   "metadata": {},
-+   "source": [
-+    "## Localization with `KnownLandmarkSquaredRangeFactor`\n",
-+    "\n",
-+    "Add the factor to an ordinary nonlinear graph and insert an initial point estimate under the same key."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 8,
-+   "id": "321197fb",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "graph = gtsam.NonlinearFactorGraph()\n",
-+    "graph.add(\n",
-+    "    gtsam.KnownLandmarkSquaredRangeFactor3(k, wL, R, model)\n",
-+    ")\n",
-+    "\n",
-+    "wX_initial = np.array([-0.1, 0.2, -0.05])\n",
-+    "initial_wXs = gtsam.Values()\n",
-+    "initial_wXs.insert(k, wX_initial)"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "7b454e9f",
-+   "metadata": {},
-+   "source": [
-+    "## Build a well-constrained graph\n",
-+    "\n",
-+    "A single range measurement does not uniquely determine the point state. In 2D, it constrains the point to a circle centered at the known landmark; in 3D, it constrains the point to a sphere. In a real localization graph, add factors for several distinct known landmarks and, where appropriate, point priors or other factors. Each observation should carry its own `R` and noise model. Reusing the same point key connects all observations made from that point.\n",
-+    "\n",
-+    "A known landmark is fixed factor data, not a variable in `Values`."
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "32acc07c",
-+   "metadata": {},
-+   "source": [
-+    "## Practical checklist\n",
-+    "\n",
-+    "- Use `KnownLandmarkSquaredRangeFactor2` or `KnownLandmarkSquaredRangeFactor3` for point localization from ranges to fixed, known landmarks.\n",
-+    "- Express the state point and landmark in the same coordinate frame.\n",
-+    "- Pass the ordinary non-negative measured range `R`; the factor squares it internally.\n",
-+    "- Supply a one-dimensional noise model, since the squared-range residual is scalar.\n",
-+    "- Interpret the noise model as uncertainty on the squared-range residual, not directly on the range measurement.\n",
-+    "- Add measurements from enough geometrically distinct landmarks, or other factors, to fully constrain the point state.\n",
-+    "- Keep known landmarks as fixed factor data; they are not variables in `Values`.\n",
-+    "\n",
-+    "## Related documentation\n",
-+    "\n",
-+    "- [KnownLandmarkSquaredRangeLocalizationExample](../../../python/gtsam/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) demonstrates 3D point localization from noisy range measurements to fixed known landmarks.\n",
-+    "- [KnownLandmarkFactor](KnownLandmarkFactor.ipynb) documents Cartesian observations of fixed known landmarks using pose states."
-+   ]
-+  }
-+ ],
-+ "metadata": {
-+  "kernelspec": {
-+   "display_name": "Python 3",
-+   "language": "python",
-+   "name": "python3"
-+  },
-+  "language_info": {
-+   "codemirror_mode": {
-+    "name": "ipython",
-+    "version": 3
-+   },
-+   "file_extension": ".py",
-+   "mimetype": "text/x-python",
-+   "name": "python",
-+   "nbconvert_exporter": "python",
-+   "pygments_lexer": "ipython3",
-+   "version": "3.12.5"
-+  }
-+ },
-+ "nbformat": 4,
-+ "nbformat_minor": 5
-+}
 --- gtsam-no-tbb-4.3.0.orig/gtsam/slam/doc/WahbaFactor.ipynb
 +++ gtsam-no-tbb-4.3.0/gtsam/slam/doc/WahbaFactor.ipynb
 @@ -185,7 +185,7 @@
@@ -20328,16 +19920,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -}
 -
  }  // namespace gtsam
---- gtsam-no-tbb-4.3.0.orig/gtsam/slam/slam.md
-+++ gtsam-no-tbb-4.3.0/gtsam/slam/slam.md
-@@ -38,6 +38,7 @@ Factors representing various geometric r
- -   [RotateFactor](doc/RotateFactor.ipynb) : Factors constraining an unknown rotation based on how it transforms measured rotations or directions.
- -   [WahbaFactor](doc/WahbaFactor.ipynb) : A `Rot3` direction-correspondence factor with a three-dimensional chordal residual and exact D=1 QCQP conversion.
- -   [KnownLandmarkFactor](doc/KnownLandmarkFactor.ipynb) : Conventional `wTk` and certifiable inverse-state `kTw` factors for observations of fixed Pose2/Pose3 landmarks.
-+-   [KnownLandmarkSquaredRangeFactor](doc/KnownLandmarkSquaredRangeFactor.ipynb) : Squared-range factors for observations of fixed known landmarks from 2D/3D Euclidean point states.
- -   [KarcherMeanFactor](doc/KarcherMeanFactor.ipynb) : Factor for constraining the Karcher mean (geometric average) of a set of rotations or other manifold values.
- -   [FrobeniusFactor](doc/FrobeniusFactor.ipynb) : Factors operating directly on rotation matrix entries using the Frobenius norm, an alternative to Lie algebra-based factors.
- -   [ReferenceFrameFactor](doc/ReferenceFrameFactor.ipynb) : Factor relating the same landmark observed in two different coordinate frames via an unknown transformation, useful for map merging.
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/slam/slam_smart_projection.i
 @@ -0,0 +1,179 @@
@@ -20522,7 +20104,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace gtsam
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/slam/slam_synchronization.i
-@@ -0,0 +1,421 @@
+@@ -0,0 +1,413 @@
 +//*************************************************************************
 +// slam_synchronization: Lie-group synchronization and averaging, plus smaller
 +// SLAM factors and dataset I/O, kept separate from slam.i to reduce wrapper
@@ -20858,14 +20440,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  gtsam::Vector evaluateError(const POSE& kTw) const;
 +};
 +
-+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
-+template <N = {2, 3}>
-+virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
-+  KnownLandmarkSquaredRangeFactor(
-+      gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
-+      const gtsam::noiseModel::Base* model);
-+};
-+
 +#include <gtsam/slam/WahbaFactor.h>
 +class WahbaFactor : gtsam::NoiseModelFactor {
 +  WahbaFactor(gtsam::Key key, const gtsam::Unit3& bDirection,
@@ -20944,219 +20518,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace lago
 +
 +}  // namespace gtsam
-\ No newline at end of file
---- /dev/null
-+++ gtsam-no-tbb-4.3.0/gtsam/slam/tests/testKnownLandmarkSquaredRangeFactor.cpp
-@@ -0,0 +1,209 @@
-+/* ----------------------------------------------------------------------------
-+
-+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
-+ * Atlanta, Georgia 30332-0415
-+ * All Rights Reserved
-+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-+
-+ * See LICENSE for the license information
-+
-+ * -------------------------------------------------------------------------- */
-+
-+/**
-+ * @file testKnownLandmarkSquaredRangeFactor.cpp
-+ * @brief Tests for KnownLandmarkSquaredRangeFactor.
-+ * @author Oluwatodimu Afolayan
-+ * @author Frederike Dümbgen
-+ * @author Frank Dellaert
-+ */
-+
-+#include <CppUnitLite/TestHarness.h>
-+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-+#include <gtsam/nonlinear/Values.h>
-+#include <gtsam/nonlinear/factorTesting.h>
-+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
-+
-+#include <Eigen/Core>
-+#include <memory>
-+#include <stdexcept>
-+
-+using namespace gtsam;
-+
-+/* ************************************************************************* */
-+namespace point2_fixture {
-+
-+using Point = Eigen::Matrix<double, 2, 1>;
-+using Factor = KnownLandmarkSquaredRangeFactor<2>;
-+
-+const Key kKey = 3;
-+
-+// Verifies the 2D residual, analytic Jacobian, and zero-residual case.
-+TEST(KnownLandmarkSquaredRangeFactor, Point2) {
-+  const Point wX(1.0, 2.0);
-+  const Point wL(4.0, 6.0);
-+  const double measuredRange = 4.0;
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  const Factor factor(kKey, wL, measuredRange, model);
-+
-+  Matrix H;
-+  const Vector actual = factor.evaluateError(wX, H);
-+  const Vector expected = Vector1(9.0);
-+
-+  EXPECT(assert_equal(expected, actual));
-+  EXPECT_LONGS_EQUAL(1, H.rows());
-+  EXPECT_LONGS_EQUAL(2, H.cols());
-+
-+  Matrix expectedH(1, 2);
-+  expectedH << -6.0, -8.0;
-+  EXPECT(assert_equal(expectedH, H));
-+
-+  const Factor exactFactor(kKey, wL, 5.0, model);
-+  EXPECT(assert_equal(Vector1::Zero(), exactFactor.evaluateError(wX)));
-+
-+  Values values;
-+  values.insert(kKey, wX);
-+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-+}
-+
-+// Verifies that scalar information weighting produces the expected factor cost.
-+TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
-+  const Point wX(1.0, 2.0);
-+  const Point wL(4.0, 6.0);
-+
-+  Matrix information(1, 1);
-+  information << 4.0;
-+  const auto model = noiseModel::Gaussian::Information(information);
-+  const Factor factor(kKey, wL, 4.0, model);
-+
-+  Values values;
-+  values.insert(kKey, wX);
-+
-+  const Vector error = factor.evaluateError(wX);
-+  const double expected = 0.5 * error.dot(information * error);
-+
-+  EXPECT_DOUBLES_EQUAL(162.0, expected, 1e-12);
-+  EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
-+}
-+
-+// Verifies that dynamically sized 2D landmarks are accepted after validation.
-+TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark2D) {
-+  Vector wL(2);
-+  wL << 4.0, 6.0;
-+  const Point wX(1.0, 2.0);
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  const Factor factor(kKey, wL, 4.0, model);
-+  EXPECT(assert_equal(Vector1(9.0), factor.evaluateError(wX)));
-+}
-+
-+// Verifies that short and long 2D landmark vectors throw before Eigen
-+// conversion.
-+TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
-+  const auto model = noiseModel::Unit::Create(1);
-+  const Vector tooShort = Vector::Zero(1);
-+  const Vector tooLong = Vector::Zero(3);
-+
-+  CHECK_EXCEPTION(Factor(kKey, tooShort, 4.0, model), std::invalid_argument);
-+  CHECK_EXCEPTION(Factor(kKey, tooLong, 4.0, model), std::invalid_argument);
-+}
-+
-+// Verifies that negative range measurements are rejected.
-+TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
-+  const Point wL(4.0, 6.0);
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  CHECK_EXCEPTION(Factor(kKey, wL, -4.0, model), std::invalid_argument);
-+}
-+
-+}  // namespace point2_fixture
-+/* ************************************************************************* */
-+
-+/* ************************************************************************* */
-+namespace point3_fixture {
-+
-+using Point = Eigen::Matrix<double, 3, 1>;
-+using Factor = KnownLandmarkSquaredRangeFactor<3>;
-+
-+const Key kKey = 4;
-+
-+// Verifies the 3D residual, analytic Jacobian, and zero-residual case.
-+TEST(KnownLandmarkSquaredRangeFactor, Point3) {
-+  const Point wX(1.0, 2.0, 3.0);
-+  const Point wL(3.0, 5.0, 9.0);
-+  const double measuredRange = 5.0;
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  const Factor factor(kKey, wL, measuredRange, model);
-+
-+  Matrix H;
-+  const Vector actual = factor.evaluateError(wX, H);
-+  const Vector expected = Vector1(24.0);
-+
-+  EXPECT(assert_equal(expected, actual));
-+  EXPECT_LONGS_EQUAL(1, H.rows());
-+  EXPECT_LONGS_EQUAL(3, H.cols());
-+
-+  Matrix expectedH(1, 3);
-+  expectedH << -4.0, -6.0, -12.0;
-+  EXPECT(assert_equal(expectedH, H));
-+
-+  const Factor exactFactor(kKey, wL, 7.0, model);
-+  EXPECT(assert_equal(Vector1::Zero(), exactFactor.evaluateError(wX)));
-+
-+  Values values;
-+  values.insert(kKey, wX);
-+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-+}
-+
-+// Verifies that dynamically sized 3D landmarks are accepted after validation.
-+TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark3D) {
-+  Vector wL(3);
-+  wL << 3.0, 5.0, 9.0;
-+  const Point wX(1.0, 2.0, 3.0);
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  const Factor factor(kKey, wL, 5.0, model);
-+  EXPECT(assert_equal(Vector1(24.0), factor.evaluateError(wX)));
-+}
-+
-+// Verifies that short and long 3D landmark vectors throw before Eigen
-+// conversion.
-+TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension3D) {
-+  const auto model = noiseModel::Unit::Create(1);
-+  const Vector tooShort = Vector::Zero(2);
-+  const Vector tooLong = Vector::Zero(4);
-+
-+  CHECK_EXCEPTION(Factor(kKey, tooShort, 5.0, model), std::invalid_argument);
-+  CHECK_EXCEPTION(Factor(kKey, tooLong, 5.0, model), std::invalid_argument);
-+}
-+
-+// Verifies cloning preserves factor data and equality detects changed data.
-+TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
-+  const Point wL(3.0, 5.0, 9.0);
-+  const auto model = noiseModel::Unit::Create(1);
-+
-+  const Factor factor(kKey, wL, 5.0, model);
-+  const auto clone = factor.clone();
-+
-+  EXPECT(factor.equals(*clone));
-+
-+  Point shiftedLandmark = wL;
-+  shiftedLandmark(0) += 0.1;
-+  EXPECT(!factor.equals(Factor(kKey, shiftedLandmark, 5.0, model)));
-+
-+  EXPECT(!factor.equals(Factor(kKey, wL, 5.1, model)));
-+
-+  NonlinearFactorGraph graph;
-+  graph.push_back(clone);
-+  const NonlinearFactorGraph graphClone = graph.clone();
-+  EXPECT(std::dynamic_pointer_cast<Factor>(graphClone.at(0)) != nullptr);
-+}
-+
-+}  // namespace point3_fixture
-+/* ************************************************************************* */
-+
-+int main() {
-+  TestResult tr;
-+  return TestRegistry::runAllTests(tr);
-+}
 --- gtsam-no-tbb-4.3.0.orig/gtsam/slam/tests/testRelativeTranslationFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/slam/tests/testRelativeTranslationFactor.cpp
 @@ -97,7 +97,7 @@ TEST(RelativeTranslationFactor, QcqpFact
@@ -21263,9 +20624,607 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  // Verifies polymorphic cloning and measurement-aware equality.
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/geometry/AugmentedPoint.cpp
+@@ -0,0 +1,25 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ * See LICENSE for the license information
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file AugmentedPoint.cpp
++ * @brief Explicit instantiations of commonly used augmented point dimensions.
++ * @author Oluwatodimu Afolayan
++ */
++
++#include <gtsam_unstable/geometry/AugmentedPoint.h>
++
++namespace gtsam {
++
++// Explicit instantiations for 1D C++ tests and 2D/3D Python and MATLAB
++// wrappers.
++template class AugmentedPoint<1>;
++template class AugmentedPoint<2>;
++template class AugmentedPoint<3>;
++
++}  // namespace gtsam
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/geometry/AugmentedPoint.h
+@@ -0,0 +1,302 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ * See LICENSE for the license information
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file AugmentedPoint.h
++ * @brief N-Dimensional Euclidean point with a lifted QCQP representation.
++ * @author Oluwatodimu Afolayan
++ * @author Frederike Dümbgen
++ * @author Frank Dellaert
++ */
++#pragma once
++
++#include <gtsam/base/VectorSpace.h>
++#include <gtsam/constrained/QcqpProblem.h>
++
++#include <Eigen/Core>
++#include <cmath>
++#include <iostream>
++#include <stdexcept>
++#include <string>
++#include <tuple>
++#include <vector>
++
++namespace gtsam {
++
++/**
++ * An N-dimensional Euclidean point supporting a quadratic QCQP lift.
++ *
++ * AugmentedPoint<N> represents the same Euclidean coordinates as a standard
++ * fixed-size Eigen vector (e.g., Point3 for N=3). Both can be used with
++ * conventional nonlinear optimization in GTSAM.
++ *
++ * Unlike Point3, AugmentedPoint<N> also provides QCQP traits that allow
++ * compatible factors to be converted into a quadratically constrained
++ * quadratic program (QCQP), which can subsequently be relaxed to an SDP.
++ * Use Point3 for ordinary nonlinear optimization and AugmentedPoint<3>
++ * when QCQP conversion is required.
++ *
++ * Its tangent space has dimension N. For D=1, its lifted representation is
++ * X = [h, x.transpose(), u].transpose(), where the canonical lift has h = 1
++ * and u = x.dot(x). The N+2 QCQP coordinates are not tangent coordinates.
++ *
++ * @tparam N Number of Euclidean coordinates (strictly positive).
++ * @ingroup geometry
++ */
++template <int N>
++class AugmentedPoint {
++ public:
++  static_assert(N > 0, "AugmentedPoint requires N > 0");
++
++  using VectorType = Eigen::Matrix<double, N, 1>;
++  static constexpr int dimension = N;  ///< Euclidean tangent dimension.
++
++  /// Construct the origin.
++  AugmentedPoint() : point_(VectorType::Zero()) {}
++
++  /// Construct from a fixed-size Euclidean coordinate vector.
++  explicit AugmentedPoint(const VectorType& point) : point_(point) {}
++
++  /// Construct from an Eigen vector expression, checking its dimensions.
++  template <typename Derived>
++  explicit AugmentedPoint(const Eigen::MatrixBase<Derived>& point) {
++    if (point.rows() != N || point.cols() != 1) {
++      throw std::invalid_argument("AugmentedPoint: invalid point dimension.");
++    }
++    point_ = point;
++  }
++
++  /// Return the additive identity.
++  static AugmentedPoint Identity() { return AugmentedPoint(); }
++
++  /// Add two points in the underlying vector space.
++  AugmentedPoint operator+(const AugmentedPoint& other) const {
++    return AugmentedPoint(point_ + other.point_);
++  }
++
++  /// Add an Eigen tangent vector or vector expression of dimension N.
++  template <typename Derived>
++  AugmentedPoint operator+(const Eigen::MatrixBase<Derived>& delta) const {
++    if (delta.rows() != N || delta.cols() != 1) {
++      throw std::invalid_argument(
++          "AugmentedPoint: tangent dimension mismatch.");
++    }
++    return AugmentedPoint(point_ + delta);
++  }
++
++  /// Subtract two points in the underlying vector space.
++  AugmentedPoint operator-(const AugmentedPoint& other) const {
++    return AugmentedPoint(point_ - other.point_);
++  }
++
++  /// Return the additive inverse.
++  AugmentedPoint operator-() const { return AugmentedPoint(-point_); }
++
++  /// Multiply by a scalar on the right.
++  AugmentedPoint operator*(double scalar) const {
++    return AugmentedPoint(point_ * scalar);
++  }
++
++  /// Multiply by a scalar on the left.
++  friend AugmentedPoint operator*(double scalar, const AugmentedPoint& point) {
++    return AugmentedPoint(scalar * point.point_);
++  }
++
++  /// Return the Euclidean dimension.
++  int dim() const { return N; }
++
++  /// Return the Euclidean norm.
++  double norm() const { return point_.norm(); }
++
++  /// Return the Euclidean inner product.
++  double dot(const AugmentedPoint& other) const {
++    return point_.dot(other.point_);
++  }
++
++  /// Return the underlying Euclidean coordinates.
++  VectorType vector() const { return point_; }
++
++  /// Print the coordinates, optionally preceded by a label.
++  void print(const std::string& s = "") const {
++    if (!s.empty()) {
++      std::cout << s << " ";
++    }
++    std::cout << point_.transpose() << '\n';
++  }
++
++  /// Compare coordinates using a component-wise absolute tolerance.
++  bool equals(const AugmentedPoint& other, double tol = 1e-9) const {
++    return (point_ - other.point_).cwiseAbs().maxCoeff() <= tol;
++  }
++
++ private:
++  VectorType point_;  ///< Euclidean point coordinates.
++};
++
++/**
++ * GTSAM vector-space traits and D=1 QCQP lift for AugmentedPoint<N>.
++ *
++ * The lifted variable X = [h, x.transpose(), u].transpose() satisfies
++ * x.dot(x) - h*u = 0 and h*h = 1. Its canonical form has h = 1; the quadratic
++ * normalization permits h = -1 as well, which is handled during extraction.
++ *
++ * @tparam N Euclidean point dimension.
++ */
++template <int N>
++struct traits<AugmentedPoint<N>>
++    : public internal::VectorSpace<AugmentedPoint<N>> {
++  using Point = AugmentedPoint<N>;
++  using VectorType = typename Point::VectorType;
++
++  /// Number of rows in the D=1 lifted QCQP variable.
++  static constexpr int QcqpVectorDim = N + 2;
++
++  /**
++   * Lift a point to [1, x.transpose(), x.dot(x)].transpose().
++   *
++   * @tparam D Number of QCQP columns; only D=1 is supported.
++   * @throws std::invalid_argument for D other than 1.
++   */
++  template <int D = 1>
++  static Matrix QcqpValue(const Point& value) {
++    if constexpr (D == 1) {
++      Eigen::Matrix<double, QcqpVectorDim, 1> X;
++      X(0) = 1.0;
++      X.template segment<N>(1) = value.vector();
++      X(N + 1) = value.dot(value);
++      return X;
++    } else {
++      throw std::invalid_argument(
++          "traits<AugmentedPoint>::QcqpValue only supports D=1.");
++    }
++  }
++
++  /**
++   * Return the two quadratic equalities as (A, a, b) triples.
++   *
++   * Each tuple represents X.transpose()*A*X + 2*a.dot(X) = b. The first
++   * equality enforces x.dot(x) = h*u; the second enforces h*h = 1.
++   * Both use an empty linear term a.
++   *
++   * @tparam D Number of QCQP columns; only D=1 is supported.
++   * @throws std::invalid_argument for D other than 1.
++   */
++  template <int D = 1>
++  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
++    if constexpr (D == 1) {
++      std::vector<std::tuple<Matrix, Vector, double>> constraints;
++      constraints.reserve(2);
++
++      Matrix liftConstraint = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
++      liftConstraint.block(1, 1, N, N).setIdentity();
++      liftConstraint(0, N + 1) = -0.5;
++      liftConstraint(N + 1, 0) = -0.5;
++      constraints.emplace_back(liftConstraint, Vector(), 0.0);
++
++      Matrix normalization = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
++      normalization(0, 0) = 1.0;
++      constraints.emplace_back(normalization, Vector(), 1.0);
++      return constraints;
++    } else {
++      throw std::invalid_argument(
++          "traits<AugmentedPoint>::QcqpConstraints only supports D=1.");
++    }
++  }
++
++  /**
++   * Recover an AugmentedPoint from a D=1 QCQP column.
++   *
++   * The recovered Euclidean coordinates are x/h. This removes the global
++   * sign ambiguity in the homogeneous representation, provided h is nonzero.
++   *
++   * @param X Lifted (N+2)-by-1 column.
++   * @throws std::invalid_argument for unsupported D, invalid dimensions,
++   *         or a non-finite or near-zero homogenization coordinate.
++   */
++  template <int D = 1>
++  static Point FromQcqpValue(const Matrix& X) {
++    if constexpr (D == 1) {
++      if (X.rows() != QcqpVectorDim || X.cols() != 1) {
++        throw std::invalid_argument(
++            "traits<AugmentedPoint>::FromQcqpValue: " + std::to_string(N) +
++            "-dimensional AugmentedPoint requires a " +
++            std::to_string(QcqpVectorDim) + "-by-1 vector.");
++      }
++
++      const double h = X(0, 0);
++      if (!std::isfinite(h) || std::abs(h) < 1e-9) {
++        throw std::invalid_argument(
++            "traits<AugmentedPoint>::FromQcqpValue requires a finite, "
++            "nonzero homogenization coordinate.");
++      }
++      const VectorType coordinates = X.col(0).segment<N>(1) / h;
++      return Point(coordinates);
++    } else {
++      throw std::invalid_argument(
++          "traits<AugmentedPoint>::FromQcqpValue only supports D=1.");
++    }
++  }
++};
++
++/// Preserve vector-space traits for const-qualified points.
++template <int N>
++struct traits<const AugmentedPoint<N>> : public traits<AugmentedPoint<N>> {};
++
++/** Insert an augmented point into Values, rejecting an existing key. */
++template <int N>
++void insertAugmentedPoint(Key key, const AugmentedPoint<N>& point,
++                          Values& values) {
++  values.insert(key, point);
++}
++
++/** Update an existing augmented point in Values. */
++template <int N>
++void updateAugmentedPoint(Key key, const AugmentedPoint<N>& point,
++                          Values& values) {
++  values.update(key, point);
++}
++
++/** Insert or replace an augmented point in Values. */
++template <int N>
++void insertOrAssignAugmentedPoint(Key key, const AugmentedPoint<N>& point,
++                                  Values& values) {
++  values.insert_or_assign(key, point);
++}
++
++/** Return a copy of the augmented point stored under key in Values. */
++template <int N>
++AugmentedPoint<N> atAugmentedPoint(Key key, const Values& values) {
++  return values.at<AugmentedPoint<N>>(key);
++}
++
++/// Return the exact QCQP column for an N-dimensional augmented point.
++template <int N>
++Matrix qcqpValue(const AugmentedPoint<N>& typedValue) {
++  return qcqpValue<AugmentedPoint<N>>(typedValue);
++}
++
++/// Insert an N-dimensional augmented point as an exact QCQP column.
++template <int N>
++void insertQcqpValue(Key key, const AugmentedPoint<N>& typedValue,
++                     Values& qcqpValues) {
++  insertQcqpValue<AugmentedPoint<N>>(key, typedValue, qcqpValues);
++}
++
++/// Recover an N-dimensional augmented point from an exact QCQP column.
++template <int N>
++AugmentedPoint<N> fromQcqpValue(const Matrix& qcqpValue) {
++  return fromQcqpValue<AugmentedPoint<N>>(qcqpValue);
++}
++
++/// Recover N-dimensional augmented points from matching exact QCQP columns.
++template <int N>
++Values extractQcqpValues(const Values& qcqpValues) {
++  return extractQcqpValues<AugmentedPoint<N>>(qcqpValues);
++}
++
++}  // namespace gtsam
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/geometry/tests/testAugmentedPoint.cpp
+@@ -0,0 +1,166 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ *
++ * See LICENSE for the license information
++ *
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file testAugmentedPoint.cpp
++ * @brief Tests for AugmentedPoint vector-space operations and QCQP traits.
++ * @author Oluwatodimu Afolayan
++ */
++
++#include <CppUnitLite/TestHarness.h>
++#include <gtsam/constrained/QcqpProblem.h>
++#include <gtsam_unstable/geometry/AugmentedPoint.h>
++
++#include <Eigen/Core>
++#include <cmath>
++#include <limits>
++#include <stdexcept>
++#include <tuple>
++
++using namespace gtsam;
++
++/* ************************************************************************* */
++namespace augmented_point3_fixture {
++
++using Point = AugmentedPoint<3>;
++using Traits = traits<Point>;
++
++// Dynamic wrapper inputs must be validated before conversion to fixed storage.
++TEST(AugmentedPoint, DynamicCoordinates) {
++  const Vector coordinates = (Vector(3) << 1.0, -2.0, 3.0).finished();
++  EXPECT(Point(coordinates).vector().isApprox(coordinates));
++  CHECK_EXCEPTION(Point(Vector::Zero(2)), std::invalid_argument);
++  CHECK_EXCEPTION(Point(Vector::Zero(4)), std::invalid_argument);
++  CHECK_EXCEPTION(Point(Matrix::Zero(1, 3)), std::invalid_argument);
++}
++
++// Verifies the additive group operations and vector-space traits.
++TEST(AugmentedPoint, VectorSpace) {
++  const Point origin = Point::Identity();
++  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
++  const Point other(Eigen::Vector3d(4.0, 5.0, 6.0));
++
++  // Compare Eigen vectors directly: avoids ambiguity between GTSAM's
++  // assert_equal(Vector, Vector) and assert_equal(Matrix, Matrix) overloads.
++  EXPECT(origin.vector().isZero(1e-12));
++  EXPECT((point + other)
++             .vector()
++             .isApprox(point.vector() + other.vector(), 1e-12));
++  EXPECT((point - other)
++             .vector()
++             .isApprox(point.vector() - other.vector(), 1e-12));
++  EXPECT((-point).vector().isApprox(-point.vector(), 1e-12));
++  EXPECT((2.0 * point).vector().isApprox(2.0 * point.vector(), 1e-12));
++  EXPECT((point * 2.0).vector().isApprox(2.0 * point.vector(), 1e-12));
++
++  const Vector tangent = Vector::Ones(3);
++  const Point shifted = point + tangent;
++  EXPECT(shifted.vector().isApprox(point.vector() + tangent, 1e-12));
++  EXPECT(Traits::Local(point, shifted).isApprox(tangent, 1e-12));
++  EXPECT(Traits::Retract(point, tangent).equals(shifted));
++
++  CHECK_EXCEPTION(point + Vector::Zero(2), std::invalid_argument);
++}
++
++// Verifies the lifted coordinates and both quadratic equalities.
++TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
++  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
++  const Matrix X = Traits::QcqpValue<1>(point);
++
++  EXPECT_LONGS_EQUAL(5, X.rows());
++  EXPECT_LONGS_EQUAL(1, X.cols());
++  const Vector expected = (Vector(5) << 1.0, 1.0, -2.0, 3.0, 14.0).finished();
++  EXPECT(expected.isApprox(X.col(0), 1e-12));
++
++  const auto constraints = Traits::QcqpConstraints<1>();
++  EXPECT_LONGS_EQUAL(2, constraints.size());
++  if (constraints.size() != 2) return;
++
++  // Each tuple represents X^T A X + 2 a^T X = b.
++  for (const auto& constraint : constraints) {
++    const Matrix& A = std::get<0>(constraint);
++    const Vector& a = std::get<1>(constraint);
++    const double b = std::get<2>(constraint);
++
++    EXPECT_LONGS_EQUAL(5, A.rows());
++    EXPECT_LONGS_EQUAL(5, A.cols());
++    EXPECT_LONGS_EQUAL(0, a.size());
++    EXPECT(A.isApprox(A.transpose(), 1e-12));
++    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X)(0, 0), 1e-12);
++  }
++
++  const Matrix& A = std::get<0>(constraints.at(0));
++  const Matrix& H = std::get<0>(constraints.at(1));
++  EXPECT_DOUBLES_EQUAL(0.0, std::get<2>(constraints.at(0)), 1e-12);
++  EXPECT_DOUBLES_EQUAL(1.0, std::get<2>(constraints.at(1)), 1e-12);
++  EXPECT_DOUBLES_EQUAL(-0.5, A(0, 4), 1e-12);
++  EXPECT_DOUBLES_EQUAL(-0.5, A(4, 0), 1e-12);
++  EXPECT_DOUBLES_EQUAL(1.0, H(0, 0), 1e-12);
++
++  // Changing u violates x^T x - h*u = 0.
++  Matrix inconsistent = X;
++  inconsistent(4, 0) += 1.0;
++  EXPECT(std::abs((inconsistent.transpose() * A * inconsistent)(0, 0)) > 1e-9);
++}
++
++// Verifies round-trip recovery and global sign invariance.
++TEST(AugmentedPoint, QcqpRoundTripAndSign) {
++  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
++  const Matrix X = qcqpValue<3>(point);
++  EXPECT(point.equals(fromQcqpValue<3>(X)));
++
++  // h^2 = 1 permits h = -1; recovery must cancel the global sign.
++  EXPECT(point.equals(fromQcqpValue<3>(-X)));
++
++  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(4, 1)),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(5, 2)),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(5, 1)),
++                  std::invalid_argument);
++
++  Matrix invalidH = X;
++  invalidH(0, 0) = std::numeric_limits<double>::quiet_NaN();
++  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(invalidH), std::invalid_argument);
++}
++
++// Verifies unsupported multi-column QCQP conversions are rejected.
++TEST(AugmentedPoint, RejectsUnsupportedQcqpColumns) {
++  const Point point(Eigen::Vector3d(1.0, 2.0, 3.0));
++
++  CHECK_EXCEPTION(Traits::QcqpValue<2>(point), std::invalid_argument);
++  CHECK_EXCEPTION(Traits::QcqpConstraints<2>(), std::invalid_argument);
++  CHECK_EXCEPTION(Traits::FromQcqpValue<2>(Matrix::Zero(5, 1)),
++                  std::invalid_argument);
++}
++
++}  // namespace augmented_point3_fixture
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace augmented_point5_fixture {
++
++// Dimensions beyond the explicit instantiations remain usable in C++.
++TEST(AugmentedPoint, ArbitraryDimension) {
++  const AugmentedPoint<5> point(Vector::Ones(5));
++  const Matrix lifted = qcqpValue(point);
++  EXPECT_LONGS_EQUAL(5, traits<AugmentedPoint<5>>::dimension);
++  EXPECT_LONGS_EQUAL(7, lifted.rows());
++  EXPECT_DOUBLES_EQUAL(5.0, lifted(6, 0), 1e-12);
++  EXPECT(point.equals(fromQcqpValue<5>(-lifted)));
++}
++
++}  // namespace augmented_point5_fixture
++/* ************************************************************************* */
++
++int main() {
++  TestResult tr;
++  return TestRegistry::runAllTests(tr);
++}
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/gtsam_unstable.i
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/gtsam_unstable.i
-@@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: g
+@@ -50,6 +50,64 @@ class gtsam::StereoPoint2;
+ 
+ namespace gtsam {
+ 
++#include <gtsam_unstable/geometry/AugmentedPoint.h>
++// Only the wrappers restrict spatial dimensions to 2 and 3.
++template <N = {2, 3}>
++class AugmentedPoint {
++  // Standard Constructors
++  AugmentedPoint();
++  AugmentedPoint(const gtsam::Vector& point);
++
++  // Group
++  static gtsam::AugmentedPoint<N> Identity();
++
++  // Standard Interface
++  int dim() const;
++  double norm() const;
++  double dot(const gtsam::AugmentedPoint<N>& other) const;
++
++  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
++  @pybind_lambda
++  gtsam::Vector vector() const;
++
++  // Testable
++  void print(const std::string& s = "") const;
++  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
++};
++
++// Typed access belongs to unstable rather than the stable Values wrapper.
++template <N = {2, 3}>
++void insertAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
++                          gtsam::Values& values);
++
++template <N = {2, 3}>
++void updateAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
++                          gtsam::Values& values);
++
++template <N = {2, 3}>
++void insertOrAssignAugmentedPoint(gtsam::Key key,
++                                  const gtsam::AugmentedPoint<N>& point,
++                                  gtsam::Values& values);
++
++template <N = {2, 3}>
++gtsam::AugmentedPoint<N> atAugmentedPoint(gtsam::Key key,
++                                         const gtsam::Values& values);
++
++// Dimension overloads avoid nested type arguments in wrapped free functions.
++template <N = {2, 3}>
++gtsam::Matrix qcqpValue(const gtsam::AugmentedPoint<N>& typedValue);
++
++template <N = {2, 3}>
++void insertQcqpValue(gtsam::Key key,
++                     const gtsam::AugmentedPoint<N>& typedValue,
++                     gtsam::Values& qcqpValues);
++
++template <N = {2, 3}>
++gtsam::AugmentedPoint<N> fromQcqpValue(const gtsam::Matrix& qcqpValue);
++
++template <N = {2, 3}>
++gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
++
+ #include <gtsam_unstable/geometry/Pose3Upright.h>
+ class Pose3Upright {
+   Pose3Upright();
+@@ -286,6 +344,30 @@ virtual class TransformBtwRobotsUnaryFac
+   void serializable() const; // enabling serialization functionality
+ };
+ 
++#include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
++
++// Instantiate the supported position types.
++template <POSITION>
++virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
++  KnownLandmarkSquaredRangeFactor(
++      gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
++      const gtsam::noiseModel::Base* model);
++
++  gtsam::Vector evaluateError(const POSITION& wX) const;
++};
++
++// Ordinary nonlinear factors.
++typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector2>
++    KnownLandmarkSquaredRangeFactor2;
++typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector3>
++    KnownLandmarkSquaredRangeFactor3;
++
++// Factors supporting both nonlinear optimization and QCQP conversion.
++typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<2>>
++    KnownLandmarkSquaredRangeFactorAugmentedPoint2;
++typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<3>>
++    KnownLandmarkSquaredRangeFactorAugmentedPoint3;
++
+ #include <gtsam_unstable/slam/SmartRangeFactor.h>
+ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
+   SmartRangeFactor(double s);
+@@ -397,6 +479,13 @@ virtual class RelativeElevationFactor: g
    //void print(string s) const;
  };
  
@@ -21279,7 +21238,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
  virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
    InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
-@@ -415,6 +422,14 @@ virtual class InvDepthFactorVariant3b :
+@@ -415,6 +504,14 @@ virtual class InvDepthFactorVariant3b :
    InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
  };
  
@@ -21521,6 +21480,587 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
  }; // \class GaussMarkov1stOrderFactor
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h
+@@ -0,0 +1,258 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ * See LICENSE for the license information
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file KnownLandmarkSquaredRangeFactor.h
++ * @brief Squared-range observation factor with an optional lifted QCQP state.
++ * @author Oluwatodimu Afolayan
++ * @author Frederike Dümbgen
++ * @author Frank Dellaert
++ */
++#pragma once
++
++#include <gtsam/constrained/QpCost.h>
++#include <gtsam_unstable/geometry/AugmentedPoint.h>
++#include <gtsam/nonlinear/NoiseModelFactorN.h>
++
++#include <Eigen/Core>
++#include <cmath>
++#include <iostream>
++#include <memory>
++#include <stdexcept>
++#include <string>
++#include <type_traits>
++#include <vector>
++
++namespace gtsam {
++
++/**
++ * Unary squared-range factor for a known Euclidean landmark.
++ *
++ * Given an unknown state x, known world landmark L, and measured range d,
++ * the scalar residual is ||x-L||^2 - d^2. The supplied noise model weights
++ * this squared-range residual (not the unsquared range).
++ *
++ * Supports fixed-size Eigen vectors (e.g., Point3) and AugmentedPoint<N>
++ * as position types. Both support nonlinear optimization, but AugmentedPoint<N>
++ * additionally enables exact D=1 QCQP conversion using N+2 lifted coordinates.
++ * AugmentedPoint<N> is defined in gtsam_unstable/geometry/AugmentedPoint.h.
++ *
++ * @tparam Position Euclidean point representing robot location.
++ * @ingroup slam
++ *
++ * See `gtsam_unstable/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for usage.
++ */
++template <typename Position>
++class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {
++ public:
++  static constexpr int N = traits<Position>::dimension;
++  static_assert(N > 0,
++                "KnownLandmarkSquaredRangeFactor requires a fixed positive "
++                "position dimension.");
++  using VectorType = Eigen::Matrix<double, N, 1>;
++  using Point = Position;
++  using Base = NoiseModelFactorN<Position>;
++  using This = KnownLandmarkSquaredRangeFactor<Position>;
++  static_assert(std::is_same_v<Position, VectorType> ||
++                    std::is_same_v<Position, AugmentedPoint<N>>,
++                "KnownLandmarkSquaredRangeFactor requires an Eigen vector "
++                "or AugmentedPoint<N> position.");
++
++ private:
++  VectorType wL_;                ///< Known landmark in world coordinates.
++  double measuredRangeSquared_;  ///< Squared measured range (d^2).
++
++  /// Validate landmark dimensions before conversion to fixed-size storage.
++  template <typename Derived>
++  static VectorType checkedLandmark(
++      const Eigen::MatrixBase<Derived>& landmark) {
++    if (landmark.rows() != N || landmark.cols() != 1) {
++      throw std::invalid_argument(
++          "KnownLandmarkSquaredRangeFactor: invalid landmark dimension.");
++    }
++    return VectorType(landmark);
++  }
++
++  /// Return underlying state coordinates for either supported state type.
++  static VectorType coordinates(const Point& point) {
++    if constexpr (std::is_same_v<Point, AugmentedPoint<N>>) {
++      return point.vector();
++    } else {
++      return point;
++    }
++  }
++
++ public:
++  using Base::evaluateError;
++
++  /**
++   * Construct from a fixed-size known landmark and scalar range measurement.
++   *
++   * @param key Key associated with the unknown point.
++   * @param wL Known landmark expressed in the world frame.
++   * @param measuredRange Nonnegative measured range.
++   * @param model Noise model for the scalar squared-range residual.
++   * @throws std::invalid_argument if measuredRange is negative or non-finite.
++   */
++  KnownLandmarkSquaredRangeFactor(Key key, const VectorType& wL,
++                                  double measuredRange,
++                                  const SharedNoiseModel& model)
++      : Base(model, key),
++        wL_(wL),
++        measuredRangeSquared_(measuredRange * measuredRange) {
++    if (!std::isfinite(measuredRange) || measuredRange < 0.0) {
++      throw std::invalid_argument(
++          "KnownLandmarkSquaredRangeFactor: range must be finite and "
++          "non-negative.");
++    }
++  }
++
++  /**
++   * Construct from an Eigen vector expression, including dynamic vectors.
++   *
++   * @throws std::invalid_argument if its dimension is not N or the range is
++   *         negative or non-finite.
++   */
++  template <typename Derived>
++  KnownLandmarkSquaredRangeFactor(Key key, const Eigen::MatrixBase<Derived>& wL,
++                                  double measuredRange,
++                                  const SharedNoiseModel& model)
++      : KnownLandmarkSquaredRangeFactor(key, checkedLandmark(wL), measuredRange,
++                                        model) {}
++
++  /**
++   * Construct from an AugmentedPoint landmark, regardless of the state type.
++   *
++   * The known landmark is stored as N Euclidean coordinates; no QCQP lift is
++   * needed for fixed measurement data.
++   *
++   * @throws std::invalid_argument if measuredRange is negative or non-finite.
++   */
++  KnownLandmarkSquaredRangeFactor(Key key, const AugmentedPoint<N>& wL,
++                                  double measuredRange,
++                                  const SharedNoiseModel& model)
++      : KnownLandmarkSquaredRangeFactor(key, wL.vector(), measuredRange,
++                                        model) {}
++
++  /// Return a deep copy of this factor.
++  NonlinearFactor::shared_ptr clone() const override {
++    return std::make_shared<This>(*this);
++  }
++
++  /// Print the key, known landmark, measured range, and noise model.
++  void print(
++      const std::string& s = "",
++      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
++    std::cout << s << "KnownLandmarkSquaredRangeFactor on "
++              << keyFormatter(this->key1()) << "\n";
++    traits<VectorType>::Print(wL_, "  landmark: ");
++    std::cout << "  measured range squared: " << measuredRangeSquared_ << "\n";
++    if (this->noiseModel_) {
++      this->noiseModel_->print("  noise model: ");
++    } else {
++      std::cout << "  no noise model\n";
++    }
++  }
++
++  /// Compare keys, noise models, landmarks, and squared ranges.
++  bool equals(const NonlinearFactor& expected,
++              double tol = 1e-9) const override {
++    const auto* other = dynamic_cast<const This*>(&expected);
++    return other != nullptr && Base::equals(*other, tol) &&
++           traits<VectorType>::Equals(wL_, other->wL_, tol) &&
++           traits<double>::Equals(measuredRangeSquared_,
++                                  other->measuredRangeSquared_, tol);
++  }
++
++  /**
++   * Evaluate ||x-L||^2-d^2 and optionally its 1-by-N tangent Jacobian.
++   *
++   * The Jacobian is 2(x-L).transpose(), valid for either Euclidean state type.
++   *
++   * @param wX Unknown point in world coordinates.
++   * @param H Optional 1-by-N Jacobian with respect to the state tangent vector.
++   * @return A one-element vector containing the squared-range residual.
++   */
++  Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
++    const VectorType difference = coordinates(wX) - wL_;
++    const double error = difference.squaredNorm() - measuredRangeSquared_;
++    if (H) {
++      *H = 2.0 * difference.transpose();
++    }
++    return Vector1(error);
++  }
++
++  /**
++   * Append this factor's exact D=1 QCQP quadratic cost and lift constraints.
++   *
++   * For X=[h,x,u], the scalar residual is B*X with
++   * B=[||L||^2-d^2, -2*L.transpose(), 1]. Its whitened squared residual
++   * contributes 0.5*X.transpose()*Q*X, with Q=B.transpose()*Sigma^-1*B.
++   * GTSAM's HessianFactor adds a final constant slot, whose coefficient is
++   * zero because h is already part of the lifted state.
++   *
++   * The method is supported only when Position = AugmentedPoint<N>.
++   * The optional redundant-constraint output is forwarded to the point traits;
++   * AugmentedPoint<N> does not currently define additional redundant
++   * constraints.
++   *
++   * @throws std::invalid_argument for null costs or constraints,
++   * columnDimension != 1, or a noise model whose dimension is not 1.
++   * @throws std::runtime_error for a non-augmented state or an unsupported
++   *         noise model (null, robust, or constrained).
++   */
++  void qcqpFactors(NonlinearFactorGraph* costs,
++                   NonlinearEqualityConstraints* constraints,
++                   NonlinearEqualityConstraints* redundantConstraints,
++                   size_t columnDimension = 1) const override {
++    if constexpr (!std::is_same_v<Point, AugmentedPoint<N>>) {
++      throw std::runtime_error(
++          "KnownLandmarkSquaredRangeFactor::qcqpFactors requires an "
++          "AugmentedPoint<N> state.");
++    } else {
++      if (columnDimension != 1) {
++        throw std::invalid_argument(
++            "KnownLandmarkSquaredRangeFactor::qcqpFactors only supports D=1.");
++      }
++      if (!costs || !constraints) {
++        throw std::invalid_argument(
++            "KnownLandmarkSquaredRangeFactor::qcqpFactors: null output.");
++      }
++      if (!this->noiseModel_ ||
++          std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
++          this->noiseModel_->isConstrained()) {
++        throw std::runtime_error(
++            "KnownLandmarkSquaredRangeFactor::qcqpFactors requires a "
++            "non-null, non-robust, unconstrained noise model.");
++      }
++      if (this->noiseModel_->dim() != 1) {
++        throw std::invalid_argument(
++            "KnownLandmarkSquaredRangeFactor::qcqpFactors requires a "
++            "one-dimensional noise model.");
++      }
++
++      constexpr int LiftedDim = traits<Point>::QcqpVectorDim;
++      // The last column is GTSAM's HessianFactor constant slot (coefficient 0).
++      Matrix B = Matrix::Zero(1, LiftedDim + 1);
++      B(0, 0) = wL_.squaredNorm() - measuredRangeSquared_;
++      B.block(0, 1, 1, N) = -2.0 * wL_.transpose();
++      B(0, N + 1) = 1.0;
++
++      const Matrix whitenedB = this->noiseModel_->Whiten(B);
++      const Matrix Q = whitenedB.transpose() * whitenedB;
++      InsertQcqpConstraints<Point, 1>(this->key(), constraints,
++                                      redundantConstraints);
++      const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1},
++                                        Q);
++      costs->push_back(std::make_shared<QpCost>(
++          HessianFactor(KeyVector{this->key()}, blockQ)));
++    }
++  }
++};
++
++}  // namespace gtsam
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/slam/README.md
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/README.md
+@@ -1,4 +1,4 @@
+-# SLAM Factors
++# Unstable SLAM Factors
+ 
+ ## SmartFactors
+ 
+@@ -37,4 +37,12 @@ shutter model of the camera with given r
+ values contain (for each 2D observation) two consecutive camera poses from
+ which the 2D observation pose can be interpolated.
+ 
+-TODO: the dimensions seem to be hardcoded and the types defined in the SmartFactorBase have been re-defined. Also, possibly a lot of copy/paste computation of things that (should) happen in base class.
+\ No newline at end of file
++TODO: the dimensions seem to be hardcoded and the types defined in the SmartFactorBase have been re-defined. Also, possibly a lot of copy/paste computation of things that (should) happen in base class.
++
++### KnownLandmarkSquaredRangeFactor
++
++[KnownLandmarkSquaredRangeFactor](doc/KnownLandmarkSquaredRangeFactor.ipynb) models squared ranges to fixed known landmarks from Euclidean point states. It supports ordinary nonlinear optimization and QCQP conversion through the unstable `AugmentedPoint<N>` type. Both types and their typed Values/QCQP helpers are exposed in Python by `gtsam_unstable`; MATLAB uses `gtsam.KnownLandmarkSquaredRangeFactor*` through the unstable toolbox.
++
++See the [3D localization example](../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) for nonlinear, QCQP, and optional SDP solutions.
++
++The MATLAB regression tests are in `matlab/gtsam_unstable_tests/`; add that directory to the MATLAB path and run `testAugmentedPoint` and `testKnownLandmarkSquaredRangeFactor` after building both toolboxes.
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb
+@@ -0,0 +1,294 @@
++{
++ "cells": [
++  {
++   "cell_type": "markdown",
++   "id": "693582c1",
++   "metadata": {},
++   "source": [
++    "# KnownLandmarkSquaredRangeFactor\n",
++    "\n",
++    "`KnownLandmarkSquaredRangeFactor` models a range measurement between an $N$-dimensional Euclidean point $x$ and a fixed known landmark $L$. Unlike `KnownLandmarkFactor`, it operates directly on a Euclidean point state and does not involve pose or orientation.\n",
++    "\n",
++    "A conventional range residual is\n",
++    "\n",
++    "$$\n",
++    "e_{\\text{range}}(x) = \\|x - L\\| - d,\n",
++    "$$\n",
++    "\n",
++    "where $d$ is the measured range. Note the residual is not polynomial in the state because the Euclidean norm contains a square root. Instead, `KnownLandmarkSquaredRangeFactor` uses the squared-range residual\n",
++    "\n",
++    "$$\n",
++    "e_{\\text{squared}}(x) = \\|x - L\\|^2 - d^2,\n",
++    "$$\n",
++    "\n",
++    "which is quadratic in $x$.\n",
++    "\n",
++    "The squared-range form is suitable for lifted QCQP formulations and subsequent semidefinite relaxations. If the semidefinite relaxation is tight, meaning that the lifted solution has the required rank, the relaxed problem recovers a globally optimal solution to the original QCQP.\n",
++    "\n",
++    "The same squared-range measurement can be used for ordinary nonlinear optimization with a standard point, or converted to a QCQP with `AugmentedPoint<N>`. Choosing the augmented type changes the available optimization formulation, not the physical position being estimated.\n",
++    "\n",
++    "For additional information on GTSAM's QCQP-to-SDP and chordal-sparsity framework, refer to *Exploiting Chordal Sparsity for Globally Optimal Estimation with Factor Graphs*.\n",
++    "\n",
++    "The factor and `AugmentedPoint` are provided by `gtsam_unstable`; `Values` and the optimization APIs remain in `gtsam`. Build with `GTSAM_BUILD_UNSTABLE=ON`, `GTSAM_BUILD_PYTHON=ON`, and `GTSAM_UNSTABLE_BUILD_PYTHON=ON`. In C++, include `<gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>`. MATLAB retains the `gtsam` namespace for both types and requires `GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX=ON`."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "fa13d829",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "source": [
++    "GTSAM Copyright 2010-2026, Georgia Tech Research Corporation, Atlanta, Georgia 30332-0415\n",
++    "All Rights Reserved\n",
++    "Authors: Frank Dellaert, et al. (see THANKS for the full author list)\n",
++    "See LICENSE for the license information"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "f871beec",
++   "metadata": {},
++   "source": [
++    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/gtsam_unstable/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 1,
++   "id": "979dd2b2",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "outputs": [],
++   "source": [
++    "try:\n",
++    "    import google.colab\n",
++    "    %pip install --quiet gtsam-develop\n",
++    "except ImportError:\n",
++    "    pass"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 2,
++   "id": "ec5f6c85",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "import numpy as np\n",
++    "import gtsam\n",
++    "import gtsam_unstable"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "b59f9b17",
++   "metadata": {},
++   "source": [
++    "## Position types and wrapper names\n",
++    "\n",
++    "In C++, `KnownLandmarkSquaredRangeFactor<Position>` accepts either a fixed-size Eigen vector (such as `Point3`) or `AugmentedPoint<N>`, with `N` obtained from `traits<Position>::dimension`. Both represent the same $N$-dimensional position, use the same squared-range residual, and support conventional nonlinear optimization.\n",
++    "\n",
++    "Use a standard point when nonlinear optimization is sufficient. Use `AugmentedPoint<N>` when you also want to convert compatible factors into a QCQP, for example for subsequent semidefinite relaxation. **`AugmentedPoint<N>` stores only the $N$ Euclidean coordinates**; its QCQP traits construct the additional lifted coordinates when needed. Selecting it does not automatically invoke an SDP solver or certify a global solution. The type and its QCQP traits are defined in `gtsam_unstable/geometry/AugmentedPoint.h`.\n",
++    "\n",
++    "The `gtsam_unstable` Python module exposes the 2D and 3D factor variants as `KnownLandmarkSquaredRangeFactor2` and `KnownLandmarkSquaredRangeFactor3` (NumPy position vectors), or `KnownLandmarkSquaredRangeFactorAugmentedPoint2` and `KnownLandmarkSquaredRangeFactorAugmentedPoint3` (`gtsam_unstable.AugmentedPoint2` / `gtsam_unstable.AugmentedPoint3` positions), respectively.\n",
++    "\n",
++    "Use `gtsam_unstable.insertAugmentedPoint3(key, point, values)` to store an augmented point in a stable `gtsam.Values` container, and `gtsam_unstable.atAugmentedPoint3(key, values)` to retrieve it. The matching `updateAugmentedPoint2/3` and `insertOrAssignAugmentedPoint2/3` helpers update or replace values. The dimension-specific QCQP conversion helpers also live in `gtsam_unstable`. These helpers keep unstable types out of the stable `Values` wrapper."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "f5f6e07c",
++   "metadata": {},
++   "source": [
++    "## Prepare one known-landmark range measurement\n",
++    "\n",
++    "Each factor needs four inputs:\n",
++    "\n",
++    "1. the point key `k`;\n",
++    "2. a fixed world-frame landmark `wL`;\n",
++    "3. the measured range `R`; and\n",
++    "4. a noise model describing uncertainty in the squared-range residual.\n",
++    "\n",
++    "The residual $e$ is a scalar, so the corresponding noise model is one-dimensional, with scalar standard deviation $\\sigma$ and covariance $\\sigma^2$.\n"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 3,
++   "id": "6e719445",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "k = 0\n",
++    "wL = np.array([2.0, 3.0, 6.0])\n",
++    "R = 7.1\n",
++    "\n",
++    "sigma = 0.1  # squared-range residual standard deviation [m^2]\n",
++    "model = gtsam.noiseModel.Isotropic.Sigma(1, sigma)"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "ef50107e",
++   "metadata": {},
++   "source": [
++    "## Localization with `KnownLandmarkSquaredRangeFactor`\n",
++    "\n",
++    "Add the factor to an ordinary nonlinear graph and insert an initial point estimate under the same key."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 4,
++   "id": "321197fb",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "graph = gtsam.NonlinearFactorGraph()\n",
++    "graph.add(\n",
++    "    gtsam_unstable.KnownLandmarkSquaredRangeFactor3(k, wL, R, model)\n",
++    ")\n",
++    "\n",
++    "wX_initial = np.array([-0.1, 0.2, -0.05])\n",
++    "initial_wXs = gtsam.Values()\n",
++    "initial_wXs.insert(k, wX_initial)"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "7b454e9f",
++   "metadata": {},
++   "source": [
++    "## Build a well-constrained graph\n",
++    "\n",
++    "A single range measurement does not uniquely determine the point state. In 2D, it constrains the point to a circle centered at the known landmark; in 3D, it constrains the point to a sphere. In a real localization graph, add factors for several distinct known landmarks and, where appropriate, point priors or other factors. Each observation should carry its own `R` and noise model. Reusing the same point key connects all observations made from that point.\n",
++    "\n",
++    "A known landmark is fixed factor data, not a variable in `Values`."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "c5e7d02d",
++   "metadata": {},
++   "source": [
++    "## QCQP conversion with `AugmentedPoint<N>`\n",
++    "\n",
++    "The squared-range residual is quadratic in $x$, making its least-squares cost quartic in the original point coordinates. Merely using a standard `Point3` state therefore does not give the factor the QCQP representation required by GTSAM's conversion interface. `AugmentedPoint<N>` supplies the appropriate lifting and constraint traits without changing the $N$-dimensional nonlinear state.\n",
++    "\n",
++    "For QCQP conversion, introduce the $N+2$ dimensional lifted variable $X$:\n",
++    "\n",
++    "$$\n",
++    "X =\n",
++    "\\begin{bmatrix}\n",
++    "h \\\\\n",
++    "x \\\\\n",
++    "u\n",
++    "\\end{bmatrix},\n",
++    "\\qquad h=1,\\quad u=x^\\top x\n",
++    "\\quad\\text{for the canonical lift}.\n",
++    "$$\n",
++    "\n",
++    "For a known landmark $L_i$ and measured range $d_i$, the squared-range residual becomes linear in the lifted variable:\n",
++    "\n",
++    "$$\n",
++    "e_i(X) = b_i X, \\qquad\n",
++    "b_i = \\begin{bmatrix} \\|L_i\\|^2-d_i^2 & -2L_i^\\top & 1 \\end{bmatrix}.\n",
++    "$$\n",
++    "\n",
++    "The whitened least-squares cost is then quadratic in $X$. Two quadratic equalities enforce a valid homogeneous lift:\n",
++    "\n",
++    "$$\n",
++    "E(X) = \\frac12 \\sum_i \\frac{(b_i X)^2}{\\sigma_i^2},\n",
++    "\\qquad x^\\top x-hu=0, \\qquad h^2=1.\n",
++    "$$\n",
++    "\n",
++    "The constraint permits $h=\\pm 1$; the original position is recovered as $x/h$. The lifted QCQP variable is **not** the five-dimensional (for $N=3$) tangent or stored representation of `AugmentedPoint3`. In C++, the QCQP-capable factor is `KnownLandmarkSquaredRangeFactor<AugmentedPoint<N>>`; in Python, it is `KnownLandmarkSquaredRangeFactorAugmentedPoint2/3`.\n",
++    "\n",
++    "The following cell converts the same measurement and checks that its lifted cost matches the original nonlinear cost at the same position. It does not solve either optimization problem: the [localization example](../../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) shows nonlinear and QCQP solves, with an optional SDP relaxation.\n"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 5,
++   "id": "8864cd27",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "Lifted coordinates [h, x, u]: [ 1.     -0.1     0.2    -0.05    0.0525]\n",
++      "QCQP cost: 121.29031249999946\n"
++     ]
++    }
++   ],
++   "source": [
++    "augmented_graph = gtsam.NonlinearFactorGraph()\n",
++    "augmented_graph.add(\n",
++    "    gtsam_unstable.KnownLandmarkSquaredRangeFactorAugmentedPoint3(k, wL, R, model)\n",
++    ")\n",
++    "augmented_initial = gtsam.Values()\n",
++    "gtsam_unstable.insertAugmentedPoint3(k, gtsam_unstable.AugmentedPoint3(wX_initial), augmented_initial)\n",
++    "\n",
++    "qcqp = gtsam.QcqpProblem(augmented_graph, 1)\n",
++    "lifted_initial = gtsam.Values()\n",
++    "gtsam_unstable.insertQcqpValue3(k, gtsam_unstable.atAugmentedPoint3(k, augmented_initial), lifted_initial)\n",
++    "cost, equality_violation, inequality_violation = qcqp.evaluate(lifted_initial)\n",
++    "np.testing.assert_allclose(cost, graph.error(initial_wXs))\n",
++    "np.testing.assert_allclose([equality_violation, inequality_violation], 0.0, atol=1e-12)\n",
++    "print(\"Lifted coordinates [h, x, u]:\", lifted_initial.atMatrix(k).ravel())\n",
++    "print(\"QCQP cost:\", cost)\n"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "32acc07c",
++   "metadata": {},
++   "source": [
++    "## Practical checklist\n",
++    "\n",
++    "- Use `KnownLandmarkSquaredRangeFactor2/3` for point localization from ranges to fixed, known landmarks using `NonlinearFactorGraph`.\n",
++    "- Use `KnownLandmarkSquaredRangeFactorAugmentedPoint2/3` when constructing a `QcqpProblem`; the augmented type represents the same point and also supports ordinary nonlinear optimization.\n",
++    "- QCQP conversion alone is not a global optimality guarantee; a separate solver and, where applicable, a tight SDP bound are needed.\n",
++    "- Express the state point and landmark in the same coordinate frame.\n",
++    "- Pass the ordinary non-negative measured range `R`; the factor squares it internally.\n",
++    "- Supply a one-dimensional noise model, since the squared-range residual is scalar.\n",
++    "- Interpret the noise model as uncertainty on the squared-range residual, not directly on the range measurement.\n",
++    "- Add measurements from enough geometrically distinct landmarks, or other factors, to fully constrain the point state.\n",
++    "- Keep known landmarks as fixed factor data; they are not variables in `Values`.\n",
++    "\n",
++    "## Related documentation\n",
++    "\n",
++    "- [KnownLandmarkSquaredRangeLocalizationExample](../../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) demonstrates 3D point localization from noisy range measurements to fixed known landmarks.\n",
++    "- [KnownLandmarkFactor](../../../gtsam/slam/doc/KnownLandmarkFactor.ipynb) documents Cartesian observations of fixed known landmarks using pose states."
++   ]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {
++   "display_name": ".venv-gtsam (3.12.5)",
++   "language": "python",
++   "name": "python3"
++  },
++  "language_info": {
++   "codemirror_mode": {
++    "name": "ipython",
++    "version": 3
++   },
++   "file_extension": ".py",
++   "mimetype": "text/x-python",
++   "name": "python",
++   "nbconvert_exporter": "python",
++   "pygments_lexer": "ipython3",
++   "version": "3.12.5"
++  }
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/tests/testBiasedGPSFactor.cpp
 @@ -77,6 +77,35 @@ TEST(BiasedGPSFactor, jacobian) {
@@ -21675,6 +22215,413 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main()
  {
    TestResult tr; return TestRegistry::runAllTests(tr);
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/slam/tests/testKnownLandmarkSquaredRangeFactor.cpp
+@@ -0,0 +1,404 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++ *
++ * See LICENSE for the license information
++ *
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file testKnownLandmarkSquaredRangeFactor.cpp
++ * @brief Tests for KnownLandmarkSquaredRangeFactor, including QCQP conversion.
++ * @author Oluwatodimu Afolayan
++ */
++
++#include <CppUnitLite/TestHarness.h>
++#include <gtsam/constrained/QcqpProblem.h>
++#include <gtsam/nonlinear/NonlinearFactorGraph.h>
++#include <gtsam/nonlinear/Values.h>
++#include <gtsam/nonlinear/factorTesting.h>
++#include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
++
++#include <Eigen/Core>
++#include <limits>
++#include <memory>
++#include <stdexcept>
++
++using namespace gtsam;
++
++/* ************************************************************************* */
++namespace point2_fixture {
++
++using Point = Eigen::Matrix<double, 2, 1>;
++using Factor = KnownLandmarkSquaredRangeFactor<Point>;
++
++const Key kKey = 3;
++
++// Verifies the 2D residual, analytic Jacobian, and zero-residual case.
++TEST(KnownLandmarkSquaredRangeFactor, Point2) {
++  const Point wX(1.0, 2.0);
++  const Point wL(4.0, 6.0);
++  const double measuredRange = 4.0;
++  const auto model = noiseModel::Unit::Create(1);
++
++  const Factor factor(kKey, wL, measuredRange, model);
++
++  Matrix H;
++  const Vector actual = factor.evaluateError(wX, H);
++  const Vector expected = Vector1(9.0);
++
++  EXPECT(assert_equal(expected, actual));
++  EXPECT_LONGS_EQUAL(1, H.rows());
++  EXPECT_LONGS_EQUAL(2, H.cols());
++
++  Matrix expectedH(1, 2);
++  expectedH << -6.0, -8.0;
++  EXPECT(assert_equal(expectedH, H));
++
++  const Factor exactFactor(kKey, wL, 5.0, model);
++  EXPECT(assert_equal(Vector1::Zero(), exactFactor.evaluateError(wX)));
++
++  Values values;
++  values.insert(kKey, wX);
++  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
++}
++
++// Verifies that dynamically sized 2D landmarks are accepted after validation.
++TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark2D) {
++  Vector wL(2);
++  wL << 4.0, 6.0;
++  const Point wX(1.0, 2.0);
++  const auto model = noiseModel::Unit::Create(1);
++
++  const Factor factor(kKey, wL, 4.0, model);
++  EXPECT(assert_equal(Vector1(9.0), factor.evaluateError(wX)));
++  const Factor expression(kKey, Point::Zero(), 1.0, model);
++  EXPECT(assert_equal(Vector1(4.0), expression.evaluateError(wX)));
++}
++
++// Verifies that short and long 2D landmark vectors throw before Eigen
++// conversion.
++TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
++  const auto model = noiseModel::Unit::Create(1);
++  const Vector tooShort = Vector::Zero(1);
++  const Vector tooLong = Vector::Zero(3);
++
++  CHECK_EXCEPTION(Factor(kKey, tooShort, 4.0, model), std::invalid_argument);
++  CHECK_EXCEPTION(Factor(kKey, tooLong, 4.0, model), std::invalid_argument);
++  CHECK_EXCEPTION(Factor(kKey, Matrix::Zero(1, 2), 4.0, model),
++                  std::invalid_argument);
++}
++
++}  // namespace point2_fixture
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace point3_fixture {
++
++using Point = Eigen::Matrix<double, 3, 1>;
++using Factor = KnownLandmarkSquaredRangeFactor<Point>;
++
++const Key kKey = 4;
++
++// Verifies the 3D residual, analytic Jacobian, and zero-residual case.
++TEST(KnownLandmarkSquaredRangeFactor, Point3) {
++  const Point wX(1.0, 2.0, 3.0);
++  const Point wL(3.0, 5.0, 9.0);
++  const double measuredRange = 5.0;
++  const auto model = noiseModel::Unit::Create(1);
++
++  const Factor factor(kKey, wL, measuredRange, model);
++
++  Matrix H;
++  const Vector actual = factor.evaluateError(wX, H);
++  const Vector expected = Vector1(24.0);
++
++  EXPECT(assert_equal(expected, actual));
++  EXPECT_LONGS_EQUAL(1, H.rows());
++  EXPECT_LONGS_EQUAL(3, H.cols());
++
++  Matrix expectedH(1, 3);
++  expectedH << -4.0, -6.0, -12.0;
++  EXPECT(assert_equal(expectedH, H));
++
++  const Factor exactFactor(kKey, wL, 7.0, model);
++  EXPECT(assert_equal(Vector1::Zero(), exactFactor.evaluateError(wX)));
++
++  Values values;
++  values.insert(kKey, wX);
++  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
++}
++
++// Verifies cloning preserves factor data and equality detects changed data.
++TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
++  const Point wL(3.0, 5.0, 9.0);
++  const auto model = noiseModel::Unit::Create(1);
++
++  const Factor factor(kKey, wL, 5.0, model);
++  const auto clone = factor.clone();
++
++  EXPECT(factor.equals(*clone));
++
++  Point shiftedLandmark = wL;
++  shiftedLandmark(0) += 0.1;
++  EXPECT(!factor.equals(Factor(kKey, shiftedLandmark, 5.0, model)));
++
++  EXPECT(!factor.equals(Factor(kKey, wL, 5.1, model)));
++
++  NonlinearFactorGraph graph;
++  graph.push_back(clone);
++  const NonlinearFactorGraph graphClone = graph.clone();
++  EXPECT(std::dynamic_pointer_cast<Factor>(graphClone.at(0)) != nullptr);
++}
++
++}  // namespace point3_fixture
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace augmented_factor1_fixture {
++
++using VectorType = Eigen::Matrix<double, 1, 1>;
++using Point = AugmentedPoint<1>;
++using Factor = KnownLandmarkSquaredRangeFactor<Point>;
++
++const Key kKey = 11;
++
++// C++ dimensions remain unrestricted by the 2D/3D wrapper specializations.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
++  VectorType coordinates;
++  coordinates << 2.0;
++  VectorType landmark;
++  landmark << 5.0;
++  const Point point(coordinates);
++  const auto model = noiseModel::Unit::Create(1);
++  const Factor factor(kKey, landmark, 2.0, model);
++
++  Matrix H;
++  EXPECT(assert_equal(Vector1(5.0), factor.evaluateError(point, H)));
++  EXPECT_LONGS_EQUAL(1, H.rows());
++  EXPECT_LONGS_EQUAL(1, H.cols());
++  EXPECT_DOUBLES_EQUAL(-6.0, H(0, 0), 1e-12);
++
++  NonlinearFactorGraph graph;
++  graph.push_back(std::make_shared<Factor>(factor));
++  Values values;
++  values.insert(kKey, point);
++
++  const QcqpProblem qcqp(graph);
++  Values lifted;
++  insertQcqpValue<1>(kKey, point, lifted);
++  EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
++  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
++  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted), 1e-12);
++  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(lifted), 1e-12);
++}
++
++}  // namespace augmented_factor1_fixture
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace augmented_factor2_fixture {
++
++using VectorType = Eigen::Vector2d;
++using Point = AugmentedPoint<2>;
++using Factor = KnownLandmarkSquaredRangeFactor<Point>;
++using EigenFactor = KnownLandmarkSquaredRangeFactor<VectorType>;
++
++const Key kKey = 12;
++
++// Verifies that both state types give the same residual and tangent Jacobian.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DResidualAndJacobian) {
++  const VectorType coordinates(1.0, 2.0);
++  const VectorType landmark(4.0, 6.0);
++  const Point point(coordinates);
++  const auto model = noiseModel::Unit::Create(1);
++
++  const Factor augmented(kKey, landmark, 4.0, model);
++  const EigenFactor eigen(kKey, landmark, 4.0, model);
++
++  Matrix augmentedH, eigenH;
++  const Vector augmentedError = augmented.evaluateError(point, augmentedH);
++  const Vector eigenError = eigen.evaluateError(coordinates, eigenH);
++
++  EXPECT(assert_equal(Vector1(9.0), augmentedError));
++  EXPECT(assert_equal(eigenError, augmentedError));
++  EXPECT(assert_equal(eigenH, augmentedH));
++  EXPECT_LONGS_EQUAL(1, augmentedH.rows());
++  EXPECT_LONGS_EQUAL(2, augmentedH.cols());
++
++  Values values;
++  values.insert(kKey, point);
++  EXPECT_CORRECT_FACTOR_JACOBIANS(augmented, values, 1e-7, 1e-5);
++}
++
++// An AugmentedPoint supplied as the fixed landmark must produce the same
++// factor as one constructed with ordinary Eigen coordinates.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedLandmarkConstructor2D) {
++  const VectorType landmark(4.0, 6.0);
++  const Point point(VectorType(1.0, 2.0));
++  const auto model = noiseModel::Unit::Create(1);
++  const Factor fromVector(kKey, landmark, 4.0, model);
++  const Factor fromAugmented(kKey, Point(landmark), 4.0, model);
++
++  EXPECT(fromVector.equals(fromAugmented));
++  EXPECT(assert_equal(fromVector.evaluateError(point),
++                      fromAugmented.evaluateError(point)));
++}
++
++// The whitened lifted quadratic cost must match the nonlinear information-
++// weighted least-squares cost, including its homogeneous sign ambiguity.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
++  const Point point(VectorType(1.0, 2.0));
++  const VectorType landmark(4.0, 6.0);
++  Matrix information(1, 1);
++  information << 4.0;
++  const auto model = noiseModel::Gaussian::Information(information);
++
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<Factor>(kKey, landmark, 4.0, model);
++
++  Values nonlinearValues;
++  nonlinearValues.insert(kKey, point);
++  const QcqpProblem qcqp(graph);
++  Values liftedValues;
++  insertQcqpValue<2>(kKey, point, liftedValues);
++
++  EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
++  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
++  EXPECT_DOUBLES_EQUAL(162.0, graph.error(nonlinearValues), 1e-12);
++  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
++                       qcqp.costs().error(liftedValues), 1e-10);
++  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(liftedValues),
++                       1e-12);
++
++  // X and -X represent the same original point and quadratic cost.
++  const Matrix negativeLift = -traits<Point>::QcqpValue<1>(point);
++  Values negativeValues;
++  negativeValues.insert(kKey, negativeLift);
++  EXPECT_DOUBLES_EQUAL(qcqp.costs().error(liftedValues),
++                       qcqp.costs().error(negativeValues), 1e-10);
++  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(negativeValues),
++                       1e-12);
++
++  const Values recovered = extractQcqpValues<2>(negativeValues);
++  EXPECT(recovered.at<Point>(kKey).equals(point));
++}
++
++// The Eigen-state factor remains usable for nonlinear optimization, while
++// conversion to QCQP requires the opt-in AugmentedPoint state.
++TEST(KnownLandmarkSquaredRangeFactor, RejectsEigenStateQcqpConversion) {
++  const VectorType landmark(4.0, 6.0);
++  const auto model = noiseModel::Unit::Create(1);
++  const EigenFactor factor(kKey, landmark, 4.0, model);
++  NonlinearFactorGraph costs;
++  NonlinearEqualityConstraints constraints;
++  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr),
++                  std::runtime_error);
++}
++
++}  // namespace augmented_factor2_fixture
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace augmented_factor3_fixture {
++
++using VectorType = Eigen::Vector3d;
++using Point = AugmentedPoint<3>;
++using Factor = KnownLandmarkSquaredRangeFactor<Point>;
++
++const Key kKey = 13;
++
++// Checks the 3D tangent Jacobian and the factor's nonlinear graph interface.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint3DResidualAndJacobian) {
++  const Point point(VectorType(1.0, 2.0, 3.0));
++  const VectorType landmark(3.0, 5.0, 9.0);
++  const auto model = noiseModel::Unit::Create(1);
++  const Factor factor(kKey, landmark, 5.0, model);
++
++  Matrix H;
++  EXPECT(assert_equal(Vector1(24.0), factor.evaluateError(point, H)));
++  Matrix expectedH(1, 3);
++  expectedH << -4.0, -6.0, -12.0;
++  EXPECT(assert_equal(expectedH, H));
++
++  Values values;
++  values.insert(kKey, point);
++  EXPECT_DOUBLES_EQUAL(0.5 * 24.0 * 24.0, factor.error(values), 1e-12);
++  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
++}
++
++// Multiple measurements on the same state must contribute separate costs but
++// must not duplicate the two shared point-lift constraints, with or without
++// redundant constraints enabled.
++TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
++  const Point point(VectorType(1.0, 2.0, 3.0));
++  const auto model = noiseModel::Unit::Create(1);
++
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0, model);
++  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0, model);
++
++  Values nonlinearValues;
++  nonlinearValues.insert(kKey, point);
++  Values qcqpValues;
++  InsertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
++
++  for (const bool useRedundantConstraints : {false, true}) {
++    const QcqpProblem qcqp(graph, 1, useRedundantConstraints);
++    EXPECT_LONGS_EQUAL(2, qcqp.costs().size());
++    EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
++    EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
++                         qcqp.costs().error(qcqpValues), 1e-10);
++    EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
++                         1e-12);
++  }
++}
++
++// Validate qcqpFactors error handling without an SDP solve.
++TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
++  const VectorType landmark(3.0, 5.0, 9.0);
++  const auto model = noiseModel::Unit::Create(1);
++  const Factor factor(kKey, landmark, 5.0, model);
++
++  NonlinearFactorGraph costs;
++  NonlinearEqualityConstraints constraints;
++  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr, nullptr),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
++                  std::invalid_argument);
++
++  const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
++  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints, nullptr),
++                  std::runtime_error);
++  const Factor wrongNoiseDimension(kKey, landmark, 5.0,
++                                   noiseModel::Isotropic::Sigma(2, 1.0));
++  CHECK_EXCEPTION(
++      wrongNoiseDimension.qcqpFactors(&costs, &constraints, nullptr),
++      std::invalid_argument);
++  const Factor constrainedNoise(kKey, landmark, 5.0,
++                                noiseModel::Constrained::All(1));
++  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints, nullptr),
++                  std::runtime_error);
++  const Factor robustNoise(
++      kKey, landmark, 5.0,
++      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
++                                 model));
++  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints, nullptr),
++                  std::runtime_error);
++  CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model), std::invalid_argument);
++  CHECK_EXCEPTION(
++      Factor(kKey, landmark, std::numeric_limits<double>::infinity(), model),
++      std::invalid_argument);
++}
++
++}  // namespace augmented_factor3_fixture
++/* ************************************************************************* */
++
++int main() {
++  TestResult tr;
++  return TestRegistry::runAllTests(tr);
++}
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/timing/timeHybridAllDiff.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/timing/timeHybridAllDiff.cpp
 @@ -35,6 +35,7 @@ using gtsam::DecisionTreeFactor;
@@ -22056,54 +23003,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +end
 +assert(threw, 'Expected the invalid query to throw.');
 +end
---- /dev/null
-+++ gtsam-no-tbb-4.3.0/matlab/gtsam_tests/testKnownLandmarkSquaredRangeFactor.m
-@@ -0,0 +1,45 @@
-+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+% GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
-+% Atlanta, Georgia 30332-0415
-+% All Rights Reserved
-+% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-+%
-+% See LICENSE for the license information
-+%
-+% @brief Tests MATLAB wrapper dimension validation for
-+% KnownLandmarkSquaredRangeFactor.
-+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+
-+function testKnownLandmarkSquaredRangeFactor()
-+model = gtsam.noiseModel.Unit.Create(1);
-+key = 3;
-+
-+% Both specializations accept correctly sized landmark vectors.
-+factor2 = gtsam.KnownLandmarkSquaredRangeFactor2(key, zeros(2, 1), 5.0, model);
-+factor3 = gtsam.KnownLandmarkSquaredRangeFactor3(key, zeros(3, 1), 5.0, model);
-+assert(~isempty(factor2));
-+assert(~isempty(factor3));
-+
-+% Both specializations reject undersized and oversized landmark vectors.
-+for landmarkSize = [1, 3]
-+    assertInvalidLandmarkDimension(@() gtsam.KnownLandmarkSquaredRangeFactor2( ...
-+        key, zeros(landmarkSize, 1), 5.0, model));
-+end
-+
-+for landmarkSize = [2, 4]
-+    assertInvalidLandmarkDimension(@() gtsam.KnownLandmarkSquaredRangeFactor3( ...
-+        key, zeros(landmarkSize, 1), 5.0, model));
-+end
-+end
-+
-+function assertInvalidLandmarkDimension(constructor)
-+% Ensure an invalid landmark dimension produces a catchable MATLAB error.
-+try
-+    constructor();
-+catch ME
-+    assert(contains(ME.message, 'invalid landmark dimension'), ...
-+        'Expected a landmark dimension error; received: %s', ME.message);
-+    return;
-+end
-+error('Expected an invalid landmark dimension error, but none was thrown.');
-+end
 --- gtsam-no-tbb-4.3.0.orig/matlab/gtsam_tests/testMosekSDP.m
 +++ gtsam-no-tbb-4.3.0/matlab/gtsam_tests/testMosekSDP.m
 @@ -1,4 +1,4 @@
@@ -22327,6 +23226,218 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  %% navigation
  display 'Starting: testRotatingImuCovariance'
  testRotatingImuCovariance
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/matlab/gtsam_unstable_tests/testAugmentedPoint.m
+@@ -0,0 +1,103 @@
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++% GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++% Atlanta, Georgia 30332-0415
++% All Rights Reserved
++% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++%
++% See LICENSE for the license information
++%
++% @brief Tests unstable augmented points, Values access, and QCQP bindings.
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++
++function testAugmentedPoint()
++for dimension = [2, 3]
++    testPoint(dimension);
++    testAugmentedValues(dimension);
++    testQcqpConversions(dimension);
++end
++end
++
++function testPoint(dimension)
++% Point methods marshal coordinates and validate input dimensions.
++pointType = str2func(sprintf('gtsam.AugmentedPoint%d', dimension));
++coordinates = (1:dimension)';
++point = pointType(coordinates);
++assert(isequal(point.vector(), coordinates));
++origin = pointType();
++identity = feval(sprintf('gtsam.AugmentedPoint%d.Identity', dimension));
++assert(isequal(origin.vector(), zeros(dimension, 1)));
++assert(isequal(identity.vector(), zeros(dimension, 1)));
++assert(point.dim() == dimension);
++assert(abs(point.norm() - norm(coordinates)) < 1e-12);
++assert(abs(point.dot(point) - coordinates' * coordinates) < 1e-12);
++assert(point.equals(pointType(coordinates)));
++assert(~point.equals(pointType(coordinates + 1)));
++for pointSize = [dimension - 1, dimension + 1]
++    assertThrows(@() pointType(zeros(pointSize, 1)), 'invalid point dimension');
++end
++end
++
++function testAugmentedValues(dimension)
++% Typed Values access preserves coordinates, lifetimes, and 64-bit keys.
++pointType = str2func(sprintf('gtsam.AugmentedPoint%d', dimension));
++coordinates = (1:dimension)';
++key = bitshift(uint64(1), 40) + uint64(dimension);
++point = pointType(coordinates);
++values = gtsam.Values();
++feval(sprintf('gtsam.insertAugmentedPoint%d', dimension), key, point, values);
++read = @(key) feval(sprintf('gtsam.atAugmentedPoint%d', dimension), key, values);
++feval(sprintf('gtsam.updateAugmentedPoint%d', dimension), ...
++    key, pointType(coordinates + 1), values);
++updated = read(key);
++assert(isequal(updated.vector(), coordinates + 1));
++feval(sprintf('gtsam.insertOrAssignAugmentedPoint%d', dimension), key, point, values);
++feval(sprintf('gtsam.insertOrAssignAugmentedPoint%d', dimension), ...
++    key + uint64(1), point, values);
++clear point;
++for repeat = 1:3
++    point = read(key);
++    other = read(key + uint64(1));
++    assert(isequal(point.vector(), coordinates));
++    assert(isequal(other.vector(), coordinates));
++end
++end
++
++function testQcqpConversions(dimension)
++% Lift, recovery, insertion, and extraction work for both dimensions.
++coordinates = (1:dimension)';
++point = feval(sprintf('gtsam.AugmentedPoint%d', dimension), coordinates);
++key = bitshift(uint64(1), 40) + uint64(dimension);
++lift = feval(sprintf('gtsam.qcqpValue%d', dimension), point);
++expected = [1; coordinates; coordinates' * coordinates];
++assert(isequal(lift, expected));
++recover = str2func(sprintf('gtsam.fromQcqpValue%d', dimension));
++recovered = recover(lift);
++negative = recover(-lift);
++assert(recovered.equals(point));
++assert(negative.equals(point));
++assertThrows(@() recover(zeros(dimension + 1, 1)), ...
++    sprintf('requires a %d-by-1', dimension + 2));
++assertThrows(@() recover(zeros(dimension + 2, 1)), ...
++    'nonzero homogenization coordinate');
++lifted = gtsam.Values();
++insert = str2func(sprintf('gtsam.insertQcqpValue%d', dimension));
++insert(key, point, lifted);
++insert(key, point, lifted);
++assert(isequal(lifted.atMatrix(key), expected));
++extracted = feval(sprintf('gtsam.extractQcqpValues%d', dimension), lifted);
++extractedPoint = feval(sprintf('gtsam.atAugmentedPoint%d', dimension), key, extracted);
++assert(extractedPoint.equals(point));
++end
++
++function assertThrows(action, expectedMessage)
++% Ensure C++ validation failures become catchable MATLAB errors.
++try
++    action();
++catch ME
++    assert(contains(ME.message, expectedMessage), ...
++        'Expected an error containing "%s"; received: %s', ...
++        expectedMessage, ME.message);
++    return;
++end
++error('Expected an error containing "%s", but none was thrown.', expectedMessage);
++end
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/matlab/gtsam_unstable_tests/testKnownLandmarkSquaredRangeFactor.m
+@@ -0,0 +1,81 @@
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++% GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++% Atlanta, Georgia 30332-0415
++% All Rights Reserved
++% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++%
++% See LICENSE for the license information
++%
++% @brief Tests unstable squared-range factors with unstable points and stable graphs.
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++
++function testKnownLandmarkSquaredRangeFactor()
++for dimension = [2, 3]
++    testFactorErrors(dimension);
++    testQcqpFactorConversion(dimension);
++end
++end
++
++function testFactorErrors(dimension)
++% Both state types give matching residuals and reject invalid landmarks.
++model = gtsam.noiseModel.Unit.Create(1);
++coordinates = (1:dimension)';
++point = feval(sprintf('gtsam.AugmentedPoint%d', dimension), coordinates);
++factorType = str2func(sprintf( ...
++    'gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint%d', dimension));
++ordinaryType = str2func(sprintf( ...
++    'gtsam.KnownLandmarkSquaredRangeFactor%d', dimension));
++factor = factorType(0, zeros(dimension, 1), 1.0, model);
++ordinary = ordinaryType(0, zeros(dimension, 1), 1.0, model);
++residual = coordinates' * coordinates - 1;
++assert(abs(factor.evaluateError(point) - residual) < 1e-12);
++assert(abs(ordinary.evaluateError(coordinates) - residual) < 1e-12);
++exact = factorType(0, zeros(dimension, 1), norm(coordinates), model);
++assert(abs(exact.evaluateError(point)) < 1e-12);
++values = gtsam.Values();
++feval(sprintf('gtsam.insertAugmentedPoint%d', dimension), 0, point, values);
++graph = gtsam.NonlinearFactorGraph();
++graph.add(factor);
++assert(abs(graph.error(values) - 0.5 * residual^2) < 1e-12);
++for landmarkSize = [dimension - 1, dimension + 1]
++    assertThrows(@() factorType(0, zeros(landmarkSize, 1), 1.0, model), ...
++        'invalid landmark dimension');
++    assertThrows(@() ordinaryType(0, zeros(landmarkSize, 1), 1.0, model), ...
++        'invalid landmark dimension');
++end
++end
++
++function testQcqpFactorConversion(dimension)
++% QCQP construction requires an augmented state and a single column.
++model = gtsam.noiseModel.Unit.Create(1);
++graph = gtsam.NonlinearFactorGraph();
++graph.add(feval(sprintf( ...
++    'gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint%d', dimension), ...
++    0, zeros(dimension, 1), 1.0, model));
++problem = gtsam.QcqpProblem(graph);
++assert(isa(problem, 'gtsam.QcqpProblem'));
++assertThrows(@() gtsam.QcqpProblem(graph, 2), 'only supports D=1');
++invalidGraph = gtsam.NonlinearFactorGraph();
++invalidGraph.add(feval(sprintf( ...
++    'gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint%d', dimension), ...
++    0, zeros(dimension, 1), 1.0, gtsam.noiseModel.Isotropic.Sigma(2, 1.0)));
++assertThrows(@() gtsam.QcqpProblem(invalidGraph), 'one-dimensional noise');
++ordinaryGraph = gtsam.NonlinearFactorGraph();
++ordinaryGraph.add(feval(sprintf( ...
++    'gtsam.KnownLandmarkSquaredRangeFactor%d', dimension), ...
++    0, zeros(dimension, 1), 1.0, model));
++assertThrows(@() gtsam.QcqpProblem(ordinaryGraph), 'AugmentedPoint');
++end
++
++function assertThrows(action, expectedMessage)
++% Ensure C++ validation failures become catchable MATLAB errors.
++try
++    action();
++catch ME
++    assert(contains(ME.message, expectedMessage), ...
++        'Expected an error containing "%s"; received: %s', ...
++        expectedMessage, ME.message);
++    return;
++end
++error('Expected an error containing "%s", but none was thrown.', expectedMessage);
++end
+--- gtsam-no-tbb-4.3.0.orig/myst.yml
++++ gtsam-no-tbb-4.3.0/myst.yml
+@@ -53,6 +53,9 @@ project:
+       - file: ./gtsam/hybrid/hybrid.md
+         children:
+         - pattern: ./gtsam/hybrid/doc/*
++      - file: ./gtsam_unstable/slam/README.md
++        children:
++        - pattern: ./gtsam_unstable/slam/doc/*.ipynb
+     - file: ./doc/examples.md
+       children:
+       - title: Geometry
+@@ -88,6 +91,9 @@ project:
+       - title: SLAM
+         children:
+         - pattern: ./python/gtsam/examples/slam/*.ipynb
++      - title: Unstable SLAM
++        children:
++        - pattern: ./python/gtsam_unstable/examples/slam/*.ipynb
+     - file: ./doc/expressions.md
+ site:
+   nav: 
 --- gtsam-no-tbb-4.3.0.orig/package.xml
 +++ gtsam-no-tbb-4.3.0/package.xml
 @@ -2,7 +2,7 @@
@@ -39031,1326 +40142,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + "nbformat": 4,
 + "nbformat_minor": 5
 +}
---- /dev/null
-+++ gtsam-no-tbb-4.3.0/python/gtsam/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb
-@@ -0,0 +1,1317 @@
-+{
-+ "cells": [
-+  {
-+   "cell_type": "markdown",
-+   "id": "3adcfc01",
-+   "metadata": {},
-+   "source": [
-+    "# Known landmark localization in ℝ³\n",
-+    "\n",
-+    "This example demonstrates 3D localization of a single point state $x$ from four known landmarks using `KnownLandmarkSquaredRangeFactor3`.\n",
-+    "\n",
-+    "A single unknown point $x \\in \\mathbb{R}^3$ is observed through range measurements to several fixed, known landmarks $L_i$. A conventional range residual has the form\n",
-+    "\n",
-+    "$$\n",
-+    "e_i(x) = \\|x - L_i\\| - d_i,\n",
-+    "$$\n",
-+    "\n",
-+    "where $d_i$ is the measured range to landmark $L_i$. Because the Euclidean norm contains a square root, this residual is not polynomial in the state.\n",
-+    "\n",
-+    "`KnownLandmarkSquaredRangeFactor2` and `KnownLandmarkSquaredRangeFactor3` instead use the squared-range residual\n",
-+    "\n",
-+    "$$\n",
-+    "e_i(x) = \\|x - L_i\\|^2 - d_i^2,\n",
-+    "$$\n",
-+    "\n",
-+    "which is quadratic in $x$. This polynomial form is suitable for lifted QCQP\n",
-+    "formulations and subsequent semidefinite relaxations. If the semidefinite\n",
-+    "relaxation is tight, meaning that the lifted solution has the required rank, the\n",
-+    "relaxed problem recovers a globally optimal solution to the original QCQP.\n",
-+    "\n",
-+    "In this notebook, the factor is used with GTSAM's standard nonlinear optimizer; QCQP/certifiable conversion is not included.\n",
-+    "\n",
-+    "Several geometrically distinct landmarks are required to uniquely determine the point. This example uses four known landmarks and noisy range measurements to estimate the 3D position.\n",
-+    "\n",
-+    "See the `KnownLandmarkSquaredRangeFactor` [API notebook](../../../../gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb) for more details on the factor.\n"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "e152dfcf",
-+   "metadata": {
-+    "tags": [
-+     "remove-cell"
-+    ]
-+   },
-+   "source": [
-+    "GTSAM Copyright 2010-2026, Georgia Tech Research Corporation, Atlanta, Georgia 30332-0415\n",
-+    "All Rights Reserved\n",
-+    "Authors: Frank Dellaert, et al. (see THANKS for the full author list)\n",
-+    "See LICENSE for the license information"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "87f0b251",
-+   "metadata": {},
-+   "source": [
-+    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/python/gtsam/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb)"
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 22,
-+   "id": "4b92024d",
-+   "metadata": {
-+    "tags": [
-+     "remove-cell"
-+    ]
-+   },
-+   "outputs": [],
-+   "source": [
-+    "try:\n",
-+    "    import google.colab\n",
-+    "    %pip install --quiet gtsam-develop\n",
-+    "except ImportError:\n",
-+    "    pass"
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 23,
-+   "id": "1cd6924b",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "import numpy as np\n",
-+    "import gtsam\n",
-+    "import plotly.graph_objects as go\n"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "8ea56ff8",
-+   "metadata": {},
-+   "source": [
-+    "## Create a 3D synthetic localization problem\n",
-+    "\n",
-+    "We choose one true 3D point and four fixed landmarks. The landmarks are spread through space so that the resulting range measurements provide independent geometric constraints.\n",
-+    "\n",
-+    "Gaussian noise is added to each raw range measurement for realism."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 24,
-+   "id": "df3990e8",
-+   "metadata": {},
-+   "outputs": [
-+    {
-+     "name": "stdout",
-+     "output_type": "stream",
-+     "text": [
-+      "True point: [1. 2. 3.]\n",
-+      "Raw range standard deviation: 0.100 m\n",
-+      "\n",
-+      "L0: [0. 0. 0.] True range = 3.742 m,  Measured range = 3.772 m\n",
-+      "L1: [5. 0. 0.] True range = 5.385 m,  Measured range = 5.281 m\n",
-+      "L2: [0. 6. 0.] True range = 5.099 m,  Measured range = 5.174 m\n",
-+      "L3: [1. 0. 8.] True range = 5.385 m,  Measured range = 5.479 m\n"
-+     ]
-+    }
-+   ],
-+   "source": [
-+    "rng = np.random.default_rng(42)\n",
-+    "\n",
-+    "x_true = np.array([1.0, 2.0, 3.0])\n",
-+    "\n",
-+    "landmarks = np.array([\n",
-+    "    [0.0, 0.0, 0.0],\n",
-+    "    [5.0, 0.0, 0.0],\n",
-+    "    [0.0, 6.0, 0.0],\n",
-+    "    [1.0, 0.0, 8.0],\n",
-+    "])\n",
-+    "\n",
-+    "range_sigma = 0.10  # raw range standard deviation [m]\n",
-+    "\n",
-+    "true_ranges = [np.linalg.norm(x_true - wL) for wL in landmarks]\n",
-+    "\n",
-+    "measurement_noise = rng.normal(\n",
-+    "    loc=0.0, scale=range_sigma, size=len(landmarks)\n",
-+    ")\n",
-+    "\n",
-+    "measured_ranges = true_ranges + measurement_noise\n",
-+    "\n",
-+    "print(\"True point:\", x_true)\n",
-+    "print(f\"Raw range standard deviation: {range_sigma:.3f} m\\n\")\n",
-+    "\n",
-+    "for i, (wL, r_true, r_measured) in enumerate(\n",
-+    "    zip(landmarks, true_ranges, measured_ranges)):\n",
-+    "    print(\n",
-+    "        f\"L{i}: {wL} \"\n",
-+    "        f\"True range = {r_true:.3f} m, \",\n",
-+    "        f\"Measured range = {r_measured:.3f} m\"\n",
-+    "    )"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "5934ab25",
-+   "metadata": {},
-+   "source": [
-+    "## Propagate range uncertainty into squared-range units\n",
-+    "\n",
-+    "The sensor uncertainty above is expressed in range units, while `KnownLandmarkSquaredRangeFactor3` uses the squared-range residual\n",
-+    "\n",
-+    "$$\n",
-+    "e_i(x) = \\|x - L_i\\|^2 - d_i^2.\n",
-+    "$$\n",
-+    "\n",
-+    "For $y = d^2$, first-order uncertainty propagation gives\n",
-+    "\n",
-+    "$$\n",
-+    "\\sigma_y \\approx \\left|\\frac{\\partial d^2}{\\partial d}\\right|\\sigma_d = 2d\\,\\sigma_d.\n",
-+    "$$\n",
-+    "\n",
-+    "Therefore, the standard deviation used by each factor is approximately\n",
-+    "\n",
-+    "$$\n",
-+    "\\sigma_{d^2} \\approx 2d\\,\\sigma_d.\n",
-+    "$$\n",
-+    "\n",
-+    "Even when each range measurement has the same $\\sigma_d$, their respective squared-range uncertainties differ between landmarks."
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "ee258de2",
-+   "metadata": {},
-+   "source": [
-+    "## Build the factor graph\n",
-+    "\n",
-+    "Each range measurement contributes one factor to the same unknown point state."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 25,
-+   "id": "f48e207c",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "key = 0\n",
-+    "graph = gtsam.NonlinearFactorGraph()\n",
-+    "\n",
-+    "for wL, measured_range in zip(landmarks, measured_ranges):\n",
-+    "    sigma_squared_range = 2.0 * measured_range * range_sigma\n",
-+    "    model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_squared_range)\n",
-+    "    graph.add(\n",
-+    "        gtsam.KnownLandmarkSquaredRangeFactor3(key, wL, measured_range, model)\n",
-+    "    )"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "eb81f04e",
-+   "metadata": {},
-+   "source": [
-+    "## Choose an initial estimate\n",
-+    "\n",
-+    "The nonlinear optimizer needs an initial value for the point state. The initial position is deliberately offset from the true position."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 26,
-+   "id": "a64e0da3",
-+   "metadata": {},
-+   "outputs": [],
-+   "source": [
-+    "x_initial = np.array([1.2, 1.7, 3.2])\n",
-+    "\n",
-+    "initial = gtsam.Values()\n",
-+    "initial.insert(key, x_initial)"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "cdb7d696",
-+   "metadata": {},
-+   "source": [
-+    "## Optimize\n",
-+    "\n",
-+    "We solve the nonlinear least-squares problem with Levenberg-Marquardt."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 27,
-+   "id": "fa84a534",
-+   "metadata": {},
-+   "outputs": [
-+    {
-+     "name": "stdout",
-+     "output_type": "stream",
-+     "text": [
-+      "True point:  [1. 2. 3.]\n",
-+      "Initial point:  [1.2 1.7 3.2]\n",
-+      "Estimated point:  [1.14882058 1.99174407 2.96859758]\n",
-+      "Final graph error:  0.41722601045710256\n",
-+      "Localization error:  0.15232149470799192\n"
-+     ]
-+    }
-+   ],
-+   "source": [
-+    "optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial)\n",
-+    "result = optimizer.optimize()\n",
-+    "\n",
-+    "x_estimated = result.atVector(key)\n",
-+    "\n",
-+    "print(\"True point: \", x_true)\n",
-+    "print(\"Initial point: \", x_initial)\n",
-+    "print(\"Estimated point: \", x_estimated)\n",
-+    "print(\"Final graph error: \", graph.error(result))\n",
-+    "print(\"Localization error: \", np.linalg.norm(x_estimated - x_true))"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "86ee0d6b",
-+   "metadata": {},
-+   "source": [
-+    "## Visualize the result\n",
-+    "\n",
-+    "The interactive 3D plot below shows the known landmarks, true position,\n",
-+    "initial estimate, and optimized estimate. Rotate or zoom the plot to inspect\n",
-+    "the geometry from different viewpoints."
-+   ]
-+  },
-+  {
-+   "cell_type": "code",
-+   "execution_count": 28,
-+   "id": "1b6feb92",
-+   "metadata": {},
-+   "outputs": [
-+    {
-+     "data": {
-+      "application/vnd.plotly.v1+json": {
-+       "data": [
-+        {
-+         "hovertemplate": "Landmark<br>x=%{x:.2f}<br>y=%{y:.2f}<br>z=%{z:.2f}<extra></extra>",
-+         "marker": {
-+          "size": 6
-+         },
-+         "mode": "markers",
-+         "name": "Known Landmarks",
-+         "type": "scatter3d",
-+         "x": {
-+          "bdata": "AAAAAAAAAAAAAAAAAAAUQAAAAAAAAAAAAAAAAAAA8D8=",
-+          "dtype": "f8"
-+         },
-+         "y": {
-+          "bdata": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABhAAAAAAAAAAAA=",
-+          "dtype": "f8"
-+         },
-+         "z": {
-+          "bdata": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIEA=",
-+          "dtype": "f8"
-+         }
-+        },
-+        {
-+         "marker": {
-+          "size": 7
-+         },
-+         "mode": "markers",
-+         "name": "True Position",
-+         "type": "scatter3d",
-+         "x": [
-+          1
-+         ],
-+         "y": [
-+          2
-+         ],
-+         "z": [
-+          3
-+         ]
-+        },
-+        {
-+         "marker": {
-+          "size": 7
-+         },
-+         "mode": "markers",
-+         "name": "Initial Estimate",
-+         "type": "scatter3d",
-+         "x": [
-+          1.2
-+         ],
-+         "y": [
-+          1.7
-+         ],
-+         "z": [
-+          3.2
-+         ]
-+        },
-+        {
-+         "marker": {
-+          "size": 7
-+         },
-+         "mode": "markers",
-+         "name": "Estimated Position",
-+         "type": "scatter3d",
-+         "x": [
-+          1.1488205802519205
-+         ],
-+         "y": [
-+          1.9917440698657831
-+         ],
-+         "z": [
-+          2.9685975755525558
-+         ]
-+        },
-+        {
-+         "mode": "lines",
-+         "name": "Estimation Error",
-+         "type": "scatter3d",
-+         "x": [
-+          1,
-+          1.1488205802519205
-+         ],
-+         "y": [
-+          2,
-+          1.9917440698657831
-+         ],
-+         "z": [
-+          3,
-+          2.9685975755525558
-+         ]
-+        }
-+       ],
-+       "layout": {
-+        "height": 650,
-+        "legend": {
-+         "x": 0.02,
-+         "y": 0.98
-+        },
-+        "margin": {
-+         "b": 0,
-+         "l": 0,
-+         "r": 0,
-+         "t": 50
-+        },
-+        "scene": {
-+         "aspectmode": "data",
-+         "xaxis": {
-+          "title": {
-+           "text": "x"
-+          }
-+         },
-+         "yaxis": {
-+          "title": {
-+           "text": "y"
-+          }
-+         },
-+         "zaxis": {
-+          "title": {
-+           "text": "z"
-+          }
-+         }
-+        },
-+        "template": {
-+         "data": {
-+          "bar": [
-+           {
-+            "error_x": {
-+             "color": "#2a3f5f"
-+            },
-+            "error_y": {
-+             "color": "#2a3f5f"
-+            },
-+            "marker": {
-+             "line": {
-+              "color": "#E5ECF6",
-+              "width": 0.5
-+             },
-+             "pattern": {
-+              "fillmode": "overlay",
-+              "size": 10,
-+              "solidity": 0.2
-+             }
-+            },
-+            "type": "bar"
-+           }
-+          ],
-+          "barpolar": [
-+           {
-+            "marker": {
-+             "line": {
-+              "color": "#E5ECF6",
-+              "width": 0.5
-+             },
-+             "pattern": {
-+              "fillmode": "overlay",
-+              "size": 10,
-+              "solidity": 0.2
-+             }
-+            },
-+            "type": "barpolar"
-+           }
-+          ],
-+          "carpet": [
-+           {
-+            "aaxis": {
-+             "endlinecolor": "#2a3f5f",
-+             "gridcolor": "white",
-+             "linecolor": "white",
-+             "minorgridcolor": "white",
-+             "startlinecolor": "#2a3f5f"
-+            },
-+            "baxis": {
-+             "endlinecolor": "#2a3f5f",
-+             "gridcolor": "white",
-+             "linecolor": "white",
-+             "minorgridcolor": "white",
-+             "startlinecolor": "#2a3f5f"
-+            },
-+            "type": "carpet"
-+           }
-+          ],
-+          "choropleth": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "type": "choropleth"
-+           }
-+          ],
-+          "contour": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "colorscale": [
-+             [
-+              0,
-+              "#0d0887"
-+             ],
-+             [
-+              0.1111111111111111,
-+              "#46039f"
-+             ],
-+             [
-+              0.2222222222222222,
-+              "#7201a8"
-+             ],
-+             [
-+              0.3333333333333333,
-+              "#9c179e"
-+             ],
-+             [
-+              0.4444444444444444,
-+              "#bd3786"
-+             ],
-+             [
-+              0.5555555555555556,
-+              "#d8576b"
-+             ],
-+             [
-+              0.6666666666666666,
-+              "#ed7953"
-+             ],
-+             [
-+              0.7777777777777778,
-+              "#fb9f3a"
-+             ],
-+             [
-+              0.8888888888888888,
-+              "#fdca26"
-+             ],
-+             [
-+              1,
-+              "#f0f921"
-+             ]
-+            ],
-+            "type": "contour"
-+           }
-+          ],
-+          "contourcarpet": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "type": "contourcarpet"
-+           }
-+          ],
-+          "heatmap": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "colorscale": [
-+             [
-+              0,
-+              "#0d0887"
-+             ],
-+             [
-+              0.1111111111111111,
-+              "#46039f"
-+             ],
-+             [
-+              0.2222222222222222,
-+              "#7201a8"
-+             ],
-+             [
-+              0.3333333333333333,
-+              "#9c179e"
-+             ],
-+             [
-+              0.4444444444444444,
-+              "#bd3786"
-+             ],
-+             [
-+              0.5555555555555556,
-+              "#d8576b"
-+             ],
-+             [
-+              0.6666666666666666,
-+              "#ed7953"
-+             ],
-+             [
-+              0.7777777777777778,
-+              "#fb9f3a"
-+             ],
-+             [
-+              0.8888888888888888,
-+              "#fdca26"
-+             ],
-+             [
-+              1,
-+              "#f0f921"
-+             ]
-+            ],
-+            "type": "heatmap"
-+           }
-+          ],
-+          "histogram": [
-+           {
-+            "marker": {
-+             "pattern": {
-+              "fillmode": "overlay",
-+              "size": 10,
-+              "solidity": 0.2
-+             }
-+            },
-+            "type": "histogram"
-+           }
-+          ],
-+          "histogram2d": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "colorscale": [
-+             [
-+              0,
-+              "#0d0887"
-+             ],
-+             [
-+              0.1111111111111111,
-+              "#46039f"
-+             ],
-+             [
-+              0.2222222222222222,
-+              "#7201a8"
-+             ],
-+             [
-+              0.3333333333333333,
-+              "#9c179e"
-+             ],
-+             [
-+              0.4444444444444444,
-+              "#bd3786"
-+             ],
-+             [
-+              0.5555555555555556,
-+              "#d8576b"
-+             ],
-+             [
-+              0.6666666666666666,
-+              "#ed7953"
-+             ],
-+             [
-+              0.7777777777777778,
-+              "#fb9f3a"
-+             ],
-+             [
-+              0.8888888888888888,
-+              "#fdca26"
-+             ],
-+             [
-+              1,
-+              "#f0f921"
-+             ]
-+            ],
-+            "type": "histogram2d"
-+           }
-+          ],
-+          "histogram2dcontour": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "colorscale": [
-+             [
-+              0,
-+              "#0d0887"
-+             ],
-+             [
-+              0.1111111111111111,
-+              "#46039f"
-+             ],
-+             [
-+              0.2222222222222222,
-+              "#7201a8"
-+             ],
-+             [
-+              0.3333333333333333,
-+              "#9c179e"
-+             ],
-+             [
-+              0.4444444444444444,
-+              "#bd3786"
-+             ],
-+             [
-+              0.5555555555555556,
-+              "#d8576b"
-+             ],
-+             [
-+              0.6666666666666666,
-+              "#ed7953"
-+             ],
-+             [
-+              0.7777777777777778,
-+              "#fb9f3a"
-+             ],
-+             [
-+              0.8888888888888888,
-+              "#fdca26"
-+             ],
-+             [
-+              1,
-+              "#f0f921"
-+             ]
-+            ],
-+            "type": "histogram2dcontour"
-+           }
-+          ],
-+          "mesh3d": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "type": "mesh3d"
-+           }
-+          ],
-+          "parcoords": [
-+           {
-+            "line": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "parcoords"
-+           }
-+          ],
-+          "pie": [
-+           {
-+            "automargin": true,
-+            "type": "pie"
-+           }
-+          ],
-+          "scatter": [
-+           {
-+            "fillpattern": {
-+             "fillmode": "overlay",
-+             "size": 10,
-+             "solidity": 0.2
-+            },
-+            "type": "scatter"
-+           }
-+          ],
-+          "scatter3d": [
-+           {
-+            "line": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scatter3d"
-+           }
-+          ],
-+          "scattercarpet": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scattercarpet"
-+           }
-+          ],
-+          "scattergeo": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scattergeo"
-+           }
-+          ],
-+          "scattergl": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scattergl"
-+           }
-+          ],
-+          "scattermap": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scattermap"
-+           }
-+          ],
-+          "scatterpolar": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scatterpolar"
-+           }
-+          ],
-+          "scatterpolargl": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scatterpolargl"
-+           }
-+          ],
-+          "scatterternary": [
-+           {
-+            "marker": {
-+             "colorbar": {
-+              "outlinewidth": 0,
-+              "ticks": ""
-+             }
-+            },
-+            "type": "scatterternary"
-+           }
-+          ],
-+          "surface": [
-+           {
-+            "colorbar": {
-+             "outlinewidth": 0,
-+             "ticks": ""
-+            },
-+            "colorscale": [
-+             [
-+              0,
-+              "#0d0887"
-+             ],
-+             [
-+              0.1111111111111111,
-+              "#46039f"
-+             ],
-+             [
-+              0.2222222222222222,
-+              "#7201a8"
-+             ],
-+             [
-+              0.3333333333333333,
-+              "#9c179e"
-+             ],
-+             [
-+              0.4444444444444444,
-+              "#bd3786"
-+             ],
-+             [
-+              0.5555555555555556,
-+              "#d8576b"
-+             ],
-+             [
-+              0.6666666666666666,
-+              "#ed7953"
-+             ],
-+             [
-+              0.7777777777777778,
-+              "#fb9f3a"
-+             ],
-+             [
-+              0.8888888888888888,
-+              "#fdca26"
-+             ],
-+             [
-+              1,
-+              "#f0f921"
-+             ]
-+            ],
-+            "type": "surface"
-+           }
-+          ],
-+          "table": [
-+           {
-+            "cells": {
-+             "fill": {
-+              "color": "#EBF0F8"
-+             },
-+             "line": {
-+              "color": "white"
-+             }
-+            },
-+            "header": {
-+             "fill": {
-+              "color": "#C8D4E3"
-+             },
-+             "line": {
-+              "color": "white"
-+             }
-+            },
-+            "type": "table"
-+           }
-+          ]
-+         },
-+         "layout": {
-+          "annotationdefaults": {
-+           "arrowcolor": "#2a3f5f",
-+           "arrowhead": 0,
-+           "arrowwidth": 1
-+          },
-+          "autotypenumbers": "strict",
-+          "coloraxis": {
-+           "colorbar": {
-+            "outlinewidth": 0,
-+            "ticks": ""
-+           }
-+          },
-+          "colorscale": {
-+           "diverging": [
-+            [
-+             0,
-+             "#8e0152"
-+            ],
-+            [
-+             0.1,
-+             "#c51b7d"
-+            ],
-+            [
-+             0.2,
-+             "#de77ae"
-+            ],
-+            [
-+             0.3,
-+             "#f1b6da"
-+            ],
-+            [
-+             0.4,
-+             "#fde0ef"
-+            ],
-+            [
-+             0.5,
-+             "#f7f7f7"
-+            ],
-+            [
-+             0.6,
-+             "#e6f5d0"
-+            ],
-+            [
-+             0.7,
-+             "#b8e186"
-+            ],
-+            [
-+             0.8,
-+             "#7fbc41"
-+            ],
-+            [
-+             0.9,
-+             "#4d9221"
-+            ],
-+            [
-+             1,
-+             "#276419"
-+            ]
-+           ],
-+           "sequential": [
-+            [
-+             0,
-+             "#0d0887"
-+            ],
-+            [
-+             0.1111111111111111,
-+             "#46039f"
-+            ],
-+            [
-+             0.2222222222222222,
-+             "#7201a8"
-+            ],
-+            [
-+             0.3333333333333333,
-+             "#9c179e"
-+            ],
-+            [
-+             0.4444444444444444,
-+             "#bd3786"
-+            ],
-+            [
-+             0.5555555555555556,
-+             "#d8576b"
-+            ],
-+            [
-+             0.6666666666666666,
-+             "#ed7953"
-+            ],
-+            [
-+             0.7777777777777778,
-+             "#fb9f3a"
-+            ],
-+            [
-+             0.8888888888888888,
-+             "#fdca26"
-+            ],
-+            [
-+             1,
-+             "#f0f921"
-+            ]
-+           ],
-+           "sequentialminus": [
-+            [
-+             0,
-+             "#0d0887"
-+            ],
-+            [
-+             0.1111111111111111,
-+             "#46039f"
-+            ],
-+            [
-+             0.2222222222222222,
-+             "#7201a8"
-+            ],
-+            [
-+             0.3333333333333333,
-+             "#9c179e"
-+            ],
-+            [
-+             0.4444444444444444,
-+             "#bd3786"
-+            ],
-+            [
-+             0.5555555555555556,
-+             "#d8576b"
-+            ],
-+            [
-+             0.6666666666666666,
-+             "#ed7953"
-+            ],
-+            [
-+             0.7777777777777778,
-+             "#fb9f3a"
-+            ],
-+            [
-+             0.8888888888888888,
-+             "#fdca26"
-+            ],
-+            [
-+             1,
-+             "#f0f921"
-+            ]
-+           ]
-+          },
-+          "colorway": [
-+           "#636efa",
-+           "#EF553B",
-+           "#00cc96",
-+           "#ab63fa",
-+           "#FFA15A",
-+           "#19d3f3",
-+           "#FF6692",
-+           "#B6E880",
-+           "#FF97FF",
-+           "#FECB52"
-+          ],
-+          "font": {
-+           "color": "#2a3f5f"
-+          },
-+          "geo": {
-+           "bgcolor": "white",
-+           "lakecolor": "white",
-+           "landcolor": "#E5ECF6",
-+           "showlakes": true,
-+           "showland": true,
-+           "subunitcolor": "white"
-+          },
-+          "hoverlabel": {
-+           "align": "left"
-+          },
-+          "hovermode": "closest",
-+          "paper_bgcolor": "white",
-+          "plot_bgcolor": "#E5ECF6",
-+          "polar": {
-+           "angularaxis": {
-+            "gridcolor": "white",
-+            "linecolor": "white",
-+            "ticks": ""
-+           },
-+           "bgcolor": "#E5ECF6",
-+           "radialaxis": {
-+            "gridcolor": "white",
-+            "linecolor": "white",
-+            "ticks": ""
-+           }
-+          },
-+          "scene": {
-+           "xaxis": {
-+            "backgroundcolor": "#E5ECF6",
-+            "gridcolor": "white",
-+            "gridwidth": 2,
-+            "linecolor": "white",
-+            "showbackground": true,
-+            "ticks": "",
-+            "zerolinecolor": "white"
-+           },
-+           "yaxis": {
-+            "backgroundcolor": "#E5ECF6",
-+            "gridcolor": "white",
-+            "gridwidth": 2,
-+            "linecolor": "white",
-+            "showbackground": true,
-+            "ticks": "",
-+            "zerolinecolor": "white"
-+           },
-+           "zaxis": {
-+            "backgroundcolor": "#E5ECF6",
-+            "gridcolor": "white",
-+            "gridwidth": 2,
-+            "linecolor": "white",
-+            "showbackground": true,
-+            "ticks": "",
-+            "zerolinecolor": "white"
-+           }
-+          },
-+          "shapedefaults": {
-+           "line": {
-+            "color": "#2a3f5f"
-+           }
-+          },
-+          "ternary": {
-+           "aaxis": {
-+            "gridcolor": "white",
-+            "linecolor": "white",
-+            "ticks": ""
-+           },
-+           "baxis": {
-+            "gridcolor": "white",
-+            "linecolor": "white",
-+            "ticks": ""
-+           },
-+           "bgcolor": "#E5ECF6",
-+           "caxis": {
-+            "gridcolor": "white",
-+            "linecolor": "white",
-+            "ticks": ""
-+           }
-+          },
-+          "title": {
-+           "x": 0.05
-+          },
-+          "xaxis": {
-+           "automargin": true,
-+           "gridcolor": "white",
-+           "linecolor": "white",
-+           "ticks": "",
-+           "title": {
-+            "standoff": 15
-+           },
-+           "zerolinecolor": "white",
-+           "zerolinewidth": 2
-+          },
-+          "yaxis": {
-+           "automargin": true,
-+           "gridcolor": "white",
-+           "linecolor": "white",
-+           "ticks": "",
-+           "title": {
-+            "standoff": 15
-+           },
-+           "zerolinecolor": "white",
-+           "zerolinewidth": 2
-+          }
-+         }
-+        },
-+        "title": {
-+         "text": "3D Squared-Range Localization"
-+        },
-+        "width": 800
-+       }
-+      }
-+     },
-+     "metadata": {},
-+     "output_type": "display_data"
-+    }
-+   ],
-+   "source": [
-+    "fig = go.Figure()\n",
-+    "\n",
-+    "# Known landmarks\n",
-+    "fig.add_trace(\n",
-+    "    go.Scatter3d(\n",
-+    "        x=landmarks[:, 0],\n",
-+    "        y=landmarks[:, 1],\n",
-+    "        z=landmarks[:, 2],\n",
-+    "        mode=\"markers\",\n",
-+    "        marker=dict(size=6),\n",
-+    "        name=\"Known Landmarks\",\n",
-+    "        hovertemplate=(\n",
-+    "            \"Landmark<br>\"\n",
-+    "            \"x=%{x:.2f}<br>\"\n",
-+    "            \"y=%{y:.2f}<br>\"\n",
-+    "            \"z=%{z:.2f}<extra></extra>\"\n",
-+    "        ),\n",
-+    "    )\n",
-+    ")\n",
-+    "\n",
-+    "# True position\n",
-+    "fig.add_trace(\n",
-+    "    go.Scatter3d(\n",
-+    "        x=[x_true[0]],\n",
-+    "        y=[x_true[1]],\n",
-+    "        z=[x_true[2]],\n",
-+    "        mode=\"markers\",\n",
-+    "        marker=dict(size=7),\n",
-+    "        name=\"True Position\",\n",
-+    "    )\n",
-+    ")\n",
-+    "\n",
-+    "# Initial estimate\n",
-+    "fig.add_trace(\n",
-+    "    go.Scatter3d(\n",
-+    "        x=[x_initial[0]],\n",
-+    "        y=[x_initial[1]],\n",
-+    "        z=[x_initial[2]],\n",
-+    "        mode=\"markers\",\n",
-+    "        marker=dict(size=7),\n",
-+    "        name=\"Initial Estimate\",\n",
-+    "    )\n",
-+    ")\n",
-+    "\n",
-+    "# Optimized estimate\n",
-+    "fig.add_trace(\n",
-+    "    go.Scatter3d(\n",
-+    "        x=[x_estimated[0]],\n",
-+    "        y=[x_estimated[1]],\n",
-+    "        z=[x_estimated[2]],\n",
-+    "        mode=\"markers\",\n",
-+    "        marker=dict(size=7),\n",
-+    "        name=\"Estimated Position\",\n",
-+    "    )\n",
-+    ")\n",
-+    "\n",
-+    "# Localization error line\n",
-+    "fig.add_trace(\n",
-+    "    go.Scatter3d(\n",
-+    "        x=[x_true[0], x_estimated[0]],\n",
-+    "        y=[x_true[1], x_estimated[1]],\n",
-+    "        z=[x_true[2], x_estimated[2]],\n",
-+    "        mode=\"lines\",\n",
-+    "        name=\"Estimation Error\",\n",
-+    "    )\n",
-+    ")\n",
-+    "\n",
-+    "fig.update_layout(\n",
-+    "    title=\"3D Squared-Range Localization\",\n",
-+    "    width=800,\n",
-+    "    height=650,\n",
-+    "    scene=dict(\n",
-+    "        xaxis_title=\"x\",\n",
-+    "        yaxis_title=\"y\",\n",
-+    "        zaxis_title=\"z\",\n",
-+    "        aspectmode=\"data\",\n",
-+    "    ),\n",
-+    "    legend=dict(\n",
-+    "        x=0.02,\n",
-+    "        y=0.98,\n",
-+    "    ),\n",
-+    "    margin=dict(l=0, r=0, b=0, t=50),\n",
-+    ")\n",
-+    "\n",
-+    "fig.show()"
-+   ]
-+  },
-+  {
-+   "cell_type": "markdown",
-+   "id": "b351f839",
-+   "metadata": {},
-+   "source": [
-+    "## Takeaways\n",
-+    "\n",
-+    "- `KnownLandmarkSquaredRangeFactor3` estimates a 3D Euclidean point, not a pose.\n",
-+    "- Each factor relates the point to one fixed known landmark.\n",
-+    "- Pass the non-negative range measurement $d$ to the constructor; the factor stores $d^2$ internally.\n",
-+    "- The residual is scalar, so each factor uses a one-dimensional noise model.\n",
-+    "- Raw range uncertainty should be propagated into squared-range units before use in the factor noise model.\n",
-+    "- Known landmarks are fixed factor data and are not inserted into `Values`."
-+   ]
-+  }
-+ ],
-+ "metadata": {
-+  "kernelspec": {
-+   "display_name": "Python 3",
-+   "language": "python",
-+   "name": "python3"
-+  },
-+  "language_info": {
-+   "codemirror_mode": {
-+    "name": "ipython",
-+    "version": 3
-+   },
-+   "file_extension": ".py",
-+   "mimetype": "text/x-python",
-+   "name": "python",
-+   "nbconvert_exporter": "python",
-+   "pygments_lexer": "ipython3",
-+   "version": "3.12.5"
-+  }
-+ },
-+ "nbformat": 4,
-+ "nbformat_minor": 5
-+}
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam/gtsam.tpl
 +++ gtsam-no-tbb-4.3.0/python/gtsam/gtsam.tpl
 @@ -27,12 +27,16 @@
@@ -41245,61 +41036,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      def test_optimize(self):
          """Test construction of hybrid factor graph."""
 --- /dev/null
-+++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_KnownLandmarkSquaredRangeFactor.py
-@@ -0,0 +1,51 @@
-+"""
-+GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
-+Atlanta, Georgia 30332-0415
-+All Rights Reserved
-+Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-+
-+See LICENSE for the license information
-+
-+Tests for KnownLandmarkSquaredRangeFactor wrapper dimension validation.
-+"""
-+
-+import unittest
-+
-+import gtsam
-+import numpy as np
-+
-+
-+class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
-+    """Verify valid and invalid landmark dimensions in the Python wrapper."""
-+
-+    def test_valid_landmark_dimensions(self):
-+        """Both specializations accept correctly sized landmarks."""
-+        model = gtsam.noiseModel.Unit.Create(1)
-+
-+        gtsam.KnownLandmarkSquaredRangeFactor2(
-+            0, np.zeros(2), 5.0, model
-+        )
-+
-+        gtsam.KnownLandmarkSquaredRangeFactor3(
-+            0, np.zeros(3), 5.0, model
-+        )
-+
-+    def test_invalid_landmark_dimensions(self):
-+        """Both specializations reject incorrectly sized landmarks."""
-+        model = gtsam.noiseModel.Unit.Create(1)
-+
-+        cases = [
-+            (gtsam.KnownLandmarkSquaredRangeFactor2, 1),
-+            (gtsam.KnownLandmarkSquaredRangeFactor2, 3),
-+            (gtsam.KnownLandmarkSquaredRangeFactor3, 2),
-+            (gtsam.KnownLandmarkSquaredRangeFactor3, 4),
-+        ]
-+
-+        for factor_type, size in cases:
-+            with self.subTest(size=size):
-+                with self.assertRaises(ValueError):
-+                    factor_type(0, np.zeros(size), 5.0, model)
-+
-+
-+if __name__ == "__main__":
-+    unittest.main()
-\ No newline at end of file
---- /dev/null
 +++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_ParameterGradients.py
 @@ -0,0 +1,242 @@
 +"""ParameterTag identity and parameter VJPs through real Python callbacks.
@@ -41724,6 +41460,1465 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
              recovered = from_qcqp(to_qcqp(value))
              error = value.localCoordinates(recovered)
              np.testing.assert_allclose(error, np.zeros_like(error), atol=1e-12)
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb
+@@ -0,0 +1,1456 @@
++{
++ "cells": [
++  {
++   "cell_type": "markdown",
++   "id": "3adcfc01",
++   "metadata": {},
++   "source": [
++    "# Known landmark localization in ℝ³\n",
++    "\n",
++    "This example demonstrates 3D localization of a single point state `wX` from four known landmarks using `KnownLandmarkSquaredRangeFactor3`.\n",
++    "\n",
++    "A single unknown point $x \\in \\mathbb{R}^3$ is observed through range measurements to several fixed, known landmarks $L_i$. A conventional range residual has the form\n",
++    "\n",
++    "$$\n",
++    "e_i(x) = \\|x - L_i\\| - d_i,\n",
++    "$$\n",
++    "\n",
++    "where $d_i$ is the measured range to landmark $L_i$. Because the Euclidean norm contains a square root, this residual is not polynomial in the state.\n",
++    "\n",
++    "`KnownLandmarkSquaredRangeFactor2` and `KnownLandmarkSquaredRangeFactor3` instead use the squared-range residual\n",
++    "\n",
++    "$$\n",
++    "e_i(x) = \\|x - L_i\\|^2 - d_i^2,\n",
++    "$$\n",
++    "\n",
++    "which is quadratic in $x$. This polynomial form is suitable for lifted QCQP\n",
++    "formulations and subsequent semidefinite relaxations. If the semidefinite\n",
++    "relaxation is tight, meaning that the lifted solution has the required rank, the\n",
++    "relaxed problem recovers a globally optimal solution to the original QCQP.\n",
++    "\n",
++    "In this notebook, we first solve the problem with GTSAM's nonlinear optimizer using an ordinary 3D point, then solve the same measurement problem in a QCQP formulation using `AugmentedPoint3`. The augmented type represents the **same 3D position**, but supplies the lifting traits that enable QCQP conversion. An optional SDP relaxation illustrates how to obtain a lower bound; simply using `AugmentedPoint3` does not make a local solve globally optimal.\n",
++    "\n",
++    "Several geometrically distinct landmarks are required to uniquely determine the point. This example uses four known landmarks and noisy range measurements to estimate the 3D position.\n",
++    "\n",
++    "See the `KnownLandmarkSquaredRangeFactor` [API notebook](../../../../gtsam_unstable/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb) for more details on the factor.\n",
++    "\n",
++    "The factor and `AugmentedPoint` are provided by `gtsam_unstable`; `Values` and the optimization APIs remain in `gtsam`. Build with `GTSAM_BUILD_UNSTABLE=ON`, `GTSAM_BUILD_PYTHON=ON`, and `GTSAM_UNSTABLE_BUILD_PYTHON=ON`. In C++, include `<gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>`. MATLAB retains the `gtsam` namespace for both types and requires `GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX=ON`."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "e152dfcf",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "source": [
++    "GTSAM Copyright 2010-2026, Georgia Tech Research Corporation, Atlanta, Georgia 30332-0415\n",
++    "All Rights Reserved\n",
++    "Authors: Frank Dellaert, et al. (see THANKS for the full author list)\n",
++    "See LICENSE for the license information"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "87f0b251",
++   "metadata": {},
++   "source": [
++    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 11,
++   "id": "4b92024d",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "outputs": [],
++   "source": [
++    "try:\n",
++    "    import google.colab\n",
++    "    %pip install --quiet gtsam-develop\n",
++    "except ImportError:\n",
++    "    pass"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 12,
++   "id": "1cd6924b",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "import numpy as np\n",
++    "import gtsam\n",
++    "import gtsam_unstable\n",
++    "import plotly.graph_objects as go\n"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "8ea56ff8",
++   "metadata": {},
++   "source": [
++    "## Create a 3D synthetic localization problem\n",
++    "\n",
++    "We choose one true 3D point and four fixed landmarks. The landmarks are spread through space so that the resulting range measurements provide independent geometric constraints.\n",
++    "\n",
++    "Gaussian noise is added to each raw range measurement for realism."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 13,
++   "id": "df3990e8",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "True point: [1. 2. 3.]\n",
++      "Raw range standard deviation: 0.100 m\n",
++      "\n",
++      "L0: [0. 0. 0.] True range = 3.742 m,  Measured range = 3.772 m\n",
++      "L1: [5. 0. 0.] True range = 5.385 m,  Measured range = 5.281 m\n",
++      "L2: [0. 6. 0.] True range = 5.099 m,  Measured range = 5.174 m\n",
++      "L3: [1. 0. 8.] True range = 5.385 m,  Measured range = 5.479 m\n"
++     ]
++    }
++   ],
++   "source": [
++    "rng = np.random.default_rng(42)\n",
++    "\n",
++    "x_true = np.array([1.0, 2.0, 3.0])\n",
++    "\n",
++    "landmarks = np.array([\n",
++    "    [0.0, 0.0, 0.0],\n",
++    "    [5.0, 0.0, 0.0],\n",
++    "    [0.0, 6.0, 0.0],\n",
++    "    [1.0, 0.0, 8.0],\n",
++    "])\n",
++    "\n",
++    "range_sigma = 0.10  # raw range standard deviation [m]\n",
++    "\n",
++    "true_ranges = [np.linalg.norm(x_true - wL) for wL in landmarks]\n",
++    "\n",
++    "measurement_noise = rng.normal(\n",
++    "    loc=0.0, scale=range_sigma, size=len(landmarks)\n",
++    ")\n",
++    "\n",
++    "measured_ranges = true_ranges + measurement_noise\n",
++    "\n",
++    "print(\"True point:\", x_true)\n",
++    "print(f\"Raw range standard deviation: {range_sigma:.3f} m\\n\")\n",
++    "\n",
++    "for i, (wL, r_true, r_measured) in enumerate(\n",
++    "    zip(landmarks, true_ranges, measured_ranges)):\n",
++    "    print(\n",
++    "        f\"L{i}: {wL} \"\n",
++    "        f\"True range = {r_true:.3f} m, \",\n",
++    "        f\"Measured range = {r_measured:.3f} m\"\n",
++    "    )"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "5934ab25",
++   "metadata": {},
++   "source": [
++    "## Propagate range uncertainty into squared-range units\n",
++    "\n",
++    "The sensor uncertainty above is expressed in range units, while `KnownLandmarkSquaredRangeFactor3` uses the squared-range residual\n",
++    "\n",
++    "$$\n",
++    "e_i(x) = \\|x - L_i\\|^2 - d_i^2.\n",
++    "$$\n",
++    "\n",
++    "For $y = d^2$, first-order uncertainty propagation gives\n",
++    "\n",
++    "$$\n",
++    "\\sigma_y \\approx \\left|\\frac{\\partial d^2}{\\partial d}\\right|\\sigma_d = 2d\\,\\sigma_d.\n",
++    "$$\n",
++    "\n",
++    "Therefore, the standard deviation used by each factor is approximately\n",
++    "\n",
++    "$$\n",
++    "\\sigma_{d^2} \\approx 2d\\,\\sigma_d.\n",
++    "$$\n",
++    "\n",
++    "Even when each range measurement has the same $\\sigma_d$, their respective squared-range uncertainties differ between landmarks."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "ee258de2",
++   "metadata": {},
++   "source": [
++    "## Build the factor graph\n",
++    "\n",
++    "Each range measurement contributes one factor to the same unknown point state."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 14,
++   "id": "f48e207c",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "key = 0\n",
++    "graph = gtsam.NonlinearFactorGraph()\n",
++    "\n",
++    "for wL, measured_range in zip(landmarks, measured_ranges):\n",
++    "    sigma_squared_range = 2.0 * measured_range * range_sigma\n",
++    "    model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_squared_range)\n",
++    "    graph.add(\n",
++    "        gtsam_unstable.KnownLandmarkSquaredRangeFactor3(key, wL, measured_range, model)\n",
++    "    )"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "eb81f04e",
++   "metadata": {},
++   "source": [
++    "## Choose an initial estimate\n",
++    "\n",
++    "The nonlinear optimizer needs an initial value for the point state. The initial position is deliberately offset from the true position."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 15,
++   "id": "a64e0da3",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "x_initial = np.array([1.2, 1.7, 3.2])\n",
++    "\n",
++    "initial = gtsam.Values()\n",
++    "initial.insert(key, x_initial)"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "cdb7d696",
++   "metadata": {},
++   "source": [
++    "## Optimize\n",
++    "\n",
++    "We solve the nonlinear least-squares problem with Levenberg-Marquardt."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 16,
++   "id": "fa84a534",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "True point:  [1. 2. 3.]\n",
++      "Initial point:  [1.2 1.7 3.2]\n",
++      "Estimated point:  [1.14882058 1.99174407 2.96859758]\n",
++      "Final graph error:  0.41722601045710256\n",
++      "Localization error:  0.15232149470799192\n"
++     ]
++    }
++   ],
++   "source": [
++    "optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial)\n",
++    "result = optimizer.optimize()\n",
++    "\n",
++    "x_estimated = result.atVector(key)\n",
++    "\n",
++    "print(\"True point: \", x_true)\n",
++    "print(\"Initial point: \", x_initial)\n",
++    "print(\"Estimated point: \", x_estimated)\n",
++    "print(\"Final graph error: \", graph.error(result))\n",
++    "print(\"Localization error: \", np.linalg.norm(x_estimated - x_true))"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "b3e420df",
++   "metadata": {},
++   "source": [
++    "## Convert and solve the QCQP\n",
++    "\n",
++    "In C++, `KnownLandmarkSquaredRangeFactor<Position>` accepts either a fixed-size Eigen point (such as `Point3`) or `AugmentedPoint<N>`. In Python, `KnownLandmarkSquaredRangeFactor3` takes ordinary NumPy position coordinates, whereas `KnownLandmarkSquaredRangeFactorAugmentedPoint3` uses `gtsam_unstable.AugmentedPoint3`. **Both models estimate the same physical 3D point and have the same nonlinear residual.** Use the augmented representation specifically when you need the QCQP conversion interface.\n",
++    "\n",
++    "`AugmentedPoint3` stores only three Euclidean coordinates; it does **not** store a five-dimensional point. During QCQP conversion its traits introduce $X=[h,x^\\top,u]^\\top$ with five entries. The canonical lift uses $h=1$ and $u=x^\\top x$, while the QCQP constrains $x^\\top x-hu=0$ and $h^2=1$.\n",
++    "\n",
++    "We reuse the same landmarks, ranges, and noise models with the augmented factor. `QcqpProblem` constructs a quadratic objective with lifting constraints, and `insertQcqpValue3` initializes its lifted variables from the augmented point. The QCQP solver below remains a **local** optimizer; the optional SDP section provides a lower bound for comparison. These cells require a GTSAM build with augmented-point Python bindings.\n"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 17,
++   "id": "f480fe78",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "augmented_graph = gtsam.NonlinearFactorGraph()\n",
++    "for wL, measured_range in zip(landmarks, measured_ranges):\n",
++    "    sigma_squared_range = 2.0 * measured_range * range_sigma\n",
++    "    model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_squared_range)\n",
++    "    augmented_graph.add(\n",
++    "        gtsam_unstable.KnownLandmarkSquaredRangeFactorAugmentedPoint3(\n",
++    "            key, wL, measured_range, model\n",
++    "        )\n",
++    "    )\n",
++    "\n",
++    "augmented_initial = gtsam.Values()\n",
++    "gtsam_unstable.insertAugmentedPoint3(key, gtsam_unstable.AugmentedPoint3(x_initial), augmented_initial)\n",
++    "qcqp = gtsam.QcqpProblem(augmented_graph, 1)\n",
++    "lifted_initial = gtsam.Values()\n",
++    "gtsam_unstable.insertQcqpValue3(\n",
++    "    key, gtsam_unstable.atAugmentedPoint3(key, augmented_initial), lifted_initial\n",
++    ")\n",
++    "initial_cost, initial_equality, initial_inequality = qcqp.evaluate(lifted_initial)\n",
++    "np.testing.assert_allclose(initial_cost, graph.error(initial))\n",
++    "np.testing.assert_allclose([initial_equality, initial_inequality], 0.0, atol=1e-10)\n"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "98c10884",
++   "metadata": {},
++   "source": [
++    "We solve the QCQP using GTSAM's augmented-Lagrangian optimizer, then compare the recovered position and objective with Levenberg–Marquardt. This is a local solve; QCQP conversion alone does not certify a global optimum."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 18,
++   "id": "8a08c058",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "QCQP position: [1.14880785 1.99173832 2.96859341]\n",
++      "Position difference from LM: 1.4578001410045574e-05\n",
++      "Objectives: LM=0.417226010, QCQP=0.417225902\n",
++      "Constraint violations: 6.37e-08, 0.00e+00\n"
++     ]
++    }
++   ],
++   "source": [
++    "params = gtsam.AugmentedLagrangianParams()\n",
++    "params.maxIterations = 200\n",
++    "params.absoluteViolationTolerance = 1e-9\n",
++    "params.relativeViolationTolerance = 1e-9\n",
++    "params.relativeCostTolerance = 1e-12\n",
++    "params.absoluteStationarityTolerance = 1e-8\n",
++    "lifted_result = gtsam.AugmentedLagrangianOptimizer(\n",
++    "    qcqp, lifted_initial, params\n",
++    ").optimize()\n",
++    "recovered = gtsam_unstable.extractQcqpValues3(lifted_result)\n",
++    "x_qcqp = gtsam_unstable.atAugmentedPoint3(key, recovered).vector()\n",
++    "qcqp_cost, equality_violation, inequality_violation = qcqp.evaluate(lifted_result)\n",
++    "feasible_cost = augmented_graph.error(recovered)\n",
++    "nonlinear_cost = graph.error(result)\n",
++    "\n",
++    "print(\"QCQP position:\", x_qcqp)\n",
++    "print(\"Position difference from LM:\", np.linalg.norm(x_qcqp - x_estimated))\n",
++    "print(f\"Objectives: LM={nonlinear_cost:.9f}, QCQP={qcqp_cost:.9f}\")\n",
++    "print(f\"Constraint violations: {equality_violation:.2e}, {inequality_violation:.2e}\")\n",
++    "np.testing.assert_allclose(x_qcqp, x_estimated, rtol=0.0, atol=1e-4)\n",
++    "np.testing.assert_allclose(qcqp_cost, feasible_cost, rtol=1e-6, atol=1e-7)\n",
++    "np.testing.assert_allclose(feasible_cost, nonlinear_cost, rtol=1e-6, atol=1e-7)\n",
++    "assert max(equality_violation, inequality_violation) < 1e-6\n"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "f5ad7990",
++   "metadata": {},
++   "source": [
++    "## Optional semidefinite relaxation\n",
++    "\n",
++    "GTSAM's `MosekMonolithicSDP` backend can relax the QCQP to obtain a lower bound. If a feasible recovered point attains that bound, the solution is globally optimal; the relaxation is not necessarily tight.\n",
++    "\n",
++    "We fix $h=1$ to remove the homogeneous sign ambiguity before relaxation. This section requires a GTSAM build with MOSEK support and a usable license."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 19,
++   "id": "91c96c80",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "SDP problem status: ProblemStatus::PrimalAndDualFeasible\n",
++      "SDP position: [1.14880786 1.99173845 2.96859343]\n",
++      "SDP lower bound: 0.417226004\n",
++      "Recovered nonlinear cost: 0.417226004, gap: -2.86e-11\n",
++      "Position difference from LM: 1.4513146075643321e-05\n",
++      "Eigenvalue ratios: [813455052060502.4]\n",
++      "The recovered point matches the SDP bound within tolerance.\n"
++     ]
++    }
++   ],
++   "source": [
++    "sdp_position = None\n",
++    "if not hasattr(gtsam, \"MosekMonolithicSDP\"):\n",
++    "    print(\"This GTSAM build does not include the optional MOSEK backend.\")\n",
++    "else:\n",
++    "    sdp_qcqp = gtsam.QcqpProblem(augmented_graph, 1)\n",
++    "    h_selector = np.zeros((1, 5))\n",
++    "    h_selector[0, 0] = 1.0\n",
++    "    sdp_qcqp.addConstraint(gtsam.LinearConstraint.Equal(gtsam.JacobianFactor(\n",
++    "        key, h_selector, np.ones(1), gtsam.noiseModel.Unit.Create(1)\n",
++    "    )))\n",
++    "    sdp = gtsam.MosekMonolithicSDP(sdp_qcqp)\n",
++    "    if not sdp.solve({\"intpntCoTolRelGap\": 1e-10}):\n",
++    "        raise RuntimeError(\"The SDP solver did not return a readable solution\")\n",
++    "    status = sdp.problemStatus()\n",
++    "    print(\"SDP problem status:\", status)\n",
++    "    if status != \"ProblemStatus::PrimalAndDualFeasible\":\n",
++    "        raise RuntimeError(f\"Cannot interpret this SDP result as an optimum: {status}\")\n",
++    "    sdp_recovered = gtsam_unstable.extractQcqpValues3(sdp.qcqpValues())\n",
++    "    sdp_position = gtsam_unstable.atAugmentedPoint3(key, sdp_recovered).vector()\n",
++    "    lower_bound = sdp.objectiveValue()\n",
++    "    sdp_feasible_cost = augmented_graph.error(sdp_recovered)\n",
++    "    gap = sdp_feasible_cost - lower_bound\n",
++    "    tolerance = 1e-6 * max(1.0, abs(nonlinear_cost))\n",
++    "    print(\"SDP position:\", sdp_position)\n",
++    "    print(f\"SDP lower bound: {lower_bound:.9f}\")\n",
++    "    print(f\"Recovered nonlinear cost: {sdp_feasible_cost:.9f}, gap: {gap:.2e}\")\n",
++    "    print(\"Position difference from LM:\", np.linalg.norm(sdp_position - x_estimated))\n",
++    "    print(\"Eigenvalue ratios:\", sdp.variableEVRs())\n",
++    "    assert lower_bound <= nonlinear_cost + tolerance\n",
++    "    if abs(gap) <= tolerance:\n",
++    "        print(\"The recovered point matches the SDP bound within tolerance.\")\n",
++    "    else:\n",
++    "        print(\"The recovered point is not certified by this SDP bound.\")\n"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "86ee0d6b",
++   "metadata": {},
++   "source": [
++    "## Visualize the result\n",
++    "\n",
++    "The interactive 3D plot below shows the known landmarks, true position,\n",
++    "initial estimate, and optimized estimate. Rotate or zoom the plot to inspect\n",
++    "the geometry from different viewpoints. The QCQP estimate is also shown, along\n",
++    "with the SDP estimate if available."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 20,
++   "id": "1b6feb92",
++   "metadata": {},
++   "outputs": [
++    {
++     "data": {
++      "application/vnd.plotly.v1+json": {
++       "data": [
++        {
++         "hovertemplate": "Landmark<br>x=%{x:.2f}<br>y=%{y:.2f}<br>z=%{z:.2f}<extra></extra>",
++         "marker": {
++          "size": 6
++         },
++         "mode": "markers",
++         "name": "Known Landmarks",
++         "type": "scatter3d",
++         "x": {
++          "bdata": "AAAAAAAAAAAAAAAAAAAUQAAAAAAAAAAAAAAAAAAA8D8=",
++          "dtype": "f8"
++         },
++         "y": {
++          "bdata": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAABhAAAAAAAAAAAA=",
++          "dtype": "f8"
++         },
++         "z": {
++          "bdata": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIEA=",
++          "dtype": "f8"
++         }
++        },
++        {
++         "marker": {
++          "size": 7
++         },
++         "mode": "markers",
++         "name": "True Position",
++         "type": "scatter3d",
++         "x": [
++          1
++         ],
++         "y": [
++          2
++         ],
++         "z": [
++          3
++         ]
++        },
++        {
++         "marker": {
++          "size": 7
++         },
++         "mode": "markers",
++         "name": "Initial Estimate",
++         "type": "scatter3d",
++         "x": [
++          1.2
++         ],
++         "y": [
++          1.7
++         ],
++         "z": [
++          3.2
++         ]
++        },
++        {
++         "marker": {
++          "size": 7
++         },
++         "mode": "markers",
++         "name": "Estimated Position",
++         "type": "scatter3d",
++         "x": [
++          1.1488205802519205
++         ],
++         "y": [
++          1.9917440698657831
++         ],
++         "z": [
++          2.9685975755525558
++         ]
++        },
++        {
++         "marker": {
++          "size": 7,
++          "symbol": "diamond"
++         },
++         "mode": "markers",
++         "name": "QCQP (ALM)",
++         "type": "scatter3d",
++         "x": [
++          1.1488078466127636
++         ],
++         "y": [
++          1.991738323225406
++         ],
++         "z": [
++          2.9685934103774922
++         ]
++        },
++        {
++         "marker": {
++          "size": 7,
++          "symbol": "cross"
++         },
++         "mode": "markers",
++         "name": "SDP",
++         "type": "scatter3d",
++         "x": [
++          1.1488078572491223
++         ],
++         "y": [
++          1.9917384488390033
++         ],
++         "z": [
++          2.9685934330090435
++         ]
++        },
++        {
++         "mode": "lines",
++         "name": "Estimation Error",
++         "type": "scatter3d",
++         "x": [
++          1,
++          1.1488205802519205
++         ],
++         "y": [
++          2,
++          1.9917440698657831
++         ],
++         "z": [
++          3,
++          2.9685975755525558
++         ]
++        }
++       ],
++       "layout": {
++        "height": 650,
++        "legend": {
++         "x": 0.02,
++         "y": 0.98
++        },
++        "margin": {
++         "b": 0,
++         "l": 0,
++         "r": 0,
++         "t": 50
++        },
++        "scene": {
++         "aspectmode": "data",
++         "xaxis": {
++          "title": {
++           "text": "x"
++          }
++         },
++         "yaxis": {
++          "title": {
++           "text": "y"
++          }
++         },
++         "zaxis": {
++          "title": {
++           "text": "z"
++          }
++         }
++        },
++        "template": {
++         "data": {
++          "bar": [
++           {
++            "error_x": {
++             "color": "#2a3f5f"
++            },
++            "error_y": {
++             "color": "#2a3f5f"
++            },
++            "marker": {
++             "line": {
++              "color": "#E5ECF6",
++              "width": 0.5
++             },
++             "pattern": {
++              "fillmode": "overlay",
++              "size": 10,
++              "solidity": 0.2
++             }
++            },
++            "type": "bar"
++           }
++          ],
++          "barpolar": [
++           {
++            "marker": {
++             "line": {
++              "color": "#E5ECF6",
++              "width": 0.5
++             },
++             "pattern": {
++              "fillmode": "overlay",
++              "size": 10,
++              "solidity": 0.2
++             }
++            },
++            "type": "barpolar"
++           }
++          ],
++          "carpet": [
++           {
++            "aaxis": {
++             "endlinecolor": "#2a3f5f",
++             "gridcolor": "white",
++             "linecolor": "white",
++             "minorgridcolor": "white",
++             "startlinecolor": "#2a3f5f"
++            },
++            "baxis": {
++             "endlinecolor": "#2a3f5f",
++             "gridcolor": "white",
++             "linecolor": "white",
++             "minorgridcolor": "white",
++             "startlinecolor": "#2a3f5f"
++            },
++            "type": "carpet"
++           }
++          ],
++          "choropleth": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "type": "choropleth"
++           }
++          ],
++          "contour": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "colorscale": [
++             [
++              0,
++              "#0d0887"
++             ],
++             [
++              0.1111111111111111,
++              "#46039f"
++             ],
++             [
++              0.2222222222222222,
++              "#7201a8"
++             ],
++             [
++              0.3333333333333333,
++              "#9c179e"
++             ],
++             [
++              0.4444444444444444,
++              "#bd3786"
++             ],
++             [
++              0.5555555555555556,
++              "#d8576b"
++             ],
++             [
++              0.6666666666666666,
++              "#ed7953"
++             ],
++             [
++              0.7777777777777778,
++              "#fb9f3a"
++             ],
++             [
++              0.8888888888888888,
++              "#fdca26"
++             ],
++             [
++              1,
++              "#f0f921"
++             ]
++            ],
++            "type": "contour"
++           }
++          ],
++          "contourcarpet": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "type": "contourcarpet"
++           }
++          ],
++          "heatmap": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "colorscale": [
++             [
++              0,
++              "#0d0887"
++             ],
++             [
++              0.1111111111111111,
++              "#46039f"
++             ],
++             [
++              0.2222222222222222,
++              "#7201a8"
++             ],
++             [
++              0.3333333333333333,
++              "#9c179e"
++             ],
++             [
++              0.4444444444444444,
++              "#bd3786"
++             ],
++             [
++              0.5555555555555556,
++              "#d8576b"
++             ],
++             [
++              0.6666666666666666,
++              "#ed7953"
++             ],
++             [
++              0.7777777777777778,
++              "#fb9f3a"
++             ],
++             [
++              0.8888888888888888,
++              "#fdca26"
++             ],
++             [
++              1,
++              "#f0f921"
++             ]
++            ],
++            "type": "heatmap"
++           }
++          ],
++          "histogram": [
++           {
++            "marker": {
++             "pattern": {
++              "fillmode": "overlay",
++              "size": 10,
++              "solidity": 0.2
++             }
++            },
++            "type": "histogram"
++           }
++          ],
++          "histogram2d": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "colorscale": [
++             [
++              0,
++              "#0d0887"
++             ],
++             [
++              0.1111111111111111,
++              "#46039f"
++             ],
++             [
++              0.2222222222222222,
++              "#7201a8"
++             ],
++             [
++              0.3333333333333333,
++              "#9c179e"
++             ],
++             [
++              0.4444444444444444,
++              "#bd3786"
++             ],
++             [
++              0.5555555555555556,
++              "#d8576b"
++             ],
++             [
++              0.6666666666666666,
++              "#ed7953"
++             ],
++             [
++              0.7777777777777778,
++              "#fb9f3a"
++             ],
++             [
++              0.8888888888888888,
++              "#fdca26"
++             ],
++             [
++              1,
++              "#f0f921"
++             ]
++            ],
++            "type": "histogram2d"
++           }
++          ],
++          "histogram2dcontour": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "colorscale": [
++             [
++              0,
++              "#0d0887"
++             ],
++             [
++              0.1111111111111111,
++              "#46039f"
++             ],
++             [
++              0.2222222222222222,
++              "#7201a8"
++             ],
++             [
++              0.3333333333333333,
++              "#9c179e"
++             ],
++             [
++              0.4444444444444444,
++              "#bd3786"
++             ],
++             [
++              0.5555555555555556,
++              "#d8576b"
++             ],
++             [
++              0.6666666666666666,
++              "#ed7953"
++             ],
++             [
++              0.7777777777777778,
++              "#fb9f3a"
++             ],
++             [
++              0.8888888888888888,
++              "#fdca26"
++             ],
++             [
++              1,
++              "#f0f921"
++             ]
++            ],
++            "type": "histogram2dcontour"
++           }
++          ],
++          "mesh3d": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "type": "mesh3d"
++           }
++          ],
++          "parcoords": [
++           {
++            "line": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "parcoords"
++           }
++          ],
++          "pie": [
++           {
++            "automargin": true,
++            "type": "pie"
++           }
++          ],
++          "scatter": [
++           {
++            "fillpattern": {
++             "fillmode": "overlay",
++             "size": 10,
++             "solidity": 0.2
++            },
++            "type": "scatter"
++           }
++          ],
++          "scatter3d": [
++           {
++            "line": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scatter3d"
++           }
++          ],
++          "scattercarpet": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scattercarpet"
++           }
++          ],
++          "scattergeo": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scattergeo"
++           }
++          ],
++          "scattergl": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scattergl"
++           }
++          ],
++          "scattermap": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scattermap"
++           }
++          ],
++          "scatterpolar": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scatterpolar"
++           }
++          ],
++          "scatterpolargl": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scatterpolargl"
++           }
++          ],
++          "scatterternary": [
++           {
++            "marker": {
++             "colorbar": {
++              "outlinewidth": 0,
++              "ticks": ""
++             }
++            },
++            "type": "scatterternary"
++           }
++          ],
++          "surface": [
++           {
++            "colorbar": {
++             "outlinewidth": 0,
++             "ticks": ""
++            },
++            "colorscale": [
++             [
++              0,
++              "#0d0887"
++             ],
++             [
++              0.1111111111111111,
++              "#46039f"
++             ],
++             [
++              0.2222222222222222,
++              "#7201a8"
++             ],
++             [
++              0.3333333333333333,
++              "#9c179e"
++             ],
++             [
++              0.4444444444444444,
++              "#bd3786"
++             ],
++             [
++              0.5555555555555556,
++              "#d8576b"
++             ],
++             [
++              0.6666666666666666,
++              "#ed7953"
++             ],
++             [
++              0.7777777777777778,
++              "#fb9f3a"
++             ],
++             [
++              0.8888888888888888,
++              "#fdca26"
++             ],
++             [
++              1,
++              "#f0f921"
++             ]
++            ],
++            "type": "surface"
++           }
++          ],
++          "table": [
++           {
++            "cells": {
++             "fill": {
++              "color": "#EBF0F8"
++             },
++             "line": {
++              "color": "white"
++             }
++            },
++            "header": {
++             "fill": {
++              "color": "#C8D4E3"
++             },
++             "line": {
++              "color": "white"
++             }
++            },
++            "type": "table"
++           }
++          ]
++         },
++         "layout": {
++          "annotationdefaults": {
++           "arrowcolor": "#2a3f5f",
++           "arrowhead": 0,
++           "arrowwidth": 1
++          },
++          "autotypenumbers": "strict",
++          "coloraxis": {
++           "colorbar": {
++            "outlinewidth": 0,
++            "ticks": ""
++           }
++          },
++          "colorscale": {
++           "diverging": [
++            [
++             0,
++             "#8e0152"
++            ],
++            [
++             0.1,
++             "#c51b7d"
++            ],
++            [
++             0.2,
++             "#de77ae"
++            ],
++            [
++             0.3,
++             "#f1b6da"
++            ],
++            [
++             0.4,
++             "#fde0ef"
++            ],
++            [
++             0.5,
++             "#f7f7f7"
++            ],
++            [
++             0.6,
++             "#e6f5d0"
++            ],
++            [
++             0.7,
++             "#b8e186"
++            ],
++            [
++             0.8,
++             "#7fbc41"
++            ],
++            [
++             0.9,
++             "#4d9221"
++            ],
++            [
++             1,
++             "#276419"
++            ]
++           ],
++           "sequential": [
++            [
++             0,
++             "#0d0887"
++            ],
++            [
++             0.1111111111111111,
++             "#46039f"
++            ],
++            [
++             0.2222222222222222,
++             "#7201a8"
++            ],
++            [
++             0.3333333333333333,
++             "#9c179e"
++            ],
++            [
++             0.4444444444444444,
++             "#bd3786"
++            ],
++            [
++             0.5555555555555556,
++             "#d8576b"
++            ],
++            [
++             0.6666666666666666,
++             "#ed7953"
++            ],
++            [
++             0.7777777777777778,
++             "#fb9f3a"
++            ],
++            [
++             0.8888888888888888,
++             "#fdca26"
++            ],
++            [
++             1,
++             "#f0f921"
++            ]
++           ],
++           "sequentialminus": [
++            [
++             0,
++             "#0d0887"
++            ],
++            [
++             0.1111111111111111,
++             "#46039f"
++            ],
++            [
++             0.2222222222222222,
++             "#7201a8"
++            ],
++            [
++             0.3333333333333333,
++             "#9c179e"
++            ],
++            [
++             0.4444444444444444,
++             "#bd3786"
++            ],
++            [
++             0.5555555555555556,
++             "#d8576b"
++            ],
++            [
++             0.6666666666666666,
++             "#ed7953"
++            ],
++            [
++             0.7777777777777778,
++             "#fb9f3a"
++            ],
++            [
++             0.8888888888888888,
++             "#fdca26"
++            ],
++            [
++             1,
++             "#f0f921"
++            ]
++           ]
++          },
++          "colorway": [
++           "#636efa",
++           "#EF553B",
++           "#00cc96",
++           "#ab63fa",
++           "#FFA15A",
++           "#19d3f3",
++           "#FF6692",
++           "#B6E880",
++           "#FF97FF",
++           "#FECB52"
++          ],
++          "font": {
++           "color": "#2a3f5f"
++          },
++          "geo": {
++           "bgcolor": "white",
++           "lakecolor": "white",
++           "landcolor": "#E5ECF6",
++           "showlakes": true,
++           "showland": true,
++           "subunitcolor": "white"
++          },
++          "hoverlabel": {
++           "align": "left"
++          },
++          "hovermode": "closest",
++          "paper_bgcolor": "white",
++          "plot_bgcolor": "#E5ECF6",
++          "polar": {
++           "angularaxis": {
++            "gridcolor": "white",
++            "linecolor": "white",
++            "ticks": ""
++           },
++           "bgcolor": "#E5ECF6",
++           "radialaxis": {
++            "gridcolor": "white",
++            "linecolor": "white",
++            "ticks": ""
++           }
++          },
++          "scene": {
++           "xaxis": {
++            "backgroundcolor": "#E5ECF6",
++            "gridcolor": "white",
++            "gridwidth": 2,
++            "linecolor": "white",
++            "showbackground": true,
++            "ticks": "",
++            "zerolinecolor": "white"
++           },
++           "yaxis": {
++            "backgroundcolor": "#E5ECF6",
++            "gridcolor": "white",
++            "gridwidth": 2,
++            "linecolor": "white",
++            "showbackground": true,
++            "ticks": "",
++            "zerolinecolor": "white"
++           },
++           "zaxis": {
++            "backgroundcolor": "#E5ECF6",
++            "gridcolor": "white",
++            "gridwidth": 2,
++            "linecolor": "white",
++            "showbackground": true,
++            "ticks": "",
++            "zerolinecolor": "white"
++           }
++          },
++          "shapedefaults": {
++           "line": {
++            "color": "#2a3f5f"
++           }
++          },
++          "ternary": {
++           "aaxis": {
++            "gridcolor": "white",
++            "linecolor": "white",
++            "ticks": ""
++           },
++           "baxis": {
++            "gridcolor": "white",
++            "linecolor": "white",
++            "ticks": ""
++           },
++           "bgcolor": "#E5ECF6",
++           "caxis": {
++            "gridcolor": "white",
++            "linecolor": "white",
++            "ticks": ""
++           }
++          },
++          "title": {
++           "x": 0.05
++          },
++          "xaxis": {
++           "automargin": true,
++           "gridcolor": "white",
++           "linecolor": "white",
++           "ticks": "",
++           "title": {
++            "standoff": 15
++           },
++           "zerolinecolor": "white",
++           "zerolinewidth": 2
++          },
++          "yaxis": {
++           "automargin": true,
++           "gridcolor": "white",
++           "linecolor": "white",
++           "ticks": "",
++           "title": {
++            "standoff": 15
++           },
++           "zerolinecolor": "white",
++           "zerolinewidth": 2
++          }
++         }
++        },
++        "title": {
++         "text": "3D Squared-Range Localization"
++        },
++        "width": 800
++       }
++      }
++     },
++     "metadata": {},
++     "output_type": "display_data"
++    }
++   ],
++   "source": [
++    "fig = go.Figure()\n",
++    "\n",
++    "fig.add_scatter3d(x=landmarks[:, 0], y=landmarks[:, 1], z=landmarks[:, 2], mode=\"markers\", marker=dict(size=6), name=\"Known Landmarks\",\n",
++    "                  hovertemplate=\"Landmark<br>x=%{x:.2f}<br>y=%{y:.2f}<br>z=%{z:.2f}<extra></extra>\")\n",
++    "fig.add_scatter3d(x=[x_true[0]], y=[x_true[1]], z=[x_true[2]], mode=\"markers\", marker=dict(size=7), name=\"True Position\")\n",
++    "fig.add_scatter3d(x=[x_initial[0]], y=[x_initial[1]], z=[x_initial[2]], mode=\"markers\", marker=dict(size=7), name=\"Initial Estimate\")\n",
++    "fig.add_scatter3d(x=[x_estimated[0]], y=[x_estimated[1]], z=[x_estimated[2]], mode=\"markers\", marker=dict(size=7), name=\"Estimated Position\")\n",
++    "fig.add_scatter3d(x=[x_qcqp[0]], y=[x_qcqp[1]], z=[x_qcqp[2]], mode=\"markers\", marker=dict(size=7, symbol=\"diamond\"), name=\"QCQP (ALM)\")\n",
++    "\n",
++    "if sdp_position is not None:\n",
++    "    fig.add_scatter3d(x=[sdp_position[0]], y=[sdp_position[1]], z=[sdp_position[2]], mode=\"markers\", marker=dict(size=7, symbol=\"cross\"), name=\"SDP\")\n",
++    "\n",
++    "fig.add_scatter3d(x=[x_true[0], x_estimated[0]], y=[x_true[1], x_estimated[1]], z=[x_true[2], x_estimated[2]], mode=\"lines\", name=\"Estimation Error\")\n",
++    "\n",
++    "fig.update_layout(\n",
++    "    title=\"3D Squared-Range Localization\", width=800, height=650,\n",
++    "    scene=dict(xaxis_title=\"x\", yaxis_title=\"y\", zaxis_title=\"z\", aspectmode=\"data\"),\n",
++    "    legend=dict(x=0.02, y=0.98), margin=dict(l=0, r=0, b=0, t=50),\n",
++    ")\n",
++    "fig.show()"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "b351f839",
++   "metadata": {},
++   "source": [
++    "## Takeaways\n",
++    "\n",
++    "- `KnownLandmarkSquaredRangeFactor3` estimates a 3D Euclidean point, not a pose.\n",
++    "- Each factor relates the point to one fixed known landmark.\n",
++    "- Pass the non-negative range measurement $d$ to the constructor; the factor stores $d^2$ internally.\n",
++    "- The residual is scalar, so each factor uses a one-dimensional noise model.\n",
++    "- Raw range uncertainty should be propagated into squared-range units before use in the factor noise model.\n",
++    "- Known landmarks are fixed factor data and are not inserted into `Values`.\n",
++    "- `AugmentedPoint3` represents the same three-dimensional position as an ordinary point; its QCQP traits construct a five-dimensional lift only during conversion.\n",
++    "- `KnownLandmarkSquaredRangeFactorAugmentedPoint3` provides a QCQP formulation of the same objective; the local QCQP solution can be checked against an SDP lower bound when available."
++   ]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {
++   "display_name": ".venv-gtsam (3.12.5)",
++   "language": "python",
++   "name": "python3"
++  },
++  "language_info": {
++   "codemirror_mode": {
++    "name": "ipython",
++    "version": 3
++   },
++   "file_extension": ".py",
++   "mimetype": "text/x-python",
++   "name": "python",
++   "nbconvert_exporter": "python",
++   "pygments_lexer": "ipython3",
++   "version": "3.12.5"
++  }
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
 --- gtsam-no-tbb-4.3.0.orig/python/gtsam_unstable/gtsam_unstable.tpl
 +++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/gtsam_unstable.tpl
 @@ -16,6 +16,7 @@
@@ -41785,6 +42980,106 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #endif
  
  #include "python/gtsam_unstable/preamble.h"
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/tests/test_AugmentedPoint.py
+@@ -0,0 +1,97 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++See LICENSE for the license information
++
++Tests for augmented points, typed Values access, and QCQP bindings.
++"""
++
++import unittest
++
++import gtsam
++import gtsam_unstable
++import numpy as np
++
++
++class TestAugmentedPoint(unittest.TestCase):
++    """Exercise unstable points with stable Values and optimization APIs."""
++
++    def test_augmented_points(self):
++        """Point methods marshal coordinates and validate input dimensions."""
++        for dimension in (2, 3):
++            with self.subTest(dimension=dimension):
++                point_type = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")
++                coordinates = np.arange(1.0, dimension + 1)
++                point = point_type(coordinates)
++                np.testing.assert_allclose(point.vector(), coordinates)
++                np.testing.assert_allclose(point_type().vector(), np.zeros(dimension))
++                np.testing.assert_allclose(
++                    point_type.Identity().vector(), np.zeros(dimension)
++                )
++                self.assertEqual(point.dim(), dimension)
++                self.assertAlmostEqual(point.norm(), np.linalg.norm(coordinates))
++                self.assertAlmostEqual(point.dot(point), coordinates @ coordinates)
++                self.assertTrue(point.equals(point_type(coordinates)))
++                self.assertFalse(point.equals(point_type(coordinates + 1)))
++                for size in (dimension - 1, dimension + 1):
++                    with self.assertRaisesRegex(ValueError, "invalid point dimension"):
++                        point_type(np.zeros(size))
++
++    def test_augmented_values(self):
++        """Typed Values access preserves coordinates, lifetimes, and 64-bit keys."""
++        for dimension in (2, 3):
++            with self.subTest(dimension=dimension):
++                point_type = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")
++                coordinates = np.arange(1.0, dimension + 1)
++                key = (1 << 40) + dimension
++                point = point_type(coordinates)
++                values = gtsam.Values()
++                insert = getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")
++                update = getattr(gtsam_unstable, f"updateAugmentedPoint{dimension}")
++                assign = getattr(
++                    gtsam_unstable, f"insertOrAssignAugmentedPoint{dimension}"
++                )
++                read = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
++                insert(key, point, values)
++                update(key, point_type(coordinates + 1), values)
++                np.testing.assert_allclose(read(key, values).vector(), coordinates + 1)
++                assign(key, point, values)
++                assign(key + 1, point, values)
++                del point
++                for _ in range(3):
++                    np.testing.assert_allclose(read(key, values).vector(), coordinates)
++                    np.testing.assert_allclose(read(key + 1, values).vector(), coordinates)
++
++    def test_qcqp_conversions(self):
++        """Lift, recovery, insertion, and extraction work for both dimensions."""
++        for dimension in (2, 3):
++            with self.subTest(dimension=dimension):
++                coordinates = np.arange(1.0, dimension + 1)
++                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
++                key = (1 << 40) + dimension
++                lift = getattr(gtsam_unstable, f"qcqpValue{dimension}")(point)
++                expected = np.r_[
++                    1.0, coordinates, coordinates @ coordinates
++                ].reshape(-1, 1)
++                np.testing.assert_allclose(lift, expected)
++                recover = getattr(gtsam_unstable, f"fromQcqpValue{dimension}")
++                self.assertTrue(recover(lift).equals(point))
++                self.assertTrue(recover(-lift).equals(point))
++                for invalid in (np.zeros((dimension + 1, 1)), np.zeros_like(lift)):
++                    with self.assertRaises(ValueError):
++                        recover(invalid)
++                lifted = gtsam.Values()
++                insert = getattr(gtsam_unstable, f"insertQcqpValue{dimension}")
++                insert(key, point, lifted)
++                insert(key, point, lifted)
++                np.testing.assert_allclose(lifted.atMatrix(key), expected)
++                recovered = getattr(gtsam_unstable, f"extractQcqpValues{dimension}")(lifted)
++                read = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
++                self.assertTrue(read(key, recovered).equals(point))
++
++
++if __name__ == "__main__":
++    unittest.main()
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/tests/test_BiasedGPSFactor.py
 @@ -0,0 +1,54 @@
@@ -41897,6 +43192,129 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +        np.testing.assert_allclose(factor.unwhitenedError(values),
 +                                   -np.exp(-1.0 / 5.0) * np.array([1.0, 2.0, 3.0]))
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/tests/test_KnownLandmarkSquaredRangeFactor.py
+@@ -0,0 +1,120 @@
++"""
++GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
++Atlanta, Georgia 30332-0415
++All Rights Reserved
++Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++See LICENSE for the license information
++
++Tests for unstable squared-range factors and their QCQP bindings.
++"""
++
++import unittest
++
++import gtsam
++import gtsam_unstable
++import numpy as np
++
++
++class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
++    """Exercise unstable points and factors with stable graph bindings."""
++
++    def test_module_ownership(self):
++        """Only the unstable extension exposes all four factor specializations."""
++        for dimension in (2, 3):
++            for state in ("", "AugmentedPoint"):
++                name = f"KnownLandmarkSquaredRangeFactor{state}{dimension}"
++                self.assertFalse(hasattr(gtsam, name))
++                self.assertTrue(hasattr(gtsam_unstable, name))
++            self.assertFalse(hasattr(gtsam.Values, f"atAugmentedPoint{dimension}"))
++            self.assertFalse(hasattr(gtsam, f"AugmentedPoint{dimension}"))
++            self.assertTrue(hasattr(gtsam_unstable, f"AugmentedPoint{dimension}"))
++
++    def test_invalid_landmark_dimensions(self):
++        """Both state types reject undersized and oversized landmarks."""
++        model = gtsam.noiseModel.Unit.Create(1)
++        for dimension in (2, 3):
++            for state in ("", "AugmentedPoint"):
++                factor_type = getattr(
++                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactor{state}{dimension}"
++                )
++                for size in (dimension - 1, dimension + 1):
++                    with self.subTest(dimension=dimension, state=state, size=size):
++                        with self.assertRaisesRegex(
++                            ValueError, "invalid landmark dimension"
++                        ):
++                            factor_type(0, np.zeros(size), 5.0, model)
++
++    def test_augmented_factor_errors(self):
++        """Augmented and ordinary states give matching residuals and graph costs."""
++        model = gtsam.noiseModel.Unit.Create(1)
++        for dimension in (2, 3):
++            with self.subTest(dimension=dimension):
++                coordinates = np.arange(1.0, dimension + 1)
++                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
++                factor_type = getattr(
++                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}"
++                )
++                factor = factor_type(0, np.zeros(dimension), 1.0, model)
++                ordinary_type = getattr(
++                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactor{dimension}"
++                )
++                ordinary = ordinary_type(0, np.zeros(dimension), 1.0, model)
++                residual = coordinates @ coordinates - 1.0
++                np.testing.assert_allclose(factor.evaluateError(point), [residual])
++                np.testing.assert_allclose(
++                    ordinary.evaluateError(coordinates), [residual]
++                )
++                exact = factor_type(
++                    0, np.zeros(dimension), np.linalg.norm(coordinates), model
++                )
++                np.testing.assert_allclose(
++                    exact.evaluateError(point), [0.0], atol=1e-12
++                )
++                values = gtsam.Values()
++                getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")(0, point, values)
++                graph = gtsam.NonlinearFactorGraph()
++                graph.add(factor)
++                self.assertAlmostEqual(graph.error(values), float(0.5 * residual**2))
++
++    def test_qcqp_factor_conversion(self):
++        """QCQP construction requires an augmented state and a single column."""
++        model = gtsam.noiseModel.Unit.Create(1)
++        for dimension in (2, 3):
++            with self.subTest(dimension=dimension):
++                coordinates = np.arange(1.0, dimension + 1)
++                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
++                graph = gtsam.NonlinearFactorGraph()
++                factor_type = getattr(
++                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}"
++                )
++                graph.add(factor_type(0, np.zeros(dimension), 1.0, model))
++                values = gtsam.Values()
++                getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")(0, point, values)
++                lifted = gtsam.Values()
++                getattr(gtsam_unstable, f"insertQcqpValue{dimension}")(0, point, lifted)
++                problem = gtsam.QcqpProblem(graph)
++                cost, equalities, inequalities = problem.evaluate(lifted)
++                self.assertAlmostEqual(cost, graph.error(values))
++                self.assertAlmostEqual(equalities, 0.0)
++                self.assertAlmostEqual(inequalities, 0.0)
++                with self.assertRaisesRegex(ValueError, "only supports D=1"):
++                    gtsam.QcqpProblem(graph, 2)
++                invalid_graph = gtsam.NonlinearFactorGraph()
++                invalid_graph.add(factor_type(
++                    0, np.zeros(dimension), 1.0,
++                    gtsam.noiseModel.Isotropic.Sigma(2, 1.0)
++                ))
++                with self.assertRaisesRegex(ValueError, "one-dimensional noise"):
++                    gtsam.QcqpProblem(invalid_graph)
++                ordinary_graph = gtsam.NonlinearFactorGraph()
++                ordinary_type = getattr(
++                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactor{dimension}"
++                )
++                ordinary_graph.add(ordinary_type(0, np.zeros(dimension), 1.0, model))
++                with self.assertRaisesRegex(RuntimeError, "AugmentedPoint"):
++                    gtsam.QcqpProblem(ordinary_graph)
 +
 +
 +if __name__ == "__main__":
