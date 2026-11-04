@@ -1,10 +1,41 @@
-gtsam (4.3.0-0ubuntu14~51.gbp34b78f) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~52.gbpb5f5f8) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @b5f5f886b25256abefe6ba256ae92d6e2067571c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @34b78fb6b2f24bcf3e1a837f1892ec84d55955ea **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 30 Oct 2026 17:04:20 +0000
+  [ Oluwatodimu Afolayan ]
+  * Implement Augmented point class in KnownLandmarkSquaredRangeFactor.h; implement tests for Augmented point.
+  * Implement QCQP factor conversion for known landmark squared range factor and compatibility with nonlinear and QCQP graphs. Add tests validating QCQP conversation and integration of AugmentedPoint with squared range factor.
+  * Implement AugmentedPoint .i bindings for QCQP support and remove duplicate c++ tests.
+  * Extend Matlab and Python tests to validate AugmentedPoint behavior and QCQP conversion of known squared landmark factor.
+  * Update known landmark squared range documentation and localization example file with description of AugmentedPoint and intended use.
+  * Update description of squared-range factor notebook in slam.md.
+  * Revise known landmark squared range templating to only position representation (Eigen vector or AugmentedPoint) and update tests accordingly.
+  * Update documentation and example notebooks for known landmark squared range factor to reflect new templating API.
+  * Rerun squared range localization example notebook with Mosek. Move AugmentedPoint .i declaration from slam_synchronization.i to geometry.i.
+  * Refactor AugmentedPoint into geometry and update tessts. Add more detail concerning using and purpose of Augmented Point in docs.
+  * Update squared-range factor for upstream QCQP API.
+
+  [ Frank Dellaert ]
+  * Use optional providers for redundant QCQP constraints
+  * Refactor InsertQcqpConstraints to inline quadratic equalities insertion
+  * Refactor QCQP Constraint Handling
+  * Collect QCQP variable constraints through reference-based APIs
+  * Move known-landmark squared-range factor to unstable
+  * Move AugmentedPoint and its bindings to unstable geometry
+
+  [ DLuminary ]
+  * Use fixed-size Vector2 results in SharedParameterGradientAndDirectTerm
+
+  [ dellaert ]
+  * Update pixi lockfile
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Nov 2026 23:43:07 +0000
 
 gtsam (4.3.0-0ubuntu14~50.gbp17eb45) resolute; urgency=medium
 
