@@ -1,10 +1,44 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~54.gbpf8c179) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~55.gbp7ffbd6) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7ffbd645b43b73ff0f8cea420b44cfd7560ca4cc **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @f8c179fc4a333c0e9494491390fa7ddd5574a5c2 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Nov 2026 23:38:32 +0000
+  [ Frank Dellaert ]
+  * Use optional providers for redundant QCQP constraints
+  * Refactor InsertQcqpConstraints to inline quadratic equalities insertion
+  * Refactor QCQP Constraint Handling
+  * Collect QCQP variable constraints through reference-based APIs
+  * Fix unstable squared-range factor for current QCQP API
+
+  [ jns6 ]
+  * extend Gradients so contributions from learned diagonal noise models are included
+  * small comment on true state
+  * add brief note to documentation on using a final NN layer to ensure non negative oouputs for covariances)
+  * add 2x scaling to diagonal/isotropic gradients to account for the fact that we're doing IFT in the whitened space
+  * Replace noise-model ParameterTag with Gradients::noiseGradient
+
+  [ dellaert ]
+  * Update pixi lockfile
+
+  [ dellaert@gmail.com ]
+  * Use scale-aware rank cutoff in constrained QR
+  * Recover sparse active-set multipliers with rank-revealing QR
+  * Keep sparse QP regularization proximal and certify original KKT
+  * Try equality projection before sparse QP phase one
+  * Clarify active-set stationarity and split solver steps
+  * Keep stateless active-set helpers local
+  * Group active-set internal helpers in header
+  * Recover rank-deficient multipliers with graph elimination
+  * Reorder active-set helpers to reduce develop diff
+  * Preserve square-root QP costs and record weighted-QR regression
+  * Propagate constrained QR rank scales through exact substitution
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Nov 2026 01:09:16 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~53.gbp95501e) resolute; urgency=medium
 
