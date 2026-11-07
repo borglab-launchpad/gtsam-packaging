@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Nov, 04 2026 23:43:09 +0000
+Date: Nov, 07 2026 10:53:03 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -3652,6 +3652,1054 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      qcqp.addConstraint(QuadraticConstraint::Equal(key, A, b, sigma));
    }
    return qcqp;
+--- gtsam-4.3.0.orig/gtsam/constrained/ActiveSetSolver.cpp
++++ gtsam-4.3.0/gtsam/constrained/ActiveSetSolver.cpp
+@@ -23,9 +23,12 @@
+ #include <gtsam/linear/linearExceptions.h>
+ 
+ #include <Eigen/Cholesky>
++#include <Eigen/QR>
+ #include <algorithm>
+ #include <cmath>
++#include <iomanip>
+ #include <limits>
++#include <sstream>
+ #include <stdexcept>
+ #include <tuple>
+ #include <utility>
+@@ -42,6 +45,14 @@ struct ActiveSetSolver::DenseQpWorkspace
+   Vector unconstrainedMinimum;
+ };
+ 
++// Dense rows are assembled only in dense mode, in the same order as their
++// multiplier keys. Sparse mode keeps each row as a factor instead.
++struct ActiveSetSolver::DenseConstraintSystem {
++  Matrix normals;
++  Vector rhs;
++  std::vector<Key> multiplierKeys;
++};
++
+ namespace {
+ 
+ constexpr double kMinimumDenseRegularization = 1e-6;
+@@ -196,6 +207,214 @@ bool DenseSchurComplementIsSingular(cons
+   return diagonal.cwiseAbs().minCoeff() <= tolerance;
+ }
+ 
++/* ************************************************************************* */
++// Multipliers may be nonunique. A measured residual distinguishes a valid
++// least-squares multiplier set from an inconsistent stationarity equation.
++struct DualSolveResult {
++  VectorValues multipliers;
++  double residual = 0.0;
++  double threshold = 0.0;
++
++  bool consistent() const { return residual <= threshold; }
++};
++
++/* ************************************************************************* */
++std::pair<double, double> DualGraphResidual(const GaussianFactorGraph& graph,
++                                            const VectorValues& multipliers) {
++  for (const auto& [_, value] : multipliers)
++    if (!value.allFinite())
++      throw std::runtime_error("ActiveSetSolver: non-finite multipliers.");
++  double residual = 0.0, rhsNorm = 0.0;
++  for (const auto& factor : graph) {
++    const JacobianFactor whitened = JacobianFactor(*factor).whiten();
++    residual = std::max(
++        residual,
++        whitened.unweighted_error(multipliers).lpNorm<Eigen::Infinity>());
++    rhsNorm = std::max(rhsNorm, whitened.getb().lpNorm<Eigen::Infinity>());
++  }
++  return {residual, rhsNorm};
++}
++
++/* ************************************************************************* */
++// Retain original column scales: a dependent column can reach a later clique
++// as roundoff alone, which must not become its new reference scale.
++std::map<Key, double> dualColumnScales(const GaussianFactorGraph& graph) {
++  std::map<Key, double> scales;
++  for (const auto& factor : graph) {
++    const JacobianFactor whitened = JacobianFactor(*factor).whiten();
++    for (auto key = whitened.begin(); key != whitened.end(); ++key) {
++      const auto block = whitened.getA(key);
++      if (block.cols() != 1)
++        throw std::logic_error("Expected scalar multiplier keys");
++      scales[*key] = std::hypot(scales[*key], block.stableNorm());
++    }
++  }
++  return scales;
++}
++
++/* ************************************************************************* */
++// Pivot only among frontal columns. Separator equations must survive unchanged
++// so that the rest of the Bayes tree still solves the original least squares.
++KeyVector freeDualFrontalKeys(const JacobianFactor& joint,
++                              const Ordering& frontals,
++                              const std::map<Key, double>& scales) {
++  if (joint.rows() == 0) return KeyVector(frontals.begin(), frontals.end());
++  Matrix frontalMatrix(joint.rows(), frontals.size());
++  for (size_t column = 0; column < frontals.size(); ++column) {
++    const Key key = frontals[column];
++    const double scale = scales.at(key);
++    frontalMatrix.col(column) =
++        joint.getA(joint.find(key)) / (scale > 0.0 ? scale : 1.0);
++  }
++  Eigen::ColPivHouseholderQR<Matrix> qr(frontalMatrix);
++  const double threshold = 64.0 * std::numeric_limits<double>::epsilon() *
++                           std::max(frontalMatrix.rows(), frontalMatrix.cols());
++  // Eigen's threshold is relative to the largest pivot; ours is relative to
++  // the original columns after normalization, including at a nearly zero root.
++  qr.setThreshold(qr.maxPivot() > 0.0 ? threshold / qr.maxPivot() : 1.0);
++  KeyVector freeKeys;
++  for (Eigen::Index column = qr.rank(); column < frontalMatrix.cols(); ++column)
++    freeKeys.push_back(frontals[qr.colsPermutation().indices()(column)]);
++  return freeKeys;
++}
++
++/* ************************************************************************* */
++// Dual-only elimination: choose zero for free scalar multipliers, then return
++// an ordinary nonsingular conditional through GTSAM's constrained QR. For
++// exact dependencies this selects one solution without changing the reduced
++// objective on the separator. The caller checks the original graph residual.
++GaussianFactorGraph::EliminationResult eliminateDualWithGauge(
++    const GaussianFactorGraph& factors, const Ordering& frontals,
++    const std::map<Key, double>& scales) {
++  auto joint = std::make_shared<JacobianFactor>(factors, frontals);
++  *joint = joint->whiten();
++  GaussianFactorGraph gauged;
++  gauged.push_back(joint);
++  for (Key key : freeDualFrontalKeys(*joint, frontals, scales))
++    gauged.emplace_shared<JacobianFactor>(key, Matrix::Ones(1, 1),
++                                          Vector::Zero(1),
++                                          noiseModel::Constrained::All(1));
++  return EliminateQR(gauged, frontals);
++}
++
++/* ************************************************************************* */
++DualSolveResult solveRankDeficientDualGraph(const GaussianFactorGraph& graph,
++                                            double tolerance) {
++  const auto scales = dualColumnScales(graph);
++  DualSolveResult result;
++  result.multipliers = graph.optimize(
++      [&](const GaussianFactorGraph& factors, const Ordering& frontals) {
++        return eliminateDualWithGauge(factors, frontals, scales);
++      });
++  double rhsNorm;
++  std::tie(result.residual, rhsNorm) =
++      DualGraphResidual(graph, result.multipliers);
++  result.threshold = std::max(1e-12, tolerance) * (1.0 + rhsNorm);
++  return result;
++}
++
++/* ************************************************************************* */
++DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
++                                     double tolerance,
++                                     bool checkStationarity = true) {
++  if (graph.empty()) return {};
++  try {
++    // The usual graph solve is faster, but a successful factorization alone
++    // does not prove that an overdetermined stationarity equation is exact.
++    DualSolveResult result;
++    result.multipliers = graph.optimize();
++    if (!checkStationarity) return result;
++    double rhsNorm;
++    std::tie(result.residual, rhsNorm) =
++        DualGraphResidual(graph, result.multipliers);
++    result.threshold = std::max(1e-12, tolerance) * (1.0 + rhsNorm);
++    if (result.consistent()) return result;
++  } catch (const IndeterminateSystemException&) {
++    // The graph QR fallback fixes free multiplier coordinates clique by clique.
++  }
++  DualSolveResult result = solveRankDeficientDualGraph(graph, tolerance);
++  if (!checkStationarity && !result.consistent())
++    throw std::runtime_error("Multiplier graph QR: inconsistent stationarity");
++  return result;
++}
++
++/* ************************************************************************* */
++// These row helpers need no solver state. Templates keep ConstraintRow private
++// to ActiveSetSolver while accepting its row containers at the call site.
++template <typename Row>
++bool primalFeasible(const std::vector<Row>& equalities,
++                    const std::vector<Row>& inequalities,
++                    const VectorValues& values, double tolerance) {
++  for (const Row& row : equalities) {
++    const double residual = RowResidual(*row.factor, values);
++    if (!std::isfinite(residual) || std::abs(residual) > tolerance)
++      return false;
++  }
++  for (const Row& row : inequalities) {
++    const double residual = RowResidual(*row.factor, values);
++    if (!std::isfinite(residual) || residual > tolerance) return false;
++  }
++  return true;
++}
++
++/* ************************************************************************* */
++template <typename Row>
++int leavingInequality(const std::vector<Row>& inequalities,
++                      const std::vector<bool>& activeRows,
++                      const VectorValues& duals, double tolerance) {
++  int leavingRow = -1;
++  double largestMultiplier = tolerance;
++  for (size_t row = 0; row < inequalities.size(); ++row) {
++    if (!activeRows[row]) continue;
++    const Key key = inequalities[row].multiplierKey;
++    const double multiplier = duals.exists(key) ? duals.at(key)(0) : 0.0;
++    if (multiplier > largestMultiplier) {
++      leavingRow = static_cast<int>(row);
++      largestMultiplier = multiplier;
++    }
++  }
++  return leavingRow;
++}
++
++/* ************************************************************************* */
++template <typename Row>
++LpProblem buildPhaseOneProblem(const std::vector<Row>& equalities,
++                               const std::vector<Row>& inequalities,
++                               Key slackKey, double* initialSlack) {
++  // Minimize a nonnegative scalar slack. Each equality becomes two relaxed
++  // inequalities, and all rows share the same slack variable.
++  LpProblem problem;
++  problem.addCost(
++      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
++  auto rowTerms = [&](const Row& row, double sign) {
++    std::vector<std::pair<Key, Matrix>> terms;
++    terms.reserve(row.factor->size() + 1);
++    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
++      terms.emplace_back(*key, sign * row.factor->getA(key));
++    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
++    return terms;
++  };
++
++  *initialSlack = 1.0;
++  for (const Row& row : equalities) {
++    const double rhs = row.factor->getb()(0);
++    problem.addConstraint(LinearConstraint::LessEqual(
++        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
++    problem.addConstraint(LinearConstraint::LessEqual(
++        JacobianFactor(rowTerms(row, -1.0), SingleValue(-rhs))));
++    *initialSlack = std::max(*initialSlack, std::abs(rhs) + 1.0);
++  }
++  for (const Row& row : inequalities) {
++    const double rhs = row.factor->getb()(0);
++    problem.addConstraint(LinearConstraint::LessEqual(
++        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
++    *initialSlack = std::max(*initialSlack, -rhs + 1.0);
++  }
++  problem.addConstraint(LinearConstraint::LessEqual(
++      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
++  return problem;
++}
++
+ }  // namespace
+ 
+ /* ************************************************************************* */
+@@ -287,7 +506,7 @@ void ActiveSetSolver::initializeObjectiv
+ 
+   for (const auto& factor : qpProblem_->costs()) {
+     const auto cost = std::dynamic_pointer_cast<QpCost>(factor);
+-    qpCostGraph_.push_back(cost->hessianFactor());
++    qpCostGraph_.push_back(cost->gaussianFactor().clone());
+   }
+   if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense) {
+     initializeDenseQpWorkspace();
+@@ -315,6 +534,23 @@ void ActiveSetSolver::initializeDenseQpW
+   }
+   workspace.totalDim = offset;
+ 
++  factorDenseQpCost();
++  // Constrained solves reuse the unconstrained minimizer x0 and apply only
++  // the active constraint correction x = x0 + H^{-1} A^T lambda.
++  workspace.unconstrainedMinimum = Vector::Zero(workspace.totalDim);
++  const VectorValues minimum = workspace.costBayesNet->optimize();
++  for (const auto& [key, vector] : minimum) {
++    const auto offsetIt = workspace.keyOffsets.find(key);
++    if (offsetIt != workspace.keyOffsets.end()) {
++      workspace.unconstrainedMinimum.segment(offsetIt->second, vector.size()) =
++          vector;
++    }
++  }
++}
++
++/* ************************************************************************* */
++void ActiveSetSolver::factorDenseQpCost() {
++  DenseQpWorkspace& workspace = *denseQpWorkspace_;
+   // The dense subproblem path assumes every constrained variable is present in
+   // the quadratic cost, because H^{-1} is applied through this Bayes net.
+   auto eliminate = [&](const GaussianFactorGraph& graph) {
+@@ -349,18 +585,6 @@ void ActiveSetSolver::initializeDenseQpW
+           "sparse QP subproblem solver.");
+     }
+   }
+-
+-  // Store the unconstrained minimizer x0. Constrained solves then only need the
+-  // active constraint correction x = x0 + H^{-1} A^T lambda.
+-  workspace.unconstrainedMinimum = Vector::Zero(workspace.totalDim);
+-  const VectorValues minimum = workspace.costBayesNet->optimize();
+-  for (const auto& [key, vector] : minimum) {
+-    const auto offsetIt = workspace.keyOffsets.find(key);
+-    if (offsetIt != workspace.keyOffsets.end()) {
+-      workspace.unconstrainedMinimum.segment(offsetIt->second, vector.size()) =
+-          vector;
+-    }
+-  }
+ }
+ 
+ /* ************************************************************************* */
+@@ -377,39 +601,26 @@ void ActiveSetSolver::initializeConstrai
+   // Assign synthetic keys to scalar Lagrange multipliers. Keeping one key per
+   // row lets the dual solve use ordinary GaussianFactorGraph machinery and lets
+   // the public state rebuild row-ordered multiplier vectors later.
+-  constraints_.equalityDims.reserve(eqConstraints.size());
+-  for (size_t constraintIndex = 0; constraintIndex < eqConstraints.size();
+-       ++constraintIndex) {
+-    const auto constraintFactor = eqConstraints.at(constraintIndex);
+-    const LinearConstraint& constraint =
+-        RequireLinearConstraint(constraintFactor);
+-    const JacobianFactor& factor = constraint.factor();
+-    const double sign = ConstraintSign(constraint.sense());
+-    const size_t rows = static_cast<size_t>(factor.getb().size());
+-    constraints_.equalityDims.push_back(rows);
+-    for (size_t row = 0; row < rows; ++row) {
+-      constraints_.equalities.push_back(
+-          {constraintIndex, row, multiplierKey++,
+-           OneRowConstraintFactor(factor, row, sign)});
++  auto appendRows = [&](const auto& source, auto* rows, auto* dimensions) {
++    dimensions->reserve(source.size());
++    for (size_t constraintIndex = 0; constraintIndex < source.size();
++         ++constraintIndex) {
++      const auto constraintFactor = source.at(constraintIndex);
++      const LinearConstraint& constraint =
++          RequireLinearConstraint(constraintFactor);
++      const JacobianFactor& factor = constraint.factor();
++      const double sign = ConstraintSign(constraint.sense());
++      const size_t rowCount = static_cast<size_t>(factor.getb().size());
++      dimensions->push_back(rowCount);
++      for (size_t row = 0; row < rowCount; ++row)
++        rows->push_back({constraintIndex, row, multiplierKey++,
++                         OneRowConstraintFactor(factor, row, sign)});
+     }
+-  }
+-
+-  constraints_.inequalityDims.reserve(ineqConstraints.size());
+-  for (size_t constraintIndex = 0; constraintIndex < ineqConstraints.size();
+-       ++constraintIndex) {
+-    const auto constraintFactor = ineqConstraints.at(constraintIndex);
+-    const LinearConstraint& constraint =
+-        RequireLinearConstraint(constraintFactor);
+-    const JacobianFactor& factor = constraint.factor();
+-    const double sign = ConstraintSign(constraint.sense());
+-    const size_t rows = static_cast<size_t>(factor.getb().size());
+-    constraints_.inequalityDims.push_back(rows);
+-    for (size_t row = 0; row < rows; ++row) {
+-      constraints_.inequalities.push_back(
+-          {constraintIndex, row, multiplierKey++,
+-           OneRowConstraintFactor(factor, row, sign)});
+-    }
+-  }
++  };
++  appendRows(eqConstraints, &constraints_.equalities,
++             &constraints_.equalityDims);
++  appendRows(ineqConstraints, &constraints_.inequalities,
++             &constraints_.inequalityDims);
+ }
+ 
+ /* ************************************************************************* */
+@@ -502,7 +713,7 @@ GaussianFactorGraph ActiveSetSolver::bui
+       for (const auto& [key, dim] : keyDims_) {
+         workingGraph.emplace_shared<JacobianFactor>(
+             key, sqrtRegularization * Matrix::Identity(dim, dim),
+-            Vector::Zero(dim));
++            sqrtRegularization * values.at(key));
+       }
+     }
+   } else {
+@@ -530,8 +741,8 @@ GaussianFactorGraph ActiveSetSolver::bui
+ /* ************************************************************************* */
+ GaussianFactorGraph ActiveSetSolver::buildDualGraph(
+     const SparseConstraintData& constraints,
+-    const std::vector<bool>& activeInequalityRows,
+-    const VectorValues& values) const {
++    const std::vector<bool>& activeInequalityRows, const VectorValues& values,
++    const VectorValues* proximalCenter) const {
+   GaussianFactorGraph dualGraph;
+   // Stationarity for the current working set is A_active^T * lambda = grad.
+   // With the normalized A*x-b<=0 convention, a positive active inequality
+@@ -554,10 +765,12 @@ GaussianFactorGraph ActiveSetSolver::bui
+         terms.emplace_back(row.multiplierKey, row.factor->getA(it).transpose());
+       }
+     }
+-    if (!terms.empty()) {
+-      dualGraph.emplace_shared<JacobianFactor>(terms,
+-                                               objectiveGradient(key, values));
+-    }
++    if (terms.empty()) continue;
++    Vector gradient = objectiveGradient(key, values);
++    if (proximalCenter)
++      gradient +=
++          params_->regularization * (values.at(key) - proximalCenter->at(key));
++    dualGraph.emplace_shared<JacobianFactor>(terms, gradient);
+   }
+   return dualGraph;
+ }
+@@ -609,98 +822,71 @@ Vector ActiveSetSolver::applyInverseDens
+ }
+ 
+ /* ************************************************************************* */
++ActiveSetSolver::DenseConstraintSystem ActiveSetSolver::denseConstraintSystem(
++    const std::vector<bool>& activeInequalityRows) const {
++  const DenseQpWorkspace& workspace = *denseQpWorkspace_;
++  size_t rowCount = constraints_.equalities.size();
++  for (bool active : activeInequalityRows) rowCount += active ? 1 : 0;
++
++  DenseConstraintSystem system;
++  system.normals = Matrix::Zero(rowCount, workspace.totalDim);
++  system.rhs = Vector::Zero(rowCount);
++  system.multiplierKeys.reserve(rowCount);
++  auto appendRow = [&](const ConstraintRow& row) {
++    const size_t index = system.multiplierKeys.size();
++    const JacobianFactor& factor = *row.factor;
++    for (auto key = factor.begin(); key != factor.end(); ++key)
++      system.normals.block(index, workspace.keyOffsets.at(*key), 1,
++                           keyDims_.at(*key)) = factor.getA(key);
++    system.rhs(index) = factor.getb()(0);
++    system.multiplierKeys.push_back(row.multiplierKey);
++  };
++  for (const ConstraintRow& row : constraints_.equalities) appendRow(row);
++  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
++    if (activeInequalityRows.at(row)) appendRow(constraints_.inequalities[row]);
++  return system;
++}
++
++/* ************************************************************************* */
+ std::pair<VectorValues, VectorValues> ActiveSetSolver::solveDenseQpSubproblem(
+     const std::vector<bool>& activeInequalityRows) const {
+-  if (!denseQpWorkspace_) {
++  if (!denseQpWorkspace_)
+     throw std::logic_error(
+         "ActiveSetSolver: dense QP workspace has not been initialized.");
+-  }
+   const DenseQpWorkspace& workspace = *denseQpWorkspace_;
+-
+-  size_t activeInequalityDim = 0;
+-  for (bool active : activeInequalityRows) {
+-    if (active) {
+-      ++activeInequalityDim;
+-    }
+-  }
+-  const size_t equalityDim = constraints_.equalities.size();
+-  const size_t kktDim = equalityDim + activeInequalityDim;
+-
++  const DenseConstraintSystem active =
++      denseConstraintSystem(activeInequalityRows);
++  const size_t kktDim = active.multiplierKeys.size();
+   VectorValues duals;
+-  if (kktDim == 0) {
++  if (kktDim == 0)
+     return {denseVectorToVectorValues(workspace.unconstrainedMinimum), duals};
+-  }
+-
+-  Matrix activeA = Matrix::Zero(kktDim, workspace.totalDim);
+-  Vector activeB = Vector::Zero(kktDim);
+-  auto addRow = [&](size_t row, const ConstraintRow& constraint) {
+-    const JacobianFactor& factor = *constraint.factor;
+-    for (auto it = factor.begin(); it != factor.end(); ++it) {
+-      const Key key = *it;
+-      activeA.block(row, workspace.keyOffsets.at(key), 1, keyDims_.at(key)) =
+-          factor.getA(it);
+-    }
+-    activeB(row) = factor.getb()(0);
+-  };
+-
+-  size_t row = 0;
+-  for (const ConstraintRow& equality : constraints_.equalities) {
+-    addRow(row++, equality);
+-  }
+-  for (size_t inequalityIndex = 0;
+-       inequalityIndex < constraints_.inequalities.size(); ++inequalityIndex) {
+-    if (activeInequalityRows.at(inequalityIndex)) {
+-      addRow(row++, constraints_.inequalities[inequalityIndex]);
+-    }
+-  }
+ 
+   Matrix hessianInverseAT(workspace.totalDim, kktDim);
+-  for (size_t column = 0; column < kktDim; ++column) {
++  for (size_t column = 0; column < kktDim; ++column)
+     hessianInverseAT.col(column) =
+-        applyInverseDenseHessian(activeA.row(column).transpose());
+-  }
++        applyInverseDenseHessian(active.normals.row(column).transpose());
+ 
+-  // Solve the equality-constrained QP through the Schur complement:
+-  //
+-  //     (A H^{-1} A^T) lambda = b - A*x0
+-  //     x = x0 + H^{-1} A^T lambda
+-  //
+-  // where x0 is the unconstrained minimizer of the quadratic cost.
+-  const Matrix schurComplement = activeA * hessianInverseAT;
++  // Schur complement: (A H^{-1} A^T) lambda = b - A*x0, followed by
++  // x = x0 + H^{-1} A^T lambda. The Hessian factorization is reused.
++  const Matrix schurComplement = active.normals * hessianInverseAT;
+   Eigen::LDLT<Matrix> ldlt(schurComplement);
+-  if (DenseSchurComplementIsSingular(ldlt, schurComplement)) {
++  if (DenseSchurComplementIsSingular(ldlt, schurComplement))
+     throw std::runtime_error(
+         "ActiveSetSolver: dense QP Schur complement is singular or "
+         "ill-conditioned. Active constraints may be linearly dependent; "
+         "remove redundant constraints or use the sparse QP subproblem solver.");
+-  }
+   const Vector multipliers =
+-      ldlt.solve(activeB - activeA * workspace.unconstrainedMinimum);
+-  if (!multipliers.allFinite()) {
++      ldlt.solve(active.rhs - active.normals * workspace.unconstrainedMinimum);
++  if (!multipliers.allFinite())
+     throw std::runtime_error(
+         "ActiveSetSolver: dense QP Schur complement solve produced non-finite "
+         "multipliers. Active constraints may be ill-conditioned; use the "
+         "sparse QP subproblem solver.");
+-  }
++
+   const Vector values =
+       workspace.unconstrainedMinimum + hessianInverseAT * multipliers;
+-
+-  size_t multiplierRow = 0;
+-  for (const ConstraintRow& equality : constraints_.equalities) {
+-    duals.insert(equality.multiplierKey,
+-                 SingleValue(multipliers(multiplierRow++)));
+-  }
+-  for (size_t inequalityIndex = 0;
+-       inequalityIndex < constraints_.inequalities.size(); ++inequalityIndex) {
+-    if (!activeInequalityRows.at(inequalityIndex)) {
+-      continue;
+-    }
+-    const ConstraintRow& inequality =
+-        constraints_.inequalities[inequalityIndex];
+-    duals.insert(inequality.multiplierKey,
+-                 SingleValue(multipliers(multiplierRow++)));
+-  }
+-
++  for (size_t row = 0; row < kktDim; ++row)
++    duals.insert(active.multiplierKeys[row], SingleValue(multipliers(row)));
+   return {denseVectorToVectorValues(values), duals};
+ }
+ 
+@@ -728,7 +914,9 @@ Vector ActiveSetSolver::objectiveGradien
+       gradient += factor->gradient(key, values);
+     }
+   }
+-  if (params_->regularization > 0.0) {
++  // Sparse QPs regularize only the working subproblem, not the target cost.
++  if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense &&
++      params_->regularization > 0.0) {
+     gradient += params_->regularization * values.at(key);
+   }
+   return gradient;
+@@ -771,94 +959,178 @@ ActiveSetSolver::InternalState ActiveSet
+   const bool useDenseQp =
+       problemType_ == ProblemType::QP &&
+       params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
+-
+-  VectorValues candidateValues;
+-  VectorValues subproblemDuals;
++  VectorValues candidate, subproblemDuals;
+   if (useDenseQp) {
+-    std::tie(candidateValues, subproblemDuals) =
++    std::tie(candidate, subproblemDuals) =
+         solveDenseQpSubproblem(state.activeInequalityRows);
+   } else {
+-    candidateValues =
+-        buildWorkingGraph(state.values, state.activeInequalityRows).optimize();
+-    CompleteMissingKeys(&candidateValues, state.values, keyDims_);
++    // Keep least-squares QPs in square-root form throughout elimination.
++    // Forming normal equations can erase weak finite directions, including
++    // after an active row leaves the working set.
++    const bool squareRootQp =
++        problemType_ == ProblemType::QP &&
++        std::all_of(qpCostGraph_.begin(), qpCostGraph_.end(),
++                    [](const GaussianFactor::shared_ptr& factor) {
++                      return dynamic_cast<const JacobianFactor*>(factor.get());
++                    });
++    const GaussianFactorGraph workingGraph =
++        buildWorkingGraph(state.values, state.activeInequalityRows);
++    candidate = squareRootQp ? workingGraph.optimize(EliminateQR)
++                            : workingGraph.optimize();
++    CompleteMissingKeys(&candidate, state.values, keyDims_);
+   }
+ 
+   InternalState next = state;
+   next.iterations = state.iterations + 1;
++  if (!shouldInspectOptimality(state, candidate, useDenseQp)) {
++    moveTowardCandidate(state, candidate, &next);
++    return next;
++  }
+ 
+-  const bool smallStep =
+-      useDenseQp ? denseQpStepIsSmall(candidateValues, state.values)
+-                 : candidateValues.equals(state.values, params_->stepTolerance);
+-  if (smallStep) {
+-    // No primal movement is left for this working set. Check KKT multipliers:
+-    // if every active inequality multiplier has the correct sign, we are done;
+-    // otherwise remove the most offending row and solve the reduced set.
+-    if (useDenseQp) {
+-      next.duals = subproblemDuals;
+-    } else {
+-      const GaussianFactorGraph dualGraph = buildDualGraph(
+-          constraints_, state.activeInequalityRows, candidateValues);
+-      next.duals = dualGraph.empty() ? VectorValues() : dualGraph.optimize();
+-    }
+-
+-    int leavingRow = -1;
+-    double largestMultiplier = params_->multiplierTolerance;
+-    for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
+-      if (!state.activeInequalityRows[row]) {
+-        continue;
+-      }
+-      const Key multiplierKey = constraints_.inequalities[row].multiplierKey;
+-      const double lambda = next.duals.exists(multiplierKey)
+-                                ? next.duals.at(multiplierKey)(0)
+-                                : 0.0;
+-      if (lambda > largestMultiplier) {
+-        leavingRow = static_cast<int>(row);
+-        largestMultiplier = lambda;
+-      }
+-    }
+-    next.values = candidateValues;
+-    if (leavingRow < 0) {
+-      next.converged = true;
+-    } else {
+-      next.activeInequalityRows[leavingRow] = false;
+-    }
++  if (useDenseQp) {
++    next.duals = subproblemDuals;
++  } else if (!recoverSparseMultipliers(state, candidate, &next.duals)) {
++    next.values = candidate;
+     return next;
+   }
++  next.values = candidate;
++  const int leavingRow =
++      leavingInequality(constraints_.inequalities, state.activeInequalityRows,
++                        next.duals, params_->multiplierTolerance);
++  if (leavingRow >= 0) {
++    next.activeInequalityRows[leavingRow] = false;
++  } else {
++    next.converged = useDenseQp || problemType_ == ProblemType::LP ||
++                     originalSparseKktSatisfied(
++                         candidate, state.activeInequalityRows, next.duals);
++  }
++  return next;
++}
++
++/* ************************************************************************* */
++bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
++                                              const VectorValues& candidate,
++                                              bool useDenseQp) const {
++  if (!useDenseQp && problemType_ == ProblemType::QP) {
++    // A feasible working-set minimum can be inspected immediately, without
++    // repeating the same factorization just to observe a zero step. When
++    // regularization is positive, its proximal residual bounds the difference
++    // from original stationarity, including movement along flat directions.
++    double bound = 0.0;
++    for (const auto& [key, _] : keyDims_)
++      bound = std::max(bound, params_->regularization *
++                                  (candidate.at(key) - state.values.at(key))
++                                      .lpNorm<Eigen::Infinity>());
++    return bound <= params_->multiplierTolerance &&
++           primalFeasible(constraints_.equalities, constraints_.inequalities,
++                          candidate, params_->feasibilityTolerance);
++  }
++  return useDenseQp ? denseQpStepIsSmall(candidate, state.values)
++                    : candidate.equals(state.values, params_->stepTolerance);
++}
++
++/* ************************************************************************* */
++bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
++                                               const VectorValues& candidate,
++                                               VectorValues* duals) const {
++  // The original gradient is the only one that can certify a solution.
++  const DualSolveResult original = SolveSparseDualGraph(
++      buildDualGraph(constraints_, state.activeInequalityRows, candidate),
++      params_->multiplierTolerance, problemType_ == ProblemType::QP);
++  if (original.consistent()) {
++    *duals = original.multipliers;
++    return true;
++  }
++
++  if (problemType_ == ProblemType::QP && params_->regularization > 0.0) {
++    const DualSolveResult proximal = SolveSparseDualGraph(
++        buildDualGraph(constraints_, state.activeInequalityRows, candidate,
++                       &state.values),
++        params_->multiplierTolerance);
++    if (proximal.consistent()) {
++      // Only the proximal subproblem is stationary. The next iteration must
++      // recenter at candidate; its multipliers cannot certify the original QP.
++      return false;
++    }
++    std::ostringstream message;
++    message << std::setprecision(16)
++            << "ActiveSetSolver: multiplier stationarity is inconsistent "
++               "for both the original and proximal QP (residuals "
++            << original.residual << ", " << proximal.residual << "; thresholds "
++            << original.threshold << ", " << proximal.threshold << ").";
++    throw std::runtime_error(message.str());
++  }
++
++  std::ostringstream message;
++  message << std::setprecision(16)
++          << "ActiveSetSolver: multiplier stationarity is inconsistent "
++             "(residual "
++          << original.residual << "; threshold " << original.threshold << ").";
++  throw std::runtime_error(message.str());
++}
+ 
+-  const VectorValues direction = candidateValues - state.values;
+-  // Move toward the working-set solution until an inactive inequality becomes
+-  // tight. QPs can take the full step when nothing blocks; LPs use the same
+-  // calculation to detect unbounded descent.
++/* ************************************************************************* */
++bool ActiveSetSolver::originalSparseKktSatisfied(
++    const VectorValues& values, const std::vector<bool>& activeRows,
++    const VectorValues& duals) const {
++  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
++                      values, params_->feasibilityTolerance))
++    return false;
++  VectorValues stationarity;
++  double gap = 0.0;
++  for (const auto& [key, _] : keyDims_) {
++    const Vector gradient = objectiveGradient(key, values);
++    stationarity.insert(key, gradient);
++    gap += values.at(key).dot(gradient);
++  }
++
++  auto subtractRow = [&](const ConstraintRow& row) {
++    if (!duals.exists(row.multiplierKey)) return;
++    const double multiplier = duals.at(row.multiplierKey)(0);
++    gap -= row.factor->getb()(0) * multiplier;
++    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
++      stationarity.at(*key) -=
++          row.factor->getA(key).transpose() * Vector::Constant(1, multiplier);
++  };
++  for (const ConstraintRow& row : constraints_.equalities) subtractRow(row);
++  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
++    if (activeRows[row]) subtractRow(constraints_.inequalities[row]);
++
++  for (const auto& [_, residual] : stationarity)
++    if (!residual.allFinite() ||
++        residual.lpNorm<Eigen::Infinity>() > params_->multiplierTolerance)
++      return false;
++  return std::isfinite(gap) && std::abs(gap) <= params_->multiplierTolerance;
++}
++
++/* ************************************************************************* */
++void ActiveSetSolver::moveTowardCandidate(const InternalState& state,
++                                          const VectorValues& candidate,
++                                          InternalState* next) const {
++  const VectorValues direction = candidate - state.values;
++  // Stop at the first inactive inequality reached along the working-set
++  // direction. An unblocked LP direction proves unboundedness.
+   double step = problemType_ == ProblemType::QP
+                     ? 1.0
+                     : std::numeric_limits<double>::infinity();
+   int blockingRow = -1;
+   for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
+-    if (state.activeInequalityRows[row]) {
+-      continue;
+-    }
++    if (state.activeInequalityRows[row]) continue;
+     const JacobianFactor& factor = *constraints_.inequalities[row].factor;
+     const double denominator = RowDotProduct(factor, direction);
+-    if (denominator <= 0.0) {
+-      continue;
+-    }
+-    const double residual = RowResidual(factor, state.values);
+-    const double candidateStep = -residual / denominator;
++    if (denominator <= 0.0) continue;
++    const double candidateStep =
++        -RowResidual(factor, state.values) / denominator;
+     if (candidateStep < step) {
+       step = std::max(0.0, candidateStep);
+       blockingRow = static_cast<int>(row);
+     }
+   }
+-
+-  if (problemType_ == ProblemType::LP && blockingRow < 0) {
++  if (problemType_ == ProblemType::LP && blockingRow < 0)
+     throw std::runtime_error("ActiveSetSolver: LP is unbounded.");
+-  }
+ 
+-  next.values = state.values + step * direction;
+-  if (blockingRow >= 0) {
+-    next.activeInequalityRows[blockingRow] = true;
+-  }
+-  return next;
++  next->values = state.values + step * direction;
++  if (blockingRow >= 0) next->activeInequalityRows[blockingRow] = true;
+ }
+ 
+ /* ************************************************************************* */
+@@ -951,60 +1223,61 @@ Values ActiveSetSolver::zeroVectorValues
+ /* ************************************************************************* */
+ Values ActiveSetSolver::findVectorFeasiblePoint() const {
+   const Values zeroValues = zeroVectorValues();
+-  LpProblem phaseProblem;
+-  const Key slackKey = NextAvailableKey(keyDims_);
+-  // Phase one minimizes a non-negative scalar slack s. If the optimum slack is
+-  // zero within tolerance, the original variables satisfy all constraints.
+-  phaseProblem.addCost(
+-      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
++  Values feasible;
++  if (problemType_ == ProblemType::QP &&
++      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse &&
++      tryEqualityProjection(zeroValues, &feasible))
++    return feasible;
++  return solvePhaseOne(zeroValues);
++}
++/* ************************************************************************* */
++bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
++                                            Values* feasible) const {
++  // Unit unary factors select a minimum-norm point on the equality manifold.
++  GaussianFactorGraph graph;
++  for (const auto& [key, dim] : keyDims_)
++    graph.emplace_shared<JacobianFactor>(key, Matrix::Identity(dim, dim),
++                                         Vector::Zero(dim));
++  for (const ConstraintRow& row : constraints_.equalities)
++    graph.push_back(row.factor);
+ 
+-  auto rowTerms = [&](const ConstraintRow& row, double rowSign) {
+-    std::vector<std::pair<Key, Matrix>> terms;
+-    terms.reserve(row.factor->size() + 1);
+-    for (auto it = row.factor->begin(); it != row.factor->end(); ++it) {
+-      terms.emplace_back(*it, rowSign * row.factor->getA(it));
+-    }
+-    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
+-    return terms;
+-  };
+-
+-  double initialSlack = 1.0;
+-  for (const ConstraintRow& row : constraints_.equalities) {
+-    const double b = row.factor->getb()(0);
+-    // Equality A*x=b is relaxed as both A*x-s<=b and -A*x-s<=-b.
+-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
+-        JacobianFactor(rowTerms(row, 1.0), SingleValue(b))));
+-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
+-        JacobianFactor(rowTerms(row, -1.0), SingleValue(-b))));
+-    initialSlack = std::max(initialSlack, std::abs(b) + 1.0);
+-  }
+-  for (const ConstraintRow& row : constraints_.inequalities) {
+-    const double b = row.factor->getb()(0);
+-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
+-        JacobianFactor(rowTerms(row, 1.0), SingleValue(b))));
+-    initialSlack = std::max(initialSlack, -b + 1.0);
++  try {
++    const VectorValues candidate = graph.optimize();
++    for (const auto& [key, _] : keyDims_)
++      if (!candidate.exists(key) || !candidate.at(key).allFinite())
++        return false;
++    if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
++                        candidate, params_->feasibilityTolerance))
++      return false;
++    *feasible = vectorValuesToValues(candidate, zeroValues);
++    return true;
++  } catch (const IndeterminateSystemException&) {
++    // Phase one handles an inconsistent or singular projection.
++    return false;
+   }
+-  phaseProblem.addConstraint(LinearConstraint::LessEqual(
+-      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
++}
+ 
+-  Values phaseInitial = zeroValues;
+-  const Vector slackInitial = Vector::Constant(1, initialSlack);
+-  phaseInitial.insert(slackKey, slackInitial);
+-  const Values phaseResult =
+-      ActiveSetSolver(phaseProblem, params_).optimize(phaseInitial);
+-  const double slack = phaseResult.at<Vector>(slackKey)(0);
+-  if (slack > params_->phaseOneFeasibilityTolerance) {
++/* ************************************************************************* */
++Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
++  const Key slackKey = NextAvailableKey(keyDims_);
++  double initialSlack;
++  const LpProblem phaseProblem =
++      buildPhaseOneProblem(constraints_.equalities, constraints_.inequalities,
++                           slackKey, &initialSlack);
++  Values initial = zeroValues;
++  initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
++  const Values result =
++      ActiveSetSolver(phaseProblem, params_).optimize(initial);
++  if (result.at<Vector>(slackKey)(0) > params_->phaseOneFeasibilityTolerance)
+     throw std::runtime_error(
+         "ActiveSetSolver: could not find a feasible point.");
+-  }
+ 
+-  Values feasibleValues;
+-  for (const auto& [key, _] : keyDims_) {
+-    feasibleValues.insert(key, phaseResult.exists(key)
+-                                   ? phaseResult.at<Vector>(key)
+-                                   : zeroValues.at<Vector>(key));
+-  }
+-  return feasibleValues;
++  Values feasible;
++  for (const auto& [key, _] : keyDims_)
++    feasible.insert(key, result.exists(key) ? result.at<Vector>(key)
++                                            : zeroValues.at<Vector>(key));
++  return feasible;
+ }
+ 
++
+ }  // namespace gtsam
+--- gtsam-4.3.0.orig/gtsam/constrained/ActiveSetSolver.h
++++ gtsam-4.3.0/gtsam/constrained/ActiveSetSolver.h
+@@ -42,12 +42,20 @@ class GTSAM_EXPORT ActiveSetSolverParams
+     Dense
+   };
+ 
++  /// Maximum number of active-set or proximal iterations.
+   size_t maxIterations = 1000;
++  /// Distance at which an inequality is initially considered active.
+   double activeTolerance = 1e-7;
++  /// Step size used to inspect LP and unregularized QP optimality.
+   double stepTolerance = 1e-7;
++  /// Maximum allowed primal constraint residual.
+   double feasibilityTolerance = 1e-7;
++  /// Tolerance for multiplier signs, stationarity, and QP gap checks.
+   double multiplierTolerance = 1e-7;
++  /// Sparse QPs use this as a recentered proximal weight; dense QPs add it to
++  /// the factored Hessian.
+   double regularization = 1e-9;
++  /// Maximum residual accepted from the cold-start feasibility phase.
+   double phaseOneFeasibilityTolerance = 1e-6;
+   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
+ };
+@@ -69,10 +77,11 @@ class GTSAM_EXPORT ActiveSetSolverState
+  * Active-set solver for LPs and QPs with shared LinearConstraint constraints.
+  *
+  * QP subproblems can either rebuild sparse working factor graphs or reuse one
+- * Hessian factorization with dense active-set Schur complements. LP subproblems
+- * project the negative objective gradient onto the active constraint surface
+- * and detect unbounded descent when no inactive inequality blocks that
+- * direction.
++ * Hessian factorization with dense active-set Schur complements. Sparse QPs
++ * regularize each working graph around the current feasible point and check
++ * convergence against the original, unregularized QP. LP subproblems project
++ * the negative objective gradient onto the active constraint surface and
++ * detect unbounded descent when no inactive inequality blocks that direction.
+  */
+ class GTSAM_EXPORT ActiveSetSolver {
+  public:
+@@ -109,6 +118,7 @@ class GTSAM_EXPORT ActiveSetSolver {
+  private:
+   enum class ProblemType { LP, QP };
+   struct DenseQpWorkspace;
++  struct DenseConstraintSystem;
+ 
+   struct ValueShape {
+     enum class Type { Vector, Matrix };
+@@ -152,39 +162,96 @@ class GTSAM_EXPORT ActiveSetSolver {
+   SparseConstraintData constraints_;
+   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
+ 
++  /// Run the active-set loop from the supplied initial values and state.
++  std::pair<Values, State> optimizeWithState(const Values& initialValues,
++                                             const State* warmStart) const;
++  /// Advance the current active set by one subproblem solve.
++  InternalState iterate(const InternalState& state) const;
++
++ private:
++  // Internal helpers: setup and value representation.
++  /// Record the dimensions of all keys in the problem.
+   void initializeDimensions();
++  /// Build the stored QP graph or LP gradient.
+   void initializeObjective();
++  /// Allocate the workspace used only by dense QP mode.
+   void initializeDenseQpWorkspace();
++  /// Factor the dense-mode cost, retrying with its regularization floor.
++  void factorDenseQpCost();
++  /// Split and normalize constraints into scalar rows.
+   void initializeConstraints();
++  /// Check the types and dimensions of supplied initial values.
+   void validateInitialValues(const Values& values) const;
++  /// Create zero vectors for every key in the problem.
+   Values zeroVectorValues() const;
+-  Values findVectorFeasiblePoint() const;
++  /// Record whether each initial value was a vector or matrix.
+   std::map<Key, ValueShape> valueShapes(const Values& values) const;
++  /// Flatten supported Values entries into vector-valued entries.
+   VectorValues valuesToVectorValues(const Values& values) const;
++  /// Restore the original vector and matrix value shapes.
+   Values vectorValuesToValues(const VectorValues& values,
+                               const Values& prototype) const;
++
++  // Internal helpers: sparse working set and optimality.
++  /// Assemble the cost, proximal or LP descent term, and active constraints.
+   GaussianFactorGraph buildWorkingGraph(
+       const VectorValues& values,
+       const std::vector<bool>& activeInequalityRows) const;
++  /// Assemble A_active^T lambda = gradient for the original or proximal QP.
++  /// A nonnull center adds regularization * (values - center) to the gradient.
+   GaussianFactorGraph buildDualGraph(
+       const SparseConstraintData& constraints,
+-      const std::vector<bool>& activeInequalityRows,
+-      const VectorValues& values) const;
++      const std::vector<bool>& activeInequalityRows, const VectorValues& values,
++      const VectorValues* proximalCenter = nullptr) const;
++  /// Decide when a working-set point is ready for a multiplier check.
++  bool shouldInspectOptimality(const InternalState& state,
++                               const VectorValues& candidate,
++                               bool useDenseQp) const;
++  /// Recover original-QP multipliers, or return false for a proximal-only step.
++  bool recoverSparseMultipliers(const InternalState& state,
++                                const VectorValues& candidate,
++                                VectorValues* duals) const;
++  /// Certify the original sparse QP's primal residual, stationarity, and gap.
++  bool originalSparseKktSatisfied(const VectorValues& values,
++                                  const std::vector<bool>& activeRows,
++                                  const VectorValues& duals) const;
++  /// Line-search toward a working-set point and add the first blocking row.
++  void moveTowardCandidate(const InternalState& state,
++                           const VectorValues& candidate,
++                           InternalState* next) const;
++  /// Evaluate the QP or LP objective gradient at one key.
++  Vector objectiveGradient(Key key, const VectorValues& values) const;
++
++  // Internal helpers: dense QP subproblems.
++  /// Flatten vector values using the dense workspace ordering.
+   Vector vectorValuesToDenseVector(const VectorValues& values) const;
++  /// Recover vector values from the dense workspace ordering.
+   VectorValues denseVectorToVectorValues(const Vector& vector) const;
++  /// Apply the cached inverse Hessian through its factorization.
+   Vector applyInverseDenseHessian(const Vector& vector) const;
++  /// Solve the current equality-constrained dense QP.
+   std::pair<VectorValues, VectorValues> solveDenseQpSubproblem(
+       const std::vector<bool>& activeInequalityRows) const;
++  /// Assemble active rows in the dense workspace's stable variable order.
++  DenseConstraintSystem denseConstraintSystem(
++      const std::vector<bool>& activeInequalityRows) const;
++  /// Test whether the dense QP step is within the configured tolerance.
+   bool denseQpStepIsSmall(const VectorValues& candidateValues,
+                           const VectorValues& values) const;
+-  Vector objectiveGradient(Key key, const VectorValues& values) const;
++
++  // Internal helpers: state and cold-start feasibility.
++  /// Initialize active rows from values or a warm start.
+   InternalState initialState(const Values& values,
+                              const State* warmStart) const;
+-  std::pair<Values, State> optimizeWithState(const Values& initialValues,
+-                                             const State* warmStart) const;
+-  InternalState iterate(const InternalState& state) const;
++  /// Restore constraint row order and value shapes in the public state.
+   State buildPublicState(const InternalState& state,
+                          const Values& prototype) const;
++  /// Find a feasible starting point for a vector-valued problem.
++  Values findVectorFeasiblePoint() const;
++  /// Try the sparse QP's minimum-norm projection onto its equalities.
++  bool tryEqualityProjection(const Values& zeroValues, Values* feasible) const;
++  /// Solve phase one and discard its synthetic slack variable.
++  Values solvePhaseOne(const Values& zeroValues) const;
+ };
+ 
+ }  // namespace gtsam
 --- gtsam-4.3.0.orig/gtsam/constrained/AugmentedLagrangianOptimizer.cpp
 +++ gtsam-4.3.0/gtsam/constrained/AugmentedLagrangianOptimizer.cpp
 @@ -19,6 +19,10 @@
@@ -4559,6 +5607,121 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /** Add a quadratic cost. */
    void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }
+--- gtsam-4.3.0.orig/gtsam/constrained/QpCost.cpp
++++ gtsam-4.3.0/gtsam/constrained/QpCost.cpp
+@@ -42,13 +42,13 @@ Vector VectorOrMatrixValue(const Values&
+ 
+ /* ************************************************************************* */
+ VectorValues DirectVectorValues(const Values& values,
+-                                const HessianFactor& factor) {
++                                const GaussianFactor& factor) {
+   VectorValues result;
+   for (auto it = factor.begin(); it != factor.end(); ++it) {
+     const Vector vector = VectorOrMatrixValue(values, *it);
+     if (factor.getDim(it) != vector.size()) {
+       throw std::invalid_argument(
+-          "QpCost: Hessian block dimension does not match value dimension.");
++          "QpCost: Gaussian block dimension does not match value dimension.");
+     }
+     result.insert(*it, vector);
+   }
+@@ -113,11 +113,17 @@ bool QpCost::equals(const NonlinearFacto
+ 
+ /* ************************************************************************* */
+ double QpCost::error(const Values& values) const {
+-  return hessianFactor_->error(DirectVectorValues(values, *hessianFactor_));
++  return gaussianFactor().error(DirectVectorValues(values, gaussianFactor()));
+ }
+ 
+ /* ************************************************************************* */
+ GaussianFactor::shared_ptr QpCost::linearize(const Values& values) const {
++  if (jacobianFactor_) {
++    auto shifted = std::make_shared<JacobianFactor>(*jacobianFactor_);
++    shifted->getb() = -jacobianFactor_->unweighted_error(
++        DirectVectorValues(values, *jacobianFactor_));
++    return shifted;
++  }
+   auto shifted = std::make_shared<HessianFactor>(*hessianFactor_);
+   const VectorValues vectorValues = DirectVectorValues(values, *hessianFactor_);
+   const Vector valueVector = vectorValues.vector(hessianFactor_->keys());
+--- gtsam-4.3.0.orig/gtsam/constrained/QpCost.h
++++ gtsam-4.3.0/gtsam/constrained/QpCost.h
+@@ -19,6 +19,7 @@
+ 
+ #include <gtsam/base/SymmetricBlockMatrix.h>
+ #include <gtsam/linear/HessianFactor.h>
++#include <gtsam/linear/JacobianFactor.h>
+ #include <gtsam/nonlinear/NonlinearFactor.h>
+ #include <gtsam/nonlinear/Values.h>
+ 
+@@ -27,7 +28,7 @@
+ namespace gtsam {
+ 
+ /**
+- * Nonlinear wrapper around a HessianFactor-defined affine quadratic cost over
++ * Nonlinear wrapper around a Gaussian-factor-defined affine quadratic cost over
+  * direct Vector and Matrix Values entries.
+  *
+  * Matrix entries are interpreted by column-major vectorization. The
+@@ -48,14 +49,17 @@ class GTSAM_EXPORT QpCost : public Nonli
+         hessianFactor_(std::make_shared<HessianFactor>(factor)) {}
+ 
+   /**
+-   * Construct from any Gaussian factor by converting it to a Hessian factor.
++   * Construct from a Gaussian factor, retaining its square-root representation
++   * when available for sparse constrained solves and gradient evaluation.
+    */
+   explicit QpCost(const GaussianFactor& factor)
+-      : QpCost(HessianFactor(factor)) {}
++      : QpCost(HessianFactor(factor)) {
++    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(&factor))
++      jacobianFactor_ = std::make_shared<JacobianFactor>(*jacobian);
++  }
+ 
+   /**
+-   * Construct from a shared Gaussian factor by converting it to a Hessian
+-   * factor.
++   * Construct from a shared Gaussian factor, copying its original representation.
+    */
+   explicit QpCost(const GaussianFactor::shared_ptr& factor)
+       : QpCost(factor ? *factor
+@@ -72,6 +76,12 @@ class GTSAM_EXPORT QpCost : public Nonli
+   QpCost(const KeyVector& keys, const SymmetricBlockMatrix& Q,
+          size_t columnDim = 1);
+ 
++  /// Return the original Gaussian representation of the affine quadratic.
++  const GaussianFactor& gaussianFactor() const {
++    if (jacobianFactor_) return *jacobianFactor_;
++    return *hessianFactor_;
++  }
++
+   /// Return the stored Hessian factor.
+   const HessianFactor& hessianFactor() const { return *hessianFactor_; }
+ 
+@@ -82,13 +92,13 @@ class GTSAM_EXPORT QpCost : public Nonli
+   /** Check equality up to a tolerance. */
+   bool equals(const NonlinearFactor& other, double tol = 1e-9) const override;
+ 
+-  /** Evaluate the stored Hessian factor at the direct Vector/Matrix values. */
++  /** Evaluate the original Gaussian factor at the direct Vector/Matrix values. */
+   double error(const Values& values) const override;
+ 
+   /** Return scalar cost dimension. */
+   size_t dim() const override { return 1; }
+ 
+-  /** Return an exact Hessian factor around the current vector-space values. */
++  /** Return an exact Gaussian factor around the current vector-space values. */
+   GaussianFactor::shared_ptr linearize(const Values& values) const override;
+ 
+   /** Return a deep copy of this factor. */
+@@ -98,6 +108,7 @@ class GTSAM_EXPORT QpCost : public Nonli
+ 
+  private:
+   HessianFactor::shared_ptr hessianFactor_;
++  JacobianFactor::shared_ptr jacobianFactor_;
+ };
+ 
+ }  // namespace gtsam
 --- gtsam-4.3.0.orig/gtsam/constrained/QuadraticConstraint.cpp
 +++ gtsam-4.3.0/gtsam/constrained/QuadraticConstraint.cpp
 @@ -54,15 +54,23 @@ Vector ConstraintError(const QuadraticCo
@@ -6500,6 +7663,336 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    LONGS_EQUAL(2, extracted.size());
    const Rot2 expected0 = gaugeRotation.inverse().compose(R0);
    const Rot2 expected1 = gaugeRotation.inverse().compose(R1);
+--- gtsam-4.3.0.orig/gtsam/constrained/tests/testQpProblem.cpp
++++ gtsam-4.3.0/gtsam/constrained/tests/testQpProblem.cpp
+@@ -101,6 +101,22 @@ TEST(QpCost, LinearizeExact) {
+                        1e-12);
+ }
+ 
++// Preserve the weak least-squares direction that normal equations erase.
++TEST(QpCost, SquareRootErrorAndLinearization) {
++  const Matrix A{{1e8, 1e8}, {1.0, 0.0}};
++  const JacobianFactor factor(x0, A, Vector2{0.0, 1.0});
++  const QpCost cost(factor);
++  const Values optimum = VectorValue(Vector2{1.0, -1.0});
++  CHECK(dynamic_cast<const JacobianFactor*>(&cost.gaussianFactor()));
++  EXPECT_DOUBLES_EQUAL(0.0, cost.error(optimum), 1e-15);
++  CHECK(cost.hessianFactor().error(VectorValues{{x0, Vector2{1., -1.}}}) < 0.0);
++  const auto shifted = cost.linearize(optimum);
++  CHECK(std::dynamic_pointer_cast<JacobianFactor>(shifted));
++  const LinearContainerFactor container(shifted, optimum);
++  const Values other = VectorValue(Vector2{2.0, -2.0});
++  EXPECT_DOUBLES_EQUAL(cost.error(other), container.error(other), 1e-12);
++}
++
+ }  // namespace QpCostFixture
+ /* ************************************************************************* */
+ namespace LinearConstraintFixture {
+--- gtsam-4.3.0.orig/gtsam/constrained/tests/testQpSolver.cpp
++++ gtsam-4.3.0/gtsam/constrained/tests/testQpSolver.cpp
+@@ -535,6 +535,302 @@ TEST(QpSolver, QPS_QPTEST) {
+ 
+ }  // namespace qps_file_examples
+ /* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace redundant_sparse_multipliers {
++
++// Opposing bounds fix a variable although their multipliers are nonunique.
++// Either gradient sign must eventually produce dual-feasible multipliers.
++TEST(ActiveSetSolver, SparseOpposingBounds) {
++  for (double sign : {-1.0, 1.0}) {
++    QpProblem problem;
++    problem.addCost(
++        HessianFactor(0, Matrix::Ones(1, 1), Vector::Constant(1, sign), 0));
++    problem.addConstraint(LinearConstraint::LessEqual(
++        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
++    problem.addConstraint(LinearConstraint::LessEqual(
++        JacobianFactor(0, -Matrix::Ones(1, 1), Vector::Zero(1))));
++    Values initial;
++    initial.insert(0, Vector::Zero(1).eval());
++
++    const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
++    CHECK(solved.second.converged);
++    EXPECT_DOUBLES_EQUAL(0, solved.first.at<Vector>(0)(0), 1e-8);
++    const auto& duals = solved.second.inequalityMultipliers;
++    CHECK(duals[0](0) <= 1e-8 && duals[1](0) <= 1e-8);
++    EXPECT_DOUBLES_EQUAL(-sign, duals[0](0) - duals[1](0), 1e-8);
++  }
++}
++
++// Duplicate equality rows need a valid multiplier combination, not uniqueness.
++TEST(ActiveSetSolver, SparseDuplicateEqualities) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector::Ones(1), 0));
++  const auto equality = LinearConstraint::Equal(
++      JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1)));
++  problem.addConstraint(equality);
++  problem.addConstraint(equality);
++  Values initial;
++  initial.insert(0, Vector::Zero(1).eval());
++
++  const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
++  CHECK(solved.second.converged);
++  const auto& duals = solved.second.equalityMultipliers;
++  EXPECT_DOUBLES_EQUAL(-1, duals[0](0) + duals[1](0), 1e-8);
++}
++
++// Cold feasibility search and QP optimization tolerate duplicate normals.
++TEST(ActiveSetSolver, SparseColdSolveDuplicateBounds) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector::Ones(2), 0));
++  problem.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
++      0, Matrix{{1, 0}, {2, 0}, {0, 1}}, Vector3{0, 0, 0.5})));
++
++  const auto solved = ActiveSetSolver(problem).optimizeWithState();
++  CHECK(solved.second.converged);
++  CHECK(assert_equal(Vector2{0, 0.5}, solved.first.at<Vector>(0), 1e-7));
++}
++
++// A dependency spanning a cycle must survive elimination of earlier cliques.
++// Changing row units must preserve stationarity in the original equations.
++TEST(ActiveSetSolver, SparseDependentEqualityCycle) {
++  constexpr size_t count = 8;
++  for (double scale : {1e-3, 1.0, 1e3}) {
++    QpProblem problem;
++    Values initial;
++    for (Key key = 0; key < count; ++key) {
++      problem.addCost(HessianFactor(key, Matrix::Ones(1, 1),
++                                    Vector::Constant(1, key + 1), 0));
++      problem.addConstraint(LinearConstraint::Equal(
++          JacobianFactor(key, scale * Matrix::Ones(1, 1), (key + 1) % count,
++                         -scale * Matrix::Ones(1, 1), Vector::Zero(1))));
++      initial.insert(key, Vector::Zero(1).eval());
++    }
++    problem.addConstraint(LinearConstraint::Equal(
++        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
++
++    const auto [values, state] =
++        ActiveSetSolver(problem).optimizeWithState(initial);
++    CHECK(state.converged);
++    Vector residual = -Vector::LinSpaced(count, 1, count);
++    for (Key key = 0; key < count; ++key) {
++      EXPECT_DOUBLES_EQUAL(0.0, values.at<Vector>(key)(0), 1e-8);
++      const double multiplier = scale * state.equalityMultipliers[key](0);
++      residual(key) -= multiplier;
++      residual((key + 1) % count) += multiplier;
++    }
++    residual(0) -= state.equalityMultipliers.back()(0);
++    CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-7);
++  }
++}
++
++// Gauging a redundant row must retain a weak but independent normal direction.
++TEST(ActiveSetSolver, SparseDependentAndWeakEqualityNormals) {
++  const Matrix normals{{1, 0}, {1, 1e-5}, {2, 0}};
++  const Vector2 gradient{-1, -1e-5};
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), -gradient, 0));
++  problem.addConstraint(
++      LinearConstraint::Equal(JacobianFactor(0, normals, Vector3::Zero())));
++  Values initial;
++  initial.insert(0, Vector::Zero(2).eval());
++
++  const auto [values, state] =
++      ActiveSetSolver(problem).optimizeWithState(initial);
++  CHECK(state.converged);
++  CHECK(assert_equal(Vector2::Zero(), values.at<Vector>(0), 1e-8));
++  const Vector2 residual =
++      gradient - normals.transpose() * state.equalityMultipliers[0];
++  CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-8);
++}
++
++}  // namespace redundant_sparse_multipliers
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace sparse_proximal_qp {
++
++ActiveSetSolverParams::shared_ptr Parameters(double regularization) {
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->qpSubproblemSolver =
++      ActiveSetSolverParams::QpSubproblemSolver::Sparse;
++  params->regularization = regularization;
++  params->stepTolerance = 1e-8;
++  params->multiplierTolerance = 1e-9;
++  return params;
++}
++
++// Proximal regularization must not shrink the unconstrained optimum.
++TEST(ActiveSetSolver, SparseProximalOriginalOptimum) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
++  Values initial;
++  initial.insert(0, Vector(Vector1(0)));
++
++  const auto solved =
++      ActiveSetSolver(problem, Parameters(1)).optimizeWithState(initial);
++  CHECK(solved.second.converged);
++  EXPECT_DOUBLES_EQUAL(10, solved.first.at<Vector>(0)(0), 1e-9);
++  CHECK(solved.second.iterations > 2);
++}
++
++// Active-bound multipliers must describe the original QP gradient.
++TEST(ActiveSetSolver, SparseProximalOriginalBoundMultiplier) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
++  problem.addConstraint(LinearConstraint::LessEqual(
++      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(3))));
++
++  const auto solved =
++      ActiveSetSolver(problem, Parameters(1)).optimizeWithState();
++  EXPECT_DOUBLES_EQUAL(3, solved.first.at<Vector>(0)(0), 1e-9);
++  EXPECT_DOUBLES_EQUAL(-7, solved.second.inequalityMultipliers[0](0), 1e-9);
++}
++
++// A free direction retains its current value under a proximal solve.
++TEST(ActiveSetSolver, SparseProximalPreservesFreeDirection) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix{{1, 0}, {0, 0}}, Vector2{10, 0}, 0));
++  Values initial;
++  initial.insert(0, Vector(Vector2{0, 7}));
++
++  const auto solved =
++      ActiveSetSolver(problem, Parameters(0.1)).optimizeWithState(initial);
++  CHECK(assert_equal(Vector2{10, 7}, solved.first.at<Vector>(0), 1e-9));
++}
++
++// Tiny steps caused by large regularization do not prove original optimality.
++TEST(ActiveSetSolver, SparseProximalRejectsPrematureConvergence) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1), 0));
++  auto params = Parameters(1e6);
++  params->stepTolerance = 1e-5;
++  params->maxIterations = 3;
++  Values initial;
++  initial.insert(0, Vector(Vector1(0)));
++
++  CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimizeWithState(initial),
++                  std::runtime_error);
++}
++
++// The original primal-dual gap must be small at a large-magnitude solution.
++TEST(ActiveSetSolver, SparseProximalOriginalGap) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1000), 0));
++  Values initial;
++  initial.insert(0, Vector(Vector1(0)));
++
++  const auto solved =
++      ActiveSetSolver(problem, Parameters(1e-3)).optimizeWithState(initial);
++  const double x = solved.first.at<Vector>(0)(0);
++  CHECK(std::abs(x * (x - 1000)) <= 1e-9);
++}
++
++}  // namespace sparse_proximal_qp
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace sparse_equality_first {
++
++// A feasible equality projection avoids the iterative cold-start LP.
++TEST(ActiveSetSolver, SparseEqualityFirstFeasiblePoint) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(2), 0));
++  problem.addConstraint(LinearConstraint::Equal(
++      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2))));
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->maxIterations = 1;
++
++  const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
++  CHECK(solved.second.converged);
++  EXPECT_DOUBLES_EQUAL(2, solved.first.at<Vector>(0)(0), 1e-9);
++}
++
++// A projected point that violates an inequality still uses phase one.
++TEST(ActiveSetSolver, SparseEqualityFirstFallsBack) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector2::Zero(), 0));
++  problem.addConstraint(LinearConstraint::Equal(
++      JacobianFactor(0, Matrix{{1, 1}}, Vector1(1))));
++  problem.addConstraint(LinearConstraint::GreaterEqual(
++      JacobianFactor(0, Matrix{{1, 0}}, Vector1(0.8))));
++
++  const auto solved = ActiveSetSolver(problem).optimizeWithState();
++  CHECK(solved.second.converged);
++  CHECK(assert_equal(Vector2{0.8, 0.2}, solved.first.at<Vector>(0), 1e-7));
++}
++
++// Inconsistent equality and inequality rows still report infeasibility.
++TEST(ActiveSetSolver, SparseEqualityFirstInfeasible) {
++  QpProblem problem;
++  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(0), 0));
++  problem.addConstraint(LinearConstraint::Equal(
++      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0))));
++  problem.addConstraint(LinearConstraint::GreaterEqual(
++      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(1))));
++
++  CHECK_EXCEPTION(ActiveSetSolver(problem).optimizeWithState(),
++                  std::runtime_error);
++}
++
++}  // namespace sparse_equality_first
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace square_root_qp {
++
++// Releasing a bound must preserve a weak finite least-squares direction.
++TEST(ActiveSetSolver, SquareRootWeakDirection) {
++  QpProblem problem;
++  problem.addCost(JacobianFactor(0, Matrix{{1e8, 1e8}, {1.0, 0.0}},
++                                Vector2{1e8, 1.0}));
++  problem.addConstraint(LinearConstraint::LessEqual(
++      JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->regularization = 0;
++  params->maxIterations = 10;
++  Values initial;
++  initial.insert(0, Vector(Vector2::Zero()));
++  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
++  CHECK(result.second.converged);
++  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
++}
++
++// A feasible exact subproblem minimum needs no duplicate factorization.
++TEST(ActiveSetSolver, InspectUnregularizedMinimumImmediately) {
++  QpProblem problem;
++  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->regularization = 0;
++  params->maxIterations = 1;
++  Values initial;
++  initial.insert(0, Vector(Vector1(0.0)));
++  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
++  CHECK(result.second.converged);
++  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
++  CHECK(result.second.iterations == 1);
++}
++
++// Releasing a bound requires one constrained solve and one free solve.
++TEST(ActiveSetSolver, ReleaseUnregularizedBoundWithoutDuplicateSolve) {
++  QpProblem problem;
++  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
++  problem.addConstraint(LinearConstraint::GreaterEqual(
++      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0.0))));
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->regularization = 0;
++  params->maxIterations = 2;
++  Values initial;
++  initial.insert(0, Vector(Vector1(0.0)));
++  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
++  CHECK(result.second.converged);
++  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
++  CHECK(result.second.iterations == 2);
++}
++
++}  // namespace square_root_qp
++/* ************************************************************************* */
++
+ int main() {
+   TestResult tr;
+   return TestRegistry::runAllTests(tr);
 --- gtsam-4.3.0.orig/gtsam/discrete/AllDiff.cpp
 +++ gtsam-4.3.0/gtsam/discrete/AllDiff.cpp
 @@ -79,7 +79,7 @@ TableFactor AllDiff::toTableFactor() con
@@ -13572,7 +15065,165 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     * @return PrecomputedData containing the indexed junction tree and sizing
 --- gtsam-4.3.0.orig/gtsam/linear/NoiseModel.cpp
 +++ gtsam-4.3.0/gtsam/linear/NoiseModel.cpp
-@@ -844,7 +844,7 @@ Vector Robust::unweightedWhiten(const Ve
+@@ -18,6 +18,7 @@
+ 
+ #include <gtsam/base/timing.h>
+ #include <gtsam/linear/NoiseModel.h>
++#include <gtsam/linear/internal/ConstrainedQR.h>
+ 
+ #include <Eigen/Cholesky>
+ #include <cassert>
+@@ -557,147 +558,9 @@ Constrained::shared_ptr Constrained::uni
+ }
+ 
+ /* ************************************************************************* */
+-// Special version of QR for Constrained calls slower but smarter code
+-// that deals with possibly zero sigmas
+-// It is Gram-Schmidt orthogonalization rather than Householder
+-
+-// Check whether column a triggers a constraint and corresponding variable is deterministic
+-// Return constraint_row with maximum element in case variable plays in multiple constraints
+-template <typename VECTOR>
+-std::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
+-  std::optional<size_t> constraint_row;
+-  // not zero, so roundoff errors will not be counted
+-  // TODO(frank): that's a fairly crude way of dealing with roundoff errors :-(
+-  double max_element = 1e-9;
+-  for (size_t i = 0; i < m; i++) {
+-    if (!std::isinf(invsigmas[i]))
+-      continue;
+-    double abs_ai = std::abs(a(i,0));
+-    if (abs_ai > max_element) {
+-      max_element = abs_ai;
+-      constraint_row = i;
+-    }
+-  }
+-  return constraint_row;
+-}
+-
++// One constrained square-root implementation serves fronts of every size.
+ SharedDiagonal Constrained::QR(Matrix& Ab) const {
+-  static const double kInfinity = std::numeric_limits<double>::infinity();
+-
+-  // get size(A) and maxRank
+-  size_t m = Ab.rows();
+-  const size_t n = Ab.cols() - 1;
+-  const size_t maxRank = min(m, n);
+-
+-  // create storage for [R d]
+-  typedef std::tuple<size_t, Matrix, double> Triple;
+-  list<Triple> Rd;
+-
+-  Matrix rd(1, n + 1);  // and for row of R
+-  Vector invsigmas = sigmas_.array().inverse();
+-  Vector weights = invsigmas.array().square();  // calculate weights once
+-
+-  // We loop over all columns, because the columns that can be eliminated
+-  // are not necessarily contiguous. For each one, estimate the corresponding
+-  // scalar variable x as d-rS, with S the separator (remaining columns).
+-  // Then update A and b by substituting x with d-rS, zero-ing out x's column.
+-  for (size_t j = 0; j < n; ++j) {
+-    // extract the first column of A
+-    Eigen::Block<Matrix> a = Ab.block(0, j, m, 1);
+-
+-    // Check whether we need to handle as a constraint
+-    std::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
+-
+-    if (constraint_row) {
+-      // Handle this as a constraint, as the i^th row has zero sigma with non-zero entry A(i,j)
+-
+-      // In this case, the row in [R|d] is simply the row in [A|b]
+-      // NOTE(frank): we used to divide by a[i] but there is no need with a constraint
+-      rd = Ab.row(*constraint_row);
+-
+-      // Construct solution (r, d, sigma)
+-      Rd.push_back(std::make_tuple(j, rd, kInfinity));
+-
+-      // exit after rank exhausted
+-      if (Rd.size() >= maxRank)
+-        break;
+-
+-      // The constraint row will be zeroed out, so we can save work by swapping in the
+-      // last valid row and decreasing m. This will save work on subsequent down-dates, too.
+-      m -= 1;
+-      if (*constraint_row != m) {
+-        Ab.row(*constraint_row) = Ab.row(m);
+-        weights(*constraint_row) = weights(m);
+-        invsigmas(*constraint_row) = invsigmas(m);
+-      }
+-
+-      // get a reduced a-column which is now shorter
+-      Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
+-      a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
+-
+-      // Rank-1 down-date of Ab, expensive, using outer product
+-      Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
+-    } else {
+-      // Treat in normal Gram-Schmidt way
+-      // Calculate weighted pseudo-inverse and corresponding precision
+-
+-      // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
+-      // For diagonal Sigma, inv(Sigma) = diag(precisions)
+-      double precision = 0;
+-      Vector pseudo(m);     // allocate storage for pseudo-inverse
+-      for (size_t i = 0; i < m; i++) {
+-        double ai = a(i, 0);
+-        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
+-          pseudo[i] = weights[i] * ai;
+-          precision += pseudo[i] * ai;
+-        } else
+-          pseudo[i] = 0;
+-      }
+-
+-      if (precision > 1e-8) {
+-        pseudo /= precision;
+-
+-        // create solution [r d], rhs is automatically r(n)
+-        rd(0, j) = 1.0;  // put 1 on diagonal
+-        rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
+-
+-        // construct solution (r, d, sigma)
+-        Rd.push_back(std::make_tuple(j, rd, precision));
+-      } else {
+-        // If precision is zero, no information on this column
+-        // This is actually not limited to constraints, could happen in Gaussian::QR
+-        // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
+-        continue;  // but even if not, no need to update if a==zeros
+-      }
+-
+-      // exit after rank exhausted
+-      if (Rd.size() >= maxRank)
+-        break;
+-
+-      // Rank-1 down-date of Ab, expensive, using outer product
+-      Ab.block(0, j + 1, m, n - j).noalias() -= a * rd.middleCols(j + 1, n - j);
+-    }
+-  }
+-
+-  // Create storage for precisions
+-  Vector precisions(Rd.size());
+-
+-  // Write back result in Ab, imperative as we are
+-  size_t i = 0;  // start with first row
+-  bool mixed = false;
+-  Ab.setZero();  // make sure we don't look below
+-  for (const Triple& t: Rd) {
+-    const size_t& j = std::get<0>(t);
+-    const Matrix& rd = std::get<1>(t);
+-    precisions(i) = std::get<2>(t);
+-    if (std::isinf(precisions(i)))
+-      mixed = true;
+-    Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
+-    i += 1;
+-  }
+-
+-  // Must include mu, as the defaults might be higher, resulting in non-convergence
+-  return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
++  return internal::constrainedQR(Ab, sigmas_, mu_);
+ }
+ 
+ /* ************************************************************************* */
+@@ -844,7 +707,7 @@ Vector Robust::unweightedWhiten(const Ve
    return noise_->unweightedWhiten(v);
  }
  double Robust::weight(const Vector& v) const {
@@ -13581,6 +15232,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  Robust::shared_ptr Robust::Create(
+--- gtsam-4.3.0.orig/gtsam/linear/NoiseModel.h
++++ gtsam-4.3.0/gtsam/linear/NoiseModel.h
+@@ -277,9 +277,14 @@ namespace gtsam {
+       /**
+        * Apply appropriately weighted QR factorization to the system [A b]
+        *               Q'  *   [A b]  =  [R d]
+-       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r = min(m,n).
++       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r <= min(m,n).
+        * This routine performs an in-place factorization on Ab.
+        * Below-diagonal elements are set to zero by this routine.
++       * Exact rows take priority in the original variable order. Finite pivots
++       * use a weighted, scale-aware rank test, including weak observations.
++       * All front sizes use Eigen QR with a row-pivoted, one-column
++       * Householder fallback. Elimination preserves square-root form without
++       * forming normal equations.
+        * @param Ab is the m*(n+1) augmented system matrix [A b]
+        * @return Empty SharedDiagonal() noise model: R,d are whitened
+        */
 --- gtsam-4.3.0.orig/gtsam/linear/internal/CompactLeafSchurKernel.cpp
 +++ gtsam-4.3.0/gtsam/linear/internal/CompactLeafSchurKernel.cpp
 @@ -15,6 +15,7 @@
@@ -13610,6 +15279,274 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        return false;
      }
  
+--- /dev/null
++++ gtsam-4.3.0/gtsam/linear/internal/ConstrainedQR.cpp
+@@ -0,0 +1,232 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. All Rights Reserved.
++ * See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file ConstrainedQR.cpp
++ * Adapt Eigen QR to exact constraints and fixed-order, rank-aware elimination.
++ */
++
++#include <gtsam/linear/internal/ConstrainedQR.h>
++
++#include <Eigen/QR>
++#include <algorithm>
++#include <cmath>
++#include <limits>
++#include <optional>
++#include <vector>
++
++namespace gtsam::noiseModel::internal {
++namespace {
++
++// GTSAM selects exact/finite pivots; Eigen performs all orthogonal transforms.
++class ConstrainedQRWorkspace {
++  Matrix& output_;
++  const size_t variables_, maximumRank_;
++  const double rankTolerance_;
++  Matrix finite_, hard_, conditionals_;
++  Vector reference_, precisions_, scratch_;
++  Eigen::RowVectorXd row_;
++  std::vector<size_t> pivots_;
++  size_t finiteStart_ = 0, hardCount_ = 0;
++  bool tryFullQR_ = true;
++
++ public:
++  explicit ConstrainedQRWorkspace(Matrix& augmented, const Vector& sigmas)
++      : output_(augmented),
++        variables_(augmented.cols() - 1),
++        maximumRank_(std::min<size_t>(augmented.rows(), variables_)),
++        rankTolerance_(64.0 * std::numeric_limits<double>::epsilon() *
++                       std::max<size_t>(augmented.rows(), variables_)),
++        conditionals_(maximumRank_, variables_ + 1),
++        reference_(Vector::Zero(variables_)),
++        precisions_(maximumRank_),
++        scratch_(variables_ + 1),
++        row_(variables_ + 1) {
++    initializeRows(sigmas);
++    pivots_.reserve(maximumRank_);
++  }
++
++  SharedDiagonal compute(const Vector& mu) {
++    for (size_t column = 0;
++         column < variables_ && pivots_.size() < maximumRank_; ++column) {
++      if (const auto hardRow = selectHardRow(column))
++        eliminateHard(column, *hardRow);
++      else if (eliminateRemaining(column))
++        break;
++      else
++        eliminateFinite(column);
++    }
++    // The output includes zero padding for skipped columns and redundant rows.
++    output_.setZero();
++    bool mixed = false;
++    for (size_t i = 0; i < pivots_.size(); ++i) {
++      const size_t column = pivots_[i];
++      mixed |= std::isinf(precisions_(i));
++      output_.row(i).segment(column, variables_ + 1 - column) =
++          conditionals_.row(i).segment(column, variables_ + 1 - column);
++    }
++    precisions_.conservativeResize(pivots_.size());
++    return mixed ? Constrained::MixedPrecisions(mu, precisions_)
++                 : Diagonal::Precisions(precisions_);
++  }
++
++ private:
++  // Whiten finite observations; exact equations retain their original scale.
++  void initializeRows(const Vector& sigmas) {
++    std::vector<size_t> finiteRows, hardRows;
++    for (Eigen::Index i = 0; i < sigmas.size(); ++i) {
++      const double inverse = 1.0 / sigmas(i), weight = inverse * inverse;
++      if (std::isinf(inverse))
++        hardRows.push_back(i);
++      else if (std::isfinite(weight) && weight > 0.0)
++        finiteRows.push_back(i);
++    }
++    finite_.resize(finiteRows.size(), variables_ + 1);
++    hardCount_ = hardRows.size();
++    hard_.resize(hardCount_, variables_ + 1);
++    for (size_t i = 0; i < finiteRows.size(); ++i) {
++      const double inverse = 1.0 / sigmas(finiteRows[i]);
++      finite_.row(i) = std::abs(inverse) * output_.row(finiteRows[i]);
++      reference_.array() += inverse * inverse *
++                            output_.row(finiteRows[i])
++                                .head(variables_)
++                                .transpose()
++                                .array()
++                                .square();
++    }
++    for (size_t i = 0; i < hardCount_; ++i)
++      hard_.row(i) = output_.row(hardRows[i]);
++  }
++
++  // Keep the existing hard coefficient cutoff and weighted rank criterion.
++  std::optional<size_t> selectHardRow(size_t column) const {
++    if (!hardCount_) return {};
++    Eigen::Index selected;
++    if (hard_.col(column).head(hardCount_).cwiseAbs().maxCoeff(&selected) >
++        1e-9)
++      return selected;
++    return {};
++  }
++
++  bool accepted(double precision, size_t column) const {
++    return std::isfinite(precision) && precision > 0.0 &&
++           std::sqrt(precision) >
++               rankTolerance_ * std::sqrt(reference_(column));
++  }
++
++  void append(size_t column, double precision) {
++    conditionals_.row(pivots_.size()).segment(column, variables_ + 1 - column) =
++        row_.segment(column, variables_ + 1 - column);
++    precisions_(pivots_.size()) = precision;
++    pivots_.push_back(column);
++  }
++
++  // Substitute an accepted equation, without changing the variable ordering.
++  void substitute(Matrix& matrix, size_t start, size_t count, size_t column,
++                  double inversePivot = 1.0) const {
++    matrix.block(start, column + 1, count, variables_ - column).noalias() -=
++        matrix.col(column).segment(start, count) *
++        (inversePivot * row_.tail(variables_ - column));
++  }
++
++  void eliminateHard(size_t column, size_t selected) {
++    row_ = hard_.row(selected);
++    append(column, std::numeric_limits<double>::infinity());
++    --hardCount_;
++    if (selected != hardCount_) hard_.row(selected) = hard_.row(hardCount_);
++    // Exact substitution can transfer finite information to later columns.
++    const size_t remaining = variables_ - column - 1;
++    reference_.tail(remaining) =
++        (reference_.tail(remaining).array().sqrt() +
++         (row_.segment(column + 1, remaining).transpose().array() /
++          row_(column))
++                 .abs() *
++             std::sqrt(reference_(column)))
++            .square();
++    substitute(finite_, finiteStart_, finite_.rows() - finiteStart_, column,
++               1.0 / row_(column));
++    substitute(hard_, 0, hardCount_, column, 1.0 / row_(column));
++  }
++
++  void eliminateFinite(size_t column) {
++    const size_t count = finite_.rows() - finiteStart_;
++    if (!count ||
++        !accepted(finite_.col(column).tail(count).squaredNorm(), column))
++      return;
++    // Put the largest observation first so a zero leading entry cannot mix an
++    // unrelated RHS into the pivot. Eigen constructs and applies the reflector.
++    Eigen::Index pivot;
++    finite_.col(column).tail(count).cwiseAbs().maxCoeff(&pivot);
++    finite_.row(finiteStart_).swap(finite_.row(finiteStart_ + pivot));
++    // Pack only contributing observations; Eigen then transforms a contiguous
++    // block without visiting structurally zero rows in every trailing column.
++    size_t support = 1;
++    for (size_t i = 1; i < count; ++i) {
++      if (finite_(finiteStart_ + i, column) == 0.0) continue;
++      if (i != support)
++        finite_.row(finiteStart_ + i)
++            .tail(variables_ + 1 - column)
++            .swap(finite_.row(finiteStart_ + support)
++                      .tail(variables_ + 1 - column));
++      ++support;
++    }
++    auto pivotColumn = finite_.col(column).segment(finiteStart_, support);
++    double tau, diagonal;
++    pivotColumn.makeHouseholderInPlace(tau, diagonal);
++    finite_.block(finiteStart_, column + 1, support, variables_ - column)
++        .applyHouseholderOnTheLeft(pivotColumn.tail(support - 1), tau,
++                                   scratch_.data());
++    row_(column) = 1.0;
++    row_.tail(variables_ - column) =
++        finite_.row(finiteStart_).tail(variables_ - column) / diagonal;
++    append(column, diagonal * diagonal);
++    substitute(hard_, 0, hardCount_, column);
++    ++finiteStart_;
++  }
++
++  bool eliminateRemaining(size_t column) {
++    const size_t width = variables_ - column,
++                 count = finite_.rows() - finiteStart_;
++    if (!tryFullQR_ || width < 48 || count < width ||
++        !hard_.block(0, column, hardCount_, width).isZero(0.0))
++      return false;
++    // The weak and nearly dependent RHS regressions require row-pivoted scalar
++    // elimination. Otherwise delegate the entire remaining finite system.
++    // A rejected remainder is tried only once, avoiding repeated failed QR
++    // work.
++    tryFullQR_ = false;
++    const auto scales = reference_.tail(width);
++    const double epsilon = std::numeric_limits<double>::epsilon();
++    if (scales.minCoeff() < epsilon * scales.maxCoeff()) return false;
++    Eigen::HouseholderQR<Matrix> qr(
++        finite_.block(finiteStart_, column, count, width));
++    for (size_t k = 0; k < width; ++k) {
++      const double precision = qr.matrixQR()(k, k) * qr.matrixQR()(k, k);
++      if (!accepted(precision, column + k) ||
++          precision < epsilon * reference_(column + k))
++        return false;
++    }
++    const Vector rhs =
++        qr.householderQ().adjoint() * finite_.col(variables_).tail(count);
++    for (size_t k = 0; k < width; ++k) {
++      const double diagonal = qr.matrixQR()(k, k);
++      row_.segment(column + k, width - k) =
++          qr.matrixQR().row(k).segment(k, width - k) / diagonal;
++      row_(variables_) = rhs(k) / diagonal;
++      append(column + k, diagonal * diagonal);
++    }
++    return true;
++  }
++};
++
++}  // namespace
++
++SharedDiagonal constrainedQR(Matrix& augmented, const Vector& sigmas,
++                             const Vector& mu) {
++  return ConstrainedQRWorkspace(augmented, sigmas).compute(mu);
++}
++
++}  // namespace gtsam::noiseModel::internal
+--- /dev/null
++++ gtsam-4.3.0/gtsam/linear/internal/ConstrainedQR.h
+@@ -0,0 +1,30 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. All Rights Reserved.
++ * See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file ConstrainedQR.h
++ * Private adaptation of Eigen QR to constrained elimination fronts of any size.
++ * GTSAM handles exact equations and rank decisions; Eigen handles orthogonal
++ * transformations. Keeping the workspace here separates it from noise models.
++ */
++
++#pragma once
++
++#include <gtsam/linear/NoiseModel.h>
++
++namespace gtsam::noiseModel::internal {
++
++/**
++ * Eliminate a local augmented Jacobian in its original column order. Exact
++ * equations take priority over finite observations. A suitable finite remainder
++ * is delegated to Eigen::HouseholderQR. Rank-deficient or poorly scaled systems
++ * use Eigen Householder operations one column at a time, with row pivoting.
++ * No normal equations are formed and the original weighted rank test is kept.
++ */
++SharedDiagonal constrainedQR(Matrix& augmented, const Vector& sigmas,
++                             const Vector& mu);
++
++}  // namespace gtsam::noiseModel::internal
 --- gtsam-4.3.0.orig/gtsam/linear/linear.i
 +++ gtsam-4.3.0/gtsam/linear/linear.i
 @@ -3,6 +3,22 @@
@@ -14471,6 +16408,201 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- gtsam-4.3.0.orig/gtsam/linear/tests/testNoiseModel.cpp
++++ gtsam-4.3.0/gtsam/linear/tests/testNoiseModel.cpp
+@@ -458,6 +458,192 @@ TEST(NoiseModel, QRNan )
+ }
+ 
+ /* ************************************************************************* */
++namespace scale_aware_constrained_qr {
++
++// A finite direction with weak information must survive next to a hard constraint.
++TEST(NoiseModel, ConstrainedQRRetainsWeakFiniteDirection) {
++  Matrix augmented = Matrix::Zero(2, 3);
++  augmented(0, 0) = 1.0;
++  augmented(1, 1) = 1.0;
++  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(2, result->dim());
++  EXPECT_DOUBLES_EQUAL(1.0, augmented(1, 1), 1e-12);
++}
++
++// Rescaling a finite row and its sigma must preserve its information.
++TEST(NoiseModel, ConstrainedQRRetainsSmallWeightedCoefficients) {
++  Matrix augmented{{1.0, 0.0, 0.0}, {0.0, 1e-10, 2e-10}};
++  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e-10});
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(2, result->dim());
++  EXPECT(assert_equal(Matrix{{1.0, 0.0, 0.0}, {0.0, 1.0, 2.0}}, augmented));
++  if (result->dim() == 2)
++    EXPECT(assert_equal(Vector2{0.0, 1.0}, result->sigmas()));
++}
++
++// Exact substitution must give newly populated finite columns a rank scale.
++// The two copies of x=1 observe only y+z; roundoff must not add a third pivot.
++TEST(NoiseModel, ConstrainedQRPropagatesFiniteColumnScale) {
++  Matrix augmented{{1.0, -0.008, -0.008, 0.0},
++                   {1.0, 0.0, 0.0, 1.0},
++                   {1.0, 0.0, 0.0, 1.0}};
++  const auto model = noiseModel::Constrained::MixedSigmas(Vector3{0.0, 1.0, 1.0});
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(2, result->dim());
++  EXPECT(assert_equal(Matrix{{1.0, -0.008, -0.008, 0.0},
++                             {0.0, 1.0, 1.0, 125.0},
++                             {0.0, 0.0, 0.0, 0.0}},
++                      augmented, 1e-12));
++}
++
++// A truly absent direction must still be rejected by the local rank test.
++TEST(NoiseModel, ConstrainedQRRejectsNullDirection) {
++  Matrix augmented = Matrix::Zero(2, 3);
++  augmented(0, 0) = 1.0;
++  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(1, result->dim());
++}
++
++}  // namespace scale_aware_constrained_qr
++/* ************************************************************************* */
++
++namespace blocked_constrained_qr {
++
++// Evaluate only finite rows; exact rows describe the feasible manifold.
++Vector finiteGradient(const Matrix& augmented, const Vector& sigmas,
++                      const Vector& point) {
++  Vector gradient = Vector::Zero(point.size());
++  for (Eigen::Index row = 0; row < sigmas.size(); ++row) {
++    if (sigmas(row) == 0.0) continue;
++    const Vector normal =
++        augmented.row(row).head(point.size()).transpose() / sigmas(row);
++    const double residual = normal.dot(point) -
++                            augmented(row, point.size()) / sigmas(row);
++    gradient.noalias() += normal * residual;
++  }
++  return gradient;
++}
++
++// Blocking must not mix an unrelated large RHS into a weak observation.
++TEST(NoiseModel, ConstrainedQRBlockedWeakRightHandSide) {
++  constexpr size_t variables = 192;
++  Matrix augmented = Matrix::Zero(2 * variables, variables + 1);
++  Vector expected = Vector::LinSpaced(variables, 0.0, 19.1);
++  expected(0) = 2.0;
++  expected(1) = 1.0;
++  augmented(0, 1) = 1e10;
++  augmented(1, 0) = 1e-10;
++  for (size_t j = 2; j < variables; ++j) augmented(j, j) = 1.0;
++  augmented.col(variables) = augmented.leftCols(variables) * expected;
++  const auto model = noiseModel::Constrained::MixedSigmas(
++      Vector::Ones(augmented.rows()));
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  if (result->dim() == variables) {
++    const Vector actual = augmented.topLeftCorner(variables, variables)
++                              .triangularView<Eigen::Upper>()
++                              .solve(augmented.col(variables).head(variables));
++    EXPECT(assert_equal(expected, actual, 1e-11));
++  }
++}
++
++// A nearly dependent pair must not pick up an unrelated, large RHS via Q.
++TEST(NoiseModel, ConstrainedQRBlockedNearDependentRightHandSide) {
++  constexpr size_t variables = 192;
++  Matrix augmented = Matrix::Zero(256, variables + 1);
++  augmented(0, 2) = 1.0;
++  augmented(0, variables) = 1e10;
++  augmented(1, 0) = augmented(1, 1) = augmented(2, 0) = 1.0;
++  augmented(2, 1) = 1.0 + 1e-10;
++  augmented(2, variables) = 2e-10;
++  for (size_t j = 3; j < variables; ++j) augmented(j, j) = 1.0;
++  const double expected = 2e-10 / (augmented(2, 1) - 1.0);
++  const auto model = noiseModel::Constrained::MixedSigmas(
++      Vector::Ones(augmented.rows()));
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  if (result->dim() == variables) {
++    const Vector actual = augmented.topLeftCorner(variables, variables)
++                              .triangularView<Eigen::Upper>()
++                              .solve(augmented.col(variables).head(variables));
++    // This pair's condition number limits attainable accuracy to about 1e-6.
++    EXPECT_DOUBLES_EQUAL(-expected, actual(0), 1e-4);
++    EXPECT_DOUBLES_EQUAL(expected, actual(1), 1e-4);
++    EXPECT_DOUBLES_EQUAL(1e10, actual(2), 1e-5);
++  }
++}
++
++// Skipped and dependent columns must retain their original variable ordering.
++TEST(NoiseModel, ConstrainedQRBlockedStaggeredRank) {
++  constexpr size_t variables = 192, rows = 256;
++  Matrix augmented(rows, variables + 1);
++  for (size_t i = 0; i < rows; ++i)
++    for (size_t j = 0; j <= variables; ++j)
++      augmented(i, j) = std::sin(0.13 * (i + 1) * (j + 3));
++  for (size_t j : {0, 3, 7, 20}) augmented.col(j).setZero();
++  augmented.col(19) = 0.008 * augmented.col(11);
++  const Matrix original = augmented;
++  const Vector sigmas = Vector::Ones(rows);
++  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables - 5, result->dim());
++  const Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
++  EXPECT(assert_equal(finiteGradient(original, sigmas, point),
++                      finiteGradient(augmented, result->sigmas(), point),
++                      1e-8));
++}
++
++// Affine, opposing and redundant hard rows must preserve finite information.
++TEST(NoiseModel, ConstrainedQRBlockedAffineWeightedInformation) {
++  constexpr size_t variables = 192, finiteRows = 256;
++  Matrix augmented = Matrix::Zero(finiteRows + 4, variables + 1);
++  Vector sigmas = Vector::Zero(augmented.rows());
++  for (size_t i = 0; i < finiteRows; ++i) {
++    sigmas(i) = std::pow(10.0, static_cast<int>(i % 5) - 2);
++    for (size_t j = 0; j <= variables; ++j)
++      augmented(i, j) = sigmas(i) *
++                        std::sin(0.17 * (i + 2) * (j + 1));
++  }
++  augmented(finiteRows, 0) = 1.0;
++  augmented(finiteRows, variables) = 0.25;
++  augmented.row(finiteRows + 1) = -augmented.row(finiteRows);
++  augmented(finiteRows + 2, 30) = 1.0;
++  augmented(finiteRows + 2, variables) = -0.1;
++  augmented.row(finiteRows + 3) =
++      augmented.row(finiteRows) + 2.0 * augmented.row(finiteRows + 2);
++  const Matrix original = augmented;
++  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
++  point(0) = 0.25;
++  point(30) = -0.1;
++  Vector expected = finiteGradient(original, sigmas, point);
++  Vector actual = finiteGradient(augmented, result->sigmas(), point);
++  // Gradients are compared along the hard constraints' free directions.
++  expected(0) = actual(0) = expected(30) = actual(30) = 0.0;
++  EXPECT(assert_equal(expected, actual, 1e-8));
++  for (Eigen::Index row = 0; row < result->sigmas().size(); ++row) {
++    if (result->sigmas()(row) != 0.0) continue;
++    EXPECT_DOUBLES_EQUAL(augmented(row, variables),
++                        augmented.row(row).head(variables).dot(point), 1e-10);
++  }
++}
++
++}  // namespace blocked_constrained_qr
++/* ************************************************************************* */
++
++/* ************************************************************************* */
+ TEST(NoiseModel, SmartSqrtInformation )
+ {
+   bool smart = true;
 --- gtsam-4.3.0.orig/gtsam/navigation/AttitudeFactor.h
 +++ gtsam-4.3.0/gtsam/navigation/AttitudeFactor.h
 @@ -203,4 +203,11 @@ template <class VALUE>
@@ -15470,7 +17602,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /** Find all of the keys associated with timestamps before the provided time */
 --- /dev/null
 +++ gtsam-4.3.0/gtsam/nonlinear/Gradients.cpp
-@@ -0,0 +1,334 @@
+@@ -0,0 +1,369 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -15775,6 +17907,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  return result;
 +}
 +
++std::optional<Vector> Gradients::noiseGradient(
++    const VectorValues& stateCotangents, const SharedNoiseModel model) const {
++  if (!solution_)
++    throw std::logic_error(
++        "Gradients::noiseGradient requires a nonlinear graph and solution");
++  const auto diagonal = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
++  if (!diagonal || model->isUnit() || model->isConstrained())
++    throw std::invalid_argument(
++        "Gradients::noiseGradient supports Diagonal and Isotropic models only");
++  const bool isotropic =
++      static_cast<bool>(std::dynamic_pointer_cast<noiseModel::Isotropic>(model));
++
++  const Errors whitenedCotangents = pullback(stateCotangents);
++  const Vector& precisions = diagonal->precisions();
++  std::optional<Vector> result;
++  auto cotangent = whitenedCotangents.begin();
++  for (size_t index = 0; index < nonlinearGraph_.size(); ++index, ++cotangent) {
++    const auto& factor = nonlinearGraph_[index];
++    if (!factor || !factor->active(*solution_)) continue;
++    const auto& noiseFactor = static_cast<const NoiseModelFactor&>(*factor);
++    if (noiseFactor.noiseModel().get() != model.get()) continue;
++    const Vector residual = noiseFactor.unwhitenedError(*solution_);
++    Vector contribution =
++        -2.0 * cotangent->array() * residual.array() * precisions.array();
++    if (isotropic) contribution = Vector1(contribution.sum());
++    if (result)
++      *result += contribution;
++    else
++      result = contribution;
++  }
++  if (result && !result->allFinite())
++    throw std::runtime_error("Gradients: nonfinite noise-model gradient");
++  return result;
++}
++
 +VectorValues Gradients::pushforward(
 +    const Errors& factorResidualDirection) const {
 +  if (factorResidualDirection.size() != graph_.size())
@@ -15807,7 +17974,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace gtsam
 --- /dev/null
 +++ gtsam-4.3.0/gtsam/nonlinear/Gradients.h
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,236 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -15881,8 +18048,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + * A parameter VJP holds the solved states and supplied factor residual
 + * cotangent fixed while differentiating the unwhitened factor residual with
 + * respect to the requested parameter. Add any direct parameter derivative of
-+ * the loss separately to parameterGradient's result. Noise-model parameters
-+ * are not differentiated.
++ * the loss separately to parameterGradient's result. Noise-model sigmas are
++ * differentiated separately by noiseGradient, which identifies the model by
++ * its shared pointer rather than by a ParameterTag.
 + *
 + * \par Advanced differentiation model
 + * These derivatives use a Gauss-Newton approximation. Let J be the whitened
@@ -15979,6 +18147,30 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   */
 +  std::optional<Vector> parameterGradient(
 +      const VectorValues& stateCotangents, const ParameterTag& parameter) const;
++
++  /**
++   * Return the gradient through the solved states with respect to the sigmas
++   * of model. Factors are matched by object identity: every active factor
++   * whose noiseModel() is this exact instance contributes, so one instance
++   * shared by several factors accumulates, while separately constructed models
++   * with equal sigmas are distinct parameters. As in parameterGradient, the
++   * result is std::nullopt if no active factor holds model.
++   *
++   * The result's size follows the model's dynamic type. A Diagonal returns one
++   * entry per sigma and an Isotropic returns its single shared sigma. Unit,
++   * Constrained, Robust and full Gaussian models are not supported and throw
++   * std::invalid_argument. Because Diagonal::Sigmas and Diagonal::Variances
++   * with smart = true return an Isotropic or Unit model when the sigmas are
++   * equal, construct learned Diagonal models with smart = false.
++   *
++   * For diagonal whitening r = e / σ the result is exact with respect to σ:
++   * the Gauss-Newton term omitted from the mixed derivative, through the
++   * whitened Jacobian, equals the residual term, giving 2 ν_i (-e_i / σ_i²)
++   * per row for whitened cotangent ν. Requires construction from a nonlinear
++   * graph and solution.
++   */
++  std::optional<Vector> noiseGradient(const VectorValues& stateCotangents,
++                                      const SharedNoiseModel model) const;
 +
 +  /**
 +   * Propagate whitened factor residual changes to a change in the solved states.
@@ -16399,7 +18591,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 --- /dev/null
 +++ gtsam-4.3.0/gtsam/nonlinear/doc/Gradients.ipynb
-@@ -0,0 +1,648 @@
+@@ -0,0 +1,737 @@
 +{
 + "cells": [
 +  {
@@ -16416,7 +18608,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    "a loss gradient for a requested parameter vector, including the noise weighting.\n",
 +    "\n",
 +    "Two noisy observations provide a worked example of learning an observation\n",
-+    "parameter. The [Python tutorial](../../../python/gtsam/examples/nonlinear/GradientsExample.ipynb)\n",
++    "parameter. A later section learns a temperature-dependent measurement $\\sigma$\n",
++    "by passing its `Isotropic` noise model to `noiseGradient`, without a residual\n",
++    "`parameterVjp`. The\n",
++    "[Python tutorial](../../../python/gtsam/examples/nonlinear/GradientsExample.ipynb)\n",
 +    "extends the workflow to odometry calibration and a training update. The\n",
 +    "mathematical derivation is in the final advanced section.\n",
 +    "\n",
@@ -16479,7 +18674,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    "import gtsam\n",
 +    "from gtsam.symbol_shorthand import X\n",
 +    "\n",
-+    "assert hasattr(gtsam, \"ParameterTag\"), \"Use a GTSAM development build with ParameterTag.\""
++    "assert hasattr(gtsam, \"ParameterTag\"), \"Use a GTSAM development build with ParameterTag.\"\n",
++    "assert hasattr(gtsam.Gradients, \"noiseGradient\"), \"Use a GTSAM development build with noiseGradient.\""
 +   ]
 +  },
 +  {
@@ -16657,6 +18853,89 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  },
 +  {
 +   "cell_type": "markdown",
++   "id": "gradients-guide-noise",
++   "metadata": {},
++   "source": [
++    "## Learning a temperature-dependent noise model\n",
++    "\n",
++    "The previous example put the learnable quantity in the residual $e=x-z$.\n",
++    "Measurement $\\sigma$ lives in the noise model instead. Pass the `Diagonal` or\n",
++    "`Isotropic` model itself to `noiseGradient`; it returns $\\partial L/\\partial\\sigma$\n",
++    "summed over every active factor holding that exact instance, and no residual\n",
++    "`parameterVjp` is required. Stock factors such as `PriorFactorDouble` work as-is.\n",
++    "\n",
++    "Models are matched by identity, not by value, so pass the same object you gave\n",
++    "the factors. The result has one entry per sigma for a `Diagonal` and one shared\n",
++    "entry for an `Isotropic`. Construct learned models with `smart=False`:\n",
++    "otherwise equal sigmas collapse a `Diagonal` into an `Isotropic`, and a sigma\n",
++    "of exactly 1 collapses into a parameter-free `Unit` model.\n",
++    "\n",
++    "A thermometer's reading of a constant $x^\\star_{\\mathrm{true}}=0$ gets worse as\n",
++    "the device heats up: $\\sigma(T)=\\sigma_0+\\alpha T$ with known $\\sigma_0=0.1$\n",
++    "and true $\\alpha^\\star=1$. Two unary factors constrain one scalar $x$:\n",
++    "\n",
++    "- cold, $T=0$, $z=0$, $\\sigma=0.1$, fixed;\n",
++    "- hot, $T=1$, $z=2$ (a bad reading), $\\sigma=\\sigma_0+\\alpha T$, learned.\n",
++    "\n",
++    "The loss is $\\tfrac12(x^\\star)^2$. Starting at $\\alpha=0$ makes the hot factor\n",
++    "over-trusted, so $x^\\star$ sits near the outlier. Gradient steps on $\\alpha$\n",
++    "alone raise $\\sigma_{\\mathrm{hot}}$ and pull $x^\\star$ back toward $0$.\n",
++    "\n",
++    "A network that predicts $\\sigma$ should end with a map that keeps the output\n",
++    "positive (for example `softplus` or `exp`), and typically a small floor so\n",
++    "$\\sigma$ never reaches $0$."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "id": "gradients-guide-noise-code",
++   "metadata": {},
++   "execution_count": null,
++   "outputs": [],
++   "source": [
++    "key_x = X(1)\n",
++    "sigma0 = 0.1\n",
++    "alpha_true = 1.0\n",
++    "alpha = 0.0\n",
++    "T_hot = 1.0\n",
++    "lr = 0.1\n",
++    "\n",
++    "\n",
++    "def sigma_hot(a):\n",
++    "    return sigma0 + a * T_hot\n",
++    "\n",
++    "\n",
++    "def solve_temperature(a):\n",
++    "    temp_graph = gtsam.NonlinearFactorGraph()\n",
++    "    temp_graph.add(gtsam.PriorFactorDouble(\n",
++    "        key_x, 0.0, gtsam.noiseModel.Isotropic.Sigma(1, sigma0),\n",
++    "    ))\n",
++    "    hot = gtsam.noiseModel.Isotropic.Sigma(1, sigma_hot(a), False)  # smart=False\n",
++    "    temp_graph.add(gtsam.PriorFactorDouble(key_x, 2.0, hot))\n",
++    "    temp_initial = gtsam.Values()\n",
++    "    temp_initial.insert(key_x, 0.0)\n",
++    "    return temp_graph, hot, gtsam.GaussNewtonOptimizer(temp_graph, temp_initial).optimize()\n",
++    "\n",
++    "\n",
++    "_, _, x0 = solve_temperature(alpha)\n",
++    "print(f\"init   x*={x0.atDouble(key_x):.4f}  σ_hot={sigma_hot(alpha):.3f}\")\n",
++    "\n",
++    "for _ in range(20):\n",
++    "    temp_graph, hot, temp_values = solve_temperature(alpha)\n",
++    "    cotangents = gtsam.VectorValues()\n",
++    "    cotangents.insert(key_x, np.array([temp_values.atDouble(key_x)]))  # dL/dx for L=1/2 (x*)^2, 0 is true state\n",
++    "    dL_dsigma = gtsam.Gradients(temp_graph, temp_values).noiseGradient(cotangents, hot)\n",
++    "    alpha -= lr * dL_dsigma[0] * T_hot\n",
++    "    alpha = max(alpha, 0.0)\n",
++    "\n",
++    "_, _, x1 = solve_temperature(alpha)\n",
++    "print(f\"step20 x*={x1.atDouble(key_x):.4f}  σ_hot={sigma_hot(alpha):.3f}  α={alpha:.3f}  (α*={alpha_true})\")\n",
++    "assert x1.atDouble(key_x) < x0.atDouble(key_x)\n",
++    "assert sigma_hot(alpha) > sigma0"
++   ]
++  },
++  {
++   "cell_type": "markdown",
 +   "id": "f79cb143",
 +   "metadata": {},
 +   "source": [
@@ -16674,8 +18953,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    "differentiating the dot product of the supplied cotangent and the **raw factor\n",
 +    "residual** with respect to the requested parameter. Treat the solved states\n",
 +    "and the cotangent as constants, or detach them from the library's derivative\n",
-+    "graph. The callback returns a vector in that parameter's coordinates. Noise\n",
-+    "models remain fixed; the callback does not differentiate or apply them.\n",
++    "graph. The callback returns a vector in that parameter's coordinates. Residual\n",
++    "`parameterVjp` still ignores the noise model $W$; query $\\partial L/\\partial\\sigma$\n",
++    "for a `Diagonal` or `Isotropic` model separately with `noiseGradient`.\n",
 +    "\n",
 +    "Changing the parameters requires a new optimized solution and a new `Gradients`\n",
 +    "object. Reuse the parameter tags across these training steps. For repeated\n",
@@ -16782,6 +19062,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    "| Method | Supply | Receive |\n",
 +    "| --- | --- | --- |\n",
 +    "| `parameterGradient(g, tag)` | Keyed state loss gradients and a parameter tag | A parameter loss gradient vector, or `None` if no factor recognizes the tag |\n",
++    "| `noiseGradient(g, model)` | Keyed state loss gradients and a `Diagonal` or `Isotropic` noise model | A loss gradient on its sigmas: one per row, or one shared for `Isotropic`; `None` if no active factor holds the model |\n",
 +    "| `pullback(g)` | Keyed state loss gradients | Loss gradients on whitened factor residuals, grouped by factor |\n",
 +    "| `pushforward(q)` | Whitened factor residual directions, grouped by factor | Keyed changes in optimized states |\n",
 +    "| `adjoint(g)` | Keyed state loss gradients | An intermediate state vector; see the advanced section |\n",
@@ -17077,7 +19358,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  };
  
  #include <gtsam/nonlinear/Marginals.h>
-@@ -180,6 +193,37 @@ class Marginals {
+@@ -180,6 +193,40 @@ class Marginals {
    void deleteCachedShortcuts();
  };
  
@@ -17107,6 +19388,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  std::optional<gtsam::Vector> parameterGradient(
 +      const gtsam::VectorValues& stateCotangents,
 +      const gtsam::ParameterTag& parameter) const;
++  std::optional<gtsam::Vector> noiseGradient(
++      const gtsam::VectorValues& stateCotangents,
++      const gtsam::noiseModel::Base* model) const;
 +  gtsam::VectorValues pushforward(const gtsam::Errors& factorResidualDirection) const;
 +  gtsam::Errors pullback(const gtsam::VectorValues& stateCotangents) const;
 +  void print(string prefix = "Gradients: ") const;
@@ -17115,7 +19399,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/nonlinear/LinearContainerFactor.h>
  virtual class LinearContainerFactor : gtsam::NonlinearFactor {
    LinearContainerFactor(
-@@ -703,394 +747,4 @@ class NonlinearISAM {
+@@ -703,394 +750,4 @@ class NonlinearISAM {
    const gtsam::Values& getLinearizationPoint() const;
    const gtsam::NonlinearFactorGraph& getFactorsUnsafe() const;
  };
@@ -18809,7 +21093,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 --- /dev/null
 +++ gtsam-4.3.0/gtsam/nonlinear/tests/testGradientsParameters.cpp
-@@ -0,0 +1,332 @@
+@@ -0,0 +1,544 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415. All Rights Reserved. See LICENSE.
@@ -18822,6 +21106,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +#include <CppUnitLite/TestHarness.h>
 +#include <gtsam/base/TestableAssertions.h>
++#include <gtsam/base/Matrix.h>
 +#include <gtsam/nonlinear/CustomFactor.h>
 +#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 +#include <gtsam/nonlinear/Gradients.h>
@@ -19136,6 +21421,217 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 +
 +}  // namespace parameter_fixture
++/* ************************************************************************* */
++
++namespace noise_fixture {
++
++constexpr Key kPosition = 7;
++const Vector2 kLearnedMeasurement{0., 0.}, kAnchorMeasurement{1., -0.5};
++const Vector2 kUnequalSigmas{0.4, 1.3};
++const Vector2 kTarget{0.2, -0.3};
++
++NonlinearFactorGraph sigmaGraph(const SharedNoiseModel& learned) {
++  NonlinearFactorGraph result;
++  result.emplace_shared<PriorFactor<Vector>>(kPosition, kLearnedMeasurement,
++                                             learned);
++  result.emplace_shared<PriorFactor<Vector>>(
++      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
++  return result;
++}
++
++Values sigmaInitial() {
++  Values result;
++  result.insert(kPosition, Vector(Vector2::Zero()));
++  return result;
++}
++
++Vector sigmaSolve(const NonlinearFactorGraph& graph) {
++  return GaussNewtonOptimizer(graph, sigmaInitial())
++      .optimize()
++      .at<Vector>(kPosition);
++}
++
++VectorValues sigmaCotangents(const Values& solution) {
++  return {{kPosition, solution.at<Vector>(kPosition) - kTarget}};
++}
++
++/// Central-difference dL/dσ_i with L = ½|x - target|², graph built per σ.
++template <class MakeGraph>
++double finiteDifference(const MakeGraph& makeGraph, const Vector2& sigmas,
++                        const Vector& cotangent, size_t coordinate) {
++  const double step = 1e-6;
++  Vector2 plus = sigmas, minus = sigmas;
++  plus[coordinate] += step;
++  minus[coordinate] -= step;
++  const Vector dx = sigmaSolve(makeGraph(plus)) - sigmaSolve(makeGraph(minus));
++  return cotangent.dot(dx) / (2 * step);
++}
++
++// Diagonal σ gradient matches finite differences and is twice the
++// Jacobian-held-fixed term obtained by baking r = e ⊘ σ into the residual.
++TEST(GradientsNoise, DiagonalSigma) {
++  const auto learned = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
++  const NonlinearFactorGraph graph = sigmaGraph(learned);
++  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
++  EXPECT(graph.linearize(solution)->gradientAtZero().norm() < 1e-10);
++  const VectorValues cotangents = sigmaCotangents(solution);
++  const Vector analytic =
++      Gradients(graph, solution).noiseGradient(cotangents, learned).value();
++  EXPECT_LONGS_EQUAL(2, analytic.size());
++
++  const auto makeGraph = [](const Vector2& sigmas) {
++    return sigmaGraph(noiseModel::Diagonal::Sigmas(sigmas, false));
++  };
++  for (size_t coordinate = 0; coordinate < 2; ++coordinate)
++    EXPECT_DOUBLES_EQUAL(
++        analytic[coordinate],
++        finiteDifference(makeGraph, kUnequalSigmas, cotangents.at(kPosition),
++                         coordinate),
++        1e-6);
++
++  const ParameterTag baked{"baked sigma"};
++  NonlinearFactorGraph bakedGraph;
++  bakedGraph.emplace_shared<CustomFactor>(
++      noiseModel::Unit::Create(2), KeyVector{kPosition},
++      [](const CustomFactor&, const Values& values,
++         OptionalJacobianVector jacobians) -> Vector {
++        const Vector error =
++            (values.at<Vector>(kPosition) - kLearnedMeasurement).array() /
++            kUnequalSigmas.array();
++        if (jacobians) {
++          Matrix2 jacobian = Matrix2::Zero();
++          jacobian.diagonal() = kUnequalSigmas.array().inverse();
++          jacobians->get()[0] = jacobian;
++        }
++        return error;
++      },
++      [baked](const CustomFactor&, const Values& values,
++              const ParameterTag& parameter,
++              const Vector& cotangent) -> std::optional<Vector> {
++        if (parameter != baked) return std::nullopt;
++        const Vector residual =
++            values.at<Vector>(kPosition) - kLearnedMeasurement;
++        return Vector((-cotangent.array() * residual.array() /
++                       kUnequalSigmas.array().square())
++                          .matrix());
++      });
++  bakedGraph.emplace_shared<PriorFactor<Vector>>(
++      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
++  const Values bakedSolution =
++      GaussNewtonOptimizer(bakedGraph, sigmaInitial()).optimize();
++  EXPECT(assert_equal(solution.at<Vector>(kPosition),
++                      bakedSolution.at<Vector>(kPosition), 1e-10));
++  const auto bakedGradient =
++      Gradients(bakedGraph, bakedSolution).parameterGradient(cotangents, baked);
++  EXPECT(assert_equal((0.5 * analytic).eval(), bakedGradient.value(), 1e-10));
++}
++
++// An Isotropic model returns one shared σ: the sum of the per-row gradients
++// of an equal-sigma Diagonal built with smart = false.
++TEST(GradientsNoise, IsotropicSigma) {
++  const double sigma = 0.7;
++  const auto isotropic = noiseModel::Isotropic::Sigma(2, sigma);
++  const auto diagonal =
++      noiseModel::Diagonal::Sigmas(Vector2::Constant(sigma), false);
++  EXPECT(!std::dynamic_pointer_cast<noiseModel::Isotropic>(diagonal));
++  const Values solution =
++      GaussNewtonOptimizer(sigmaGraph(isotropic), sigmaInitial()).optimize();
++  const VectorValues cotangents = sigmaCotangents(solution);
++  const Vector isotropicGradient = Gradients(sigmaGraph(isotropic), solution)
++                                       .noiseGradient(cotangents, isotropic)
++                                       .value();
++  const Vector diagonalGradient = Gradients(sigmaGraph(diagonal), solution)
++                                      .noiseGradient(cotangents, diagonal)
++                                      .value();
++  EXPECT_LONGS_EQUAL(1, isotropicGradient.size());
++  EXPECT_LONGS_EQUAL(2, diagonalGradient.size());
++  EXPECT_DOUBLES_EQUAL(diagonalGradient.sum(), isotropicGradient[0], 1e-12);
++}
++
++/// Two learned factors plus an anchor; first and second may share a model.
++NonlinearFactorGraph twoFactorGraph(const SharedNoiseModel& first,
++                                    const SharedNoiseModel& second) {
++  NonlinearFactorGraph result;
++  result.emplace_shared<PriorFactor<Vector>>(kPosition, kLearnedMeasurement,
++                                             first);
++  result.emplace_shared<PriorFactor<Vector>>(kPosition, Vector2{0.3, 0.4},
++                                             second);
++  result.emplace_shared<PriorFactor<Vector>>(
++      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
++  return result;
++}
++
++// One instance shared by two factors accumulates both contributions.
++TEST(GradientsNoise, SharedInstanceAccumulates) {
++  const auto makeGraph = [](const Vector2& sigmas) {
++    const auto shared = noiseModel::Diagonal::Sigmas(sigmas, false);
++    return twoFactorGraph(shared, shared);
++  };
++  const auto shared = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
++  const NonlinearFactorGraph graph = twoFactorGraph(shared, shared);
++  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
++  const VectorValues cotangents = sigmaCotangents(solution);
++  const Vector analytic =
++      Gradients(graph, solution).noiseGradient(cotangents, shared).value();
++  for (size_t coordinate = 0; coordinate < 2; ++coordinate)
++    EXPECT_DOUBLES_EQUAL(
++        analytic[coordinate],
++        finiteDifference(makeGraph, kUnequalSigmas, cotangents.at(kPosition),
++                         coordinate),
++        1e-6);
++}
++
++// Separately constructed models with equal sigmas are distinct parameters:
++// each gets only its own factor, and together they sum to the shared case.
++TEST(GradientsNoise, EqualModelsAreDistinct) {
++  const auto first = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
++  const auto second = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
++  const NonlinearFactorGraph separate = twoFactorGraph(first, second);
++  const NonlinearFactorGraph shared = twoFactorGraph(first, first);
++  const Values solution =
++      GaussNewtonOptimizer(separate, sigmaInitial()).optimize();
++  const VectorValues cotangents = sigmaCotangents(solution);
++  const Gradients gradients(separate, solution);
++  const Vector firstGradient = gradients.noiseGradient(cotangents, first).value();
++  const Vector secondGradient =
++      gradients.noiseGradient(cotangents, second).value();
++  const Vector sharedGradient =
++      Gradients(shared, solution).noiseGradient(cotangents, first).value();
++  EXPECT((sharedGradient - firstGradient).norm() > 1e-6);
++  EXPECT(assert_equal(sharedGradient, Vector(firstGradient + secondGradient),
++                      1e-12));
++}
++
++// Unsupported models and Gaussian-only construction are rejected; a model no
++// active factor holds, even with equal sigmas, has no gradient.
++TEST(GradientsNoise, Errors) {
++  const auto diagonal = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
++  const NonlinearFactorGraph graph = sigmaGraph(diagonal);
++  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
++  const VectorValues cotangents = sigmaCotangents(solution);
++  const Gradients gradients(graph, solution);
++
++  // Equal values with smart = true collapse to Unit, which has no parameters.
++  const auto unit = noiseModel::Diagonal::Sigmas(Vector2::Ones());
++  EXPECT(unit->isUnit());
++  CHECK_EXCEPTION(Gradients(sigmaGraph(unit), solution)
++                      .noiseGradient(cotangents, unit),
++                  std::invalid_argument);
++
++  const auto robust = noiseModel::Robust::Create(
++      noiseModel::mEstimator::Huber::Create(1.0), diagonal);
++  CHECK_EXCEPTION(gradients.noiseGradient(cotangents, robust),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(gradients.noiseGradient(cotangents, nullptr),
++                  std::invalid_argument);
++  EXPECT(!gradients.noiseGradient(
++      cotangents, noiseModel::Diagonal::Sigmas(kUnequalSigmas, false)));
++  CHECK_EXCEPTION(Gradients(*graph.linearize(solution))
++                      .noiseGradient(cotangents, diagonal),
++                  std::logic_error);
++}
++
++}  // namespace noise_fixture
 +/* ************************************************************************* */
 +
 +int main() {
@@ -22560,7 +25056,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }; // \class GaussMarkov1stOrderFactor
 --- /dev/null
 +++ gtsam-4.3.0/gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,253 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -22760,18 +25256,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   * zero because h is already part of the lifted state.
 +   *
 +   * The method is supported only when Position = AugmentedPoint<N>.
-+   * The optional redundant-constraint output is forwarded to the point traits;
-+   * AugmentedPoint<N> does not currently define additional redundant
-+   * constraints.
++   * Its two lift equalities are added once per key through variableConstraints;
++   * there are no factor-specific or redundant constraints.
 +   *
-+   * @throws std::invalid_argument for null costs or constraints,
-+   * columnDimension != 1, or a noise model whose dimension is not 1.
++   * @throws std::invalid_argument for columnDimension != 1 or a noise model
++   *         whose dimension is not 1.
 +   * @throws std::runtime_error for a non-augmented state or an unsupported
 +   *         noise model (null, robust, or constrained).
 +   */
-+  void qcqpFactors(NonlinearFactorGraph* costs,
-+                   NonlinearEqualityConstraints* constraints,
-+                   NonlinearEqualityConstraints* redundantConstraints,
++  void qcqpFactors(NonlinearFactorGraph& costs,
++                   NonlinearEqualityConstraints& constraints,
++                   QcqpVariableConstraints& variableConstraints,
 +                   size_t columnDimension = 1) const override {
 +    if constexpr (!std::is_same_v<Point, AugmentedPoint<N>>) {
 +      throw std::runtime_error(
@@ -22781,10 +25276,6 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      if (columnDimension != 1) {
 +        throw std::invalid_argument(
 +            "KnownLandmarkSquaredRangeFactor::qcqpFactors only supports D=1.");
-+      }
-+      if (!costs || !constraints) {
-+        throw std::invalid_argument(
-+            "KnownLandmarkSquaredRangeFactor::qcqpFactors: null output.");
 +      }
 +      if (!this->noiseModel_ ||
 +          std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
@@ -22808,11 +25299,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +      const Matrix whitenedB = this->noiseModel_->Whiten(B);
 +      const Matrix Q = whitenedB.transpose() * whitenedB;
-+      InsertQcqpConstraints<Point, 1>(this->key(), constraints,
-+                                      redundantConstraints);
++      variableConstraints.add(
++          this->key(), traits<Point>::template QcqpConstraints<1>);
 +      const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1},
 +                                        Q);
-+      costs->push_back(std::make_shared<QpCost>(
++      costs.push_back(std::make_shared<QpCost>(
 +          HessianFactor(KeyVector{this->key()}, blockQ)));
 +    }
 +  }
@@ -23295,7 +25786,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    TestResult tr; return TestRegistry::runAllTests(tr);
 --- /dev/null
 +++ gtsam-4.3.0/gtsam_unstable/slam/tests/testKnownLandmarkSquaredRangeFactor.cpp
-@@ -0,0 +1,404 @@
+@@ -0,0 +1,442 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -23592,7 +26083,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  const EigenFactor factor(kKey, landmark, 4.0, model);
 +  NonlinearFactorGraph costs;
 +  NonlinearEqualityConstraints constraints;
-+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr),
++  QcqpVariableConstraints variableConstraints;
++  CHECK_EXCEPTION(factor.qcqpFactors(costs, constraints, variableConstraints),
 +                  std::runtime_error);
 +}
 +
@@ -23641,7 +26133,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  Values nonlinearValues;
 +  nonlinearValues.insert(kKey, point);
 +  Values qcqpValues;
-+  InsertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
++  insertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
 +
 +  for (const bool useRedundantConstraints : {false, true}) {
 +    const QcqpProblem qcqp(graph, 1, useRedundantConstraints);
@@ -23654,6 +26146,42 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  }
 +}
 +
++// Virtual dispatch must keep variable equalities separate from factor-specific
++// constraints and collect them once per key, including distinct point keys.
++TEST(KnownLandmarkSquaredRangeFactor, CollectsVariableConstraintsByKey) {
++  const Point point(VectorType(1.0, 2.0, 3.0));
++  const auto model = noiseModel::Unit::Create(1);
++  NonlinearFactorGraph graph;
++  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0, model);
++  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0, model);
++  graph.emplace_shared<Factor>(kKey + 1, VectorType(3.0, 5.0, 9.0), 5.0, model);
++
++  NonlinearFactorGraph costs;
++  NonlinearEqualityConstraints constraints;
++  QcqpVariableConstraints variableConstraints;
++  for (const auto& factor : graph) {
++    factor->qcqpFactors(costs, constraints, variableConstraints);
++  }
++  EXPECT_LONGS_EQUAL(3, costs.size());
++  EXPECT_LONGS_EQUAL(0, constraints.size());
++  EXPECT_LONGS_EQUAL(4, variableConstraints.constraints().size());
++
++  Values nonlinearValues, liftedValues;
++  for (const Key key : {kKey, kKey + 1}) {
++    nonlinearValues.insert(key, point);
++    insertQcqpValue(key, point, liftedValues);
++  }
++  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues), costs.error(liftedValues),
++                       1e-10);
++  EXPECT_DOUBLES_EQUAL(
++      0.0, variableConstraints.constraints().violationNorm(liftedValues), 1e-12);
++
++  Matrix invalidLift = liftedValues.at<Matrix>(kKey + 1);
++  invalidLift(4, 0) += 1.0;
++  liftedValues.update(kKey + 1, invalidLift);
++  EXPECT(variableConstraints.constraints().violationNorm(liftedValues) > 0.0);
++}
++
 +// Validate qcqpFactors error handling without an SDP solve.
 +TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
 +  const VectorType landmark(3.0, 5.0, 9.0);
@@ -23662,35 +26190,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +  NonlinearFactorGraph costs;
 +  NonlinearEqualityConstraints constraints;
-+  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr),
-+                  std::invalid_argument);
-+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr, nullptr),
-+                  std::invalid_argument);
-+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
++  QcqpVariableConstraints variableConstraints;
++  CHECK_EXCEPTION(factor.qcqpFactors(costs, constraints, variableConstraints, 2),
 +                  std::invalid_argument);
 +
 +  const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
-+  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints, nullptr),
++  CHECK_EXCEPTION(missingNoise.qcqpFactors(costs, constraints, variableConstraints),
 +                  std::runtime_error);
 +  const Factor wrongNoiseDimension(kKey, landmark, 5.0,
 +                                   noiseModel::Isotropic::Sigma(2, 1.0));
 +  CHECK_EXCEPTION(
-+      wrongNoiseDimension.qcqpFactors(&costs, &constraints, nullptr),
++      wrongNoiseDimension.qcqpFactors(costs, constraints, variableConstraints),
 +      std::invalid_argument);
 +  const Factor constrainedNoise(kKey, landmark, 5.0,
 +                                noiseModel::Constrained::All(1));
-+  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints, nullptr),
++  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(costs, constraints,
++                                             variableConstraints),
 +                  std::runtime_error);
 +  const Factor robustNoise(
 +      kKey, landmark, 5.0,
 +      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
 +                                 model));
-+  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints, nullptr),
++  CHECK_EXCEPTION(robustNoise.qcqpFactors(costs, constraints, variableConstraints),
 +                  std::runtime_error);
 +  CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model), std::invalid_argument);
 +  CHECK_EXCEPTION(
 +      Factor(kKey, landmark, std::numeric_limits<double>::infinity(), model),
 +      std::invalid_argument);
++  EXPECT_LONGS_EQUAL(0, costs.size());
++  EXPECT_LONGS_EQUAL(0, constraints.size());
++  EXPECT_LONGS_EQUAL(0, variableConstraints.constraints().size());
 +}
 +
 +}  // namespace augmented_factor3_fixture
@@ -42114,7 +44643,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
          """Test construction of hybrid factor graph."""
 --- /dev/null
 +++ gtsam-4.3.0/python/gtsam/tests/test_ParameterGradients.py
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,305 @@
 +"""ParameterTag identity and parameter VJPs through real Python callbacks.
 +
 +GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
@@ -42353,6 +44882,69 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        graph.add(vector_factor(failing))
 +        with self.assertRaisesRegex(ValueError, "parameter callback failed"):
 +            gtsam.Gradients(graph, values).parameterGradient(cotangents, SCALE)
++
++    def test_noise_gradient_matches_identity(self):
++        sigmas = np.array([0.4, 1.3])
++        noise = gtsam.noiseModel.Diagonal.Sigmas(sigmas, False)
++        self.assertNotIsInstance(noise, gtsam.noiseModel.Isotropic)
++
++        def make_graph(first, second):
++            graph = gtsam.NonlinearFactorGraph()
++            graph.add(gtsam.PriorFactorPoint2(KEY, np.zeros(2), first))
++            graph.add(gtsam.PriorFactorPoint2(KEY, np.array([0.3, 0.4]), second))
++            graph.add(gtsam.PriorFactorPoint2(
++                KEY, np.array([1.0, -0.5]), gtsam.noiseModel.Isotropic.Sigma(2, 0.5)
++            ))
++            return graph
++
++        def solve(graph):
++            initial = gtsam.Values()
++            initial.insert(KEY, np.zeros(2))
++            return gtsam.GaussNewtonOptimizer(graph, initial).optimize()
++
++        target = np.array([0.2, -0.3])
++        graph = make_graph(noise, noise)
++        solution = solve(graph)
++        cotangents = gtsam.VectorValues()
++        cotangents.insert(KEY, solution.atPoint2(KEY) - target)
++        gradients = gtsam.Gradients(graph, solution)
++        gradient = gradients.noiseGradient(cotangents, noise)
++        self.assertEqual(gradient.shape, (2,))
++        # Repeated queries with the same Python object keep matching.
++        np.testing.assert_array_equal(gradients.noiseGradient(cotangents, noise), gradient)
++
++        step = 1e-6
++        for coordinate in range(2):
++            plus, minus = sigmas.copy(), sigmas.copy()
++            plus[coordinate] += step
++            minus[coordinate] -= step
++            perturbed = [gtsam.noiseModel.Diagonal.Sigmas(s, False) for s in (plus, minus)]
++            dx = (solve(make_graph(perturbed[0], perturbed[0])).atPoint2(KEY)
++                  - solve(make_graph(perturbed[1], perturbed[1])).atPoint2(KEY))
++            self.assertAlmostEqual(
++                gradient[coordinate], cotangents.at(KEY).dot(dx) / (2 * step), places=6
++            )
++
++        # An equal-valued but distinct model is not in the graph.
++        self.assertIsNone(gradients.noiseGradient(
++            cotangents, gtsam.noiseModel.Diagonal.Sigmas(sigmas, False)
++        ))
++
++    def test_noise_gradient_isotropic(self):
++        noise = gtsam.noiseModel.Isotropic.Sigma(2, 0.7, False)
++        graph = gtsam.NonlinearFactorGraph()
++        graph.add(gtsam.PriorFactorPoint2(KEY, np.zeros(2), noise))
++        graph.add(gtsam.PriorFactorPoint2(
++            KEY, np.array([1.0, -0.5]), gtsam.noiseModel.Isotropic.Sigma(2, 0.5)
++        ))
++        initial = gtsam.Values()
++        initial.insert(KEY, np.zeros(2))
++        solution = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
++        cotangents = gtsam.VectorValues()
++        cotangents.insert(KEY, solution.atPoint2(KEY))
++        gradient = gtsam.Gradients(graph, solution).noiseGradient(cotangents, noise)
++        self.assertEqual(gradient.shape, (1,))
++        self.assertTrue(np.all(np.isfinite(gradient)))
 +
 +
 +if __name__ == "__main__":

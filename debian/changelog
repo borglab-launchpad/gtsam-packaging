@@ -1,10 +1,38 @@
-gtsam (4.3.0-0ubuntu14~54.gbpe12950) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~55.gbp65a073) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @65a073db23c959e4f99ca3b7bf324aaf94a3077c **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @e12950f364663e791200b80a1cc34514e27888db **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 04 Nov 2026 23:45:23 +0000
+  [ jns6 ]
+  * extend Gradients so contributions from learned diagonal noise models are included
+  * small comment on true state
+  * add brief note to documentation on using a final NN layer to ensure non negative oouputs for covariances)
+  * add 2x scaling to diagonal/isotropic gradients to account for the fact that we're doing IFT in the whitened space
+  * Replace noise-model ParameterTag with Gradients::noiseGradient
+
+  [ Frank Dellaert ]
+  * Fix unstable squared-range factor for current QCQP API
+
+  [ dellaert@gmail.com ]
+  * Use scale-aware rank cutoff in constrained QR
+  * Recover sparse active-set multipliers with rank-revealing QR
+  * Keep sparse QP regularization proximal and certify original KKT
+  * Try equality projection before sparse QP phase one
+  * Clarify active-set stationarity and split solver steps
+  * Keep stateless active-set helpers local
+  * Group active-set internal helpers in header
+  * Recover rank-deficient multipliers with graph elimination
+  * Reorder active-set helpers to reduce develop diff
+  * Preserve square-root QP costs and record weighted-QR regression
+  * Propagate constrained QR rank scales through exact substitution
+  * Use Eigen Householder QR for constrained elimination
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Nov 2026 10:53:02 +0000
 
 gtsam (4.3.0-0ubuntu14~53.gbp2d2119) resolute; urgency=medium
 
