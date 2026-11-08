@@ -1,10 +1,57 @@
-gtsam (4.3.0-0ubuntu14~60.gbp57355f) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~61.gbp830938) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8309389a0e45ae5165a190f11c6def9dbc672c60 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @57355ffdee66a682b1b55795ec64fc2fe5cc55c9 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 00:50:43 +0000
+  [ dellaert@gmail.com ]
+  * Cache active-set elimination orderings while variable keys are unchanged
+  * Reuse GaussianISAM2 elimination in unregularized sparse QPs
+  * Seed cold QP working sets with componentwise projected gradients
+  * Add an explicit feasible-descent step API for quadratic programs
+  * Honor projected-gradient options in feasible-step initialization
+  * Make QP gap and feasible-decrease checks scale aware
+  * Support validated custom active-set elimination orderings
+  * Add explicit QP initialization strategies with feasible-step seeding
+  * Document QP initialization and feasible-step contracts with wrapper examples
+  * Document QP solver choices and report-writing guidance
+  * Document QP solver choices and report-writing guidance
+  * Document QP solver choices and report-writing guidance
+  * Document QP solver choices and report-writing guidance
+  * Reuse incremental sparse QP elimination with proximal regularization
+  * Document QP solver choices and report-writing guidance
+  * Unify dense QP semantics and cache rank-aware working solves
+  * Document QP solver choices and report-writing guidance
+  * Separate active-set setup, initialization, and sparse backends
+  * Keep local QP benchmark artifacts outside version control
+  * Refine cached dense QR solves to preserve weak directions
+  * Eliminate permanent equalities in dense QP workspaces
+  * Document native QP inputs and require the Plotly CDN
+  * Integrate QP benchmark pages into the MyST site
+  * Reuse dense working LDLT factors for primal and multiplier solves
+  * Reduce dense QP preparation and redundant solve work
+  * Document dense working LDLT updates and preparation reuse
+  * Reuse dense equality preparation throughout QP initialization
+  * Refine sparse QP working solves through cached factors
+  * Publish block-input Dense and Sparse MPC benchmark results
+  * Add dual active-set QP formulations and benchmark both backends
+  * Benchmark Dense and Sparse Dual on G1 captures
+  * Use dual-first Automatic QP formulation by default
+  * Make Dense QP equality projection optional
+  * Use cached Cholesky for native Dense QP objectives
+
+  [ Jose Luis Blanco-Claraco ]
+  * Keep the newest variables at the root in IncrementalFixedLagSmoother, and add a parameters struct
+  * Add a timing script for IncrementalFixedLagSmoother
+
+  [ Frank Dellaert ]
+  * Fix wheel compilation and nightly constrained-solver regressions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 21:08:35 +0000
 
 gtsam (4.3.0-0ubuntu14~59.gbp57642b) resolute; urgency=medium
 

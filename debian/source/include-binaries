@@ -13,3 +13,5 @@ doc/PreintegratedIMUJacobians.pdf
 doc/robust.pdf
 doc/trustregion.pdf
 doc/IMU_Gauss_Markov_State_Space.pdf
+gtsam/constrained/doc/qp-plots/mpc-profile.png
+gtsam/constrained/doc/qp-plots/quad-profile.png
