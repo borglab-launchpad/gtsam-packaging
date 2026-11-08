@@ -1,10 +1,25 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~57.gbpb17ae8) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~58.gbp5415da) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @5415da47c4b60c62f013af3de0cc0a91fc0999e1 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b17ae8ef72e1f7cee70b325736223c493067cb7e **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Fri, 06 Nov 2026 01:11:11 +0000
+  [ dellaert@gmail.com ]
+  * Use Eigen Householder QR for constrained elimination
+  * Add GaussianISAM2 with fixed-order factor addition and removal
+  * Solve Gaussian objective forcing with cached Bayes-tree traversals
+
+  [ Frank Dellaert ]
+  * Document GaussianISAM2 updates and cached solves [skip ci]
+
+  [ Jose Luis Blanco-Claraco ]
+  * Accept any increasing constraint group indices in ColamdConstrained
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 00:48:07 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~56.gbp5dd07b) resolute; urgency=medium
 

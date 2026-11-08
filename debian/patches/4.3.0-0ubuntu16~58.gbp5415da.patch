@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Nov, 06 2026 01:09:17 +0000
+Date: Nov, 08 2026 00:48:08 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -14298,6 +14298,105 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
            keyCounter++;
          }
        }
+--- gtsam-no-tbb-4.3.0.orig/gtsam/inference/Ordering.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/inference/Ordering.cpp
+@@ -16,6 +16,7 @@
+  * @date    Sep 2, 2010
+  */
+ 
++#include <algorithm>
+ #include <vector>
+ #include <limits>
+ #include <cassert>
+@@ -71,6 +72,22 @@ int ccolamdOrder(int rows, int columns,
+ #endif
+ }
+ 
++// CCOLAMD requires every constraint group in [0, columns), but it only rejects
++// groups above that range and writes out of bounds for a group equal to it.
++// Groups only order the variables, so their ranks give the same constraints.
++std::vector<int> groupRanks(const std::vector<int>& groups) {
++  std::vector<int> labels(groups);
++  std::sort(labels.begin(), labels.end());
++  labels.erase(std::unique(labels.begin(), labels.end()), labels.end());
++  std::vector<int> ranks(groups.size());
++  for (size_t j = 0; j < groups.size(); ++j) {
++    ranks[j] = static_cast<int>(
++        std::lower_bound(labels.begin(), labels.end(), groups[j]) -
++        labels.begin());
++  }
++  return ranks;
++}
++
+ }  // namespace
+ 
+ /* ************************************************************************* */
+@@ -144,13 +161,24 @@ Ordering Ordering::ColamdConstrained(con
+ 
+   gttoc(Prepare);
+ 
++  // Groups may be any increasing labels, e.g. after ISAM2 keeps only the
++  // affected keys of the caller's constraints.
++  const auto [minGroup, maxGroup] =
++      std::minmax_element(cmember.begin(), cmember.end());
++  std::vector<int> ranks;
++  int* constraintSet = cmember.data();
++  if (*minGroup < 0 || *maxGroup >= static_cast<int>(nVars)) {
++    ranks = groupRanks(cmember);
++    constraintSet = ranks.data();
++  }
++
+   // call colamd, result will be in p
+   /* returns (1) if successful, (0) otherwise*/
+   if (nVars > 0) {
+     gttic(ccolamd);
+     int rv = ccolamdOrder(
+         static_cast<int>(nFactors), static_cast<int>(nVars),
+-        static_cast<int>(Alen), &A[0], &p[0], knobs, stats, &cmember[0]);
++        static_cast<int>(Alen), &A[0], &p[0], knobs, stats, constraintSet);
+     if (rv != 1) {
+       throw runtime_error("ccolamd failed with return value " + to_string(rv));
+     }
+@@ -245,7 +273,6 @@ Ordering Ordering::ColamdConstrained(con
+   // Assign groups
+   typedef FastMap<Key, int>::value_type key_group;
+   for(const key_group& p: groups) {
+-    // FIXME: check that no groups are skipped
+     cmember[keyIndices.at(p.first)] = p.second;
+   }
+ 
+--- gtsam-no-tbb-4.3.0.orig/gtsam/inference/Ordering.h
++++ gtsam-no-tbb-4.3.0/gtsam/inference/Ordering.h
+@@ -160,10 +160,10 @@ public:
+   /// VariableIndex, it is faster to use COLAMD(const VariableIndex&).  In this function, a group
+   /// for each variable should be specified in \c groups, and each group of variables will appear
+   /// in the ordering in group index order.  \c groups should be a map from Key to group index.
+-  /// The group indices used should be consecutive starting at 0, but may appear in \c groups in
+-  /// arbitrary order.  Any variables not present in \c groups will be assigned to group 0.  This
+-  /// function simply fills the \c cmember argument to CCOLAMD with the supplied indices, see the
+-  /// CCOLAMD documentation for more information.
++  /// Only the order of the group indices matters: they need not be consecutive nor start at 0.
++  /// Any variables not present in \c groups will be assigned to group 0.  The indices are passed
++  /// to CCOLAMD as its \c cmember argument (replaced by their ranks if outside the range it
++  /// accepts), see the CCOLAMD documentation for more information.
+   template<class FACTOR_GRAPH>
+   static Ordering ColamdConstrained(const FACTOR_GRAPH& graph,
+       const FastMap<Key, int>& groups) {
+@@ -176,10 +176,10 @@ public:
+   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  In this
+   /// function, a group for each variable should be specified in \c groups, and each group of
+   /// variables will appear in the ordering in group index order.  \c groups should be a map from
+-  /// Key to group index. The group indices used should be consecutive starting at 0, but may
+-  /// appear in \c groups in arbitrary order.  Any variables not present in \c groups will be
+-  /// assigned to group 0.  This function simply fills the \c cmember argument to CCOLAMD with the
+-  /// supplied indices, see the CCOLAMD documentation for more information.
++  /// Key to group index. Only the order of the group indices matters: they need not be
++  /// consecutive nor start at 0.  Any variables not present in \c groups will be assigned to
++  /// group 0.  The indices are passed to CCOLAMD as its \c cmember argument (replaced by their
++  /// ranks if outside the range it accepts), see the CCOLAMD documentation for more information.
+   static Ordering ColamdConstrained(
+       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
+ 
 --- gtsam-no-tbb-4.3.0.orig/gtsam/inference/tests/testOrdering.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/inference/tests/testOrdering.cpp
 @@ -17,6 +17,7 @@
@@ -14308,7 +14407,58 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/inference/Ordering.h>
  #include <gtsam/inference/MetisIndex.h>
  #include <gtsam/base/TestableAssertions.h>
-@@ -301,6 +302,7 @@ TEST(Ordering, MetisEdgelessGraph) {
+@@ -108,6 +109,50 @@ TEST(Ordering, grouped_constrained_order
+ }
+ 
+ /* ************************************************************************* */
++TEST(Ordering, grouped_constrained_ordering_any_labels) {
++  // Same groups as above, with labels that are neither consecutive nor from 0
++  SymbolicFactorGraph symbolicGraph = example::symbolicChain();
++  FastMap<Key, int> constraints;
++  constraints[0] = -5;
++  constraints[1] = -5;
++  constraints[2] = 10;
++  constraints[3] = -5;
++  constraints[4] = 10;
++  constraints[5] = 20;
++
++  Ordering actual = Ordering::ColamdConstrained(symbolicGraph, constraints);
++  Ordering expected{ 0, 1, 3, 2, 4, 5 };
++  EXPECT(assert_equal(expected, actual));
++}
++
++/* ************************************************************************* */
++TEST(Ordering, grouped_constrained_ordering_labels_not_below_size) {
++  // CCOLAMD accepts groups in [0, n) only, n being the number of variables.
++  SymbolicFactorGraph graph;
++  graph.push_factor(0, 1);
++
++  // A group equal to n used to overflow CCOLAMD's arrays.
++  {
++    FastMap<Key, int> constraints;
++    constraints[0] = 2;
++    constraints[1] = 2;
++    Ordering actual = Ordering::ColamdConstrained(graph, constraints);
++    Ordering expected{ 0, 1 };
++    EXPECT(assert_equal(expected, actual));
++  }
++
++  // A group above n used to make CCOLAMD fail.
++  {
++    FastMap<Key, int> constraints;
++    constraints[0] = 3;
++    constraints[1] = 2;
++    Ordering actual = Ordering::ColamdConstrained(graph, constraints);
++    Ordering expected{ 1, 0 };
++    EXPECT(assert_equal(expected, actual));
++  }
++}
++
++/* ************************************************************************* */
+ TEST(Ordering, csr_format) {
+   // Example in METIS manual
+   SymbolicFactorGraph symbolicGraph;
+@@ -301,6 +346,7 @@ TEST(Ordering, MetisEdgelessGraph) {
    symbolicGraph.push_factor(0);
    symbolicGraph.push_factor(1);
  
@@ -14316,7 +14466,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    const Ordering metis = Ordering::Metis(symbolicGraph);
  
    EXPECT_LONGS_EQUAL(2, metis.size());
-@@ -309,6 +311,45 @@ TEST(Ordering, MetisEdgelessGraph) {
+@@ -309,6 +355,45 @@ TEST(Ordering, MetisEdgelessGraph) {
  }
  
  /* ************************************************************************* */
@@ -14465,17 +14615,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  /// BLAS level 2 style AXPY, `y := alpha*x + y`
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/GaussianBayesTree.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/GaussianBayesTree.cpp
-@@ -26,6 +26,9 @@
+@@ -11,8 +11,7 @@
+ 
+ /**
+  * @file    GaussianBayesTree.cpp
+- * @brief   Gaussian Bayes Tree, the result of eliminating a GaussianJunctionTree
+- * @brief   GaussianBayesTree
++ * Gaussian Bayes-tree queries and exact substitution through cached conditionals.
+  * @author  Frank Dellaert
+  * @author  Richard Roberts
+  */
+@@ -26,6 +25,8 @@
  #include <gtsam/linear/GaussianBayesTreeQueries.h>
  #include <gtsam/linear/VectorValues.h>
  
-+#include <map>
 +#include <stdexcept>
 +
  namespace gtsam {
  
    // Instantiate base class
-@@ -58,6 +61,86 @@ namespace gtsam {
+@@ -58,6 +59,74 @@ namespace gtsam {
    }
    }  // namespace internal
  
@@ -14490,6 +14649,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      throw std::invalid_argument(
 +          "GaussianBayesTree substitution requires square frontal blocks.");
 +    }
++
++    // Arbitrary RHS substitution requires finite, strictly positive noise scales.
 +    const auto& model = conditional.get_model();
 +    if (model &&
 +        (model->isConstrained() || model->dim() != conditional.rows() ||
@@ -14498,6 +14659,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      throw std::invalid_argument(
 +          "GaussianBayesTree substitution requires finite positive diagonal noise.");
 +    }
++
++    // Reject singular frontal pivots before starting the parallel traversal.
 +    const auto frontalMatrix = conditional.R();
 +    const auto diagonal = frontalMatrix.diagonal();
 +    if (!diagonal.allFinite() || (diagonal.array() == 0.0).any()) {
@@ -14508,6 +14671,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  // Validate inputs for traversal and fill omitted frontal blocks with zeros.
 +  VectorValues substitutionRhs(const GaussianBayesTree& tree,
 +                               const VectorValues& rhs) {
++    // Allocate zero blocks for omitted keys after validating each conditional.
 +    VectorValues complete;
 +    for (const auto& [key, clique] : tree.nodes()) {
 +      if (!clique || !clique->conditional())
@@ -14525,6 +14689,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        }
 +      }
 +    }
++
++    // Validate supplied blocks before copying them into the traversal workspace.
 +    for (const auto& [key, value] : rhs) {
 +      auto destination = complete.find(key);
 +      if (destination == complete.end() ||
@@ -14534,27 +14700,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +      }
 +      destination->second = value;
 +    }
++
 +    return complete;
-+  }
-+
-+  using CliqueVectors = std::map<const GaussianBayesTreeClique*, VectorValues>;
-+
-+  // Each clique owns a private frontal RHS and outgoing separator message. All
-+  // entries are allocated before traversal; parallel tasks never insert into it.
-+  CliqueVectors transposeWorkspace(const GaussianBayesTree& tree,
-+                                   const VectorValues& rhs) {
-+    CliqueVectors workspace;
-+    for (const auto& [key, clique] : tree.nodes()) {
-+      const auto& conditional = *clique->conditional();
-+      if (key != conditional.firstFrontalKey()) continue;
-+      auto& local = workspace[clique.get()];
-+      for (Key frontal : conditional.frontals())
-+        local.emplace(frontal, rhs.at(frontal));
-+      for (auto parent = conditional.beginParents();
-+           parent != conditional.endParents(); ++parent)
-+        local.emplace(*parent, Vector::Zero(conditional.getDim(parent)));
-+    }
-+    return workspace;
 +  }
 +
 +  }  // namespace
@@ -14562,7 +14709,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /* ************************************************************************* */
    bool GaussianBayesTree::equals(const This& other, double tol) const
    {
-@@ -71,6 +154,42 @@ namespace gtsam {
+@@ -71,6 +140,20 @@ namespace gtsam {
    }
  
    /* ************************************************************************* */
@@ -14574,31 +14721,9 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  /* ************************************************************************* */
 +  VectorValues GaussianBayesTree::backSubstituteTranspose(
 +      const VectorValues& rhs) const {
-+    VectorValues result = substitutionRhs(*this, rhs);
-+    CliqueVectors workspace = transposeWorkspace(*this, result);
-+    auto solveClique = [&workspace, &result](
-+                           const GaussianBayesTreeClique::shared_ptr& clique) {
-+      auto& local = workspace.at(clique.get());
-+      // A child's separator can include higher ancestors as well as this
-+      // clique's frontals. Retain both kinds of contribution in the local map.
-+      for (const auto& child : clique->children) {
-+        const auto& message = workspace.at(child.get());
-+        for (Key separator : child->conditional()->parents())
-+          local.at(separator) += message.at(separator);
-+      }
-+      const auto& conditional = *clique->conditional();
-+      conditional.solveTransposeInPlace(local);
-+      for (const auto& [key, value] : local) {
-+        if (!value.allFinite())
-+          throw IndeterminateSystemException(conditional.keys().front());
-+      }
-+      // Only this clique writes these frontals; ancestors read its separators.
-+      for (Key frontal : conditional.frontals())
-+        result.at(frontal).swap(local.at(frontal));
-+    };
-+    TbbOpenMPMixedScope threadLimiter;
-+    treeTraversal::PostOrderForestParallel(*this, solveClique);
-+    return result;
++    // Share the post-order transpose traversal with incremental Gaussian trees.
++    return internal::linearAlgorithms::transposeBayesTree(
++        *this, substitutionRhs(*this, rhs));
 +  }
 +
 +  /* ************************************************************************* */
@@ -14660,6 +14785,417 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    }
  
    /* ************************************************************************* */
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/linear/GaussianISAM2.cpp
+@@ -0,0 +1,254 @@
++/* ----------------------------------------------------------------------------
++
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++ * See LICENSE for the license information
++
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file GaussianISAM2.cpp
++ * Fixed-order Gaussian updates through affected-region elimination and cached
++ * Bayes-tree solves for changes to the objective information vector.
++ * @author Frank Dellaert
++ */
++
++#include <gtsam/linear/GaussianISAM2.h>
++
++#include <gtsam/inference/BayesTree-inst.h>
++#include <gtsam/inference/BayesTreeCliqueBase-inst.h>
++#include <gtsam/inference/JunctionTree-inst.h>
++#include <gtsam/linear/GaussianBayesTree.h>
++#include <gtsam/linear/GaussianEliminationTree.h>
++#include <gtsam/linear/linearAlgorithms-inst.h>
++
++#include <algorithm>
++#include <stdexcept>
++
++namespace gtsam {
++
++template class BayesTreeCliqueBase<GaussianISAM2Clique, GaussianFactorGraph>;
++template class BayesTree<GaussianISAM2Clique>;
++
++namespace {
++
++// The generic tree constructors are protected. These local types expose only
++// construction; the existing junction-tree machinery does all elimination.
++struct IncrementalTree : BayesTree<GaussianISAM2Clique> {};
++
++class IncrementalJunctionTree
++    : public JunctionTree<IncrementalTree, GaussianFactorGraph> {
++ public:
++  explicit IncrementalJunctionTree(const GaussianEliminationTree& tree)
++      : JunctionTree<IncrementalTree, GaussianFactorGraph>(tree) {
++    // Reuse the Gaussian elimination tree with the incremental clique type.
++  }
++};
++
++GaussianFactorGraph selectRemovedFactors(
++    const GaussianFactorGraph& factors, const FactorIndices& indices) {
++  // Check removal indices before the factor store or Bayes tree is modified.
++  GaussianFactorGraph removed;
++  FactorIndexSet unique;
++
++  for (FactorIndex index : indices) {
++    if (index >= factors.size() || !factors[index] || !unique.insert(index).second)
++      throw std::invalid_argument("GaussianISAM2: invalid removal index.");
++    removed.push_back(factors[index]);
++  }
++  return removed;
++}
++
++void checkNewFactor(const GaussianFactor& factor,
++                    FastMap<Key, DenseIndex>* dimensions,
++                    FastMap<Key, ptrdiff_t>* referenceChanges) {
++  // Establish dimensions once and count each key's surviving factor references.
++  KeySet unique;
++
++  for (auto variable = factor.begin(); variable != factor.end(); ++variable) {
++    auto known = dimensions->find(*variable);
++    const DenseIndex dimension = factor.getDim(variable);
++    if (known == dimensions->end() || !unique.insert(*variable).second ||
++        dimension <= 0 || (known->second != 0 && known->second != dimension))
++      throw std::invalid_argument("GaussianISAM2: incompatible factor variables.");
++    known->second = dimension;
++    ++(*referenceChanges)[*variable];
++  }
++}
++
++}  // namespace
++
++void GaussianISAM2Clique::setEliminationResult(
++    const GaussianFactorGraph::EliminationResult& eliminationResult) {
++  // Preserve the separator contribution for later reuse of this subtree.
++  conditional_ = eliminationResult.first;
++  cachedFactor_ = eliminationResult.second;
++}
++
++GaussianISAM2::GaussianISAM2(
++    const Ordering& ordering, const GaussianFactorGraph::Eliminate& eliminate)
++    : ordering_(ordering), eliminate_(eliminate) {
++  // Require a callable elimination rule and a unique, fixed variable set.
++  if (!eliminate_)
++    throw std::invalid_argument("GaussianISAM2: empty elimination function.");
++
++  for (Key key : ordering_) {
++    if (!dimensions_.emplace(key, 0).second)
++      throw std::invalid_argument("GaussianISAM2: repeated ordering key.");
++  }
++}
++
++FastMap<Key, DenseIndex> GaussianISAM2::validateUpdate(
++    const GaussianFactorGraph& newFactors,
++    const GaussianFactorGraph& removedFactors) const {
++  // Validate additions against the fixed dimensions before changing any state.
++  auto dimensions = dimensions_;
++  FastMap<Key, ptrdiff_t> referenceChanges;
++
++  for (const auto& factor : newFactors) {
++    if (!factor)
++      throw std::invalid_argument("GaussianISAM2: null factor.");
++    checkNewFactor(*factor, &dimensions, &referenceChanges);
++  }
++
++  // Every ordering key must retain at least one factor after the update.
++  for (const auto& factor : removedFactors)
++    for (Key key : factor->keys()) --referenceChanges[key];
++  if (!initialized_ && referenceChanges.size() != ordering_.size())
++    throw std::invalid_argument("GaussianISAM2: initial graph must cover ordering.");
++
++  for (const auto& [key, change] : referenceChanges) {
++    const auto entry = variableIndex_.find(key);
++    const ptrdiff_t previous = entry == variableIndex_.end()
++                                   ? 0
++                                   : static_cast<ptrdiff_t>(entry->second.size());
++    if (previous + change <= 0)
++      throw std::invalid_argument("GaussianISAM2: update removes a variable.");
++  }
++  return dimensions;
++}
++
++FactorIndices GaussianISAM2::update(const GaussianFactorGraph& newFactors,
++                                  const FactorIndices& removeFactorIndices) {
++  // Finish argument checks before mutating factor storage or the Bayes tree.
++  if (newFactors.empty() && removeFactorIndices.empty()) return {};
++
++  const auto removed = selectRemovedFactors(factors_, removeFactorIndices);
++  auto dimensions = validateUpdate(newFactors, removed);
++  KeySet touchedKeys = newFactors.keys();
++  const KeySet removedKeys = removed.keys();
++  touchedKeys.insert(removedKeys.begin(), removedKeys.end());
++
++  // Keep append-only factor indices and variable incidence lists in sync.
++  variableIndex_.remove(removeFactorIndices.begin(), removeFactorIndices.end(),
++                        removed);
++  for (FactorIndex index : removeFactorIndices) factors_.remove(index);
++  const FactorIndices added = factors_.add_factors(newFactors);
++  variableIndex_.augment(newFactors, added);
++  dimensions_ = std::move(dimensions);
++
++  // Build the complete tree once, then rebuild only affected ancestor paths.
++  if (!initialized_) {
++    eliminateRegion(factors_, ordering_);
++    initialized_ = true;
++  } else if (!touchedKeys.empty()) {
++    updateTop(touchedKeys);
++  }
++  return added;
++}
++
++GaussianFactorGraph GaussianISAM2::affectedFactors(
++    const KeySet& affectedKeys) const {
++  // Find incident factors first, then exclude those owned by orphan subtrees.
++  FactorIndexSet indices;
++  for (Key key : affectedKeys) {
++    const auto& incident = variableIndex_[key];
++    indices.insert(incident.begin(), incident.end());
++  }
++
++  GaussianFactorGraph affected;
++  for (FactorIndex index : indices) {
++    const auto& factor = factors_[index];
++    if (std::all_of(factor->begin(), factor->end(), [&](Key key) {
++          return affectedKeys.count(key) != 0;
++        }))
++      affected.push_back(factor);
++  }
++  return affected;
++}
++
++void GaussianISAM2::updateTop(const KeySet& touchedKeys) {
++  // Detach affected ancestor paths while retaining untouched subtree objects.
++  GaussianBayesNet removed;
++  Cliques orphans;
++  removeTop(KeyVector(touchedKeys.begin(), touchedKeys.end()), &removed, &orphans);
++
++  const KeySet affectedKeys = removed.keys();
++  GaussianFactorGraph factors = affectedFactors(affectedKeys);
++
++  // Supply cached separator factors and wrappers that reattach the same orphans.
++  for (const auto& orphan : orphans) {
++    if (orphan->cachedFactor()) factors.push_back(orphan->cachedFactor());
++    factors.emplace_shared<BayesTreeOrphanWrapper<GaussianISAM2Clique>>(orphan);
++  }
++
++  // Preserve the caller's relative ordering within the affected region.
++  Ordering affectedOrdering;
++  for (Key key : ordering_)
++    if (affectedKeys.count(key)) affectedOrdering.push_back(key);
++
++  eliminateRegion(factors, affectedOrdering);
++}
++
++void GaussianISAM2::eliminateRegion(const GaussianFactorGraph& factors,
++                                  const Ordering& ordering) {
++  // Reuse multifrontal elimination, including standard orphan reattachment.
++  if (ordering.empty()) return;
++
++  const GaussianEliminationTree tree(factors, ordering);
++  const auto result = IncrementalJunctionTree(tree).eliminate(eliminate_).first;
++
++  // Merge the rebuilt roots and frontal lookup entries into the retained tree.
++  roots_.insert(roots_.end(), result->roots().begin(), result->roots().end());
++  nodes_.insert(result->nodes().begin(), result->nodes().end());
++}
++
++VectorValues GaussianISAM2::optimize() const {
++  // Exact back-substitution requires an initial tree for nonempty orderings.
++  if (!initialized_ && !ordering_.empty())
++    throw std::logic_error("GaussianISAM2: an initial update is required.");
++
++  return internal::linearAlgorithms::optimizeBayesTree(*this);
++}
++
++VectorValues GaussianISAM2::optimize(
++    const VectorValues& linearTermDelta) const {
++  // Validate this query without modifying registered factors or cached cliques.
++  if (!initialized_ && !ordering_.empty())
++    throw std::logic_error("GaussianISAM2: an initial update is required.");
++
++  // Missing forcing blocks mean zero changes in the original variable coordinates.
++  VectorValues complete;
++  for (const auto& [key, dimension] : dimensions_)
++    complete.insert(key, Vector::Zero(dimension));
++
++  for (const auto& [key, value] : linearTermDelta) {
++    auto destination = complete.find(key);
++    if (destination == complete.end() ||
++        destination->second.size() != value.size() || !value.allFinite())
++      throw std::invalid_argument("GaussianISAM2: invalid objective forcing.");
++    destination->second = value;
++  }
++
++  // With raw conditional operator R and diagonal conditional sigmas D, the
++  // constrained inverse is R^-1 D^2 R^-T. Hard rows have D=0: their affine
++  // equations retain stored d while the objective forcing changes soft rows.
++  const VectorValues rhs =
++      internal::linearAlgorithms::transposeBayesTree(*this, std::move(complete));
++  return internal::linearAlgorithms::optimizeBayesTree(*this, &rhs, true);
++}
++
++}  // namespace gtsam
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/linear/GaussianISAM2.h
+@@ -0,0 +1,151 @@
++/* ----------------------------------------------------------------------------
++
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++ * See LICENSE for the license information
++
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file GaussianISAM2.h
++ * Fixed-order Gaussian elimination with factor updates and cached RHS solves.
++ * @author Frank Dellaert
++ */
++
++#pragma once
++
++#include <gtsam/inference/BayesTree.h>
++#include <gtsam/inference/BayesTreeCliqueBase.h>
++#include <gtsam/inference/VariableIndex.h>
++#include <gtsam/linear/GaussianBayesNet.h>
++#include <gtsam/linear/GaussianFactorGraph.h>
++#include <gtsam/linear/VectorValues.h>
++
++namespace gtsam {
++
++/// A Gaussian clique retaining its outgoing separator factor for updates.
++class GTSAM_EXPORT GaussianISAM2Clique
++    : public BayesTreeCliqueBase<GaussianISAM2Clique, GaussianFactorGraph> {
++ public:
++  using Base = BayesTreeCliqueBase<GaussianISAM2Clique, GaussianFactorGraph>;
++  using shared_ptr = std::shared_ptr<GaussianISAM2Clique>;
++  using weak_ptr = std::weak_ptr<GaussianISAM2Clique>;
++
++  /**
++   * Store the eliminated conditional and its outgoing separator factor so an
++   * unaffected subtree can contribute to a later incremental update.
++   */
++  void setEliminationResult(
++      const GaussianFactorGraph::EliminationResult& eliminationResult);
++
++  /// Return the cached contribution of this subtree to its separator.
++  const GaussianFactor::shared_ptr& cachedFactor() const { return cachedFactor_; }
++
++ private:
++  /// This subtree's outgoing contribution to its separator variables.
++  GaussianFactor::shared_ptr cachedFactor_;
++};
++
++/**
++ * Incrementally eliminate a Gaussian graph with a fixed variable ordering.
++ *
++ * The first update supplies the complete graph. Subsequent updates add and
++ * remove factors, retaining unaffected Bayes-tree subtrees. Every updated graph
++ * must contain exactly the constructor's keys, with unchanged dimensions.
++ * Factors are shared with the caller and must remain immutable while registered.
++ * Use a new instance if the variable set changes.
++ *
++ * Invalid inputs are rejected before modification. If numerical elimination
++ * throws, discard this instance; updates do not provide rollback or recovery.
++ */
++class GTSAM_EXPORT GaussianISAM2 : public BayesTree<GaussianISAM2Clique> {
++ public:
++  using Base = BayesTree<GaussianISAM2Clique>;
++
++  /**
++   * Fix the ordering and elimination rule for the lifetime of this solver.
++   * Duplicate ordering keys or an empty elimination callback throw
++   * std::invalid_argument. The first successful update establishes dimensions.
++   */
++  explicit GaussianISAM2(
++      const Ordering& ordering,
++      const GaussianFactorGraph::Eliminate& eliminate =
++          GaussianFactorGraph::EliminationTraitsType::DefaultEliminate);
++
++  /**
++   * Add and remove factors, returning the indices assigned to newFactors.
++   * Indices append to the factor store and remain valid until removal. A
++   * replacement can remove a factor and add its replacement in the same call.
++   * Null factors, invalid or repeated removal indices, and changes to the key
++   * set or variable dimensions throw std::invalid_argument before modification.
++   * An update with no additions or removals performs no elimination.
++   * Numerical elimination failures propagate; discard the instance afterward.
++   */
++  FactorIndices update(const GaussianFactorGraph& newFactors,
++                       const FactorIndices& removeFactorIndices = {});
++
++  /**
++   * Back-substitute through the entire tree to obtain the exact solution.
++   * A nonempty ordering requires a successful initial update first; otherwise
++   * this method throws std::logic_error.
++   */
++  VectorValues optimize() const;
++
++  /**
++   * Minimize the registered objective minus linearTermDelta.dot(x), subject to
++   * the same exact constraints, using only cached triangular solves.
++   *
++   * linearTermDelta is an additive change to the objective's information
++   * vector, in the original variable coordinates. It is relative to the
++   * registered factors, not the preceding call. Missing keys mean zero;
++   * unknown keys, wrong dimensions, or nonfinite entries throw
++   * std::invalid_argument. A nonempty ordering requires a successful initial
++   * update first; otherwise this method throws std::logic_error.
++   * Exact affine constraint right-hand sides remain unchanged.
++   *
++   * This query performs no numerical elimination and modifies neither original
++   * factors nor cached conditionals/separator factors. Subsequent factor updates
++   * therefore still reconstruct the registered reference graph. The caller can
++   * apply any desired forcing again after arbitrary additions/removals.
++   */
++  VectorValues optimize(const VectorValues& linearTermDelta) const;
++
++ private:
++  /// Caller-supplied variable order, retained for every affected-region solve.
++  Ordering ordering_;
++  /// Numerical elimination callback used only when factors change.
++  GaussianFactorGraph::Eliminate eliminate_;
++  /// Original shared factors; removed entries remain empty to preserve indices.
++  GaussianFactorGraph factors_;
++  /// Incidence lists for finding original factors in an affected region.
++  VariableIndex variableIndex_;
++  /// Fixed key dimensions, established by the initial graph.
++  FastMap<Key, DenseIndex> dimensions_;
++  /// Whether an initial factorization has completed successfully.
++  bool initialized_ = false;
++
++  /// @name Internal helpers
++  /// @{
++
++  /// Validate an update and return the dimensions established by its factors.
++  FastMap<Key, DenseIndex> validateUpdate(
++      const GaussianFactorGraph& newFactors,
++      const GaussianFactorGraph& removedFactors) const;
++
++  /// Collect original factors wholly contained in the affected variables.
++  GaussianFactorGraph affectedFactors(const KeySet& affectedKeys) const;
++
++  /// Detach, reconstruct, and re-eliminate the affected part of the tree.
++  void updateTop(const KeySet& touchedKeys);
++
++  /// Eliminate a region and merge its roots and frontal index into this tree.
++  void eliminateRegion(const GaussianFactorGraph& factors,
++                       const Ordering& ordering);
++
++  /// @}
++};
++
++}  // namespace gtsam
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/HessianFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/HessianFactor.cpp
 @@ -597,7 +597,11 @@ VectorValues HessianFactor::solve() {
@@ -15065,63 +15601,165 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     * @return PrecomputedData containing the indexed junction tree and sizing
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/NoiseModel.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/NoiseModel.cpp
-@@ -597,6 +597,17 @@ SharedDiagonal Constrained::QR(Matrix& A
-   Vector invsigmas = sigmas_.array().inverse();
-   Vector weights = invsigmas.array().square();  // calculate weights once
+@@ -18,6 +18,7 @@
  
-+  // Initialize finite-information column scales. Exact substitutions below
-+  // propagate norm bounds when information moves into separator columns.
-+  // Comparing residual norms to these scales avoids an absolute precision floor.
-+  Vector referencePrecisions = Vector::Zero(n);
-+  for (size_t i = 0; i < m; ++i) {
-+    if (std::isfinite(weights(i)))
-+      referencePrecisions.array() += weights(i) * Ab.row(i).head(n).transpose().array().square();
-+  }
-+  const double relativeTolerance = 64.0 * std::numeric_limits<double>::epsilon() *
-+                                   std::max(m, n);
-+
-   // We loop over all columns, because the columns that can be eliminated
-   // are not necessarily contiguous. For each one, estimate the corresponding
-   // scalar variable x as d-rS, with S the separator (remaining columns).
-@@ -635,6 +646,16 @@ SharedDiagonal Constrained::QR(Matrix& A
-       Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
-       a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
+ #include <gtsam/base/timing.h>
+ #include <gtsam/linear/NoiseModel.h>
++#include <gtsam/linear/internal/ConstrainedQR.h>
  
-+      // Substitution changes finite columns as A_k -= A_j * rd_k / rd_j.
-+      // Propagate a norm bound by the triangle inequality, including into
-+      // columns with zero input scale, so cancellation still has a rank scale.
-+      for (size_t k = j + 1; k < n; ++k) {
-+        const double normBound =
-+            std::sqrt(referencePrecisions(k)) +
-+            std::abs(rd(0, k) / rd(0, j)) * std::sqrt(referencePrecisions(j));
-+        referencePrecisions(k) = normBound * normBound;
-+      }
-+
-       // Rank-1 down-date of Ab, expensive, using outer product
-       Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
-     } else {
-@@ -647,14 +668,18 @@ SharedDiagonal Constrained::QR(Matrix& A
-       Vector pseudo(m);     // allocate storage for pseudo-inverse
-       for (size_t i = 0; i < m; i++) {
-         double ai = a(i, 0);
+ #include <Eigen/Cholesky>
+ #include <cassert>
+@@ -557,147 +558,9 @@ Constrained::shared_ptr Constrained::uni
+ }
+ 
+ /* ************************************************************************* */
+-// Special version of QR for Constrained calls slower but smarter code
+-// that deals with possibly zero sigmas
+-// It is Gram-Schmidt orthogonalization rather than Householder
+-
+-// Check whether column a triggers a constraint and corresponding variable is deterministic
+-// Return constraint_row with maximum element in case variable plays in multiple constraints
+-template <typename VECTOR>
+-std::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
+-  std::optional<size_t> constraint_row;
+-  // not zero, so roundoff errors will not be counted
+-  // TODO(frank): that's a fairly crude way of dealing with roundoff errors :-(
+-  double max_element = 1e-9;
+-  for (size_t i = 0; i < m; i++) {
+-    if (!std::isinf(invsigmas[i]))
+-      continue;
+-    double abs_ai = std::abs(a(i,0));
+-    if (abs_ai > max_element) {
+-      max_element = abs_ai;
+-      constraint_row = i;
+-    }
+-  }
+-  return constraint_row;
+-}
+-
++// One constrained square-root implementation serves fronts of every size.
+ SharedDiagonal Constrained::QR(Matrix& Ab) const {
+-  static const double kInfinity = std::numeric_limits<double>::infinity();
+-
+-  // get size(A) and maxRank
+-  size_t m = Ab.rows();
+-  const size_t n = Ab.cols() - 1;
+-  const size_t maxRank = min(m, n);
+-
+-  // create storage for [R d]
+-  typedef std::tuple<size_t, Matrix, double> Triple;
+-  list<Triple> Rd;
+-
+-  Matrix rd(1, n + 1);  // and for row of R
+-  Vector invsigmas = sigmas_.array().inverse();
+-  Vector weights = invsigmas.array().square();  // calculate weights once
+-
+-  // We loop over all columns, because the columns that can be eliminated
+-  // are not necessarily contiguous. For each one, estimate the corresponding
+-  // scalar variable x as d-rS, with S the separator (remaining columns).
+-  // Then update A and b by substituting x with d-rS, zero-ing out x's column.
+-  for (size_t j = 0; j < n; ++j) {
+-    // extract the first column of A
+-    Eigen::Block<Matrix> a = Ab.block(0, j, m, 1);
+-
+-    // Check whether we need to handle as a constraint
+-    std::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
+-
+-    if (constraint_row) {
+-      // Handle this as a constraint, as the i^th row has zero sigma with non-zero entry A(i,j)
+-
+-      // In this case, the row in [R|d] is simply the row in [A|b]
+-      // NOTE(frank): we used to divide by a[i] but there is no need with a constraint
+-      rd = Ab.row(*constraint_row);
+-
+-      // Construct solution (r, d, sigma)
+-      Rd.push_back(std::make_tuple(j, rd, kInfinity));
+-
+-      // exit after rank exhausted
+-      if (Rd.size() >= maxRank)
+-        break;
+-
+-      // The constraint row will be zeroed out, so we can save work by swapping in the
+-      // last valid row and decreasing m. This will save work on subsequent down-dates, too.
+-      m -= 1;
+-      if (*constraint_row != m) {
+-        Ab.row(*constraint_row) = Ab.row(m);
+-        weights(*constraint_row) = weights(m);
+-        invsigmas(*constraint_row) = invsigmas(m);
+-      }
+-
+-      // get a reduced a-column which is now shorter
+-      Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
+-      a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
+-
+-      // Rank-1 down-date of Ab, expensive, using outer product
+-      Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
+-    } else {
+-      // Treat in normal Gram-Schmidt way
+-      // Calculate weighted pseudo-inverse and corresponding precision
+-
+-      // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
+-      // For diagonal Sigma, inv(Sigma) = diag(precisions)
+-      double precision = 0;
+-      Vector pseudo(m);     // allocate storage for pseudo-inverse
+-      for (size_t i = 0; i < m; i++) {
+-        double ai = a(i, 0);
 -        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
-+        // Rank is determined from weighted precision below. A small raw
-+        // coefficient may carry substantial information when sigma is small.
-+        // Ignore only hard rows, which were handled by check_if_constraint.
-+        if (std::isfinite(weights[i])) {
-           pseudo[i] = weights[i] * ai;
-           precision += pseudo[i] * ai;
-         } else
-           pseudo[i] = 0;
-       }
- 
+-          pseudo[i] = weights[i] * ai;
+-          precision += pseudo[i] * ai;
+-        } else
+-          pseudo[i] = 0;
+-      }
+-
 -      if (precision > 1e-8) {
-+      if (std::isfinite(precision) && precision > 0.0 &&
-+          std::sqrt(precision) > relativeTolerance * std::sqrt(referencePrecisions(j))) {
-         pseudo /= precision;
+-        pseudo /= precision;
+-
+-        // create solution [r d], rhs is automatically r(n)
+-        rd(0, j) = 1.0;  // put 1 on diagonal
+-        rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
+-
+-        // construct solution (r, d, sigma)
+-        Rd.push_back(std::make_tuple(j, rd, precision));
+-      } else {
+-        // If precision is zero, no information on this column
+-        // This is actually not limited to constraints, could happen in Gaussian::QR
+-        // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
+-        continue;  // but even if not, no need to update if a==zeros
+-      }
+-
+-      // exit after rank exhausted
+-      if (Rd.size() >= maxRank)
+-        break;
+-
+-      // Rank-1 down-date of Ab, expensive, using outer product
+-      Ab.block(0, j + 1, m, n - j).noalias() -= a * rd.middleCols(j + 1, n - j);
+-    }
+-  }
+-
+-  // Create storage for precisions
+-  Vector precisions(Rd.size());
+-
+-  // Write back result in Ab, imperative as we are
+-  size_t i = 0;  // start with first row
+-  bool mixed = false;
+-  Ab.setZero();  // make sure we don't look below
+-  for (const Triple& t: Rd) {
+-    const size_t& j = std::get<0>(t);
+-    const Matrix& rd = std::get<1>(t);
+-    precisions(i) = std::get<2>(t);
+-    if (std::isinf(precisions(i)))
+-      mixed = true;
+-    Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
+-    i += 1;
+-  }
+-
+-  // Must include mu, as the defaults might be higher, resulting in non-convergence
+-  return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
++  return internal::constrainedQR(Ab, sigmas_, mu_);
+ }
  
-         // create solution [r d], rhs is automatically r(n)
-@@ -844,7 +869,7 @@ Vector Robust::unweightedWhiten(const Ve
+ /* ************************************************************************* */
+@@ -844,7 +707,7 @@ Vector Robust::unweightedWhiten(const Ve
    return noise_->unweightedWhiten(v);
  }
  double Robust::weight(const Vector& v) const {
@@ -15130,6 +15768,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  Robust::shared_ptr Robust::Create(
+--- gtsam-no-tbb-4.3.0.orig/gtsam/linear/NoiseModel.h
++++ gtsam-no-tbb-4.3.0/gtsam/linear/NoiseModel.h
+@@ -277,9 +277,14 @@ namespace gtsam {
+       /**
+        * Apply appropriately weighted QR factorization to the system [A b]
+        *               Q'  *   [A b]  =  [R d]
+-       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r = min(m,n).
++       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r <= min(m,n).
+        * This routine performs an in-place factorization on Ab.
+        * Below-diagonal elements are set to zero by this routine.
++       * Exact rows take priority in the original variable order. Finite pivots
++       * use a weighted, scale-aware rank test, including weak observations.
++       * All front sizes use Eigen QR with a row-pivoted, one-column
++       * Householder fallback. Elimination preserves square-root form without
++       * forming normal equations.
+        * @param Ab is the m*(n+1) augmented system matrix [A b]
+        * @return Empty SharedDiagonal() noise model: R,d are whitened
+        */
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/internal/CompactLeafSchurKernel.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/internal/CompactLeafSchurKernel.cpp
 @@ -15,6 +15,7 @@
@@ -15159,6 +15815,274 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        return false;
      }
  
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/linear/internal/ConstrainedQR.cpp
+@@ -0,0 +1,232 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. All Rights Reserved.
++ * See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file ConstrainedQR.cpp
++ * Adapt Eigen QR to exact constraints and fixed-order, rank-aware elimination.
++ */
++
++#include <gtsam/linear/internal/ConstrainedQR.h>
++
++#include <Eigen/QR>
++#include <algorithm>
++#include <cmath>
++#include <limits>
++#include <optional>
++#include <vector>
++
++namespace gtsam::noiseModel::internal {
++namespace {
++
++// GTSAM selects exact/finite pivots; Eigen performs all orthogonal transforms.
++class ConstrainedQRWorkspace {
++  Matrix& output_;
++  const size_t variables_, maximumRank_;
++  const double rankTolerance_;
++  Matrix finite_, hard_, conditionals_;
++  Vector reference_, precisions_, scratch_;
++  Eigen::RowVectorXd row_;
++  std::vector<size_t> pivots_;
++  size_t finiteStart_ = 0, hardCount_ = 0;
++  bool tryFullQR_ = true;
++
++ public:
++  explicit ConstrainedQRWorkspace(Matrix& augmented, const Vector& sigmas)
++      : output_(augmented),
++        variables_(augmented.cols() - 1),
++        maximumRank_(std::min<size_t>(augmented.rows(), variables_)),
++        rankTolerance_(64.0 * std::numeric_limits<double>::epsilon() *
++                       std::max<size_t>(augmented.rows(), variables_)),
++        conditionals_(maximumRank_, variables_ + 1),
++        reference_(Vector::Zero(variables_)),
++        precisions_(maximumRank_),
++        scratch_(variables_ + 1),
++        row_(variables_ + 1) {
++    initializeRows(sigmas);
++    pivots_.reserve(maximumRank_);
++  }
++
++  SharedDiagonal compute(const Vector& mu) {
++    for (size_t column = 0;
++         column < variables_ && pivots_.size() < maximumRank_; ++column) {
++      if (const auto hardRow = selectHardRow(column))
++        eliminateHard(column, *hardRow);
++      else if (eliminateRemaining(column))
++        break;
++      else
++        eliminateFinite(column);
++    }
++    // The output includes zero padding for skipped columns and redundant rows.
++    output_.setZero();
++    bool mixed = false;
++    for (size_t i = 0; i < pivots_.size(); ++i) {
++      const size_t column = pivots_[i];
++      mixed |= std::isinf(precisions_(i));
++      output_.row(i).segment(column, variables_ + 1 - column) =
++          conditionals_.row(i).segment(column, variables_ + 1 - column);
++    }
++    precisions_.conservativeResize(pivots_.size());
++    return mixed ? Constrained::MixedPrecisions(mu, precisions_)
++                 : Diagonal::Precisions(precisions_);
++  }
++
++ private:
++  // Whiten finite observations; exact equations retain their original scale.
++  void initializeRows(const Vector& sigmas) {
++    std::vector<size_t> finiteRows, hardRows;
++    for (Eigen::Index i = 0; i < sigmas.size(); ++i) {
++      const double inverse = 1.0 / sigmas(i), weight = inverse * inverse;
++      if (std::isinf(inverse))
++        hardRows.push_back(i);
++      else if (std::isfinite(weight) && weight > 0.0)
++        finiteRows.push_back(i);
++    }
++    finite_.resize(finiteRows.size(), variables_ + 1);
++    hardCount_ = hardRows.size();
++    hard_.resize(hardCount_, variables_ + 1);
++    for (size_t i = 0; i < finiteRows.size(); ++i) {
++      const double inverse = 1.0 / sigmas(finiteRows[i]);
++      finite_.row(i) = std::abs(inverse) * output_.row(finiteRows[i]);
++      reference_.array() += inverse * inverse *
++                            output_.row(finiteRows[i])
++                                .head(variables_)
++                                .transpose()
++                                .array()
++                                .square();
++    }
++    for (size_t i = 0; i < hardCount_; ++i)
++      hard_.row(i) = output_.row(hardRows[i]);
++  }
++
++  // Keep the existing hard coefficient cutoff and weighted rank criterion.
++  std::optional<size_t> selectHardRow(size_t column) const {
++    if (!hardCount_) return {};
++    Eigen::Index selected;
++    if (hard_.col(column).head(hardCount_).cwiseAbs().maxCoeff(&selected) >
++        1e-9)
++      return selected;
++    return {};
++  }
++
++  bool accepted(double precision, size_t column) const {
++    return std::isfinite(precision) && precision > 0.0 &&
++           std::sqrt(precision) >
++               rankTolerance_ * std::sqrt(reference_(column));
++  }
++
++  void append(size_t column, double precision) {
++    conditionals_.row(pivots_.size()).segment(column, variables_ + 1 - column) =
++        row_.segment(column, variables_ + 1 - column);
++    precisions_(pivots_.size()) = precision;
++    pivots_.push_back(column);
++  }
++
++  // Substitute an accepted equation, without changing the variable ordering.
++  void substitute(Matrix& matrix, size_t start, size_t count, size_t column,
++                  double inversePivot = 1.0) const {
++    matrix.block(start, column + 1, count, variables_ - column).noalias() -=
++        matrix.col(column).segment(start, count) *
++        (inversePivot * row_.tail(variables_ - column));
++  }
++
++  void eliminateHard(size_t column, size_t selected) {
++    row_ = hard_.row(selected);
++    append(column, std::numeric_limits<double>::infinity());
++    --hardCount_;
++    if (selected != hardCount_) hard_.row(selected) = hard_.row(hardCount_);
++    // Exact substitution can transfer finite information to later columns.
++    const size_t remaining = variables_ - column - 1;
++    reference_.tail(remaining) =
++        (reference_.tail(remaining).array().sqrt() +
++         (row_.segment(column + 1, remaining).transpose().array() /
++          row_(column))
++                 .abs() *
++             std::sqrt(reference_(column)))
++            .square();
++    substitute(finite_, finiteStart_, finite_.rows() - finiteStart_, column,
++               1.0 / row_(column));
++    substitute(hard_, 0, hardCount_, column, 1.0 / row_(column));
++  }
++
++  void eliminateFinite(size_t column) {
++    const size_t count = finite_.rows() - finiteStart_;
++    if (!count ||
++        !accepted(finite_.col(column).tail(count).squaredNorm(), column))
++      return;
++    // Put the largest observation first so a zero leading entry cannot mix an
++    // unrelated RHS into the pivot. Eigen constructs and applies the reflector.
++    Eigen::Index pivot;
++    finite_.col(column).tail(count).cwiseAbs().maxCoeff(&pivot);
++    finite_.row(finiteStart_).swap(finite_.row(finiteStart_ + pivot));
++    // Pack only contributing observations; Eigen then transforms a contiguous
++    // block without visiting structurally zero rows in every trailing column.
++    size_t support = 1;
++    for (size_t i = 1; i < count; ++i) {
++      if (finite_(finiteStart_ + i, column) == 0.0) continue;
++      if (i != support)
++        finite_.row(finiteStart_ + i)
++            .tail(variables_ + 1 - column)
++            .swap(finite_.row(finiteStart_ + support)
++                      .tail(variables_ + 1 - column));
++      ++support;
++    }
++    auto pivotColumn = finite_.col(column).segment(finiteStart_, support);
++    double tau, diagonal;
++    pivotColumn.makeHouseholderInPlace(tau, diagonal);
++    finite_.block(finiteStart_, column + 1, support, variables_ - column)
++        .applyHouseholderOnTheLeft(pivotColumn.tail(support - 1), tau,
++                                   scratch_.data());
++    row_(column) = 1.0;
++    row_.tail(variables_ - column) =
++        finite_.row(finiteStart_).tail(variables_ - column) / diagonal;
++    append(column, diagonal * diagonal);
++    substitute(hard_, 0, hardCount_, column);
++    ++finiteStart_;
++  }
++
++  bool eliminateRemaining(size_t column) {
++    const size_t width = variables_ - column,
++                 count = finite_.rows() - finiteStart_;
++    if (!tryFullQR_ || width < 48 || count < width ||
++        !hard_.block(0, column, hardCount_, width).isZero(0.0))
++      return false;
++    // The weak and nearly dependent RHS regressions require row-pivoted scalar
++    // elimination. Otherwise delegate the entire remaining finite system.
++    // A rejected remainder is tried only once, avoiding repeated failed QR
++    // work.
++    tryFullQR_ = false;
++    const auto scales = reference_.tail(width);
++    const double epsilon = std::numeric_limits<double>::epsilon();
++    if (scales.minCoeff() < epsilon * scales.maxCoeff()) return false;
++    Eigen::HouseholderQR<Matrix> qr(
++        finite_.block(finiteStart_, column, count, width));
++    for (size_t k = 0; k < width; ++k) {
++      const double precision = qr.matrixQR()(k, k) * qr.matrixQR()(k, k);
++      if (!accepted(precision, column + k) ||
++          precision < epsilon * reference_(column + k))
++        return false;
++    }
++    const Vector rhs =
++        qr.householderQ().adjoint() * finite_.col(variables_).tail(count);
++    for (size_t k = 0; k < width; ++k) {
++      const double diagonal = qr.matrixQR()(k, k);
++      row_.segment(column + k, width - k) =
++          qr.matrixQR().row(k).segment(k, width - k) / diagonal;
++      row_(variables_) = rhs(k) / diagonal;
++      append(column + k, diagonal * diagonal);
++    }
++    return true;
++  }
++};
++
++}  // namespace
++
++SharedDiagonal constrainedQR(Matrix& augmented, const Vector& sigmas,
++                             const Vector& mu) {
++  return ConstrainedQRWorkspace(augmented, sigmas).compute(mu);
++}
++
++}  // namespace gtsam::noiseModel::internal
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/linear/internal/ConstrainedQR.h
+@@ -0,0 +1,30 @@
++/* ----------------------------------------------------------------------------
++ * GTSAM Copyright 2026, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415. All Rights Reserved.
++ * See LICENSE for the license information.
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file ConstrainedQR.h
++ * Private adaptation of Eigen QR to constrained elimination fronts of any size.
++ * GTSAM handles exact equations and rank decisions; Eigen handles orthogonal
++ * transformations. Keeping the workspace here separates it from noise models.
++ */
++
++#pragma once
++
++#include <gtsam/linear/NoiseModel.h>
++
++namespace gtsam::noiseModel::internal {
++
++/**
++ * Eliminate a local augmented Jacobian in its original column order. Exact
++ * equations take priority over finite observations. A suitable finite remainder
++ * is delegated to Eigen::HouseholderQR. Rank-deficient or poorly scaled systems
++ * use Eigen Householder operations one column at a time, with row pivoting.
++ * No normal equations are formed and the original weighted rank test is kept.
++ */
++SharedDiagonal constrainedQR(Matrix& augmented, const Vector& sigmas,
++                             const Vector& mu);
++
++}  // namespace gtsam::noiseModel::internal
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/linear.i
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/linear.i
 @@ -3,6 +3,22 @@
@@ -15203,38 +16127,93 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    gtsam::VectorValues gradientAtZero() const;
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/linearAlgorithms-inst.h
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/linearAlgorithms-inst.h
-@@ -35,8 +35,6 @@ namespace gtsam
+@@ -11,8 +11,9 @@
+ 
+ /**
+  * @file    linearAlgorithms-inst.h
+- * @brief   Templated algorithms that are used in multiple places in linear
++ * Shared exact Bayes-tree traversals for stored and changed right-hand sides.
+  * @author  Richard Roberts
++ * @author  Frank Dellaert
+  */
+ 
+ #pragma once
+@@ -22,6 +23,7 @@
+ #include <gtsam/linear/VectorValues.h>
+ #include <gtsam/linear/linearExceptions.h>
+ 
++#include <map>
+ #include <memory>
+ #include <optional>
+ 
+@@ -32,39 +34,56 @@ namespace gtsam
+     namespace linearAlgorithms
+     {
+       /* ************************************************************************* */
++      /// Per-clique traversal state linking solved variables to their ancestors.
        struct OptimizeData {
++        /// Parent visitor state, used to obtain already solved separator values.
          OptimizeData* parentData = nullptr;
++        /// Available solution blocks indexed by their original variable keys.
          FastMap<Key, VectorValues::const_iterator> cliqueResults;
 -        //VectorValues ancestorResults;
 -        //VectorValues results;
        };
  
        /* ************************************************************************* */
-@@ -50,7 +48,12 @@ namespace gtsam
+-      /** Pre-order visitor for back-substitution in a Bayes tree.  The visitor function operator()()
+-      *  optimizes the clique given the solution for the parents, and returns the solution for the
+-      *  clique's frontal variables.  In addition, it adds the solution to a global collected
+-      *  solution that will finally be returned to the user.  The reason we pass the individual
+-      *  clique solutions between nodes is to avoid log(n) lookups over all variables, they instead
+-      *  then are only over a node's parent variables. */
++      /**
++       * Pre-order visitor for exact Bayes-tree back-substitution.
++       * Each clique receives its solved separator variables and contributes its
++       * frontal solution to the collected result. Passing iterators between
++       * visitors limits lookups to a clique's parents instead of the full graph.
++       */
+       template<class CLIQUE>
        struct OptimizeClique
        {
++        /// Frontal solutions collected during the traversal.
          VectorValues collectedResult;
++        /// Optional complete whitened RHS, validated before traversal.
 +        const VectorValues* rhs = nullptr;
- 
-+        /** Optimize with stored d, or solve against a complete whitened rhs. */
-+        explicit OptimizeClique(const VectorValues* rhs = nullptr) : rhs(rhs) {}
++        /// Whether an explicit RHS is an increment to the stored affine equations.
++        bool addStoredRhs = false;
 +
-+        /** Solve this clique after its separator solution is available. */
++        /**
++         * Use stored conditional right-hand sides when rhs is null. Otherwise,
++         * solve against the supplied complete whitened blocks, adding stored d
++         * when addStoredRhs is true. The caller retains ownership of rhs.
++         */
++        explicit OptimizeClique(const VectorValues* rhs = nullptr,
++                                bool addStoredRhs = false)
++            : rhs(rhs), addStoredRhs(addStoredRhs) {}
+ 
++        /// Solve this clique after its separator solution is available.
          OptimizeData operator()(
            const std::shared_ptr<CLIQUE>& clique,
            OptimizeData& parentData)
-@@ -63,7 +66,7 @@ namespace gtsam
+         {
+           OptimizeData myData;
+           myData.parentData = &parentData;
++
+           // Take any ancestor results we'll need
+           for(Key parent: clique->conditional_->parents())
+             myData.cliqueResults.emplace(parent, myData.parentData->cliqueResults.at(parent));
  
            // Solve and store in our results
            {
 -            GaussianConditional& c = *clique->conditional();
+-            // Solve matrix
 +            const GaussianConditional& c = *clique->conditional();
-             // Solve matrix
++            // Gather separator values in the conditional's parent order.
              Vector xS;
              {
-@@ -86,10 +89,23 @@ namespace gtsam
+               // Count dimensions of vector
+@@ -86,10 +105,27 @@ namespace gtsam
                }
              }
  
@@ -15250,21 +16229,26 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +              rhs->fillVector(c.frontals(), frontalRhs);
 +              if (c.get_model())
 +                frontalRhs.array() *= c.get_model()->sigmasRef().array();
++              // A forcing increment preserves the reference affine equations:
++              // zero-sigma (hard) rows receive no RHS increment.
++              if (addStoredRhs) frontalRhs += c.getb();
 +              internal::solveUpperConditional(c.R(), c.S(), frontalRhs, xS,
 +                                              &solution);
 +            } else {
 +              internal::solveUpperConditional(c.R(), c.S(), c.getb(), xS,
 +                                              &solution);
 +            }
++
 +            // RHS solves reject nonfinite values; optimize() rejects NaNs.
 +            if (rhs ? !solution.allFinite() : solution.hasNaN()) {
                throw IndeterminateSystemException(c.keys().front());
              }
  
-@@ -112,37 +128,14 @@ namespace gtsam
+@@ -111,41 +147,85 @@ namespace gtsam
+         }
        };
  
-       /* ************************************************************************* */
+-      /* ************************************************************************* */
 -      //OptimizeData OptimizePreVisitor(const GaussianBayesTreeClique::shared_ptr& clique, OptimizeData& parentData)
 -      //{
 -      //  // Create data - holds a pointer to our parent, a copy of parent solution, and our results
@@ -15278,31 +16262,100 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      //  myData.ancestorResults.insert(myData.results);
 -      //  return myData;
 -      //}
--
++      /**
++       * Solve the transpose conditional operator with a complete, validated RHS.
++       * result supplies one block per frontal key and becomes the returned
++       * solution. Each child owns its outgoing separator message. Conditional
++       * sigma scaling occurs after that message is formed, including zero sigmas.
++       * Nonfinite intermediate values throw IndeterminateSystemException.
++       */
++      template<class BAYESTREE>
++      VectorValues transposeBayesTree(const BAYESTREE& bayesTree,
++                                     VectorValues result)
++      {
++        // Allocate every clique's private RHS and message before parallel visits.
++        using Clique = typename BAYESTREE::Clique;
++        std::map<const Clique*, VectorValues> workspace;
++        for (const auto& [key, clique] : bayesTree.nodes()) {
++          const auto& conditional = *clique->conditional();
++          if (key != conditional.firstFrontalKey()) continue;
++          auto& local = workspace[clique.get()];
++          for (Key frontal : conditional.frontals())
++            local.emplace(frontal, result.at(frontal));
++          for (auto parent = conditional.beginParents();
++               parent != conditional.endParents(); ++parent)
++            local.emplace(*parent, Vector::Zero(conditional.getDim(parent)));
++        }
+ 
 -      /* ************************************************************************* */
 -      //void OptimizePostVisitor(const GaussianBayesTreeClique::shared_ptr& clique, OptimizeData& myData)
 -      //{
 -      //  // Conglomerate our results to the parent
 -      //  myData.parentData->results.insert(myData.results);
 -      //}
--
--      /* ************************************************************************* */
-+      /** Back-substitute stored d, or a complete whitened rhs, through a tree. */
++        auto solveClique = [&workspace, &result](
++                               const std::shared_ptr<Clique>& clique) {
++          auto& local = workspace.at(clique.get());
++          // A child's separator can include higher ancestors as well as this
++          // clique's frontals. Retain both kinds of contribution in the local map.
++          for (const auto& child : clique->children) {
++            const auto& message = workspace.at(child.get());
++            for (Key separator : child->conditional()->parents())
++              local.at(separator) += message.at(separator);
++          }
++
++          // Use only the cached conditional for this clique's transpose solve.
++          const auto& conditional = *clique->conditional();
++          conditional.solveTransposeInPlace(local);
++          for (const auto& [key, value] : local) {
++            if (!value.allFinite())
++              throw IndeterminateSystemException(conditional.keys().front());
++          }
++
++          // Only this clique writes these frontals; ancestors read its separators.
++          for (Key frontal : conditional.frontals())
++            result.at(frontal).swap(local.at(frontal));
++        };
++
++        // Visit children first so their separator messages are complete.
++        TbbOpenMPMixedScope threadLimiter;
++        treeTraversal::PostOrderForestParallel(bayesTree, solveClique);
++
++        return result;
++      }
+ 
+       /* ************************************************************************* */
++      /**
++       * Back-substitute through the tree using cached conditionals.
++       * A null rhs uses stored d; otherwise rhs supplies a complete, validated
++       * whitened block for each frontal key. With addStoredRhs, these blocks
++       * increment the stored affine equations instead of replacing them.
++       */
        template<class BAYESTREE>
 -      VectorValues optimizeBayesTree(const BAYESTREE& bayesTree)
 +      VectorValues optimizeBayesTree(const BAYESTREE& bayesTree,
-+                                    const VectorValues* rhs = nullptr)
++                                    const VectorValues* rhs = nullptr,
++                                    bool addStoredRhs = false)
        {
          gttic(linear_optimizeBayesTree);
 -        //internal::OptimizeData rootData; // Will hold final solution
 -        //treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
 -        //return rootData.results;
++
++        // Carry solved separator values through exact pre-order substitution.
          OptimizeData rootData;
 -        OptimizeClique<typename BAYESTREE::Clique> preVisitor;
-+        OptimizeClique<typename BAYESTREE::Clique> preVisitor(rhs);
++        OptimizeClique<typename BAYESTREE::Clique> preVisitor(rhs, addStoredRhs);
          treeTraversal::no_op postVisitor;
-         TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+-        TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
++
++        // Limit OpenMP threads while the tree traversal can also use TBB.
++        TbbOpenMPMixedScope threadLimiter;
          treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
++
+         return preVisitor.collectedResult;
+       }
+     }
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testBatchJacobianFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testBatchJacobianFactor.cpp
 @@ -295,7 +295,7 @@ TEST(BatchJacobianFactor, FlatHessianBlo
@@ -15687,6 +16740,351 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  int main() {
    TestResult tr;
    return TestRegistry::runAllTests(tr);
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testGaussianISAM2Incremental.cpp
+@@ -0,0 +1,342 @@
++/* ----------------------------------------------------------------------------
++
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++ * See LICENSE for the license information
++
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file testGaussianISAM2Incremental.cpp
++ * Regression coverage for fixed-order updates, subtree reuse, exact constraints,
++ * and cached objective-forcing queries without numerical elimination.
++ * @author Frank Dellaert
++ */
++
++#include <CppUnitLite/TestHarness.h>
++#include <gtsam/base/TestableAssertions.h>
++#include <gtsam/linear/GaussianISAM2.h>
++
++#include <atomic>
++#include <limits>
++#include <stdexcept>
++
++using namespace gtsam;
++
++/* ************************************************************************* */
++namespace branching {
++
++const Ordering ordering{0, 1, 2, 3};
++const Matrix11 unit{{1.0}};
++
++GaussianFactorGraph graph() {
++  // Couple three leaves to one anchored root so one branch can remain untouched.
++  GaussianFactorGraph result;
++  for (Key leaf = 0; leaf < 3; ++leaf)
++    result.emplace_shared<JacobianFactor>(leaf, unit, 3, -unit,
++                                         Vector1{double(leaf + 1)});
++  result.emplace_shared<JacobianFactor>(3, unit, Vector1{0.0});
++  return result;
++}
++
++// Additions, replacements, and repeated removals match fresh batch elimination.
++TEST(GaussianISAM2Incremental, BatchAgreement) {
++  GaussianFactorGraph factors = graph();
++  GaussianISAM2 solver(ordering, EliminateQR);
++  EXPECT(solver.update(factors) == FactorIndices({0, 1, 2, 3}));
++  EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++
++  for (size_t repeat = 0; repeat < 3; ++repeat) {
++    // Add a factor, replace it using a new index, then remove the replacement.
++    GaussianFactorGraph additions;
++    additions.emplace_shared<JacobianFactor>(0, unit, Vector1{4.0});
++    FactorIndices indices = solver.update(additions);
++    EXPECT(indices == FactorIndices({factors.size()}));
++    factors.push_back(additions);
++    EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++
++    additions[0] = std::make_shared<JacobianFactor>(0, unit, Vector1{-2.0});
++    const FactorIndices replacement = solver.update(additions, indices);
++    EXPECT(replacement == FactorIndices({factors.size()}));
++    factors.remove(indices[0]);
++    factors.push_back(additions);
++    EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++
++    EXPECT(solver.update({}, replacement).empty());
++    factors.remove(replacement[0]);
++    EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++  }
++}
++
++// Updating one branch reuses another branch's clique and cached separator.
++TEST(GaussianISAM2Incremental, ReusesUntouchedSubtree) {
++  std::atomic<size_t> eliminations{0};
++  GaussianISAM2 solver(ordering, [&](const GaussianFactorGraph& factors,
++                                    const Ordering& frontalKeys) {
++    ++eliminations;
++    return EliminateQR(factors, frontalKeys);
++  });
++  GaussianFactorGraph factors = graph();
++  solver.update(factors);
++  // Record clique identity as well as numerical results before changing factors.
++  const auto untouched = solver[1], affected = solver[0], root = solver[3];
++  const size_t initialEliminations = eliminations.load();
++  EXPECT(untouched != root);
++  EXPECT(solver.update({}).empty());
++  EXPECT_LONGS_EQUAL(initialEliminations, eliminations.load());
++  EXPECT(solver[0] == affected && solver[1] == untouched && solver[3] == root);
++
++  GaussianFactorGraph additions;
++  additions.emplace_shared<JacobianFactor>(0, unit, Vector1{5.0},
++                                           noiseModel::Constrained::All(1));
++  const FactorIndices added = solver.update(additions);
++  factors.push_back(additions);
++  EXPECT(solver[1] == untouched);
++  EXPECT(solver[0] != affected && solver[3] != root);
++  EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++
++  solver.update({}, added);
++  factors.remove(added[0]);
++  EXPECT(solver[1] == untouched);
++  EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++}
++
++// Hessian-native objective factors support mixed hard-row updates as well.
++TEST(GaussianISAM2Incremental, HessianNative) {
++  // Preserve Hessian-native costs while toggling an exact Jacobian constraint.
++  GaussianFactorGraph factors;
++  for (const auto& factor : graph())
++    factors.emplace_shared<HessianFactor>(*factor);
++  GaussianISAM2 solver(ordering);
++  solver.update(factors);
++  EXPECT(assert_equal(factors.optimize(ordering), solver.optimize()));
++  GaussianFactorGraph additions;
++  additions.emplace_shared<JacobianFactor>(0, unit, Vector1{2.0},
++                                           noiseModel::Constrained::All(1));
++  const FactorIndices added = solver.update(additions);
++  factors.push_back(additions);
++  EXPECT(assert_equal(factors.optimize(ordering), solver.optimize()));
++  solver.update({}, added);
++  factors.remove(added[0]);
++  EXPECT(assert_equal(factors.optimize(ordering), solver.optimize()));
++}
++
++}  // namespace branching
++/* ************************************************************************* */
++namespace constrained {
++
++// Weighted tiny coefficients survive adding and removing opposing exact rows.
++TEST(GaussianISAM2Incremental, WeightedAndDependentRows) {
++  const Ordering ordering{0, 1};
++  const Matrix11 unit{{1.0}}, tiny{{1e-10}};
++  const auto hard = noiseModel::Constrained::All(1);
++  GaussianFactorGraph factors;
++  factors.emplace_shared<JacobianFactor>(0, unit, Vector1{0.0}, hard);
++  factors.emplace_shared<JacobianFactor>(0, tiny, 1, tiny, Vector1{2e-10},
++                                         noiseModel::Isotropic::Sigma(1, 1e-10));
++  GaussianISAM2 solver(ordering, EliminateQR);
++  solver.update(factors);
++  EXPECT(assert_equal(Vector1{2.0}, solver.optimize().at(1)));
++
++  GaussianFactorGraph additions;
++  additions.emplace_shared<JacobianFactor>(1, unit, Vector1{1.0}, hard);
++  additions.emplace_shared<JacobianFactor>(1, -unit, Vector1{-1.0}, hard);
++  const FactorIndices added = solver.update(additions);
++  factors.push_back(additions);
++  EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++  EXPECT(assert_equal(Vector1{1.0}, solver.optimize().at(1)));
++  solver.update({}, added);
++  for (size_t index : added) factors.remove(index);
++  EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
++  EXPECT(assert_equal(Vector1{2.0}, solver.optimize().at(1)));
++}
++
++}  // namespace constrained
++/* ************************************************************************* */
++namespace validation {
++
++// Invalid edits leave a usable tree; replacement preserves the fixed key set.
++TEST(GaussianISAM2Incremental, InvalidUpdatesAreAtomic) {
++  const Ordering ordering{0, 1};
++  const Matrix11 unit{{1.0}};
++  GaussianFactorGraph factors;
++  factors.emplace_shared<JacobianFactor>(0, unit, Vector1{1.0});
++  factors.emplace_shared<JacobianFactor>(1, unit, Vector1{2.0});
++  GaussianISAM2 solver(ordering);
++  solver.update(factors);
++  const auto first = solver[0], second = solver[1];
++  const VectorValues expected = solver.optimize();
++
++  // Invalid removals and incompatible factor replacements must preserve state.
++  CHECK_EXCEPTION(solver.update({}, {9}), std::invalid_argument);
++  CHECK_EXCEPTION(solver.update({}, {0, 0}), std::invalid_argument);
++  CHECK_EXCEPTION(solver.update({}, {0}), std::invalid_argument);
++  GaussianFactorGraph additions;
++  additions.emplace_shared<JacobianFactor>(2, unit, Vector1{0.0});
++  CHECK_EXCEPTION(solver.update(additions), std::invalid_argument);
++  additions[0] = std::make_shared<JacobianFactor>(0, Matrix22::Identity(),
++                                                Vector2::Zero());
++  CHECK_EXCEPTION(solver.update(additions, {0}), std::invalid_argument);
++  EXPECT(solver[0] == first && solver[1] == second);
++  EXPECT(assert_equal(expected, solver.optimize()));
++
++  additions[0] = std::make_shared<JacobianFactor>(0, unit, Vector1{3.0});
++  EXPECT(solver.update(additions, {0}) == FactorIndices({2}));
++  EXPECT(assert_equal(Vector1{3.0}, solver.optimize().at(0)));
++  EXPECT(solver[1] == second);
++  CHECK_EXCEPTION(solver.update({}, {0}), std::invalid_argument);
++}
++
++// Empty graphs are valid, while an initial nonempty graph must cover ordering.
++TEST(GaussianISAM2Incremental, Initialization) {
++  // An empty ordering needs no factorization; nonempty orderings need all keys.
++  GaussianISAM2 empty(Ordering{});
++  EXPECT(empty.update({}).empty());
++  EXPECT_LONGS_EQUAL(0, empty.optimize().size());
++  CHECK_EXCEPTION(GaussianISAM2(Ordering({0, 0})), std::invalid_argument);
++  GaussianISAM2 solver(Ordering{0, 1});
++  CHECK_EXCEPTION(solver.optimize(), std::logic_error);
++  GaussianFactorGraph incomplete;
++  incomplete.emplace_shared<JacobianFactor>(0, Matrix11{{1.0}}, Vector1{0.0});
++  CHECK_EXCEPTION(solver.update(incomplete), std::invalid_argument);
++  incomplete.emplace_shared<JacobianFactor>(1, Matrix11{{1.0}}, Vector1{1.0});
++  solver.update(incomplete);
++  EXPECT(assert_equal(incomplete.optimize(), solver.optimize()));
++}
++
++}  // namespace validation
++/* ************************************************************************* */
++
++/* ************************************************************************* */
++namespace objective_forcing {
++
++const Ordering ordering{0, 1, 2, 3};
++const Matrix11 unit{{1.0}};
++
++// Change only finite objective RHSs; the graph's coupling keeps three branches.
++GaussianFactorGraph graph(const VectorValues& forcing, bool hessian) {
++  // Express information-vector changes as weighted finite-factor RHS changes.
++  GaussianFactorGraph result = branching::graph();
++  for (Key key : ordering) {
++    const double sigma = key == 1 ? 0.25 : 2.0;
++    const double rhs = forcing.exists(key) ? sigma * sigma * forcing.at(key)(0) : 0.0;
++    auto factor = std::make_shared<JacobianFactor>(
++        key, unit, Vector1{rhs}, noiseModel::Isotropic::Sigma(1, sigma));
++    if (hessian) result.emplace_shared<HessianFactor>(*factor);
++    else result.push_back(factor);
++  }
++  return result;
++}
++
++// Arbitrary RHS queries do no elimination or mutation, before/after row toggles.
++TEST(GaussianISAM2Incremental, ForcingAndWorkingSetReferenceConsistency) {
++  // Compare cached solves to fresh graphs for both objective representations.
++  for (bool hessian : {false, true}) {
++    std::atomic<size_t> eliminations{0};
++    auto eliminate = [hessian, &eliminations](const GaussianFactorGraph& factors,
++                                             const Ordering& frontals) {
++      ++eliminations;
++      return hessian ? EliminatePreferCholesky(factors, frontals)
++                     : EliminateQR(factors, frontals);
++    };
++    GaussianISAM2 solver(ordering, eliminate);
++    const GaussianFactorGraph reference = graph({}, hessian);
++    solver.update(reference);
++    GaussianFactorGraph hardRows;
++    const auto hard = noiseModel::Constrained::All(1);
++    hardRows.emplace_shared<JacobianFactor>(0, unit, 3, unit, Vector1{0.75}, hard);
++    hardRows.emplace_shared<JacobianFactor>(0, -unit, 3, -unit, Vector1{-0.75}, hard);
++    FactorIndices active;
++    for (size_t toggle = 0; toggle < 6; ++toggle) {
++      if (toggle % 2 == 0) active = solver.update(hardRows);
++      else solver.update({}, active);
++      const auto untouched = solver[1];
++      const auto separator = untouched->cachedFactor();
++      const size_t count = eliminations.load();
++      for (double offset : {2.0, -3.0, 0.0, 0.01}) {
++        const VectorValues forcing{{0, Vector1{offset}}, {3, Vector1{-0.7 * offset}}};
++        GaussianFactorGraph expected = graph(forcing, hessian);
++        if (toggle % 2 == 0) expected.push_back(hardRows);
++        EXPECT(assert_equal(expected.optimize(ordering, eliminate),
++                            solver.optimize(forcing), 1e-9));
++        // The batch comparison uses its own elimination; the query uses none.
++        const size_t beforeQuery = eliminations.load();
++        solver.optimize(forcing);
++        EXPECT_LONGS_EQUAL(beforeQuery, eliminations.load());
++        EXPECT(solver[1] == untouched && untouched->cachedFactor() == separator);
++      }
++      EXPECT(eliminations.load() > count);  // Only the independent batch calls.
++      GaussianFactorGraph original = reference;
++      if (toggle % 2 == 0) original.push_back(hardRows);
++      EXPECT(assert_equal(original.optimize(ordering, eliminate), solver.optimize(), 1e-9));
++    }
++  }
++}
++
++// Non-unit weighted rows and a weak direction obey an affine exact equation.
++TEST(GaussianISAM2Incremental, ForcingWeightedWeakAndAffineRows) {
++  // Combine weighted weak observations with an unchanged exact affine equation.
++  const Matrix22 coefficients{{1e-10, 0.0}, {0.0, 1e-15}};
++  const Vector2 sigmas{1e-10, 1e-10};
++  const auto noise = noiseModel::Diagonal::Sigmas(sigmas);
++  const Matrix12 normal{{1.0, 1.0}};
++  GaussianFactorGraph reference;
++  reference.emplace_shared<JacobianFactor>(0, coefficients, Vector2{2e-10, -3e-15}, noise);
++  reference.emplace_shared<JacobianFactor>(0, normal, Vector1{0.5},
++                                          noiseModel::Constrained::All(1));
++  size_t eliminations = 0;
++  GaussianISAM2 solver(Ordering{0}, [&](const GaussianFactorGraph& factors,
++                                      const Ordering& frontals) {
++    ++eliminations;
++    return EliminateQR(factors, frontals);
++  });
++  solver.update(reference);
++  for (double shift : {-0.3, 0.1, 0.0}) {
++    // A^T W^2 delta_b is the forcing in the original variable coordinates.
++    const Vector2 delta{shift * 1e-10, shift * 1e-15};
++    const Vector2 forcing = coefficients.transpose() *
++                           delta.cwiseQuotient(sigmas.cwiseProduct(sigmas));
++    GaussianFactorGraph changed;
++    changed.emplace_shared<JacobianFactor>(0, coefficients,
++        Vector2(Vector2{2e-10, -3e-15} + delta), noise);
++    changed.push_back(reference[1]);
++    EXPECT(assert_equal(changed.optimize(Ordering{0}, EliminateQR),
++                        solver.optimize(VectorValues{{0, forcing}}), 1e-9));
++    EXPECT_LONGS_EQUAL(1, eliminations);
++  }
++}
++
++// Bad forcing is rejected without changing the reference tree or RHS.
++TEST(GaussianISAM2Incremental, InvalidForcingAndEmptyGraph) {
++  GaussianISAM2 solver(ordering, EliminateQR);
++  CHECK_EXCEPTION(solver.optimize(VectorValues{}), std::logic_error);
++  solver.update(graph({}, false));
++  const auto root = solver[3];
++  const VectorValues reference = solver.optimize();
++
++  // Rejected forcing blocks must leave the cached tree and reference RHS intact.
++  for (const VectorValues& invalid : std::vector<VectorValues>{
++      {{99, Vector1{0.0}}}, {{0, Vector2{0.0, 1.0}}},
++      {{0, Vector1{std::numeric_limits<double>::quiet_NaN()}}},
++      {{3, Vector1{std::numeric_limits<double>::infinity()}}}}) {
++    CHECK_EXCEPTION(solver.optimize(invalid), std::invalid_argument);
++    EXPECT(solver[3] == root);
++    EXPECT(assert_equal(reference, solver.optimize()));
++  }
++  EXPECT(assert_equal(reference, solver.optimize(VectorValues{})));
++  GaussianISAM2 empty(Ordering{});
++  EXPECT_LONGS_EQUAL(0, empty.optimize(VectorValues{}).size());
++  CHECK_EXCEPTION(empty.optimize(VectorValues{{0, Vector1{1.0}}}), std::invalid_argument);
++}
++
++}  // namespace objective_forcing
++/* ************************************************************************* */
++
++int main() {
++  // Run all incremental-update and cached-forcing regression cases.
++  TestResult result;
++  return TestRegistry::runAllTests(result);
++}
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testHessianFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testHessianFactor.cpp
 @@ -55,6 +55,17 @@ TEST(HessianFactor, emptyConstructor)
@@ -16022,7 +17420,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return TestRegistry::runAllTests(tr);
 --- gtsam-no-tbb-4.3.0.orig/gtsam/linear/tests/testNoiseModel.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/linear/tests/testNoiseModel.cpp
-@@ -458,6 +458,62 @@ TEST(NoiseModel, QRNan )
+@@ -458,6 +458,192 @@ TEST(NoiseModel, QRNan )
  }
  
  /* ************************************************************************* */
@@ -16079,6 +17477,136 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 +
 +}  // namespace scale_aware_constrained_qr
++/* ************************************************************************* */
++
++namespace blocked_constrained_qr {
++
++// Evaluate only finite rows; exact rows describe the feasible manifold.
++Vector finiteGradient(const Matrix& augmented, const Vector& sigmas,
++                      const Vector& point) {
++  Vector gradient = Vector::Zero(point.size());
++  for (Eigen::Index row = 0; row < sigmas.size(); ++row) {
++    if (sigmas(row) == 0.0) continue;
++    const Vector normal =
++        augmented.row(row).head(point.size()).transpose() / sigmas(row);
++    const double residual = normal.dot(point) -
++                            augmented(row, point.size()) / sigmas(row);
++    gradient.noalias() += normal * residual;
++  }
++  return gradient;
++}
++
++// Blocking must not mix an unrelated large RHS into a weak observation.
++TEST(NoiseModel, ConstrainedQRBlockedWeakRightHandSide) {
++  constexpr size_t variables = 192;
++  Matrix augmented = Matrix::Zero(2 * variables, variables + 1);
++  Vector expected = Vector::LinSpaced(variables, 0.0, 19.1);
++  expected(0) = 2.0;
++  expected(1) = 1.0;
++  augmented(0, 1) = 1e10;
++  augmented(1, 0) = 1e-10;
++  for (size_t j = 2; j < variables; ++j) augmented(j, j) = 1.0;
++  augmented.col(variables) = augmented.leftCols(variables) * expected;
++  const auto model = noiseModel::Constrained::MixedSigmas(
++      Vector::Ones(augmented.rows()));
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  if (result->dim() == variables) {
++    const Vector actual = augmented.topLeftCorner(variables, variables)
++                              .triangularView<Eigen::Upper>()
++                              .solve(augmented.col(variables).head(variables));
++    EXPECT(assert_equal(expected, actual, 1e-11));
++  }
++}
++
++// A nearly dependent pair must not pick up an unrelated, large RHS via Q.
++TEST(NoiseModel, ConstrainedQRBlockedNearDependentRightHandSide) {
++  constexpr size_t variables = 192;
++  Matrix augmented = Matrix::Zero(256, variables + 1);
++  augmented(0, 2) = 1.0;
++  augmented(0, variables) = 1e10;
++  augmented(1, 0) = augmented(1, 1) = augmented(2, 0) = 1.0;
++  augmented(2, 1) = 1.0 + 1e-10;
++  augmented(2, variables) = 2e-10;
++  for (size_t j = 3; j < variables; ++j) augmented(j, j) = 1.0;
++  const double expected = 2e-10 / (augmented(2, 1) - 1.0);
++  const auto model = noiseModel::Constrained::MixedSigmas(
++      Vector::Ones(augmented.rows()));
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  if (result->dim() == variables) {
++    const Vector actual = augmented.topLeftCorner(variables, variables)
++                              .triangularView<Eigen::Upper>()
++                              .solve(augmented.col(variables).head(variables));
++    // This pair's condition number limits attainable accuracy to about 1e-6.
++    EXPECT_DOUBLES_EQUAL(-expected, actual(0), 1e-4);
++    EXPECT_DOUBLES_EQUAL(expected, actual(1), 1e-4);
++    EXPECT_DOUBLES_EQUAL(1e10, actual(2), 1e-5);
++  }
++}
++
++// Skipped and dependent columns must retain their original variable ordering.
++TEST(NoiseModel, ConstrainedQRBlockedStaggeredRank) {
++  constexpr size_t variables = 192, rows = 256;
++  Matrix augmented(rows, variables + 1);
++  for (size_t i = 0; i < rows; ++i)
++    for (size_t j = 0; j <= variables; ++j)
++      augmented(i, j) = std::sin(0.13 * (i + 1) * (j + 3));
++  for (size_t j : {0, 3, 7, 20}) augmented.col(j).setZero();
++  augmented.col(19) = 0.008 * augmented.col(11);
++  const Matrix original = augmented;
++  const Vector sigmas = Vector::Ones(rows);
++  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables - 5, result->dim());
++  const Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
++  EXPECT(assert_equal(finiteGradient(original, sigmas, point),
++                      finiteGradient(augmented, result->sigmas(), point),
++                      1e-8));
++}
++
++// Affine, opposing and redundant hard rows must preserve finite information.
++TEST(NoiseModel, ConstrainedQRBlockedAffineWeightedInformation) {
++  constexpr size_t variables = 192, finiteRows = 256;
++  Matrix augmented = Matrix::Zero(finiteRows + 4, variables + 1);
++  Vector sigmas = Vector::Zero(augmented.rows());
++  for (size_t i = 0; i < finiteRows; ++i) {
++    sigmas(i) = std::pow(10.0, static_cast<int>(i % 5) - 2);
++    for (size_t j = 0; j <= variables; ++j)
++      augmented(i, j) = sigmas(i) *
++                        std::sin(0.17 * (i + 2) * (j + 1));
++  }
++  augmented(finiteRows, 0) = 1.0;
++  augmented(finiteRows, variables) = 0.25;
++  augmented.row(finiteRows + 1) = -augmented.row(finiteRows);
++  augmented(finiteRows + 2, 30) = 1.0;
++  augmented(finiteRows + 2, variables) = -0.1;
++  augmented.row(finiteRows + 3) =
++      augmented.row(finiteRows) + 2.0 * augmented.row(finiteRows + 2);
++  const Matrix original = augmented;
++  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
++
++  const auto result = model->QR(augmented);
++  EXPECT_LONGS_EQUAL(variables, result->dim());
++  Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
++  point(0) = 0.25;
++  point(30) = -0.1;
++  Vector expected = finiteGradient(original, sigmas, point);
++  Vector actual = finiteGradient(augmented, result->sigmas(), point);
++  // Gradients are compared along the hard constraints' free directions.
++  expected(0) = actual(0) = expected(30) = actual(30) = 0.0;
++  EXPECT(assert_equal(expected, actual, 1e-8));
++  for (Eigen::Index row = 0; row < result->sigmas().size(); ++row) {
++    if (result->sigmas()(row) != 0.0) continue;
++    EXPECT_DOUBLES_EQUAL(augmented(row, variables),
++                        augmented.row(row).head(variables).dot(point), 1e-10);
++  }
++}
++
++}  // namespace blocked_constrained_qr
 +/* ************************************************************************* */
 +
 +/* ************************************************************************* */
@@ -46711,7 +48239,45 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  TEST(ISAM2, clone) {
  
    ISAM2 clone1;
-@@ -944,6 +972,46 @@ TEST(ISAM2, marginalizeLeaves6)
+@@ -631,6 +659,37 @@ TEST(ISAM2, constrained_ordering)
+ }
+ 
+ /* ************************************************************************* */
++// ISAM2 keeps only the affected keys of the constraint groups, so groups
++// consecutive from 0 can leave a few variables with high group indices.
++TEST(ISAM2, constrained_ordering_partial_update) {
++  const auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
++  const size_t n = 6;
++  NonlinearFactorGraph graph;
++  Values values;
++  FastMap<Key, int> groups;
++  graph.addPrior(0, Pose2(), noise);
++  values.insert(0, Pose2());
++  groups[0] = 0;
++  for (size_t i = 1; i < n; ++i) {
++    graph.emplace_shared<BetweenFactor<Pose2>>(i - 1, i, Pose2(1, 0, 0),
++                                               noise);
++    values.insert(i, Pose2(static_cast<double>(i), 0, 0));
++    groups[i] = static_cast<int>(i);
++  }
++  ISAM2 isam;
++  isam.update(graph, values, FactorIndices(), groups);
++
++  // A new factor on the last two variables only affects their cliques.
++  NonlinearFactorGraph newFactors;
++  newFactors.emplace_shared<BetweenFactor<Pose2>>(n - 2, n - 1, Pose2(1, 0, 0),
++                                                  noise);
++  isam.update(newFactors, Values(), FactorIndices(), groups);
++
++  EXPECT(assert_equal(Pose2(n - 1.0, 0, 0),
++                      isam.calculateEstimate<Pose2>(n - 1), 1e-9));
++}
++
++/* ************************************************************************* */
+ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
+ {
+   // These variables will be reused and accumulate factors and values
+@@ -944,6 +1003,46 @@ TEST(ISAM2, marginalizeLeaves6)
  }
  
  /* ************************************************************************* */
