@@ -20,6 +20,157 @@ from gtsam.symbol_shorthand import X
 class TestConstrainedWrappers(unittest.TestCase):
     """Smoke tests for the LP, QP, and QCQP Python bindings."""
 
+    def test_dense_equality_projection_option(self):
+        """Both dense formulations accept either equality representation."""
+        key = X(42)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([3., 2.]), gtsam.noiseModel.Unit.Create(2)))
+        problem.addConstraint(gtsam.LinearConstraint.Equal(gtsam.JacobianFactor(
+            key, np.array([[1., 1.]]), np.array([1.]), gtsam.noiseModel.Unit.Create(1))))
+        problem.addConstraint(gtsam.LinearConstraint.LessEqual(gtsam.JacobianFactor(
+            key, np.array([[0., 1.]]), np.array([0.]), gtsam.noiseModel.Unit.Create(1))))
+        params = gtsam.ActiveSetSolverParams()
+        self.assertTrue(params.projectDenseQpEqualities)
+        params.qpSubproblemSolver = params.QpSubproblemSolver.Dense
+        for project in (False, True):
+            params.projectDenseQpEqualities = project
+            self.assertEqual(params.projectDenseQpEqualities, project)
+            for mode in (params.QpFormulation.Primal, params.QpFormulation.Dual):
+                params.qpFormulation = mode
+                values = gtsam.ActiveSetSolver(problem, params).optimize()
+                np.testing.assert_allclose(values.atVector(key), [1., 0.], atol=1e-8)
+
+    def test_qp_formulations(self):
+        """The shared formulation enum works with both numerical backends."""
+        key = X(42)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([2., 3.]), gtsam.noiseModel.Unit.Create(2)))
+        problem.addConstraint(gtsam.LinearConstraint.LessEqual(
+            gtsam.JacobianFactor(key, np.array([[1., 0.]]), np.array([1.]),
+                                 gtsam.noiseModel.Unit.Create(1))))
+        modes = gtsam.ActiveSetSolverParams.QpFormulation
+        backends = gtsam.ActiveSetSolverParams.QpSubproblemSolver
+        params = gtsam.ActiveSetSolverParams()
+        self.assertEqual(params.qpFormulation, modes.Automatic)
+        self.assertEqual(params.qpSubproblemSolver, backends.Sparse)
+        initial = gtsam.Values()
+        initial.insert(key, np.array([20., -10.]))
+        result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+        np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+        for backend in (backends.Dense, backends.Sparse):
+            params.qpSubproblemSolver = backend
+            for mode in (modes.Primal, modes.Dual, modes.Automatic):
+                params.qpFormulation = mode
+                result = gtsam.ActiveSetSolver(problem, params).optimize()
+                np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+            initial = gtsam.Values()
+            initial.insert(key, np.array([20., -10.]))
+            params.qpFormulation = modes.Dual
+            for _ in range(2):
+                result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+                np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+
+    def test_qp_initialization_modes(self):
+        """All public initialization choices retain the same QP optimum."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(
+            gtsam.JacobianFactor(
+                key, np.eye(2), np.array([2.0, 3.0]), gtsam.noiseModel.Unit.Create(2)
+            )
+        )
+        problem.addConstraint(
+            gtsam.LinearConstraint.GreaterEqual(
+                gtsam.JacobianFactor(
+                    key, np.array([[1.0, 0.0]]), np.zeros(1),
+                    gtsam.noiseModel.Unit.Create(1)
+                )
+            )
+        )
+        initial = gtsam.Values()
+        initial.insert(key, np.zeros(2))
+        modes = gtsam.ActiveSetSolverParams.QpInitialization
+        params = gtsam.ActiveSetSolverParams()
+        self.assertEqual(params.qpInitialization, modes.TightConstraints)
+        params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
+        params.regularization = 0.0
+        ordering = gtsam.Ordering()
+        ordering.push_back(key)
+        params.setOrdering(ordering)
+        for mode in (
+            modes.TightConstraints,
+            modes.ProjectedGradient,
+            modes.FeasibleStepThenProjectedGradient,
+        ):
+            params.qpInitialization = mode
+            result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+            np.testing.assert_allclose(result.atVector(key), [2.0, 3.0], atol=1e-9)
+
+    def test_dense_qp_semantics(self):
+        """Dense keeps the original optimum and honors every initialization mode."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([2.0, 3.0]),
+            gtsam.noiseModel.Unit.Create(2)))
+        # Redundant affine equalities retain their original row identities.
+        for scale in (1.0, 2.0):
+            problem.addConstraint(gtsam.LinearConstraint.Equal(
+                gtsam.JacobianFactor(key, np.array([[scale, 0.0]]),
+                                     np.array([scale]),
+                                     gtsam.noiseModel.Unit.Create(1))))
+        initial = gtsam.Values()
+        initial.insert(key, np.array([1.0, 0.0]))
+        modes = gtsam.ActiveSetSolverParams.QpInitialization
+        for weight in (0.0, 0.1):
+            for mode in (modes.TightConstraints, modes.ProjectedGradient,
+                         modes.FeasibleStepThenProjectedGradient):
+                params = gtsam.ActiveSetSolverParams()
+                params.qpSubproblemSolver = (
+                    gtsam.ActiveSetSolverParams.QpSubproblemSolver.Dense)
+                params.qpInitialization = mode
+                params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
+                params.regularization = weight
+                result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+                np.testing.assert_allclose(result.atVector(key), [1.0, 3.0], atol=1e-7)
+
+    def test_qp_two_stage_feasible_step(self):
+        """Feasible descent keeps its distinct status and projected row mask."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(
+            gtsam.JacobianFactor(
+                key, np.eye(2), np.array([2.0, 3.0]), gtsam.noiseModel.Unit.Create(2)
+            )
+        )
+        problem.addConstraint(
+            gtsam.LinearConstraint.GreaterEqual(
+                gtsam.JacobianFactor(
+                    key, np.array([[1.0, 0.0]]), np.zeros(1),
+                    gtsam.noiseModel.Unit.Create(1)
+                )
+            )
+        )
+        initial = gtsam.Values()
+        initial.insert(key, np.zeros(2))
+        params = gtsam.ActiveSetSolverParams()
+        params.regularization = 0.0
+        params.qpInitialization = (
+            gtsam.ActiveSetSolverParams.QpInitialization.FeasibleStepThenProjectedGradient
+        )
+        step = gtsam.ActiveSetSolver(problem, params).computeFeasibleStep(initial)
+        self.assertEqual(
+            step.status, gtsam.ActiveSetFeasibleStepResult.Status.FeasibleProgress
+        )
+        self.assertEqual(step.iterations, 1)
+        self.assertGreater(step.objectiveDecrease, 0)
+        self.assertLessEqual(step.constraintViolation, params.feasibilityTolerance)
+        np.testing.assert_allclose(step.values.atVector(key), [0.0, 3.0], atol=1e-9)
+        np.testing.assert_array_equal(step.activeInequalityMask(), [0.0])
+        self.assertFalse(hasattr(step, "converged"))
+
     def test_lp_problem_wrapper(self):
         """Construct and solve a tiny LP."""
         x = X(0)
