@@ -1,10 +1,21 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~63.gbpb2cd2e) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~64.gbp7a74ea) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7a74eaa3e5db60615d26123a6159b958574de40e **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @b2cd2ecf718f2041a9584744837ba09efb93fcb5 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 16:11:59 +0000
+  [ Jose Luis Blanco-Claraco ]
+  * Keep the newest variables at the root in IncrementalFixedLagSmoother, and add a parameters struct
+  * Add a timing script for IncrementalFixedLagSmoother
+
+  [ Frank Dellaert ]
+  * Fix wheel compilation and nightly constrained-solver regressions
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 21:08:26 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~62.gbpe25fe9) resolute; urgency=medium
 

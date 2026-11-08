@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Nov, 08 2026 16:09:42 +0000
+Date: Nov, 08 2026 21:08:28 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -3881,7 +3881,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 -      noiseModel::Constrained::All(1));
 +const Ordering& cachedOrdering(const GaussianFactorGraph& graph, KeySet* keys,
 +                               Ordering* ordering,
-+                               const std::optional<Ordering>& requested = {}) {
++                               const Ordering* requested = nullptr) {
 +  const KeySet graphKeys = graph.keys();
 +  if (graphKeys != *keys) {
 +    *ordering = requested ? restrictOrdering(*requested, graphKeys)
@@ -3921,7 +3921,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  void CompleteMissingKeys(VectorValues* values, const VectorValues& fallback,
                           const std::map<Key, size_t>& keyDims) {
    for (const auto& [key, _] : keyDims) {
-@@ -170,368 +94,94 @@ void CompleteMissingKeys(VectorValues* v
+@@ -170,368 +94,95 @@ void CompleteMissingKeys(VectorValues* v
  }
  
  /* ************************************************************************* */
@@ -4211,7 +4211,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    const GaussianFactorGraph graph =
 +        buildLpWorkingGraph(state.values, state.activeInequalityRows);
 +    const Ordering& ordering = cachedOrdering(
-+        graph, &workspace->lpKeys, &workspace->lpOrdering, params_->ordering);
++        graph, &workspace->lpKeys, &workspace->lpOrdering,
++        params_->ordering ? &*params_->ordering : nullptr);
 +    return graph.optimize(ordering, EliminatePreferCholesky);
 +  }
 +  // Retain factor pointers and per-call options; the numerical backend
@@ -4359,7 +4360,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    GaussianFactorGraph dualGraph;
    // Stationarity for the current working set is A_active^T * lambda = grad.
    // With the normalized A*x-b<=0 convention, a positive active inequality
-@@ -554,162 +204,34 @@ GaussianFactorGraph ActiveSetSolver::bui
+@@ -554,162 +205,34 @@ GaussianFactorGraph ActiveSetSolver::bui
          terms.emplace_back(row.multiplierKey, row.factor->getA(it).transpose());
        }
      }
@@ -4542,7 +4543,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************* */
-@@ -728,137 +250,226 @@ Vector ActiveSetSolver::objectiveGradien
+@@ -728,137 +251,226 @@ Vector ActiveSetSolver::objectiveGradien
        gradient += factor->gradient(key, values);
      }
    }
@@ -4868,7 +4869,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************* */
-@@ -900,13 +511,15 @@ ActiveSetSolver::State ActiveSetSolver::
+@@ -900,13 +512,15 @@ ActiveSetSolver::State ActiveSetSolver::
  /* ************************************************************************* */
  std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
      const Values& initialValues) const {
@@ -4886,7 +4887,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }
  
  /* ************************************************************************* */
-@@ -917,94 +530,162 @@ Values ActiveSetSolver::optimize(const V
+@@ -917,94 +531,162 @@ Values ActiveSetSolver::optimize(const V
  /* ************************************************************************* */
  std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState()
      const {
@@ -12422,7 +12423,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace gtsam
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/internal/SparseQpSolver.cpp
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,193 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -12443,6 +12444,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +#include <gtsam/constrained/internal/SparseQpSolver.h>
 +#include <gtsam/linear/GaussianISAM2.h>
 +#include <gtsam/linear/JacobianFactor.h>
++#include <gtsam/linear/linearAlgorithms-inst.h>
 +
 +#include <algorithm>
 +#include <cmath>
@@ -12564,20 +12566,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    return gradient;
 +  }
 +
-+  // One iterative-refinement step removes roundoff amplified by weak working
-+  // directions. For the constrained inverse K, x(delta - grad f(x)) equals
-+  // x(delta) - K grad f(x); every solve retains the same affine hard rows.
-+  // Only RHSs change: neither the factors nor their elimination are repeated.
++  // Refine with homogeneous tangent corrections, not another affine solve.
++  // Adding corrections to stored d before back-substitution can round them away
++  // or reintroduce its original error along weak directions. Hard rows have
++  // zero sigmas, so the cached inverse gives corrections tangent to their face.
 +  VectorValues solveRefined(const GaussianISAM2& factorization,
 +                            const VectorValues& center,
-+                            VectorValues forcing) const {
-+    const VectorValues candidate = forcing.size() == 0
++                            const VectorValues& forcing) const {
++    VectorValues candidate = forcing.size() == 0
 +        ? factorization.optimize() : factorization.optimize(forcing);
-+    for (const auto& [key, gradient] : workingGradient(candidate, center)) {
-+      if (forcing.exists(key)) forcing.at(key) -= gradient;
-+      else forcing.insert(key, -gradient);
++    for (size_t iteration = 0; iteration < 4; ++iteration) {
++      const VectorValues rhs = linearAlgorithms::transposeBayesTree(
++          factorization, workingGradient(candidate, center));
++      const VectorValues correction =
++          linearAlgorithms::optimizeBayesTree(factorization, &rhs);
++      VectorValues refined = candidate - correction;
++      if (refined.equals(candidate, 0.0)) break;
++      candidate = std::move(refined);
 +    }
-+    return factorization.optimize(forcing);
++    return candidate;
 +  }
 +
 +  // A new center changes objective forcing only. Registered factors and orphan
@@ -12594,7 +12601,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        if (!change.isZero(0.0)) forcing.insert(key, std::move(change));
 +      }
 +    }
-+    return solveRefined(*tree, center, std::move(forcing));
++    return solveRefined(*tree, center, forcing);
 +  }
 +};
 +
@@ -14644,6 +14651,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +/* ************************************************************************* */
 +
 +int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+--- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/tests/testLpSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam/constrained/tests/testLpSolver.cpp
+@@ -57,6 +57,16 @@ TEST(ActiveSetSolver, Bounded1DLP) {
+   EXPECT_DOUBLES_EQUAL(2.0, result.at<Vector>(x)(0), 1e-7);
+ }
+ 
++// An explicitly supplied ordering follows the cached LP solve path.
++TEST(ActiveSetSolver, Bounded1DLPWithRequestedOrdering) {
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->ordering = Ordering{x};
++  const Values result =
++      ActiveSetSolver(CreateBounded1D(), params).optimize(Values1(0.0));
++
++  EXPECT_DOUBLES_EQUAL(2.0, result.at<Vector>(x)(0), 1e-7);
++}
++
+ // Verifies vector-valued no-initial LP solve uses phase-I initialization.
+ TEST(ActiveSetSolver, VectorOnlyNoInitialLP) {
+   const Values result = CreateBounded1D().optimize();
 --- gtsam-no-tbb-4.3.0.orig/gtsam/constrained/tests/testQcqpProblem.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/tests/testQcqpProblem.cpp
 @@ -31,6 +31,7 @@
@@ -16353,7 +16379,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
    return params;
  }
-@@ -535,6 +581,731 @@ TEST(QpSolver, QPS_QPTEST) {
+@@ -535,6 +581,749 @@ TEST(QpSolver, QPS_QPTEST) {
  
  }  // namespace qps_file_examples
  /* ************************************************************************* */
@@ -16617,6 +16643,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  params->maxIterations = 10;
 +  Values initial;
 +  initial.insert(0, Vector(Vector2::Zero()));
++  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
++  CHECK(result.second.converged);
++  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
++}
++
++// Homogeneous residual corrections must not reintroduce the rounded affine RHS.
++TEST(ActiveSetSolver, SquareRootAffineRhsRefinement) {
++  const Matrix jacobian{{100000030, 30000009}, {1.0, 0.2}};
++  QpProblem problem;
++  problem.addCost(JacobianFactor(0, jacobian, Vector(jacobian.col(0))));
++  problem.addConstraint(LinearConstraint::LessEqual(
++      JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
++  params->regularization = 0;
++  params->maxIterations = 10;
++  Values initial;
++  initial.insert(0, Vector(Vector2{0.5, 0.0}));
 +  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
 +  CHECK(result.second.converged);
 +  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
@@ -17087,7 +17131,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    return TestRegistry::runAllTests(tr);
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/constrained/tests/testSparseQpSolver.cpp
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,179 @@
 +/* ----------------------------------------------------------------------------
 + * GTSAM Copyright 2010, Georgia Tech Research Corporation,
 + * Atlanta, Georgia 30332-0415
@@ -17108,6 +17152,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +#include <gtsam/linear/JacobianFactor.h>
 +#include <gtsam/linear/NoiseModel.h>
 +#include <CppUnitLite/TestHarness.h>
++
++#include <limits>
 +
 +using namespace gtsam;
 +using internal::SparseQpData;
@@ -17195,7 +17241,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        const double scale = direction.dot(target - (1 + weight) * rhs) /
 +            (weight + (1 + weight) * direction.squaredNorm() * normal.squaredNorm());
 +        const Vector error = result.at(1) - normal * scale;
-+        CHECK(error.lpNorm<Eigen::Infinity>() < 5e-9);
++        // The two null directions have curvature weight, so absolute solution
++        // error is amplified by the reduced system's condition number. Check
++        // forward error at that scale, and stationarity independently below.
++        const double condition = 1 + (1 + weight) *
++            direction.squaredNorm() * normal.squaredNorm() / weight;
++        const double tolerance = std::numeric_limits<double>::epsilon() *
++            condition * (normal * scale).lpNorm<Eigen::Infinity>();
++        CHECK(error.lpNorm<Eigen::Infinity>() < tolerance);
++        const Vector gradient = weight * result.at(1) +
++            coupling.transpose() * ((1 + weight) * result.at(0) - target);
++        CHECK(gradient.lpNorm<Eigen::Infinity>() < 1e-12);
 +        EXPECT(assert_equal(rhs, Vector(result.at(0) - coupling * result.at(1)), 1e-12));
 +      }
 +    }
@@ -28588,9 +28644,129 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    KeyVector marginalizableKeys = findKeysBefore(
        current_timestamp - smootherLag_);
  
+@@ -149,8 +181,10 @@ FixedLagSmoother::Result IncrementalFixe
+     std::cout << std::endl;
+   }
+ 
+-  // Force iSAM2 to put the marginalizable variables at the beginning
+-  createOrderingConstraints(marginalizableKeys, isActive, constrainedKeys);
++  // Force iSAM2 to put the marginalizable variables at the beginning, and
++  // optionally the newest ones at the end
++  createOrderingConstraints(marginalizableKeys, newFactorKeys,
++                            current_timestamp, isActive, constrainedKeys);
+ 
+   if (debug) {
+     std::cout << "Constrained Keys: ";
+@@ -266,16 +300,41 @@ void IncrementalFixedLagSmoother::eraseK
+ 
+ /* ************************************************************************* */
+ void IncrementalFixedLagSmoother::createOrderingConstraints(
+-    const KeyVector& marginalizableKeys,
+-    const std::function<bool(Key)>& isActive,
++    const KeyVector& marginalizableKeys, const KeySet& newFactorKeys,
++    double currentTimestamp, const std::function<bool(Key)>& isActive,
+     std::optional<FastMap<Key, int> >& constrainedKeys) const {
+-  if (marginalizableKeys.size() > 0) {
++  // Without constraints, iSAM2 already orders the keys of the new factors last.
++  // Constraining only the marginalizable keys loses that, so the newest keys
++  // get their own last group, unless disabled.
++  if (marginalizableKeys.empty()) {
++    if (params_.newestKeysLast) {
++      // Nothing to marginalize: only the newest keys need a group, the others
++      // stay in the default group 0.
++      constrainedKeys = FastMap<Key, int>();
++      for (auto it = timestampKeyMap_.lower_bound(currentTimestamp);
++           it != timestampKeyMap_.end(); ++it) {
++        if (isActive(it->second)) {
++          (*constrainedKeys)[it->second] = 1;
++        }
++      }
++      for (Key key : newFactorKeys) {
++        (*constrainedKeys)[key] = 1;
++      }
++    }
++  } else {
+     constrainedKeys = FastMap<Key, int>();
+     // Generate ordering constraints so that the marginalizable variables will be eliminated first
+-    // Set all variables to Group1
++    // Set all variables to Group1, or the newest ones to Group2 if enabled
+     for(const TimestampKeyMap::value_type& timestamp_key: timestampKeyMap_) {
+       if (isActive(timestamp_key.second)) {
+-        constrainedKeys->operator[](timestamp_key.second) = 1;
++        const bool newest =
++            params_.newestKeysLast && timestamp_key.first >= currentTimestamp;
++        constrainedKeys->operator[](timestamp_key.second) = newest ? 2 : 1;
++      }
++    }
++    if (params_.newestKeysLast) {
++      for (Key key : newFactorKeys) {
++        constrainedKeys->operator[](key) = 2;
+       }
+     }
+     // Set marginalizable variables to Group0
 --- gtsam-no-tbb-4.3.0.orig/gtsam/nonlinear/IncrementalFixedLagSmoother.h
 +++ gtsam-no-tbb-4.3.0/gtsam/nonlinear/IncrementalFixedLagSmoother.h
-@@ -59,10 +59,10 @@ public:
+@@ -28,6 +28,32 @@
+ 
+ namespace gtsam {
+ 
++/** Parameters of IncrementalFixedLagSmoother */
++struct IncrementalFixedLagSmootherParams {
++  /** The iSAM2 parameters. By default it reuses the slots of removed factors,
++   * since the smoother keeps removing factors as they leave the window. */
++  ISAM2Params isam2;
++
++  /**
++   * In every update, eliminate the keys of the new factors and those at the
++   * current timestamp last, so the newest states stay at the root of the Bayes
++   * tree. Then an update or a marginal of the current state only touches a
++   * short path of the tree. It pays off with several variables per time step
++   * or several sensors, which otherwise leave the newest states deep in the
++   * tree when marginalizing. Set it to false for the previous ordering, which
++   * only constrains the marginalizable keys.
++   */
++  bool newestKeysLast = true;
++
++  IncrementalFixedLagSmootherParams() {
++    isam2.findUnusedFactorSlots = true;
++  }
++
++  /** The default options with the given iSAM2 parameters */
++  explicit IncrementalFixedLagSmootherParams(const ISAM2Params& isam2Params)
++      : isam2(isam2Params) {}
++};
++
+ /**
+  * This is a base class for the various HMF2 implementations. The HMF2 eliminates the factor graph
+  * such that the active states are placed in/near the root. This base class implements a function
+@@ -40,11 +66,21 @@ public:
+   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
+   typedef std::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
+ 
+-  /** default constructor */
+-  IncrementalFixedLagSmoother(double smootherLag = 0.0,
+-      const ISAM2Params& parameters = DefaultISAM2Params()) :
+-      FixedLagSmoother(smootherLag), isam_(parameters) {
+-  }
++  /**
++   * Constructor with the given iSAM2 parameters and the default options. For
++   * the previous ordering, use the constructor with
++   * IncrementalFixedLagSmootherParams and set newestKeysLast to false.
++   */
++  IncrementalFixedLagSmoother(
++      double smootherLag = 0.0,
++      const ISAM2Params& parameters = DefaultISAM2Params())
++      : IncrementalFixedLagSmoother(
++            smootherLag, IncrementalFixedLagSmootherParams(parameters)) {}
++
++  /** Constructor */
++  IncrementalFixedLagSmoother(double smootherLag,
++                              const IncrementalFixedLagSmootherParams& params)
++      : FixedLagSmoother(smootherLag), isam_(params.isam2), params_(params) {}
+ 
+   /** destructor */
+   ~IncrementalFixedLagSmoother() override {
+@@ -59,10 +95,10 @@ public:
  
    /**
     * Add new factors, updating the solution and re-linearizing as needed.
@@ -28605,7 +28781,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
     *
     * Every key in @p timestamps must name a value the smoother already holds or
     * one supplied in @p newTheta in this update; otherwise the update throws
-@@ -87,10 +87,44 @@ public:
+@@ -87,10 +123,44 @@ public:
     * the smoother or in @p newTheta.
     */
    Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
@@ -28651,10 +28827,36 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /** Compute an estimate from the incomplete linear delta computed during the last update.
     * This delta is incomplete because it was not updated below wildfire_threshold.  If only
     * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
-@@ -162,6 +196,14 @@ protected:
+@@ -120,6 +190,11 @@ public:
+     return isam_.params();
+   }
+ 
++  /** return the smoother parameters */
++  const IncrementalFixedLagSmootherParams& smootherParams() const {
++    return params_;
++  }
++
+   /** Access the current set of factors */
+   const NonlinearFactorGraph& getFactors() const {
+     return isam_.getFactorsUnsafe();
+@@ -150,9 +225,7 @@ protected:
+ 
+   /** Create default parameters */
+   static ISAM2Params DefaultISAM2Params() {
+-    ISAM2Params params;
+-    params.findUnusedFactorSlots = true;
+-    return params;
++    return IncrementalFixedLagSmootherParams().isam2;
+   }
+ 
+   /** An iSAM2 object used to perform inference. The smoother lag is controlled
+@@ -162,13 +235,29 @@ protected:
    /** Store results of latest isam2 update */
    ISAM2Result isamResult_;
  
++  /** The smoother parameters */
++  IncrementalFixedLagSmootherParams params_;
++
 +  /// Shared body of both update() overloads.
 +  Result updateImpl(const NonlinearFactorGraph& newFactors,
 +                    const Values& newTheta,
@@ -28666,6 +28868,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    /** Erase any keys associated with timestamps before the provided time */
    void eraseKeysBefore(double timestamp);
  
+-  /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
++  /**
++   * Fill in an iSAM2 ConstrainedKeys structure such that the marginalizable
++   * keys are eliminated before all others and, if newestKeysLast is set, the
++   * keys of the new factors and those at the current timestamp after all
++   * others.
++   */
+   void createOrderingConstraints(
+-      const KeyVector& marginalizableKeys,
+-      const std::function<bool(Key)>& isActive,
++      const KeyVector& marginalizableKeys, const KeySet& newFactorKeys,
++      double currentTimestamp, const std::function<bool(Key)>& isActive,
+       std::optional<FastMap<Key, int> >& constrainedKeys) const;
+ 
+ private:
 --- gtsam-no-tbb-4.3.0.orig/gtsam/nonlinear/NonlinearFactor.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam/nonlinear/NonlinearFactor.cpp
 @@ -35,8 +35,9 @@ double NonlinearFactor::error(const Hybr
@@ -30068,7 +30285,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  }  // namespace gtsam
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/nonlinear/nonlinear_continuous_time.i
-@@ -0,0 +1,468 @@
+@@ -0,0 +1,479 @@
 +//*************************************************************************
 +// nonlinear_continuous_time: Continuous-time Gaussian-process factors, kept
 +// separate from nonlinear.i to reduce wrapper build memory.
@@ -30460,14 +30677,25 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +};
 +
 +#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
++class IncrementalFixedLagSmootherParams {
++  IncrementalFixedLagSmootherParams();
++  IncrementalFixedLagSmootherParams(const gtsam::ISAM2Params& isam2Params);
++
++  gtsam::ISAM2Params isam2;
++  bool newestKeysLast;
++};
++
 +virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 +  IncrementalFixedLagSmoother();
 +  IncrementalFixedLagSmoother(double smootherLag);
 +  IncrementalFixedLagSmoother(double smootherLag,
 +                              const gtsam::ISAM2Params& parameters);
++  IncrementalFixedLagSmoother(
++      double smootherLag, const gtsam::IncrementalFixedLagSmootherParams& params);
 +
 +  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
 +  const gtsam::ISAM2Params& params() const;
++  const gtsam::IncrementalFixedLagSmootherParams& smootherParams() const;
 +
 +  const gtsam::NonlinearFactorGraph& getFactors() const;
 +  const gtsam::Values& getLinearizationPoint() const;
@@ -31922,7 +32150,79 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  #include <gtsam/nonlinear/NonlinearFactorGraph.h>
  #include <gtsam/nonlinear/Values.h>
  #include <gtsam/slam/BetweenFactor.h>
-@@ -1078,6 +1080,55 @@ TEST(IncrementalFixedLagSmoother, Calcul
+@@ -470,6 +472,71 @@ TEST(IncrementalFixedLagSmoother, Connec
+   EXPECT(!smoother.getISAM2().getVariableIndex().empty(X(1)));
+ }
+ 
++/* ************************************************************************* */
++// Both constructors keep the default of reusing the slots of removed factors,
++// unless given other iSAM2 parameters, and use the default options.
++TEST(IncrementalFixedLagSmoother, Params) {
++  EXPECT(IncrementalFixedLagSmoother().params().findUnusedFactorSlots);
++  EXPECT(IncrementalFixedLagSmoother(1.0, ISAM2Params())
++             .smootherParams()
++             .newestKeysLast);
++  IncrementalFixedLagSmootherParams params;
++  EXPECT(params.isam2.findUnusedFactorSlots);
++  EXPECT(params.newestKeysLast);
++  params.newestKeysLast = false;
++  EXPECT(!IncrementalFixedLagSmoother(1.0, params)
++              .smootherParams()
++              .newestKeysLast);
++  EXPECT(
++      IncrementalFixedLagSmoother(1.0, params).params().findUnusedFactorSlots);
++  EXPECT(!IncrementalFixedLagSmoother(1.0, ISAM2Params())
++              .params()
++              .findUnusedFactorSlots);
++}
++
++/* ************************************************************************* */
++// By default, the newest variables stay at the root of the Bayes tree, also
++// in updates that marginalize and in updates without new factors.
++TEST(IncrementalFixedLagSmoother, NewestKeysLast) {
++  using symbol_shorthand::V;
++  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
++  IncrementalFixedLagSmoother smoother(5.0);
++  const auto depth = [&](Key key) {
++    size_t levels = 0;
++    for (auto clique = smoother.getISAM2()[key]; clique->parent();
++         clique = clique->parent()) {
++      ++levels;
++    }
++    return levels;
++  };
++
++  // Two variables per step, linked to each other and to the previous step.
++  for (size_t i = 0; i < 20; ++i) {
++    NonlinearFactorGraph factors;
++    Values values;
++    FixedLagSmoother::KeyTimestampMap timestamps;
++    values.insert(X(i), Point2(0.0, 0.0));
++    values.insert(V(i), Point2(0.0, 0.0));
++    timestamps[X(i)] = static_cast<double>(i);
++    timestamps[V(i)] = static_cast<double>(i);
++    factors.emplace_shared<BetweenPoint2>(X(i), V(i), Point2(0.0, 0.0), noise);
++    if (i == 0) {
++      factors.addPrior(X(0), Point2(0.0, 0.0), noise);
++    } else {
++      factors.emplace_shared<BetweenPoint2>(X(i - 1), X(i), Point2(0.0, 0.0),
++                                            noise);
++      factors.emplace_shared<BetweenPoint2>(V(i - 1), V(i), Point2(0.0, 0.0),
++                                            noise);
++      factors.emplace_shared<BetweenPoint2>(X(i - 1), V(i), Point2(0.0, 0.0),
++                                            noise);
++    }
++    smoother.update(factors, values, timestamps);
++    EXPECT_LONGS_EQUAL(0, depth(X(i)));
++    smoother.update();
++    EXPECT_LONGS_EQUAL(0, depth(X(i)));
++  }
++}
++
+ // A pending value with no factor is removed once it leaves the lag window.
+ TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
+   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+@@ -1078,6 +1145,55 @@ TEST(IncrementalFixedLagSmoother, Calcul
  }
  
  /* ************************************************************************* */
@@ -31978,7 +32278,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  namespace removal_validation {
  
  // Invalid removal indices are diagnosed before additions or valid removals land.
-@@ -1146,6 +1197,211 @@ TEST(IncrementalFixedLagSmoother, Valida
+@@ -1146,6 +1262,211 @@ TEST(IncrementalFixedLagSmoother, Valida
  }  // namespace removal_validation
  /* ************************************************************************* */
  
@@ -35099,6 +35399,40 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
  // Tectonic SAM Factors
  
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/linear/QPSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/linear/QPSolver.cpp
+@@ -43,7 +43,11 @@ std::pair<VectorValues, VectorValues> QP
+   const QpProblem problem = ToConstrainedProblem(qp_);
+   const auto keyDims = CollectKeyDims(qp_);
+   const Values initial = ToValues(initialValues);
+-  ActiveSetSolver solver(problem);
++  // The legacy overload requires a feasible initial point. Automatic may select
++  // Dual, which deliberately accepts infeasible starts, so retain Primal here.
++  auto params = std::make_shared<ActiveSetSolverParams>();
++  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
++  ActiveSetSolver solver(problem, params);
+ 
+   try {
+     Values values;
+--- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/linear/tests/testQPSolver.cpp
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/linear/tests/testQPSolver.cpp
+@@ -244,6 +244,7 @@ TEST(QPSolver, failedSubproblem) {
+ }
+ 
+ /* ************************************************************************* */
++// Both legacy supplied-point overloads reject infeasible initial values.
+ TEST(QPSolver, infeasibleInitial) {
+   QP qp;
+   qp.cost.add(X(1), I_2x2, Vector::Zero(2));
+@@ -259,6 +260,8 @@ TEST(QPSolver, infeasibleInitial) {
+   QPSolver solver(qp);
+   VectorValues solution;
+   CHECK_EXCEPTION(solver.optimize(initialValues), InfeasibleInitialValues);
++  CHECK_EXCEPTION(solver.optimize(initialValues, VectorValues(), true),
++                  InfeasibleInitialValues);
+ }
+ 
+ #endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 --- gtsam-no-tbb-4.3.0.orig/gtsam_unstable/partition/tests/testFindSeparator.cpp
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/partition/tests/testFindSeparator.cpp
 @@ -15,6 +15,29 @@ using namespace std;
@@ -58068,6 +58402,273 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    values.reserve(validAssignments);
    std::vector<bool> used(numberObjects, false);
    const auto addAssignments = [&](const auto& add, size_t depth,
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/timing/timeIncrementalFixedLagSmoother.cpp
+@@ -0,0 +1,264 @@
++/* ----------------------------------------------------------------------------
++
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
++ * Atlanta, Georgia 30332-0415
++ * All Rights Reserved
++ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
++
++ * See LICENSE for the license information
++
++ * -------------------------------------------------------------------------- */
++
++/**
++ * @file    timeIncrementalFixedLagSmoother.cpp
++ * @brief   Times IncrementalFixedLagSmoother updates and marginals of the
++ *          newest pose, with and without newestKeysLast.
++ *
++ * Problems, at 10 Hz:
++ * - odom: poses, odometry, GPS at 1 Hz.
++ * - imu:  as odom, plus velocities and biases with combined IMU factors.
++ * - frames: as odom, plus two pose sensors, alternating, each measuring in its
++ *   own frame, whose pose is a variable retained for the whole run.
++ *
++ * Usage: timeIncrementalFixedLagSmoother [steps] [lags, e.g. 2,6,12]
++ */
++
++#include <gtsam/geometry/Pose3.h>
++#include <gtsam/inference/Symbol.h>
++#include <gtsam/navigation/CombinedImuFactor.h>
++#include <gtsam/navigation/GPSFactor.h>
++#include <gtsam/navigation/Scenario.h>
++#include <gtsam/navigation/ScenarioRunner.h>
++#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
++#include <gtsam/slam/BetweenFactor.h>
++
++#include <algorithm>
++#include <chrono>
++#include <cstdio>
++#include <random>
++#include <sstream>
++#include <string>
++#include <vector>
++
++using namespace gtsam;
++using symbol_shorthand::B;
++using symbol_shorthand::F;
++using symbol_shorthand::V;
++using symbol_shorthand::X;
++
++namespace {
++
++enum class Problem { Odom, Imu, Frames };
++
++const char* name(Problem problem) {
++  switch (problem) {
++    case Problem::Odom:
++      return "odom";
++    case Problem::Imu:
++      return "imu";
++    default:
++      return "frames";
++  }
++}
++
++struct Result {
++  double updateMs = 0.0;
++  double marginalMs = 0.0;
++  double depth = 0.0;
++  double errorM = 0.0;
++  size_t variables = 0;
++  Values estimate;
++};
++
++size_t depthOf(const ISAM2& isam, Key key) {
++  size_t depth = 0;
++  for (auto clique = isam[key]; clique->parent(); clique = clique->parent()) {
++    ++depth;
++  }
++  return depth;
++}
++
++double ms(std::chrono::steady_clock::duration d) {
++  return std::chrono::duration<double, std::milli>(d).count();
++}
++
++Pose3 perturbed(const Pose3& pose, double sigmaRot, double sigmaPos,
++                std::mt19937& rng) {
++  std::normal_distribution<double> n(0.0, 1.0);
++  Vector6 xi;
++  xi << sigmaRot * n(rng), sigmaRot * n(rng), sigmaRot * n(rng),
++      sigmaPos * n(rng), sigmaPos * n(rng), sigmaPos * n(rng);
++  return pose.retract(xi);
++}
++
++Result run(Problem problem, double lag, bool newestKeysLast, size_t steps) {
++  const double dt = 0.1;
++  const double imuDt = 0.005;
++  std::mt19937 rng(42);
++  std::normal_distribution<double> n(0.0, 1.0);
++
++  // A circle at 1 m/s, slowly climbing.
++  const ConstantTwistScenario scenario(Vector3(0.0, 0.0, 0.1),
++                                       Vector3(1.0, 0.0, 0.05));
++  auto imuParams = PreintegrationCombinedParams::MakeSharedU(9.81);
++  imuParams->setAccelerometerCovariance(I_3x3 * 1e-4);
++  imuParams->setGyroscopeCovariance(I_3x3 * 1e-6);
++  imuParams->setIntegrationCovariance(I_3x3 * 1e-8);
++  imuParams->setBiasAccCovariance(I_3x3 * 1e-6);
++  imuParams->setBiasOmegaCovariance(I_3x3 * 1e-8);
++  const ScenarioRunner imu(scenario, imuParams, imuDt);
++
++  const auto odomNoise = noiseModel::Diagonal::Sigmas(
++      (Vector6() << Vector3::Constant(0.01), Vector3::Constant(0.05))
++          .finished());
++  const auto gpsNoise = noiseModel::Isotropic::Sigma(3, 0.5);
++  const auto sensorNoise = noiseModel::Diagonal::Sigmas(
++      (Vector6() << Vector3::Constant(0.02), Vector3::Constant(0.1))
++          .finished());
++  const std::vector<Pose3> sensorFrames = {
++      Pose3(Rot3::Yaw(0.5), Point3(10.0, -5.0, 1.0)),
++      Pose3(Rot3::Yaw(-1.0), Point3(-3.0, 8.0, 0.0))};
++
++  IncrementalFixedLagSmootherParams params;
++  params.newestKeysLast = newestKeysLast;
++  IncrementalFixedLagSmoother smoother(lag, params);
++
++  Result result;
++  size_t timed = 0;
++  for (size_t i = 0; i < steps; ++i) {
++    const double t = static_cast<double>(i) * dt;
++    const Pose3 truth = scenario.pose(t);
++    NonlinearFactorGraph factors;
++    Values values;
++    FixedLagSmoother::KeyTimestampMap timestamps;
++    KeySet retain;
++
++    if (i == 0) {
++      values.insert(X(0), truth);
++      factors.addPrior(X(0), truth, noiseModel::Isotropic::Sigma(6, 1e-3));
++    } else {
++      const Pose3 odom =
++          perturbed(scenario.pose(t - dt).between(truth), 0.01, 0.05, rng);
++      values.insert(X(i),
++                    smoother.calculateEstimate<Pose3>(X(i - 1)).compose(odom));
++      factors.emplace_shared<BetweenFactor<Pose3>>(X(i - 1), X(i), odom,
++                                                   odomNoise);
++    }
++    timestamps[X(i)] = t;
++
++    if (i % 10 == 0) {
++      const Point3 gps(truth.translation() +
++                       0.5 * Vector3(n(rng), n(rng), n(rng)));
++      factors.emplace_shared<GPSFactor>(X(i), gps, gpsNoise);
++    }
++
++    if (problem == Problem::Imu) {
++      if (i == 0) {
++        values.insert(V(0), scenario.velocity_n(0.0));
++        values.insert(B(0), imuBias::ConstantBias());
++        factors.addPrior(V(0), scenario.velocity_n(0.0),
++                         noiseModel::Isotropic::Sigma(3, 0.1));
++        factors.addPrior(B(0), imuBias::ConstantBias(),
++                         noiseModel::Isotropic::Sigma(6, 0.1));
++      } else {
++        PreintegratedCombinedMeasurements pim(
++            imuParams,
++            smoother.calculateEstimate<imuBias::ConstantBias>(B(i - 1)));
++        for (double s = t - dt; s < t - 1e-9; s += imuDt) {
++          pim.integrateMeasurement(imu.measuredSpecificForce(s),
++                                   imu.measuredAngularVelocity(s), imuDt);
++        }
++        values.insert(V(i), smoother.calculateEstimate<Vector3>(V(i - 1)));
++        values.insert(
++            B(i), smoother.calculateEstimate<imuBias::ConstantBias>(B(i - 1)));
++        factors.emplace_shared<CombinedImuFactor>(X(i - 1), V(i - 1), X(i),
++                                                  V(i), B(i - 1), B(i), pim);
++      }
++      timestamps[V(i)] = t;
++      timestamps[B(i)] = t;
++    }
++
++    if (problem == Problem::Frames) {
++      const size_t sensor = i % sensorFrames.size();
++      const Pose3 measured =
++          perturbed(sensorFrames[sensor].between(truth), 0.02, 0.1, rng);
++      if (i < sensorFrames.size()) {
++        values.insert(F(sensor),
++                      perturbed(sensorFrames[sensor], 0.05, 1.0, rng));
++        timestamps[F(sensor)] = t;
++        retain.insert(F(sensor));
++      }
++      factors.emplace_shared<BetweenFactor<Pose3>>(F(sensor), X(i), measured,
++                                                   sensorNoise);
++    }
++
++    const auto t0 = std::chrono::steady_clock::now();
++    smoother.update(factors, values, timestamps, FactorIndices(), retain);
++    const auto t1 = std::chrono::steady_clock::now();
++    smoother.marginalCovariance(X(i));
++    const auto t2 = std::chrono::steady_clock::now();
++
++    // Time only once marginalization starts: before that, both settings give
++    // the same ordering.
++    if (t > lag + 1.0) {
++      result.updateMs += ms(t1 - t0);
++      result.marginalMs += ms(t2 - t1);
++      result.depth += static_cast<double>(depthOf(smoother.getISAM2(), X(i)));
++      result.errorM += (smoother.calculateEstimate<Pose3>(X(i)).translation() -
++                        truth.translation())
++                           .norm();
++      ++timed;
++    }
++  }
++  result.updateMs /= static_cast<double>(timed);
++  result.marginalMs /= static_cast<double>(timed);
++  result.depth /= static_cast<double>(timed);
++  result.errorM /= static_cast<double>(timed);
++  result.estimate = smoother.calculateEstimate();
++  result.variables = result.estimate.size();
++  return result;
++}
++
++double maxPositionDifference(const Values& a, const Values& b) {
++  double maxDiff = 0.0;
++  for (const auto& key_value : a) {
++    if (Symbol(key_value.key).chr() != 'x' || !b.exists(key_value.key)) {
++      continue;
++    }
++    const Point3 pa = a.at<Pose3>(key_value.key).translation();
++    const Point3 pb = b.at<Pose3>(key_value.key).translation();
++    maxDiff = std::max(maxDiff, (pa - pb).norm());
++  }
++  return maxDiff;
++}
++
++}  // namespace
++
++int main(int argc, char** argv) {
++  const size_t steps = argc > 1 ? std::stoul(argv[1]) : 1000;
++  std::vector<double> lags;
++  std::stringstream lagList(argc > 2 ? argv[2] : "2,6,12");
++  for (std::string item; std::getline(lagList, item, ',');) {
++    lags.push_back(std::stod(item));
++  }
++
++  std::printf(
++      "| problem | lag s | variables | update ms | marginal ms | newest depth "
++      "| mean error m | max diff m |\n");
++  std::printf("|---|---:|---:|---|---|---|---|---:|\n");
++  for (Problem problem : {Problem::Odom, Problem::Imu, Problem::Frames}) {
++    for (double lag : lags) {
++      const Result off = run(problem, lag, false, steps);
++      const Result on = run(problem, lag, true, steps);
++      std::printf(
++          "| %s | %.0f | %zu | %.3f -> %.3f (%.2fx) | %.3f -> %.3f (%.1fx) | "
++          "%.1f -> %.1f | %.4f / %.4f | %.1e |\n",
++          name(problem), lag, off.variables, off.updateMs, on.updateMs,
++          off.updateMs / on.updateMs, off.marginalMs, on.marginalMs,
++          off.marginalMs / on.marginalMs, off.depth, on.depth, off.errorM,
++          on.errorM, maxPositionDifference(off.estimate, on.estimate));
++      std::fflush(stdout);
++    }
++  }
++  return 0;
++}
 --- gtsam-no-tbb-4.3.0.orig/timing/timeShonanInitialization.cpp
 +++ gtsam-no-tbb-4.3.0/timing/timeShonanInitialization.cpp
 @@ -506,7 +506,7 @@ ShonanAveraging3::Parameters shonanParam
