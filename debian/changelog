@@ -1,10 +1,24 @@
-gtsam (4.3.0-0ubuntu14~57.gbp629f01) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~58.gbp80fd64) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @80fd64649b9488f31217f424ad81e4b3b022c0de **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @629f01e33def4c53d6e1b5a0edf78a623f5f438d **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 07 Nov 2026 10:55:00 +0000
+  [ dellaert@gmail.com ]
+  * Add GaussianISAM2 with fixed-order factor addition and removal
+  * Solve Gaussian objective forcing with cached Bayes-tree traversals
+
+  [ Frank Dellaert ]
+  * Document GaussianISAM2 updates and cached solves [skip ci]
+
+  [ Jose Luis Blanco-Claraco ]
+  * Accept any increasing constraint group indices in ColamdConstrained
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 00:48:32 +0000
 
 gtsam (4.3.0-0ubuntu14~56.gbp68738b) resolute; urgency=medium
 
