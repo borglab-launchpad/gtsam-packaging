@@ -1,10 +1,21 @@
-gtsam (4.3.0-0ubuntu14~66.gbp4e55b9) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~67.gbp201217) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @201217a7167b5f82e38d186fce9b84b24e1b4074 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4e55b9f82aeb17bdedc554f3e5c691691cbebc19 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 10 Nov 2026 05:16:08 +0000
+  [ sohailshk ]
+  * Serialize negLogConstant_ and pruned_ in HybridGaussianConditional
+  * Drop the serialization version check for HybridGaussianConditional
+
+  [ Rehan ]
+  * Fix PinholeCamera::Level parameter name mismatch in wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Nov 2026 14:29:02 +0000
 
 gtsam (4.3.0-0ubuntu14~65.gbp955180) resolute; urgency=medium
 

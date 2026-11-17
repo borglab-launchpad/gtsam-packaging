@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Nov, 10 2026 05:13:48 +0000
+Date: Nov, 17 2026 14:29:03 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -62002,6 +62002,20 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      } else if constexpr (D >= 3) {
        if (X.rows() != 1 || X.cols() != D) {
          throw std::invalid_argument(
+--- gtsam-4.3.0.orig/gtsam/geometry/cameras.i
++++ gtsam-4.3.0/gtsam/geometry/cameras.i
+@@ -377,9 +377,9 @@ class PinholeCamera {
+   PinholeCamera(const This other);
+   PinholeCamera(const gtsam::Pose3& pose);
+   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
+-  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
++  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose2,
+                     double height);
+-  static This Level(const gtsam::Pose2& pose, double height);
++  static This Level(const gtsam::Pose2& pose2, double height);
+   static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+                      const gtsam::Point3& upVector, const CALIBRATION& K);
+ 
 --- gtsam-4.3.0.orig/gtsam/geometry/tests/testCameraSet.cpp
 +++ gtsam-4.3.0/gtsam/geometry/tests/testCameraSet.cpp
 @@ -16,11 +16,15 @@
@@ -62353,6 +62367,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  
    /// Helper struct for pruning the hybrid bayes tree.
    struct HybridPrunerData {
+--- gtsam-4.3.0.orig/gtsam/hybrid/HybridGaussianConditional.h
++++ gtsam-4.3.0/gtsam/hybrid/HybridGaussianConditional.h
+@@ -265,6 +265,8 @@ class GTSAM_EXPORT HybridGaussianConditi
+   void serialize(Archive &ar, const unsigned int /*version*/) {
+     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
++    ar &BOOST_SERIALIZATION_NVP(negLogConstant_);
++    ar &BOOST_SERIALIZATION_NVP(pruned_);
+   }
+ #endif
+ };
 --- gtsam-4.3.0.orig/gtsam/hybrid/HybridGaussianFactorGraph.cpp
 +++ gtsam-4.3.0/gtsam/hybrid/HybridGaussianFactorGraph.cpp
 @@ -25,7 +25,6 @@
@@ -63048,6 +63073,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
  using ADT = AlgebraicDecisionTree<Key>;
  BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
  BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
+@@ -129,6 +129,34 @@ TEST(HybridSerialization, HybridGaussian
+ }
+ 
+ /* ****************************************************************************/
++// A deserialized HybridGaussianConditional keeps its negative log normalization
++// constant and its pruned flag, which equals() does not compare.
++TEST(HybridSerialization, HybridGaussianConditionalConstantAndPruned) {
++  const DiscreteKey mode(M(0), 2);
++  Matrix1 I = Matrix1::Identity();
++  const auto conditional0 = std::make_shared<GaussianConditional>(
++      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
++  const auto conditional1 = std::make_shared<GaussianConditional>(
++      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
++  const HybridGaussianConditional::FactorValuePairs pairs(
++      {mode}, std::vector<GaussianFactorValuePair>{
++                  {conditional0, conditional0->negLogConstant()},
++                  {conditional1, conditional1->negLogConstant()}});
++  const HybridGaussianConditional gm({mode}, pairs, true);
++
++  HybridGaussianConditional fromText, fromXML, fromBinary;
++  roundtrip(gm, fromText);
++  roundtripXML(gm, fromXML);
++  roundtripBinary(gm, fromBinary);
++  for (const HybridGaussianConditional* deserialized :
++       {&fromText, &fromXML, &fromBinary}) {
++    EXPECT_DOUBLES_EQUAL(gm.negLogConstant(), deserialized->negLogConstant(),
++                         1e-9);
++    EXPECT(deserialized->pruned());
++  }
++}
++
++/* ****************************************************************************/
+ // Test HybridBayesNet serialization.
+ TEST(HybridSerialization, HybridBayesNet) {
+   Switching s(2);
 --- gtsam-4.3.0.orig/gtsam/inference/MetisIndex-inl.h
 +++ gtsam-4.3.0/gtsam/inference/MetisIndex-inl.h
 @@ -47,6 +47,8 @@ void MetisIndex::augment(const FactorGra
