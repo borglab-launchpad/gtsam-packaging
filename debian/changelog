@@ -1,10 +1,32 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~66.gbp13543c) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~67.gbp088bbd) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @088bbda5d0acc721314abb83f9a41a3723bcc16f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @13543c4521d6393032eae9872f41db09f478e833 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sun, 08 Nov 2026 21:10:32 +0000
+  [ dellaert@gmail.com ]
+  * Add Gaussian ALM solver with a shared optimization engine
+  * Expose Gaussian ALM and multifrontal QR options in shared wrappers
+  * Document the Gaussian ALM solver and QP parameter controls
+  * Refresh QP benchmarks with QR-off Gaussian ALM results
+  * Validate whole-block hard constraints in multifrontal solves
+  * Fix signed dimension comparison in multifrontal constraint validation
+
+  [ Frank Dellaert ]
+  * Fix MATLAB active-set parameter bindings and register regressions
+
+  [ sohailshk ]
+  * Serialize negLogConstant_ and pruned_ in HybridGaussianConditional
+  * Drop the serialization version check for HybridGaussianConditional
+
+  [ Rehan ]
+  * Fix PinholeCamera::Level parameter name mismatch in wrapper
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Nov 2026 14:28:02 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~65.gbpc40a03) resolute; urgency=medium
 
