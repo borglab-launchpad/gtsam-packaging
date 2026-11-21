@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~72.gbp7fbbad) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~73.gbp8728c5) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @8728c51ef379f6cc74c9a94b810ee9bdb971a67f **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @7fbbaddb4a5c11328db4810633f2ab6d6a00a109 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Nov 2026 15:59:59 +0000
+  [ Frank Dellaert ]
+  * Add Kalman filtering and smoothing notebook and interactive HTML explainer
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Nov 2026 16:46:01 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~71.gbp91c8ee) resolute; urgency=medium
 
