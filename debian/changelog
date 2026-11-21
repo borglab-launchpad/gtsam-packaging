@@ -1,10 +1,25 @@
-gtsam (4.3.0-0ubuntu14~69.gbp9a4584) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~70.gbp7afc01) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7afc018fd4b5b3888e4338c12c189abdf0377c63 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @9a458403bb6285d4d9d3bc625091caf8bc12dcd0 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 17 Nov 2026 14:31:54 +0000
+  [ yunyv ]
+  * Fix Python numerical derivatives for scalar inputs
+  * Test Python and NumPy scalar numerical derivatives
+
+  [ Oluwatodimu Afolayan ]
+  * Refactor WNOA interpolator for external template instantiation
+
+  [ Frank Dellaert ]
+  * Reorganize Python example scripts into module subdirectories
+  * Add Kalman filtering and smoothing notebook and interactive HTML explainer
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Nov 2026 16:46:07 +0000
 
 gtsam (4.3.0-0ubuntu14~68.gbp9ff7d9) resolute; urgency=medium
 
