@@ -1,3 +1,12 @@
+gtsam-no-tbb (4.3.0-0ubuntu16~71.gbp91c8ee) resolute; urgency=medium
+
+  ** SNAPSHOT build @91c8eed2a920e9e9bd7a87d91daccb379473cbd9 **
+
+  * updated changelog and patch files for snapshot 4.3.0-0ubuntu16~70.gbp696f33
+  * modified changelog for distro noble
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Nov 2026 15:58:29 +0000
+
 gtsam-no-tbb (4.3.0-0ubuntu16~70.gbp696f33) noble; urgency=medium
 
   ** SNAPSHOT build @696f334b30949039e706ee40183b3c97c0fc8822 **
