@@ -1,10 +1,29 @@
-gtsam (4.3.0-0ubuntu14~72.gbpbe8cfd) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~73.gbp46ad85) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @46ad85195246ec769ad6addcf5a0a4e29008a4e7 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @be8cfdf22427aeea914316256a8faacd4936043c **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Sat, 21 Nov 2026 16:48:24 +0000
+  [ Akash Ratheesh ]
+  * Dynamics structure and example Implementations ported from private fork
+  * Cost structure ported from private fork
+  * Remove Cost Structure (keeping it for later). Add sampler
+  * MPPI structure ported from private fork
+  * Point Mass and Unicycle examples
+  * Add Readme
+
+  [ Frank Dellaert ]
+  * Implement graph-based MPPI with a sampling planner and a Gaussian proposal
+  * Expose the sampling planner and illustrate MPPI in six notebooks
+  * Connect the planning guides and examples to the published MyST site
+  * Simplify planning wrappers and use dynamic vectors for the point mass
+  * Use SamplingPlanner as the single MPPI planning API
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Nov 2026 22:03:12 +0000
 
 gtsam (4.3.0-0ubuntu14~71.gbp66fb6f) resolute; urgency=medium
 
