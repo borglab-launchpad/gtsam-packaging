@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~81.gbp2fd560) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~82.gbp7141da) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @7141daac09b699fc6163980a3643eb5e2abba5b8 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @2fd560f2e8b70b9a14e54d76464fd74ca0c48dce **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Nov 2026 14:12:48 +0000
+  [ Huyvux12 ]
+  * Fix #2941: list Cephes in top-level LICENSE
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Nov 2026 18:35:38 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~80.gbp23ec0b) resolute; urgency=medium
 
