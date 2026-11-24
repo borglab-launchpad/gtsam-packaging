@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Borglab Builder <borglab.launchpad@gmail.com>
-Date: Nov, 23 2026 22:03:31 +0000
+Date: Nov, 24 2026 14:10:45 +0000
 Subject: [PATCH] <short summary of the patch>
 
 TODO: Put a short summary on the line above and replace this paragraph
@@ -74266,7 +74266,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}  // namespace gtsam::internal
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/ControlProposals.h
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,145 @@
 +// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
 +
 +/**
@@ -74292,9 +74292,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  Matrix controls;
 +};
 +
-+/// Search state of a proposal with fixed dispersion, one column per time step.
++/// Search state of a proposal with per-knot marginal standard deviations, one
++/// column per time step.
 +struct ControlDistribution {
 +  Matrix mean;
++  Matrix stddev{};
++  size_t iteration = 0;
++};
++
++/// Reserve the first candidate for the nominal plan in every search rule.
++struct GaussianProposalOptions {
++  bool includeNominal = false;
 +};
 +
 +/// Independent Gaussian perturbations around a nominal control sequence.
@@ -74304,15 +74312,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +  /// Seed the per-candidate random streams for this proposal.
 +  GaussianProposal(const Matrix& covariance, size_t samples,
-+                   std::uint64_t seed = 42)
-+      : sampler_(covariance, samples, seed) {}
++                   std::uint64_t seed = 42,
++                   GaussianProposalOptions options = {})
++      : sampler_(covariance, samples, seed),
++        initialStddev_(covariance.diagonal().array().sqrt()),
++        options_(options) {
++    if (!samples)
++      throw std::invalid_argument("Expected at least one candidate.");
++  }
 +
 +  /// Initialize the proposal around an M-by-H nominal control sequence.
 +  State initialize(Matrix nominal) const {
-+    if (!nominal.size())
++    if (!nominal.cols() || nominal.rows() != initialStddev_.size() ||
++        !nominal.allFinite())
 +      throw std::invalid_argument(
-+          "Expected a nonempty nominal control sequence.");
-+    return {std::move(nominal)};
++          "Expected finite nominal controls matching the covariance.");
++    Matrix spread = initialStddev_.replicate(1, nominal.cols());
++    return {std::move(nominal), std::move(spread)};
 +  }
 +
 +  /**
@@ -74322,13 +74338,32 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   */
 +  ControlBatch sample(const State& state, const Values& /*initial*/,
 +                      double /*dt*/, bool includeIncumbent = false) const {
-+    ControlBatch batch{sampler_.sampleControls(state.mean)};
 +    const Eigen::Index horizon = state.mean.cols();
-+    if (!horizon || batch.controls.rows() != state.mean.rows() ||
-+        !batch.controls.cols() || batch.controls.cols() % horizon)
++    if (!horizon || state.mean.rows() != initialStddev_.size())
 +      throw std::invalid_argument(
-+          "Expected a batch of complete control sequences.");
-+    if (includeIncumbent) batch.controls.leftCols(horizon) = state.mean;
++          "Nominal controls must match the covariance.");
++    ControlBatch batch;
++    if (!state.stddev.size()) {
++      batch.controls = sampler_.sampleControls(state.mean);
++    } else {
++      if (state.stddev.rows() != state.mean.rows() ||
++          state.stddev.cols() != horizon || !state.stddev.allFinite() ||
++          (state.stddev.array() < 0.).any())
++        throw std::invalid_argument("Invalid marginal standard deviations.");
++      if ((state.stddev.colwise() - initialStddev_).isZero(0.)) {
++        batch.controls = sampler_.sampleControls(state.mean);
++      } else {
++        batch.controls = sampler_.sampleNoise(horizon).array().colwise() /
++                         initialStddev_.array();
++        for (Eigen::Index k = 0; k < batch.controls.cols(); k += horizon) {
++          auto trajectory = batch.controls.middleCols(k, horizon);
++          trajectory.array() *= state.stddev.array();
++          trajectory += state.mean;
++        }
++      }
++    }
++    if (includeIncumbent || options_.includeNominal)
++      batch.controls.leftCols(horizon) = state.mean;
 +    return batch;
 +  }
 +
@@ -74347,10 +74382,33 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +                batch.controls.middleCols(i * mean.cols(), mean.cols());
 +    }
 +    state.mean.swap(mean);
++    ++state.iteration;
++  }
++
++  /// Refit marginal standard deviations while retaining cross-control
++  /// correlations.
++  void fit(State& state, const ControlBatch& batch, const Vector& weights,
++           double minStddev) const {
++    if (!(minStddev > 0.) || !std::isfinite(minStddev))
++      throw std::invalid_argument("Expected a positive finite spread floor.");
++    update(state, batch, weights);
++    Matrix variance = Matrix::Zero(state.mean.rows(), state.mean.cols());
++    for (Eigen::Index i = 0; i < weights.size(); ++i) {
++      if (weights[i] > 0.)
++        variance.array() +=
++            weights[i] *
++            (batch.controls.middleCols(i * variance.cols(), variance.cols()) -
++             state.mean)
++                .array()
++                .square();
++    }
++    state.stddev = variance.array().sqrt().max(minStddev);
 +  }
 +
 + private:
 +  GaussianNoiseSampler sampler_;
++  Vector initialStddev_;
++  GaussianProposalOptions options_;
 +};
 +
 +}  // namespace gtsam
@@ -74603,8 +74661,73 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +}  // namespace gtsam
 --- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/planning/SamplingAlgorithms.cpp
+@@ -0,0 +1,62 @@
++// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
++
++/**
++ * @file    SamplingAlgorithms.cpp
++ * @author  Frank Dellaert
++ * @author  Akash Ratheesh
++ */
++
++#include <gtsam/planning/SamplingAlgorithms.h>
++
++#include <algorithm>
++#include <cmath>
++#include <limits>
++#include <numeric>
++#include <stdexcept>
++#include <utility>
++#include <vector>
++
++namespace gtsam {
++namespace {
++
++void checkCosts(const Vector& costs) {
++  if (!costs.size())
++    throw std::invalid_argument("Expected at least one candidate.");
++  if (costs.hasNaN() || !std::isfinite(costs.minCoeff()))
++    throw std::domain_error(
++        "Expected finite costs or +infinity, with at least one finite cost.");
++}
++
++}  // namespace
++
++Vector PredictiveSampling::weights(const Vector& costs) const {
++  checkCosts(costs);
++  Eigen::Index best;
++  costs.minCoeff(&best);
++  return Vector::Unit(costs.size(), best);
++}
++
++CEM::CEM(size_t elites, double floor) : elites_(elites), minStddev_(floor) {
++  if (!elites || !(floor > 0) || !std::isfinite(floor))
++    throw std::invalid_argument(
++        "Expected a positive elite count and spread floor.");
++}
++
++Vector CEM::weights(const Vector& costs) const {
++  checkCosts(costs);
++  if (static_cast<size_t>(costs.size()) < elites_)
++    throw std::invalid_argument(
++        "CEM needs at least as many candidates as elites.");
++  std::vector<Eigen::Index> order(costs.size());
++  std::iota(order.begin(), order.end(), 0);
++  std::partial_sort(order.begin(), order.begin() + elites_, order.end(),
++                    [&](auto a, auto b) {
++                      return costs[a] == costs[b] ? a < b : costs[a] < costs[b];
++                    });
++  Vector weights = Vector::Zero(costs.size());
++  for (size_t i = 0; i < elites_ && std::isfinite(costs[order[i]]); ++i)
++    weights[order[i]] = 1;
++  return weights / weights.sum();
++}
++
++}  // namespace gtsam
+--- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/SamplingAlgorithms.h
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,104 @@
 +// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
 +
 +/**
@@ -74671,6 +74794,41 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 + private:
 +  double inverseTemperature_;
++};
++
++/// Select the lowest-cost sequence, reserving one slot for the incumbent.
++class GTSAM_EXPORT PredictiveSampling {
++ public:
++  static constexpr bool includeIncumbent = true;
++  PredictiveSampling() = default;
++  /// Return a one-hot vector selecting the first minimum-cost sequence.
++  Vector weights(const Vector& costs) const;
++  /// Update the proposal with the selected candidate.
++  template <class Proposal, class Search, class Batch>
++  void apply(const Proposal& proposal, Search& state, const Batch& batch,
++             const Vector& costs) const {
++    proposal.update(state, batch, weights(costs));
++  }
++};
++
++/// Cross-entropy search with an explicit proposal-specific fit to the elites.
++class GTSAM_EXPORT CEM {
++ public:
++  static constexpr bool includeIncumbent = false;
++  /// Set the elite count and positive floor on fitted standard deviations.
++  explicit CEM(size_t elites, double minStddev = 1e-3);
++  /// Return uniform weights on the lowest-cost finite elites.
++  Vector weights(const Vector& costs) const;
++  /// Fit the proposal family to the elite candidates.
++  template <class Proposal, class Search, class Batch>
++  void apply(const Proposal& proposal, Search& state, const Batch& batch,
++             const Vector& costs) const {
++    proposal.fit(state, batch, weights(costs), minStddev_);
++  }
++
++ private:
++  size_t elites_;
++  double minStddev_;
 +};
 +
 +}  // namespace gtsam
@@ -75201,7 +75359,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/doc/PlanningOverview.md
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,172 @@
 +# Sampling-based planning with factor-graph costs
 +
 +By Akash Ratheesh and Frank Dellaert
@@ -75219,7 +75377,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    P["Gaussian proposal"] -->|candidate controls| R["SamplingPlanner rollout"]
 +    D["Dynamics callable"] --> R
 +    R -->|trajectory Values| G["Factor graph"]
-+    G -->|candidate costs| A["MPPI"]
++    G -->|candidate costs| A["MPPI, CEM or predictive sampling"]
 +    A -->|normalized weights| P
 +```
 +
@@ -75234,6 +75392,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +| `SamplingPlanner<State, Control>(stateKeys, controlKeys, dt)` | Associates the trajectory with its ordered graph keys and sets the integration step for a vector field. |
 +| `GaussianProposal(covariance, numSamples, seed)` | Uses `GaussianNoiseSampler` to perturb the current control sequence and updates it with a weighted mean. |
 +| `MPPI(inverseTemperature)` | Converts the graph costs into normalized weights and passes them back to the proposal. |
++| `CEM(elites, minStddev)` | Fits the Gaussian to the lowest-cost candidates. |
++| `PredictiveSampling()` | Selects the lowest-cost candidate, including the incumbent. |
 +| `planner.rollout(initial, controls, dynamics)` | Predicts the trajectory for a single control sequence and returns its `Values`. |
 +| `planner.optimize(graph, initial, dynamics, proposal, rule, iterations)` | Initializes the search, repeats the sampling update, and returns the final nominal trajectory. |
 +| `planner.iterate(graph, initial, dynamics, proposal, rule, search)` | Advances a caller-owned search by one iteration. Initialize it with `proposal.initialize(planner.nominalControls(initial))`. |
@@ -75357,6 +75517,21 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +uses both forms of dynamics. [Gaussian proposals and the MPPI update](MPPI.ipynb)
 +follows a Gaussian proposal through one update and visualizes how each sampled
 +trajectory contributes to the next plan.
++
++## Changing the update rule
++
++The planner evaluates every sampled trajectory with the same factor graph.
++MPPI averages the sampled controls using exponential cost weights. Predictive
++sampling includes the incumbent and selects the lowest-cost trajectory, so its
++nominal cost can only decrease or stay constant for a deterministic rollout.
++CEM gives equal weight to the lowest-cost finite elites and refits both the
++mean and marginal standard deviation at each control and time step. The
++standard-deviation floor keeps the search exploring when the elites agree.
++
++Pass `CEM(elites, minStddev)` or `PredictiveSampling()` in the same argument
++position as `MPPI(inverseTemperature)`. The explicit Gaussian proposal owns
++the random streams. The search state holds the fitted controls and dispersion.
++See the [sampling search guide](SamplingSearch.ipynb) for a complete solve.
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/doc/SamplingPlanner.ipynb
 @@ -0,0 +1,244 @@
@@ -75605,8 +75780,281 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + "nbformat_minor": 5
 +}
 --- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam/planning/doc/SamplingSearch.ipynb
+@@ -0,0 +1,270 @@
++{
++ "cells": [
++  {
++   "cell_type": "markdown",
++   "id": "a0355df3",
++   "metadata": {},
++   "source": [
++    "# Sampling-based planning with a factor graph\n",
++    "\n",
++    "A control proposal determines which trajectories the planner explores. An update rule determines how the next proposal uses the graph errors of those trajectories. This guide makes the two choices independently on a one-dimensional double integrator. The same calls work on a manifold by supplying velocities in its local tangent coordinates."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "b82321d8",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "source": [
++    "GTSAM Copyright 2010–2026, Georgia Tech Research Corporation, Atlanta, Georgia. See LICENSE. Authors: Frank Dellaert and Akash Ratheesh."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "d3e2fd24",
++   "metadata": {},
++   "source": [
++    "[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/gtsam/planning/doc/SamplingSearch.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 1,
++   "id": "4f4e1f52",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "outputs": [],
++   "source": [
++    "import sys\n",
++    "if 'google.colab' in sys.modules:\n",
++    "    %pip install --quiet gtsam-develop plotly"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 2,
++   "id": "3d33a422",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "import numpy as np\n",
++    "import plotly.graph_objects as go\n",
++    "import gtsam\n",
++    "from gtsam.symbol_shorthand import U, X\n",
++    "from IPython.display import HTML, display"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "2cce9cdb",
++   "metadata": {},
++   "source": [
++    "## Specify dynamics and the objective\n",
++    "\n",
++    "The state is position and velocity, and the action is acceleration. A terminal factor asks the system to move one meter and come to rest. The other factors penalize acceleration. Every candidate has a complete set of graph values, so a cost factor may also connect nonconsecutive states."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 3,
++   "id": "115f64a3",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "horizon, dt = 12, 0.15\n",
++    "states = [X(k) for k in range(horizon + 1)]\n",
++    "actions = [U(k) for k in range(horizon)]\n",
++    "planner = gtsam.SamplingPlannerVectorVector(states, actions, dt)\n",
++    "initial, graph = gtsam.Values(), gtsam.NonlinearFactorGraph()\n",
++    "initial.insert(states[0], np.zeros(2))\n",
++    "effort = gtsam.noiseModel.Isotropic.Sigma(1, 6.0)\n",
++    "for key in actions:\n",
++    "    initial.insert(key, np.zeros(1))\n",
++    "    graph.add(gtsam.PriorFactorVector(key, np.zeros(1), effort))\n",
++    "goal = np.array([1.0, 0.0])\n",
++    "terminal = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.08, 0.15]))\n",
++    "graph.add(gtsam.PriorFactorVector(states[-1], goal, terminal))\n",
++    "\n",
++    "\n",
++    "def dynamics(state, acceleration):\n",
++    "    return np.array([state[1], acceleration[0]])"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "d28f5481",
++   "metadata": {},
++   "source": [
++    "## Inspect one optimization step at a time\n",
++    "\n",
++    "Here CEM refits the mean and marginal standard deviations of a Gaussian proposal from eight elites. Keeping the search state lets us inspect the cost of its nominal trajectory after every update."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 4,
++   "id": "b672b764",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "Initial cost 78.12; final cost 0.44\n"
++     ]
++    }
++   ],
++   "source": [
++    "proposal = gtsam.GaussianProposal(np.array([[2.0]]), 64, 17)\n",
++    "rule = gtsam.CEM(8)\n",
++    "search = proposal.initialize(planner.nominalControls(initial))\n",
++    "\n",
++    "\n",
++    "def evaluate(controls):\n",
++    "    return graph.error(planner.rollout(initial, controls, dynamics))\n",
++    "\n",
++    "\n",
++    "history = [evaluate(search.mean)]\n",
++    "for iteration in range(5):\n",
++    "    planner.iterate(graph, initial, dynamics, proposal, rule, search)\n",
++    "    history.append(evaluate(search.mean))\n",
++    "print(f\"Initial cost {history[0]:.2f}; final cost {history[-1]:.2f}\")\n",
++    "assert search.iteration == 5 and history[-1] < history[0]"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "a7e83e69",
++   "metadata": {},
++   "source": [
++    "## Change the update rule\n",
++    "\n",
++    "MPPI weights each sequence by an exponential function of its cost. Predictive sampling takes the best sampled sequence and includes the incumbent in the competition. Both use the same Gaussian proposal as CEM. The result of `optimize` is a `Values` containing the states and controls of the final plan."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 5,
++   "id": "8f5ed41e",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "MPPI final [position, velocity] [1.012 0.02 ]\n"
++     ]
++    },
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "Predictive sampling final [position, velocity] [1.02  0.034]\n"
++     ]
++    }
++   ],
++   "source": [
++    "for name, algorithm in [\n",
++    "    (\"MPPI\", gtsam.MPPI()),\n",
++    "    (\"Predictive sampling\", gtsam.PredictiveSampling()),\n",
++    "]:\n",
++    "    sampler = gtsam.GaussianProposal(np.array([[2.0]]), 64, 17)\n",
++    "    result = planner.optimize(graph, initial, dynamics, sampler, algorithm, 5)\n",
++    "    print(name, \"final [position, velocity]\", result.atVector(states[-1]).round(3))\n",
++    "    assert graph.error(result) < history[0]"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "fe9f9420",
++   "metadata": {},
++   "source": [
++    "The plot follows the cost of the CEM mean after each update. An individual iteration can increase this cost because CEM fits a distribution to several elites. Interactive charts require an internet connection."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 6,
++   "id": "841b4425",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stderr",
++     "output_type": "stream",
++     "text": [
++      "/Users/dellaert/miniforge3/envs/py312/lib/python3.12/site-packages/IPython/core/display.py:431: UserWarning:\n",
++      "\n",
++      "Consider using IPython.display.IFrame instead\n",
++      "\n"
++     ]
++    },
++    {
++     "data": {
++      "text/html": [
++       "<iframe title=\"Sampling-based planning with a factor graph\" style=\"width:100%;border:0\" height=\"480\" srcdoc=\"&lt;html&gt;\n",
++       "&lt;head&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;/head&gt;\n",
++       "&lt;body&gt;\n",
++       "    &lt;div&gt;                        &lt;script type=&quot;text/javascript&quot;&gt;window.PlotlyConfig = {MathJaxConfig: &#x27;local&#x27;};&lt;/script&gt;\n",
++       "        &lt;script charset=&quot;utf-8&quot; src=&quot;https://cdn.plot.ly/plotly-3.1.1.min.js&quot; integrity=&quot;sha256-HUEFyfiTnZJxCxur99FjbKYTvKSzwDaD3/x5TqHpFu4=&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;                &lt;div id=&quot;cd77dfa8-6cb6-42e3-8d23-945c42ed650a&quot; class=&quot;plotly-graph-div&quot; style=&quot;height:100%; width:100%;&quot;&gt;&lt;/div&gt;            &lt;script type=&quot;text/javascript&quot;&gt;                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(&quot;cd77dfa8-6cb6-42e3-8d23-945c42ed650a&quot;)) {                    Plotly.newPlot(                        &quot;cd77dfa8-6cb6-42e3-8d23-945c42ed650a&quot;,                        [{&quot;mode&quot;:&quot;lines+markers&quot;,&quot;x&quot;:[0,1,2,3,4,5],&quot;y&quot;:[78.125,10.74633779099468,1.248888860809265,0.9078613021110273,0.46231628121085516,0.4388580348765053],&quot;type&quot;:&quot;scatter&quot;}],                        {&quot;template&quot;:{&quot;data&quot;:{&quot;histogram2dcontour&quot;:[{&quot;type&quot;:&quot;histogram2dcontour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;choropleth&quot;:[{&quot;type&quot;:&quot;choropleth&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;histogram2d&quot;:[{&quot;type&quot;:&quot;histogram2d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;heatmap&quot;:[{&quot;type&quot;:&quot;heatmap&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;contourcarpet&quot;:[{&quot;type&quot;:&quot;contourcarpet&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;contour&quot;:[{&quot;type&quot;:&quot;contour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;surface&quot;:[{&quot;type&quot;:&quot;surface&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;mesh3d&quot;:[{&quot;type&quot;:&quot;mesh3d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;scatter&quot;:[{&quot;fillpattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2},&quot;type&quot;:&quot;scatter&quot;}],&quot;parcoords&quot;:[{&quot;type&quot;:&quot;parcoords&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolargl&quot;:[{&quot;type&quot;:&quot;scatterpolargl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;bar&quot;:[{&quot;error_x&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;error_y&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;bar&quot;}],&quot;scattergeo&quot;:[{&quot;type&quot;:&quot;scattergeo&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolar&quot;:[{&quot;type&quot;:&quot;scatterpolar&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;histogram&quot;:[{&quot;marker&quot;:{&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;histogram&quot;}],&quot;scattergl&quot;:[{&quot;type&quot;:&quot;scattergl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatter3d&quot;:[{&quot;type&quot;:&quot;scatter3d&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermap&quot;:[{&quot;type&quot;:&quot;scattermap&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermapbox&quot;:[{&quot;type&quot;:&quot;scattermapbox&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterternary&quot;:[{&quot;type&quot;:&quot;scatterternary&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattercarpet&quot;:[{&quot;type&quot;:&quot;scattercarpet&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;carpet&quot;:[{&quot;aaxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;baxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;type&quot;:&quot;carpet&quot;}],&quot;table&quot;:[{&quot;cells&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#EBF0F8&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;header&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#C8D4E3&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;type&quot;:&quot;table&quot;}],&quot;barpolar&quot;:[{&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;barpolar&quot;}],&quot;pie&quot;:[{&quot;automargin&quot;:true,&quot;type&quot;:&quot;pie&quot;}]},&quot;layout&quot;:{&quot;autotypenumbers&quot;:&quot;strict&quot;,&quot;colorway&quot;:[&quot;#636efa&quot;,&quot;#EF553B&quot;,&quot;#00cc96&quot;,&quot;#ab63fa&quot;,&quot;#FFA15A&quot;,&quot;#19d3f3&quot;,&quot;#FF6692&quot;,&quot;#B6E880&quot;,&quot;#FF97FF&quot;,&quot;#FECB52&quot;],&quot;font&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;hovermode&quot;:&quot;closest&quot;,&quot;hoverlabel&quot;:{&quot;align&quot;:&quot;left&quot;},&quot;paper_bgcolor&quot;:&quot;white&quot;,&quot;plot_bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;polar&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;angularaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;radialaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;ternary&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;aaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;baxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;caxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;coloraxis&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;colorscale&quot;:{&quot;sequential&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;sequentialminus&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;diverging&quot;:[[0,&quot;#8e0152&quot;],[0.1,&quot;#c51b7d&quot;],[0.2,&quot;#de77ae&quot;],[0.3,&quot;#f1b6da&quot;],[0.4,&quot;#fde0ef&quot;],[0.5,&quot;#f7f7f7&quot;],[0.6,&quot;#e6f5d0&quot;],[0.7,&quot;#b8e186&quot;],[0.8,&quot;#7fbc41&quot;],[0.9,&quot;#4d9221&quot;],[1,&quot;#276419&quot;]]},&quot;xaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;yaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;scene&quot;:{&quot;xaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;yaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;zaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2}},&quot;shapedefaults&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;}},&quot;annotationdefaults&quot;:{&quot;arrowcolor&quot;:&quot;#2a3f5f&quot;,&quot;arrowhead&quot;:0,&quot;arrowwidth&quot;:1},&quot;geo&quot;:{&quot;bgcolor&quot;:&quot;white&quot;,&quot;landcolor&quot;:&quot;#E5ECF6&quot;,&quot;subunitcolor&quot;:&quot;white&quot;,&quot;showland&quot;:true,&quot;showlakes&quot;:true,&quot;lakecolor&quot;:&quot;white&quot;},&quot;title&quot;:{&quot;x&quot;:0.05},&quot;mapbox&quot;:{&quot;style&quot;:&quot;light&quot;}}},&quot;xaxis&quot;:{&quot;title&quot;:{&quot;text&quot;:&quot;CEM iteration&quot;}},&quot;yaxis&quot;:{&quot;title&quot;:{&quot;text&quot;:&quot;Nominal trajectory graph error&quot;}}},                        {&quot;displaylogo&quot;: false, &quot;responsive&quot;: true}                    )                };            &lt;/script&gt;        &lt;/div&gt;\n",
++       "&lt;/body&gt;\n",
++       "&lt;/html&gt;\"></iframe>"
++      ],
++      "text/plain": [
++       "<IPython.core.display.HTML object>"
++      ]
++     },
++     "metadata": {},
++     "output_type": "display_data"
++    }
++   ],
++   "source": [
++    "figure = go.Figure(\n",
++    "    go.Scatter(x=list(range(len(history))), y=history, mode=\"lines+markers\")\n",
++    ")\n",
++    "figure.update_layout(\n",
++    "    xaxis_title=\"CEM iteration\", yaxis_title=\"Nominal trajectory graph error\"\n",
++    ")\n",
++    "from html import escape\n",
++    "\n",
++    "document = figure.to_html(include_plotlyjs=\"cdn\", config={\"displaylogo\": False, \"responsive\": True})\n",
++    "display(HTML(f'<iframe title=\"Sampling-based planning with a factor graph\" style=\"width:100%;border:0\" '\n",
++    "             f'height=\"{figure.layout.height or 480}\" srcdoc=\"{escape(document, quote=True)}\"></iframe>'))"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "2f8a41a8",
++   "metadata": {},
++   "source": [
++    "For the C++ signatures, proposal families and weighting conventions, see the [architecture overview](PlanningOverview.md)."
++   ]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {
++   "display_name": "Python 3",
++   "language": "python",
++   "name": "python3"
++  },
++  "language_info": {
++   "codemirror_mode": {
++    "name": "ipython",
++    "version": 3
++   },
++   "file_extension": ".py",
++   "mimetype": "text/x-python",
++   "name": "python",
++   "nbconvert_exporter": "python",
++   "pygments_lexer": "ipython3",
++   "version": "3.12.6"
++  }
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
+--- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/planning.i
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,149 @@
 +// Sampling-based planning. Authors: Frank Dellaert and Akash Ratheesh.
 +namespace gtsam {
 +
@@ -75629,14 +76077,23 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +
 +class ControlDistribution {
 +  gtsam::Matrix mean;
++  gtsam::Matrix stddev;
++  size_t iteration;
 +};
 +
 +class ControlBatch {
 +  gtsam::Matrix controls;
 +};
 +
++class GaussianProposalOptions {
++  GaussianProposalOptions();
++  bool includeNominal;
++};
++
 +class GaussianProposal {
 +  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed = 42);
++  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed,
++                   gtsam::GaussianProposalOptions options);
 +  @pybind_lambda
 +  gtsam::ControlDistribution initialize(const gtsam::Matrix& nominal) const;
 +  gtsam::ControlBatch sample(const gtsam::ControlDistribution& state, const gtsam::Values& initial,
@@ -75653,6 +76110,16 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  @pybind_lambda
 +  void apply(const gtsam::GaussianProposal& proposal, gtsam::ControlDistribution& search,
 +             const gtsam::ControlBatch& batch, const gtsam::Vector& costs) const;
++};
++
++class CEM {
++  CEM(size_t elites, double minStddev = 1e-3);
++  gtsam::Vector weights(const gtsam::Vector& costs) const;
++};
++
++class PredictiveSampling {
++  PredictiveSampling();
++  gtsam::Vector weights(const gtsam::Vector& costs) const;
 +};
 +
 +#include <gtsam/planning/wrap/PlannerBindings.h>
@@ -75681,6 +76148,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
 +                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
 +                         const gtsam::MPPI& algorithm, size_t iterations) const;
++  @pybind_lambda
++  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++               const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
++               const gtsam::CEM& algorithm, gtsam::ControlDistribution& search) const;
++  @pybind_lambda
++  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
++                         const gtsam::CEM& algorithm, size_t iterations) const;
++  @pybind_lambda
++  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++               const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
++               const gtsam::PredictiveSampling& algorithm, gtsam::ControlDistribution& search) const;
++  @pybind_lambda
++  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
++                         const gtsam::PredictiveSampling& algorithm, size_t iterations) const;
 +};
 +
 +template<State={gtsam::Pose2}, Control={gtsam::Vector}>
@@ -75702,6 +76185,22 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
 +                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
 +                         const gtsam::MPPI& algorithm, size_t iterations) const;
++  @pybind_lambda
++  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++               const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
++               const gtsam::CEM& algorithm, gtsam::ControlDistribution& search) const;
++  @pybind_lambda
++  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
++                         const gtsam::CEM& algorithm, size_t iterations) const;
++  @pybind_lambda
++  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++               const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
++               const gtsam::PredictiveSampling& algorithm, gtsam::ControlDistribution& search) const;
++  @pybind_lambda
++  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
++                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
++                         const gtsam::PredictiveSampling& algorithm, size_t iterations) const;
 +};
 +
 +}  // namespace gtsam
@@ -75938,7 +76437,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam/planning/tests/testSamplingPlanner.cpp
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,260 @@
 +// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
 +
 +/**
@@ -76175,6 +76674,24 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  const ControlBatch batch{Matrix{{nan, nan, 3., 4.}}};
 +  MPPI().apply(proposal, search, batch, Vector2{inf, 0.});
 +  EXPECT(assert_equal(Matrix{{3., 4.}}, search.mean));
++}
++
++TEST(SamplingPlanner, EliteFitAndIncumbent) {
++  const GaussianProposal proposal(Matrix1::Identity(), 3, 17);
++  auto search = proposal.initialize(Matrix::Zero(1, 2));
++  const ControlBatch batch{Matrix{{0., 1., 2., 1., 8., 9.}}};
++  const Vector3 costs{2., 2., 8.};
++  CEM(2, .25).apply(proposal, search, batch, costs);
++  EXPECT(assert_equal(Matrix{{1., 1.}}, search.mean));
++  EXPECT(assert_equal(Matrix{{1., .25}}, search.stddev));
++  auto next =
++      proposal.sample(search, {}, 1., PredictiveSampling::includeIncumbent);
++  EXPECT(assert_equal(search.mean, Matrix(next.controls.leftCols(2))));
++  EXPECT(
++      assert_equal(Vector3{1., 0., 0.}, PredictiveSampling().weights(costs)));
++  CHECK_EXCEPTION(GaussianProposal(Matrix1::Identity(), 0),
++                  std::invalid_argument);
++  CHECK_EXCEPTION(CEM(4).weights(costs), std::invalid_argument);
 +}
 +
 +int main() {
@@ -78618,7 +79135,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +}
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/examples/mppi/README.md
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,72 @@
 +# MPPI Examples
 +
 +These examples plan the motion of a point mass and a unicycle using model
@@ -78686,6 +79203,11 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +- [Unicycle receding-horizon control](../../../python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb)
 +
 +The interactive Plotly figures require an internet connection.
++
++The [unicycle search comparison](../../../python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb)
++runs three update rules with the same model and cost graph. The
++[LQR comparison](../../../python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb)
++compares their graph costs against the exact linear-quadratic solution at equal rollout budgets.
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/examples/mppi/UnicycleMPPIMPCExample.cpp
 @@ -0,0 +1,170 @@
@@ -79009,6 +79531,77 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +              (last.translation() - goal.translation()).norm(),
 +              std::abs(last.theta() - goal.theta()));
 +  return 0;
++}
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/gtsam_unstable/examples/mppi/UnicycleSamplingExample.cpp
+@@ -0,0 +1,68 @@
++// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
++/**
++ * @file    UnicycleSamplingExample.cpp
++ * @brief   Compare three sampling algorithms on one unicycle planning problem.
++ * @author  Frank Dellaert
++ * @author  Akash Ratheesh
++ */
++
++#include <gtsam/geometry/Pose2.h>
++#include <gtsam/inference/Symbol.h>
++#include <gtsam/planning/SamplingPlanner.h>
++
++#include <iostream>
++#include <string>
++
++using namespace gtsam;
++using symbol_shorthand::U;
++using symbol_shorthand::X;
++
++int main(int argc, char** argv) {
++  const std::string choice = argc > 1 ? argv[1] : "all";
++  if (argc > 2 || (choice != "all" && choice != "cem" && choice != "mppi" &&
++                   choice != "predictive")) {
++    std::cerr << "Usage: UnicycleSamplingExample [all|cem|mppi|predictive]\n";
++    return 1;
++  }
++  const size_t horizon = 20, samples = 256, iterations = 12;
++  const double dt = 0.1;
++  const Pose2 goal(1.5, 0.75, 0.8);
++  const Vector2 zero = Vector2::Zero();
++  const auto effort = noiseModel::Isotropic::Sigma(2, 4.0);
++  const auto terminal = noiseModel::Diagonal::Sigmas(Vector3{0.1, 0.1, 0.2});
++
++  NonlinearFactorGraph cost;
++  Values initial;
++  initial.insert(X(0), Pose2());
++  KeyVector states{X(0)}, controls;
++  for (size_t k = 0; k < horizon; ++k) {
++    states.push_back(X(k + 1));
++    controls.push_back(U(k));
++    initial.insert(U(k), zero);
++    cost.addPrior(U(k), zero, effort);
++  }
++  cost.addPrior(X(horizon), goal, terminal);
++
++  // Body-frame tangent velocity at the current pose.
++  const auto field = [](const Pose2&, const Vector2& u) {
++    return Vector3{u[0], 0.0, u[1]};
++  };
++  const SamplingPlanner<Pose2, Vector2> planner(states, controls, dt);
++  std::cout << "Initial cost: "
++            << cost.error(
++                   planner.rollout(initial, Matrix::Zero(2, horizon), field))
++            << '\n';
++  const auto run = [&](const char* name, const auto& algorithm) {
++    GaussianProposal proposal(Matrix2::Identity(), samples);
++    const Values plan =
++        planner.optimize(cost, initial, field, proposal, algorithm, iterations);
++    const Pose2 pose = plan.at<Pose2>(states.back());
++    std::cout << name << " cost: " << cost.error(plan)
++              << ", final pose: " << pose << '\n';
++  };
++  // All three start with independent unit-variance noise and seed 42.
++  if (choice == "cem" || choice == "all") run("CEM", CEM(32));
++  if (choice == "mppi" || choice == "all") run("MPPI", MPPI());
++  if (choice == "predictive" || choice == "all")
++    run("Predictive sampling", PredictiveSampling());
 +}
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/gtsam_unstable/geometry/AugmentedPoint.cpp
@@ -83432,7 +84025,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +end
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/matlab/gtsam_unstable_tests/testPlanning.m
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,62 @@
 +% Exercise the planning models and vector and pose trajectories.
 +% Authors: Akash Ratheesh and Frank Dellaert. See LICENSE for details.
 +
@@ -83482,15 +84075,17 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +    else
 +        assert(initial.atPose2(x1).equals(predicted, 1e-12));
 +    end
-+    proposal = gtsam.GaussianProposal(eye(2), 16, uint64(24));
-+    result = planner.optimize(graph, initial, dynamics, proposal, rule, 1);
-+    predicted = model.predict(start, result.atVector(u0));
-+    if isPointMass
-+        assert(norm(result.atVector(x1) - predicted) < 1e-12);
-+    else
-+        assert(result.atPose2(x1).equals(predicted, 1e-12));
++    for searchRule = {rule, gtsam.CEM(4), gtsam.PredictiveSampling()}
++        proposal = gtsam.GaussianProposal(eye(2), 16, uint64(24));
++        result = planner.optimize(graph, initial, dynamics, proposal, searchRule{1}, 1);
++        predicted = model.predict(start, result.atVector(u0));
++        if isPointMass
++            assert(norm(result.atVector(x1) - predicted) < 1e-12);
++        else
++            assert(result.atPose2(x1).equals(predicted, 1e-12));
++        end
++        assert(graph.error(result) < graph.error(initial));
 +    end
-+    assert(graph.error(result) < graph.error(initial));
 +end
 +end
 --- gtsam-no-tbb-4.3.0.orig/myst.yml
@@ -83504,7 +84099,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
    toc:
      - file: README.md
      - file: INSTALL.md
-@@ -34,25 +36,40 @@ project:
+@@ -34,25 +36,41 @@ project:
          - pattern: ./gtsam/nonlinear/doc/*
        - file: ./gtsam/constrained/constrained.md
          children:
@@ -83523,6 +84118,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        title: Planning
 +        children:
 +        - file: ./gtsam/planning/doc/SamplingPlanner.ipynb
++        - file: ./gtsam/planning/doc/SamplingSearch.ipynb
 +        - file: ./gtsam/planning/doc/MPPI.ipynb
 +        - file: ./gtsam_unstable/planning/README.md
 +          title: Dynamics factors (unstable)
@@ -83548,7 +84144,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
      - file: ./doc/examples.md
        children:
        - title: Geometry
-@@ -64,6 +81,8 @@ project:
+@@ -64,6 +82,8 @@ project:
        - title: Linear
          children:
          - pattern: ./python/gtsam/examples/linear/*.ipynb
@@ -83557,7 +84153,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
        - title: Discrete
          children:
          - pattern: ./python/gtsam/examples/discrete/*.ipynb
-@@ -82,12 +101,21 @@ project:
+@@ -82,12 +102,23 @@ project:
        - title: Navigation
          children:
          - pattern: ./python/gtsam/examples/navigation/*.ipynb
@@ -83567,6 +84163,8 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        - file: ./python/gtsam_unstable/examples/planning/PointMassMPPITrajectoryOptimizationExample.ipynb
 +        - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPITrajectoryOptimizationExample.ipynb
 +        - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb
++        - file: ./python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb
++        - file: ./python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb
        - title: Structure from Motion
          children:
          - pattern: ./python/gtsam/examples/sfm/*.ipynb
@@ -131513,7 +132111,7 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + */
 --- /dev/null
 +++ gtsam-no-tbb-4.3.0/python/gtsam/preamble/planning.h
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,69 @@
 +// Copyright (c) Georgia Tech Research Corporation. See LICENSE for details.
 +// Authors: Akash Ratheesh and Frank Dellaert.
 +#pragma once
@@ -131535,8 +132133,29 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +  }
 +};
 +
-+// Release the caller's GIL while planning. PythonStep and pybind11's
-+// std::function caster acquire it when invoking a Python callback.
++/// Bind a search rule and a proposal to a Python dynamics callable.
++template <class Dynamics, class Proposal, class Rule, class Planner>
++void bindSearch(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
++  using Release = py::call_guard<py::gil_scoped_release>;
++  cls.def(
++         "iterate",
++         [](const Planner& planner, const NonlinearFactorGraph& cost,
++            const Values& initial, const Dynamics& dynamics,
++            const Proposal& proposal, const Rule& rule,
++            typename Proposal::State& search) {
++           planner.iterate(cost, initial, dynamics, proposal, rule, search);
++         },
++         py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
++         py::arg("proposal"), py::arg("algorithm"), py::arg("search"),
++         Release())
++      .def("optimize", &Planner::template optimize<Dynamics, Proposal, Rule>,
++           py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
++           py::arg("proposal"), py::arg("algorithm"), py::arg("iterations"),
++           Release());
++}
++
++/// Release the GIL around rollouts. Python callbacks reacquire it at
++/// invocation.
 +template <class Dynamics, class Planner>
 +void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
 +  using Release = py::call_guard<py::gil_scoped_release>;
@@ -131544,24 +132163,10 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +          py::arg("controls"), py::arg("dynamics"), Release())
 +      .def("rolloutAndScore", &Planner::template rolloutAndScore<Dynamics>,
 +           py::arg("cost"), py::arg("initial"), py::arg("controls"),
-+           py::arg("dynamics"), Release())
-+      .def(
-+          "iterate",
-+          [](const Planner& planner, const NonlinearFactorGraph& cost,
-+             const Values& initial, const Dynamics& dynamics,
-+             const GaussianProposal& proposal, const MPPI& algorithm,
-+             ControlDistribution& search) {
-+            planner.iterate(cost, initial, dynamics, proposal, algorithm,
-+                            search);
-+          },
-+          py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
-+          py::arg("proposal"), py::arg("algorithm"), py::arg("search"),
-+          Release())
-+      .def("optimize",
-+           &Planner::template optimize<Dynamics, GaussianProposal, MPPI>,
-+           py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
-+           py::arg("proposal"), py::arg("algorithm"), py::arg("iterations"),
-+           Release());
++           py::arg("dynamics"), Release());
++  bindSearch<Dynamics, GaussianProposal, MPPI>(cls);
++  bindSearch<Dynamics, GaussianProposal, CEM>(cls);
++  bindSearch<Dynamics, GaussianProposal, PredictiveSampling>(cls);
 +}
 +
 +template <class State, class Control>
@@ -132765,6 +133370,42 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +        saved = first.copy()
 +        sampler.sampleControls(np.ones((2, 3)))
 +        np.testing.assert_array_equal(first, saved)
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam/tests/test_SamplingPlanner.py
+@@ -0,0 +1,33 @@
++"""Compare search rules on the same Python discrete dynamics and cost graph.
++
++Authors: Frank Dellaert and Akash Ratheesh. See LICENSE for details.
++"""
++
++import unittest
++
++import numpy as np
++
++import gtsam
++from gtsam.symbol_shorthand import U, X
++
++
++class TestSamplingPlanner(unittest.TestCase):
++    def test_discrete_search_rules(self):
++        """Each rule scores the same explicit discrete transition."""
++        planner = gtsam.SamplingPlannerVectorVector([X(0), X(1)], [U(0)], 0.1)
++        step = gtsam.discreteTransition(lambda x, u: x + u)
++        seed = gtsam.Values()
++        seed.insert(X(0), np.array([1.]))
++        initial = planner.rollout(seed, np.zeros((1, 1)), step)
++        graph = gtsam.NonlinearFactorGraph()
++        graph.addPriorVector(X(1), np.array([2.]), gtsam.noiseModel.Unit.Create(1))
++        for rule in (gtsam.MPPI(), gtsam.CEM(4), gtsam.PredictiveSampling()):
++            with self.subTest(rule=type(rule).__name__):
++                proposal = gtsam.GaussianProposal(np.eye(1), 32, 17)
++                plan = planner.optimize(graph, initial, step, proposal, rule, 2)
++                np.testing.assert_allclose(plan.atVector(X(1)), 1. + plan.atVector(U(0)))
++                self.assertLess(graph.error(plan), graph.error(initial))
 +
 +
 +if __name__ == "__main__":
@@ -134877,6 +135518,348 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 + "nbformat_minor": 5
 +}
 --- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb
+@@ -0,0 +1,339 @@
++{
++ "cells": [
++  {
++   "cell_type": "markdown",
++   "id": "f4e9392e",
++   "metadata": {},
++   "source": [
++    "# Sampling planners on a finite-horizon LQR problem\n",
++    "\n",
++    "How much does sampling cost in control accuracy when the optimal sequence is known? This example compares MPPI, the cross-entropy method (CEM), and predictive sampling on the double integrator from GTSAM’s LQR example. Gaussian elimination and a Riccati recursion independently establish the reference. Each sampling method then receives the same rollout budget and random seeds. [Original LQR example](../../../gtsam/examples/linear/LQRExample.ipynb) · [Sampling planner guide](../../../../gtsam/planning/doc/SamplingPlanner.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "f4f6e59d",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "source": [
++    "GTSAM Copyright 2010–2026, Georgia Tech Research Corporation, Atlanta, Georgia 30332-0415. All rights reserved.  \n",
++    "Authors: Frank Dellaert and Akash Ratheesh. See LICENSE for details."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "40afc4a1",
++   "metadata": {},
++   "source": [
++    "[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 1,
++   "id": "3e944487",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "outputs": [],
++   "source": [
++    "import sys\n",
++    "if 'google.colab' in sys.modules:\n",
++    "    %pip install --quiet gtsam-develop plotly"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 2,
++   "id": "6c9312a3",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "import gtsam\n",
++    "import numpy as np\n",
++    "import plotly.graph_objects as go\n",
++    "from gtsam.symbol_shorthand import U, X\n",
++    "from IPython.display import HTML, display\n",
++    "from plotly.subplots import make_subplots"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "cb6f2b0e",
++   "metadata": {},
++   "source": [
++    "## The graph and its exact solution\n",
++    "\n",
++    "The reference graph has four states $x_0,\\ldots,x_3$ and three scalar controls. Its code uses $x_{k+1}=Ax_k+Bu_k$ with $A_{12}=0.1$ and $B=[0.005,\\,1.0]^\\mathsf{T}$. It attaches one state penalty at each of the four times and a second terminal penalty at $x_3$. Thus $Q_f=2Q$ in the equivalent Riccati recursion. On trajectories that satisfy the fixed initial state and dynamics, the GTSAM graph error is\n",
++    "\n",
++    "$$E=\\tfrac12\\sum_{k=0}^{2}(x_k^\\mathsf{T}Qx_k+u_k^\\mathsf{T}Ru_k)+\\tfrac12x_3^\\mathsf{T}Q_fx_3.$$\n",
++    "\n",
++    "The two graphs below share the same quadratic costs. The Gaussian graph also carries the tight initial prior and the hard dynamics factors. The sampling planner enforces both by starting every rollout at $x_0$ and simulating the dynamics."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 3,
++   "id": "85f12a37",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "horizon = 3\n",
++    "A = np.array([[1.0, 0.1], [0.0, 1.0]])\n",
++    "B = np.array([[0.005], [1.0]])\n",
++    "x0 = np.array([0.0, 1.0])\n",
++    "Q, R = np.eye(2), np.eye(1)\n",
++    "states = [X(k) for k in range(horizon + 1)]\n",
++    "controls = [U(k) for k in range(horizon)]\n",
++    "state_noise = gtsam.noiseModel.Gaussian.Information(Q)\n",
++    "control_noise = gtsam.noiseModel.Gaussian.Information(R)\n",
++    "hard_dynamics = gtsam.noiseModel.Diagonal.Sigmas(np.zeros(2))\n",
++    "initial_noise = gtsam.noiseModel.Isotropic.Sigma(2, 1e-20)\n",
++    "\n",
++    "linear = gtsam.GaussianFactorGraph()\n",
++    "linear.add(gtsam.JacobianFactor(states[0], np.eye(2), x0, initial_noise))\n",
++    "cost = gtsam.NonlinearFactorGraph()\n",
++    "for key in [*states, states[-1]]:\n",
++    "    linear.add(gtsam.JacobianFactor(key, np.eye(2), np.zeros(2), state_noise))\n",
++    "    cost.add(gtsam.PriorFactorVector(key, np.zeros(2), state_noise))\n",
++    "for k, key in enumerate(controls):\n",
++    "    linear.add(gtsam.JacobianFactor(key, np.eye(1), np.zeros(1), control_noise))\n",
++    "    cost.add(gtsam.PriorFactorVector(key, np.zeros(1), control_noise))\n",
++    "    linear.add(gtsam.JacobianFactor(states[k + 1], np.eye(2), states[k], -A,\n",
++    "                                    key, -B, np.zeros(2), hard_dynamics))"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "d5bbb87d",
++   "metadata": {},
++   "source": [
++    "Reverse-time elimination leaves the tightly anchored initial state until last. This order is numerically stable here with the original initial-prior standard deviation of $10^{-20}$. The Riccati recursion below checks every optimal state and control, as well as the factor of one-half in the reported graph error."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 4,
++   "id": "868717c8",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "Optimal controls: [-0.63946054 -0.236538   -0.0831465 ]\n",
++      "Minimum graph error: 0.8442304564\n"
++     ]
++    }
++   ],
++   "source": [
++    "ordering = gtsam.Ordering()\n",
++    "for k in reversed(range(horizon + 1)):\n",
++    "    ordering.push_back(states[k])\n",
++    "    if k:\n",
++    "        ordering.push_back(controls[k - 1])\n",
++    "solution = linear.eliminateSequential(ordering).optimize()\n",
++    "reference_controls = np.array([solution.at(key)[0] for key in controls])\n",
++    "reference_error = linear.error(solution)\n",
++    "\n",
++    "\n",
++    "P = 2 * Q\n",
++    "feedback = []\n",
++    "for k in reversed(range(horizon)):\n",
++    "    gain = np.linalg.solve(R + B.T @ P @ B, B.T @ P @ A)\n",
++    "    feedback.insert(0, gain)\n",
++    "    P = Q + A.T @ P @ (A - B @ gain)\n",
++    "x = x0.copy()\n",
++    "for k, gain in enumerate(feedback):\n",
++    "    np.testing.assert_allclose(x, solution.at(states[k]), atol=1e-10)\n",
++    "    u = -gain @ x\n",
++    "    np.testing.assert_allclose(u, solution.at(controls[k]), atol=1e-10)\n",
++    "    x = A @ x + B @ u\n",
++    "np.testing.assert_allclose(x, solution.at(states[-1]), atol=1e-10)\n",
++    "np.testing.assert_allclose(0.5 * x0 @ P @ x0, reference_error, atol=1e-10)\n",
++    "print(f\"Optimal controls: {reference_controls}\")\n",
++    "print(f\"Minimum graph error: {reference_error:.10f}\")"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "6d1880a6",
++   "metadata": {},
++   "source": [
++    "## Matched sampling budget\n",
++    "\n",
++    "GTSAM’s vector planner takes a tangent increment and multiplies it by the integration step. Setting the step to one and supplying $(A-I)x+Bu$ reproduces the reference’s discrete transition exactly.\n",
++    "\n",
++    "Each solver starts from zero controls and evaluates 64 candidates for six iterations, including the incumbent in each batch. This gives 384 search rollouts per method per seed. All three also roll out their returned plan once for measurement. A fresh unit-variance, temporally independent Gaussian proposal starts each trial with the same seed. MPPI averages candidates with weights proportional to $\\exp(-4E)$. CEM refits the mean and standard deviation to the best eight, with a standard deviation floor of 0.02. Predictive sampling keeps the best candidate. These settings stay fixed across the 20 seeds."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 5,
++   "id": "47accc39",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "drift = A - np.eye(2)\n",
++    "\n",
++    "def dynamics(x, u):\n",
++    "    return drift @ x + B @ u\n",
++    "\n",
++    "planner = gtsam.SamplingPlannerVectorVector(states, controls, 1.0)\n",
++    "initial = gtsam.Values()\n",
++    "initial.insert(states[0], x0)\n",
++    "for key in controls:\n",
++    "    initial.insert(key, np.zeros(1))"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "0583fb63",
++   "metadata": {},
++   "source": [
++    "The first metric is $|u_0-u_0^\\star|$, the error in the action an MPC controller would execute now. The second is $E-E^\\star$, the extra cost over the entire plan. Each plan is also rescored on the original Gaussian graph to verify both graph representations give the same error."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 6,
++   "id": "d4636c3e",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "iterations, batch_size = 6, 64\n",
++    "seeds = range(20)\n",
++    "algorithms = {'MPPI': gtsam.MPPI(4.0), 'CEM': gtsam.CEM(8, 0.02),\n",
++    "              'Predictive sampling': gtsam.PredictiveSampling()}\n",
++    "options = gtsam.GaussianProposalOptions()\n",
++    "options.includeNominal = True\n",
++    "metrics = {}\n",
++    "for name, algorithm in algorithms.items():\n",
++    "    measurements = []\n",
++    "    for seed in seeds:\n",
++    "        proposal = gtsam.GaussianProposal(np.eye(1), batch_size, seed, options)\n",
++    "        plan = planner.optimize(cost, initial, dynamics, proposal, algorithm, iterations)\n",
++    "        candidate = gtsam.VectorValues()\n",
++    "        for key in states + controls:\n",
++    "            candidate.insert(key, plan.atVector(key))\n",
++    "        error = cost.error(plan)\n",
++    "        np.testing.assert_allclose(error, linear.error(candidate), atol=1e-12)\n",
++    "        assert error >= reference_error - 1e-12\n",
++    "        measurements.append((abs(plan.atVector(controls[0])[0] - reference_controls[0]),\n",
++    "                             error - reference_error))\n",
++    "    metrics[name] = np.array(measurements)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 7,
++   "id": "1b585a96",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "Method                 Median first-action error   Median excess graph error\n",
++      "MPPI                                   0.0702719                   0.0213396\n",
++      "CEM                                    0.0044571                   0.0000515\n",
++      "Predictive sampling                    0.0969566                   0.0429241\n"
++     ]
++    }
++   ],
++   "source": [
++    "print(f\"{'Method':20s} {'Median first-action error':>27s} {'Median excess graph error':>27s}\")\n",
++    "for name, samples in metrics.items():\n",
++    "    action_error, excess_error = np.median(samples, axis=0)\n",
++    "    print(f\"{name:20s} {action_error:27.7f} {excess_error:27.7f}\")"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "eeaa8759",
++   "metadata": {},
++   "source": [
++    "Each dot below represents one seed. The box spans the middle half of the runs and its central line marks the median. The logarithmic axes make small errors visible. On this three-control quadratic problem, CEM concentrates its proposals as it refits the elites, while MPPI and predictive sampling retain their original spread. The interactive figure loads Plotly from its version-pinned CDN and requires an internet connection."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 8,
++   "id": "246d46df",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stderr",
++     "output_type": "stream",
++     "text": [
++      "/Users/dellaert/miniforge3/envs/py312/lib/python3.12/site-packages/IPython/core/display.py:431: UserWarning:\n",
++      "\n",
++      "Consider using IPython.display.IFrame instead\n",
++      "\n"
++     ]
++    },
++    {
++     "data": {
++      "text/html": [
++       "<iframe title=\"Sampling planners on a finite-horizon LQR problem\" style=\"width:100%;border:0\" height=\"370\" srcdoc=\"&lt;html&gt;\n",
++       "&lt;head&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;/head&gt;\n",
++       "&lt;body&gt;\n",
++       "    &lt;div&gt;                        &lt;script type=&quot;text/javascript&quot;&gt;window.PlotlyConfig = {MathJaxConfig: &#x27;local&#x27;};&lt;/script&gt;\n",
++       "        &lt;script charset=&quot;utf-8&quot; src=&quot;https://cdn.plot.ly/plotly-3.1.1.min.js&quot; integrity=&quot;sha256-HUEFyfiTnZJxCxur99FjbKYTvKSzwDaD3/x5TqHpFu4=&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;                &lt;div id=&quot;cb9d1003-595e-431d-85d6-656622c9dbd7&quot; class=&quot;plotly-graph-div&quot; style=&quot;height:370px; width:100%;&quot;&gt;&lt;/div&gt;            &lt;script type=&quot;text/javascript&quot;&gt;                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(&quot;cb9d1003-595e-431d-85d6-656622c9dbd7&quot;)) {                    Plotly.newPlot(                        &quot;cb9d1003-595e-431d-85d6-656622c9dbd7&quot;,                        [{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;MPPI&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;qMzuzPNysD8g0TnPts+4P4hmO2K+4rU\\u002f4Gt3eFtRvT8gRROSUayyP\\u002fjkjKf5+b0\\u002fyIM++ltOsT\\u002fAeAFbBbyaP7g\\u002fVYp0zbY\\u002fwCxwsF7kmz8ACVdC8+qDP8ACJXmKf4k\\u002f8KfJH7mwuD\\u002f0dnE4uGHBP1AQVK84Sr0\\u002f0ARNWDzhoD9wg11UcsivP8h0F6GGrbM\\u002fMFaFgLPPpD+gjNUfa0KqPw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x&quot;,&quot;yaxis&quot;:&quot;y&quot;},{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;CEM&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;AIiF1hjIQz8AAI0zz30pPwAAET\\u002fTaPk+oMaLsqhVlT8AhGB13PxxP4CYUzKsiHc\\u002fwFvi\\u002fPq0oj9gT2lBS9ScPwDwsj9Qd24\\u002fADDrLPqMIT9ArK5ioTOEPwA4GS6seVc\\u002fAMJgWlCGcj+A872BDDV9PwC1iA7JiXU\\u002fAHR1LJTtQz8A2G3VgBsxP4BSGMBN4HQ\\u002fABzY3YnTQT+ASt1nKxeHPw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x&quot;,&quot;yaxis&quot;:&quot;y&quot;},{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;Predictive sampling&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;kEb\\u002fz5vqpz\\u002fAlrVzyIicP+CSScYWjrU\\u002foK2NQeKhsD9oJzQWEYPCP4DOt5XrM7c\\u002fVH5a45AxyD+QpG0t+EW9P5CkVYVQr8s\\u002f9l6NMCjoxj9w1r3pYHC6P9C4ypwjj7E\\u002fBKZFplPwzD8g+HsaL4CQP\\u002fn9BAN\\u002fBdA\\u002fPow6x+OFxD\\u002fgYxBjC0+UPwCqvZtlTaw\\u002fwByTsthXnj+YMHJek3e8Pw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x&quot;,&quot;yaxis&quot;:&quot;y&quot;},{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;MPPI&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;gF1MrZ+ImT8g0C4M6LOQP8AXdc9pRos\\u002fgEOd7g9nnT+AlBqT1iehP6DHVY+ZA5g\\u002fwLRG7YVcgD9gMG+ufbCTP8AIVl3hxoY\\u002fwLyG5ypxpD+AGjkwIHqaP0DeKDTc9I0\\u002foJhx4q9ZkT\\u002fwYXeoWU6jPygGsAiBWbI\\u002fAIbLmILrWj8A3v3DBUB4P0BK5dTgUYc\\u002fwB6Z3VUFmD9gjnvN266ZPw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x2&quot;,&quot;yaxis&quot;:&quot;y2&quot;},{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;CEM&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;AIDScDva+D4AAAhRckK4PgAANOPkePU+AJSfTgyTRj8AAOuD33gKPwAApokqygs\\u002fAFC00CH9bz8A0QHBlq9nPwAAHOFIgvY+AADBRX2l8D4AYG7cgtsjPwAAtlpM4Ps+AMAwuoPhGj8AUEsdXskkPwAwofDh3SA\\u002fAICPExg38D4AAPD1ule6PgBAQ+Bjjgs\\u002fAIDCN5TwCT8AAO3LhnQmPw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x2&quot;,&quot;yaxis&quot;:&quot;y2&quot;},{&quot;boxpoints&quot;:&quot;all&quot;,&quot;customdata&quot;:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],&quot;hovertemplate&quot;:&quot;seed %{customdata}\\u003cbr\\u003eerror %{y:.6g}\\u003cextra\\u003e%{fullData.name}\\u003c\\u002fextra\\u003e&quot;,&quot;jitter&quot;:0.4,&quot;name&quot;:&quot;Predictive sampling&quot;,&quot;showlegend&quot;:false,&quot;y&quot;:{&quot;dtype&quot;:&quot;f8&quot;,&quot;bdata&quot;:&quot;sIcSzVWPoz8gzkfPMsigP\\u002fDGKHC3L6c\\u002fILP6GqOHmT8AgHUBkE2lP4DBNyunrZY\\u002fEKORFuRgrD8g6AwWz5TJP5CnbiQBq7U\\u002fkGkUsLKisD+gRUEp2uecP+BvKIWvT6I\\u002fKBnpNKBevD8ABhV6n5BbP2gZl4IZtrU\\u002fsChaykD6rz8AjkS179OHP2A5oDappqQ\\u002f8B2VB7mmpj9QIh4jiFGqPw==&quot;},&quot;type&quot;:&quot;box&quot;,&quot;xaxis&quot;:&quot;x2&quot;,&quot;yaxis&quot;:&quot;y2&quot;}],                        {&quot;template&quot;:{&quot;data&quot;:{&quot;barpolar&quot;:[{&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;barpolar&quot;}],&quot;bar&quot;:[{&quot;error_x&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;error_y&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;bar&quot;}],&quot;carpet&quot;:[{&quot;aaxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;#C8D4E3&quot;,&quot;linecolor&quot;:&quot;#C8D4E3&quot;,&quot;minorgridcolor&quot;:&quot;#C8D4E3&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;baxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;#C8D4E3&quot;,&quot;linecolor&quot;:&quot;#C8D4E3&quot;,&quot;minorgridcolor&quot;:&quot;#C8D4E3&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;type&quot;:&quot;carpet&quot;}],&quot;choropleth&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;type&quot;:&quot;choropleth&quot;}],&quot;contourcarpet&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;type&quot;:&quot;contourcarpet&quot;}],&quot;contour&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;type&quot;:&quot;contour&quot;}],&quot;heatmap&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;type&quot;:&quot;heatmap&quot;}],&quot;histogram2dcontour&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;type&quot;:&quot;histogram2dcontour&quot;}],&quot;histogram2d&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;type&quot;:&quot;histogram2d&quot;}],&quot;histogram&quot;:[{&quot;marker&quot;:{&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;histogram&quot;}],&quot;mesh3d&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;type&quot;:&quot;mesh3d&quot;}],&quot;parcoords&quot;:[{&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;parcoords&quot;}],&quot;pie&quot;:[{&quot;automargin&quot;:true,&quot;type&quot;:&quot;pie&quot;}],&quot;scatter3d&quot;:[{&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scatter3d&quot;}],&quot;scattercarpet&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scattercarpet&quot;}],&quot;scattergeo&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scattergeo&quot;}],&quot;scattergl&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scattergl&quot;}],&quot;scattermapbox&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scattermapbox&quot;}],&quot;scattermap&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scattermap&quot;}],&quot;scatterpolargl&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scatterpolargl&quot;}],&quot;scatterpolar&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scatterpolar&quot;}],&quot;scatter&quot;:[{&quot;fillpattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2},&quot;type&quot;:&quot;scatter&quot;}],&quot;scatterternary&quot;:[{&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;type&quot;:&quot;scatterternary&quot;}],&quot;surface&quot;:[{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;type&quot;:&quot;surface&quot;}],&quot;table&quot;:[{&quot;cells&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#EBF0F8&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;header&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#C8D4E3&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;type&quot;:&quot;table&quot;}]},&quot;layout&quot;:{&quot;annotationdefaults&quot;:{&quot;arrowcolor&quot;:&quot;#2a3f5f&quot;,&quot;arrowhead&quot;:0,&quot;arrowwidth&quot;:1},&quot;autotypenumbers&quot;:&quot;strict&quot;,&quot;coloraxis&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;colorscale&quot;:{&quot;diverging&quot;:[[0,&quot;#8e0152&quot;],[0.1,&quot;#c51b7d&quot;],[0.2,&quot;#de77ae&quot;],[0.3,&quot;#f1b6da&quot;],[0.4,&quot;#fde0ef&quot;],[0.5,&quot;#f7f7f7&quot;],[0.6,&quot;#e6f5d0&quot;],[0.7,&quot;#b8e186&quot;],[0.8,&quot;#7fbc41&quot;],[0.9,&quot;#4d9221&quot;],[1,&quot;#276419&quot;]],&quot;sequential&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;sequentialminus&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]},&quot;colorway&quot;:[&quot;#636efa&quot;,&quot;#EF553B&quot;,&quot;#00cc96&quot;,&quot;#ab63fa&quot;,&quot;#FFA15A&quot;,&quot;#19d3f3&quot;,&quot;#FF6692&quot;,&quot;#B6E880&quot;,&quot;#FF97FF&quot;,&quot;#FECB52&quot;],&quot;font&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;geo&quot;:{&quot;bgcolor&quot;:&quot;white&quot;,&quot;lakecolor&quot;:&quot;white&quot;,&quot;landcolor&quot;:&quot;white&quot;,&quot;showlakes&quot;:true,&quot;showland&quot;:true,&quot;subunitcolor&quot;:&quot;#C8D4E3&quot;},&quot;hoverlabel&quot;:{&quot;align&quot;:&quot;left&quot;},&quot;hovermode&quot;:&quot;closest&quot;,&quot;mapbox&quot;:{&quot;style&quot;:&quot;light&quot;},&quot;paper_bgcolor&quot;:&quot;white&quot;,&quot;plot_bgcolor&quot;:&quot;white&quot;,&quot;polar&quot;:{&quot;angularaxis&quot;:{&quot;gridcolor&quot;:&quot;#EBF0F8&quot;,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;bgcolor&quot;:&quot;white&quot;,&quot;radialaxis&quot;:{&quot;gridcolor&quot;:&quot;#EBF0F8&quot;,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;scene&quot;:{&quot;xaxis&quot;:{&quot;backgroundcolor&quot;:&quot;white&quot;,&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;gridwidth&quot;:2,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;#EBF0F8&quot;},&quot;yaxis&quot;:{&quot;backgroundcolor&quot;:&quot;white&quot;,&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;gridwidth&quot;:2,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;#EBF0F8&quot;},&quot;zaxis&quot;:{&quot;backgroundcolor&quot;:&quot;white&quot;,&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;gridwidth&quot;:2,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;#EBF0F8&quot;}},&quot;shapedefaults&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;}},&quot;ternary&quot;:{&quot;aaxis&quot;:{&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;linecolor&quot;:&quot;#A2B1C6&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;baxis&quot;:{&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;linecolor&quot;:&quot;#A2B1C6&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;bgcolor&quot;:&quot;white&quot;,&quot;caxis&quot;:{&quot;gridcolor&quot;:&quot;#DFE8F3&quot;,&quot;linecolor&quot;:&quot;#A2B1C6&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;title&quot;:{&quot;x&quot;:0.05},&quot;xaxis&quot;:{&quot;automargin&quot;:true,&quot;gridcolor&quot;:&quot;#EBF0F8&quot;,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;#EBF0F8&quot;,&quot;zerolinewidth&quot;:2},&quot;yaxis&quot;:{&quot;automargin&quot;:true,&quot;gridcolor&quot;:&quot;#EBF0F8&quot;,&quot;linecolor&quot;:&quot;#EBF0F8&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;#EBF0F8&quot;,&quot;zerolinewidth&quot;:2}}},&quot;xaxis&quot;:{&quot;anchor&quot;:&quot;y&quot;,&quot;domain&quot;:[0.0,0.45]},&quot;yaxis&quot;:{&quot;anchor&quot;:&quot;x&quot;,&quot;domain&quot;:[0.0,1.0],&quot;title&quot;:{&quot;text&quot;:&quot;Absolute control error&quot;},&quot;type&quot;:&quot;log&quot;},&quot;xaxis2&quot;:{&quot;anchor&quot;:&quot;y2&quot;,&quot;domain&quot;:[0.55,1.0]},&quot;yaxis2&quot;:{&quot;anchor&quot;:&quot;x2&quot;,&quot;domain&quot;:[0.0,1.0],&quot;title&quot;:{&quot;text&quot;:&quot;Graph error above optimum&quot;},&quot;type&quot;:&quot;log&quot;},&quot;annotations&quot;:[{&quot;font&quot;:{&quot;size&quot;:16},&quot;showarrow&quot;:false,&quot;text&quot;:&quot;First-action absolute error&quot;,&quot;x&quot;:0.225,&quot;xanchor&quot;:&quot;center&quot;,&quot;xref&quot;:&quot;paper&quot;,&quot;y&quot;:1.0,&quot;yanchor&quot;:&quot;bottom&quot;,&quot;yref&quot;:&quot;paper&quot;},{&quot;font&quot;:{&quot;size&quot;:16},&quot;showarrow&quot;:false,&quot;text&quot;:&quot;Excess graph error&quot;,&quot;x&quot;:0.775,&quot;xanchor&quot;:&quot;center&quot;,&quot;xref&quot;:&quot;paper&quot;,&quot;y&quot;:1.0,&quot;yanchor&quot;:&quot;bottom&quot;,&quot;yref&quot;:&quot;paper&quot;}],&quot;margin&quot;:{&quot;t&quot;:42,&quot;b&quot;:70},&quot;height&quot;:370},                        {&quot;displaylogo&quot;: false, &quot;responsive&quot;: true}                    )                };            &lt;/script&gt;        &lt;/div&gt;\n",
++       "&lt;/body&gt;\n",
++       "&lt;/html&gt;\"></iframe>"
++      ],
++      "text/plain": [
++       "<IPython.core.display.HTML object>"
++      ]
++     },
++     "metadata": {},
++     "output_type": "display_data"
++    }
++   ],
++   "source": [
++    "figure = make_subplots(rows=1, cols=2, subplot_titles=(\"First-action absolute error\", \"Excess graph error\"))\n",
++    "for column in range(2):\n",
++    "    for name, samples in metrics.items():\n",
++    "        figure.add_trace(go.Box(name=name, y=samples[:, column], customdata=list(seeds),\n",
++    "                                boxpoints=\"all\", jitter=0.4, showlegend=False,\n",
++    "                                hovertemplate=\"seed %{customdata}<br>error %{y:.6g}<extra>%{fullData.name}</extra>\"),\n",
++    "                         row=1, col=column + 1)\n",
++    "figure.update_yaxes(type=\"log\", title_text=\"Absolute control error\", row=1, col=1)\n",
++    "figure.update_yaxes(type=\"log\", title_text=\"Graph error above optimum\", row=1, col=2)\n",
++    "figure.update_layout(template=\"plotly_white\", height=370, margin=dict(t=42, b=70))\n",
++    "from html import escape\n",
++    "\n",
++    "document = figure.to_html(include_plotlyjs=\"cdn\", config={\"displaylogo\": False, \"responsive\": True})\n",
++    "display(HTML(f'<iframe title=\"Sampling planners on a finite-horizon LQR problem\" style=\"width:100%;border:0\" '\n",
++    "             f'height=\"{figure.layout.height or 480}\" srcdoc=\"{escape(document, quote=True)}\"></iframe>'))"
++   ]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {
++   "display_name": "Python 3",
++   "language": "python",
++   "name": "python3"
++  },
++  "language_info": {
++   "codemirror_mode": {
++    "name": "ipython",
++    "version": 3
++   },
++   "file_extension": ".py",
++   "mimetype": "text/x-python",
++   "name": "python",
++   "nbconvert_exporter": "python",
++   "pygments_lexer": "ipython3",
++   "version": "3.12.6"
++  }
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
+--- /dev/null
 +++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb
 @@ -0,0 +1,259 @@
 +{
@@ -135378,6 +136361,235 @@ Reviewed-By: <name and email of someone who approved/reviewed the patch>
 +   "display_name": "Python 3",
 +   "language": "python",
 +   "name": "python3"
++  }
++ },
++ "nbformat": 4,
++ "nbformat_minor": 5
++}
+--- /dev/null
++++ gtsam-no-tbb-4.3.0/python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb
+@@ -0,0 +1,226 @@
++{
++ "cells": [
++  {
++   "cell_type": "markdown",
++   "id": "c2ef34de",
++   "metadata": {},
++   "source": [
++    "# Three sampling planners for a unicycle\n",
++    "\n",
++    "A unicycle can move forward and turn, yet it cannot translate sideways. This example compares MPPI, CEM, and predictive sampling on the same terminal pose and control-effort graph. The model, two-second horizon, goal and cost scales match the [C++ example](../../../../gtsam_unstable/examples/mppi/UnicycleSamplingExample.cpp). The notebook uses a smaller batch and fewer iterations for the Python dynamics callback."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "1bad8bed",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "source": [
++    "GTSAM Copyright 2010–2026, Georgia Tech Research Corporation, Atlanta, Georgia. See LICENSE. Authors: Frank Dellaert and Akash Ratheesh."
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "c479b925",
++   "metadata": {},
++   "source": [
++    "[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/borglab/gtsam/blob/develop/python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb)"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 1,
++   "id": "3b8bb26f",
++   "metadata": {
++    "tags": [
++     "remove-cell"
++    ]
++   },
++   "outputs": [],
++   "source": [
++    "import sys\n",
++    "if 'google.colab' in sys.modules:\n",
++    "    %pip install --quiet gtsam-develop plotly"
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 2,
++   "id": "b9972cb9",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "import numpy as np\n",
++    "import plotly.graph_objects as go\n",
++    "import gtsam\n",
++    "from gtsam.symbol_shorthand import U, X\n",
++    "from IPython.display import HTML, display"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "d32ae075",
++   "metadata": {},
++   "source": [
++    "## Build the cost graph\n",
++    "\n",
++    "The prior on the last pose penalizes position and heading error in local coordinates. A Gaussian prior on each control penalizes high speed and yaw rate. The first pose and nominal controls provide the starting point for shooting."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 3,
++   "id": "b70ae4c1",
++   "metadata": {},
++   "outputs": [],
++   "source": [
++    "horizon, dt = 20, 0.1\n",
++    "states = [X(k) for k in range(horizon + 1)]\n",
++    "actions = [U(k) for k in range(horizon)]\n",
++    "goal = gtsam.Pose2(1.5, 0.75, 0.8)\n",
++    "graph, initial = gtsam.NonlinearFactorGraph(), gtsam.Values()\n",
++    "initial.insert(states[0], gtsam.Pose2())\n",
++    "effort = gtsam.noiseModel.Isotropic.Sigma(2, 4.0)\n",
++    "terminal = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 0.2]))\n",
++    "for key in actions:\n",
++    "    initial.insert(key, np.zeros(2))\n",
++    "    graph.add(gtsam.PriorFactorVector(key, np.zeros(2), effort))\n",
++    "graph.add(gtsam.PriorFactorPose2(states[-1], goal, terminal))"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "18e07b3c",
++   "metadata": {},
++   "source": [
++    "## Integrate and compare\n",
++    "\n",
++    "The dynamics return the body-frame velocity $(v,0,\\omega)$. The planner multiplies it by the time step and retracts it at the current pose. Each search gets the same initial plan and random seed. MPPI averages candidates with exponential weights, CEM fits the proposal to its elites, and predictive sampling keeps the cheapest trajectory including the incumbent."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 4,
++   "id": "6c1a827d",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "MPPI                 graph cost   3.198 (initial 148.625)\n"
++     ]
++    },
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "CEM                  graph cost   1.123 (initial 148.625)\n",
++      "Predictive sampling  graph cost   3.237 (initial 148.625)\n"
++     ]
++    }
++   ],
++   "source": [
++    "def dynamics(pose, u):\n",
++    "    return np.array([u[0], 0.0, u[1]])\n",
++    "\n",
++    "planner = gtsam.SamplingPlannerPose2Vector(states, actions, dt)\n",
++    "baseline = planner.rollout(initial, np.zeros((2, horizon)), dynamics)\n",
++    "initial_cost = graph.error(baseline)\n",
++    "algorithms = {\"MPPI\": gtsam.MPPI(), \"CEM\": gtsam.CEM(8),\n",
++    "              \"Predictive sampling\": gtsam.PredictiveSampling()}\n",
++    "plans = {}\n",
++    "for name, algorithm in algorithms.items():\n",
++    "    proposal = gtsam.GaussianProposal(np.eye(2), 64, 42)\n",
++    "    plan = planner.optimize(graph, initial, dynamics, proposal, algorithm, 8)\n",
++    "    plans[name] = plan\n",
++    "    print(f\"{name:20s} graph cost {graph.error(plan):7.3f} (initial {initial_cost:.3f})\")\n",
++    "    assert graph.error(plan) < initial_cost"
++   ]
++  },
++  {
++   "cell_type": "markdown",
++   "id": "2ccfda1b",
++   "metadata": {},
++   "source": [
++    "The curves show where each optimized control sequence drives the robot. Orientation contributes to the reported graph cost. Interactive charts require an internet connection."
++   ]
++  },
++  {
++   "cell_type": "code",
++   "execution_count": 5,
++   "id": "38677225",
++   "metadata": {},
++   "outputs": [
++    {
++     "name": "stderr",
++     "output_type": "stream",
++     "text": [
++      "/Users/dellaert/miniforge3/envs/py312/lib/python3.12/site-packages/IPython/core/display.py:431: UserWarning:\n",
++      "\n",
++      "Consider using IPython.display.IFrame instead\n",
++      "\n"
++     ]
++    },
++    {
++     "data": {
++      "text/html": [
++       "<iframe title=\"Three sampling planners for a unicycle\" style=\"width:100%;border:0\" height=\"480\" srcdoc=\"&lt;html&gt;\n",
++       "&lt;head&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;/head&gt;\n",
++       "&lt;body&gt;\n",
++       "    &lt;div&gt;                        &lt;script type=&quot;text/javascript&quot;&gt;window.PlotlyConfig = {MathJaxConfig: &#x27;local&#x27;};&lt;/script&gt;\n",
++       "        &lt;script charset=&quot;utf-8&quot; src=&quot;https://cdn.plot.ly/plotly-3.1.1.min.js&quot; integrity=&quot;sha256-HUEFyfiTnZJxCxur99FjbKYTvKSzwDaD3/x5TqHpFu4=&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;                &lt;div id=&quot;dd78a400-760e-4971-b6e9-5316a636e994&quot; class=&quot;plotly-graph-div&quot; style=&quot;height:100%; width:100%;&quot;&gt;&lt;/div&gt;            &lt;script type=&quot;text/javascript&quot;&gt;                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById(&quot;dd78a400-760e-4971-b6e9-5316a636e994&quot;)) {                    Plotly.newPlot(                        &quot;dd78a400-760e-4971-b6e9-5316a636e994&quot;,                        [{&quot;mode&quot;:&quot;lines+markers&quot;,&quot;name&quot;:&quot;MPPI&quot;,&quot;x&quot;:[0.0,0.13036092858055343,0.3177052125912784,0.4005720804905608,0.6960417515529945,0.8613551028854346,1.00163335749046,1.0652105383261319,1.1384628548751083,1.0999921609155916,1.1374484057695156,1.1078061623382902,1.0899924871984943,1.0449858263611262,1.097006436280365,1.0842192518800895,1.2049779636643663,1.443680823198396,1.5168245258399267,1.6036564735562777,1.462675994369226],&quot;y&quot;:[0.0,0.0,0.000017132914402322657,0.007866599784020028,0.06972230592262234,0.14639542468402775,0.22526583562553176,0.27109108327119535,0.3382671274536287,0.30232348725432023,0.34674223713038715,0.31994080902044997,0.3104283383319853,0.2912917702532434,0.3373253118787387,0.3232575621893622,0.43290457336197785,0.696220450883778,0.754723169620677,0.8363873516605059,0.7562324282278289],&quot;type&quot;:&quot;scatter&quot;},{&quot;mode&quot;:&quot;lines+markers&quot;,&quot;name&quot;:&quot;CEM&quot;,&quot;x&quot;:[0.0,-0.0370539272348693,0.055628664333420404,0.18363014122547439,0.3892854128938296,0.5673252626430783,0.6970316339140343,0.7599291990286685,0.8644656096702671,0.9521484102180237,0.9375462398155093,0.9871105852252783,0.9915278923208267,1.0920200623719571,1.0896524710040867,1.1799337883819603,1.2287695445790432,1.355883669415354,1.4538869602007702,1.5436822830996733,1.4949324427531405],&quot;y&quot;:[0.0,0.0,0.005761407280972025,0.024997044869803066,0.07008216952797477,0.12542693923957987,0.18318560537741846,0.22010673412580384,0.28825056929628134,0.3502007022358219,0.34003650404473257,0.37847621731465975,0.381342965164178,0.4394629149338382,0.4382101973868861,0.5039132393912835,0.5354825529092385,0.6214206389743928,0.6983896260726115,0.7734974243705403,0.7326704804565976],&quot;type&quot;:&quot;scatter&quot;},{&quot;mode&quot;:&quot;lines+markers&quot;,&quot;name&quot;:&quot;Predictive sampling&quot;,&quot;x&quot;:[0.0,0.10247218443708164,0.17325614469966205,0.17470105627795557,0.398513967385142,0.47424532901637356,0.7083661022857274,0.6604029671283321,0.7703614394526269,0.7883944925710867,0.8409073324520205,1.0146560513268672,0.9791764793642493,0.8005159467604768,0.8636591815029777,0.9284287059489771,0.9604680788945847,1.1745812494711145,1.2728960765087804,1.4732497515471092,1.4970973853944936],&quot;y&quot;:[0.0,0.0,0.010926510073496102,0.011118798717161156,0.03263380188495567,0.044269156139815566,0.11019331067870199,0.08954682444750192,0.15217935257004025,0.16256367049928164,0.20735582182092935,0.30584493823553854,0.2976733681552693,0.28633941959051995,0.30381861109777986,0.3564483442476575,0.3784858476390798,0.5555851184498725,0.6161304386042754,0.7710256611355658,0.7900628887088752],&quot;type&quot;:&quot;scatter&quot;},{&quot;marker&quot;:{&quot;size&quot;:12,&quot;symbol&quot;:&quot;x&quot;},&quot;mode&quot;:&quot;markers&quot;,&quot;name&quot;:&quot;Goal&quot;,&quot;x&quot;:[1.5],&quot;y&quot;:[0.75],&quot;type&quot;:&quot;scatter&quot;}],                        {&quot;template&quot;:{&quot;data&quot;:{&quot;histogram2dcontour&quot;:[{&quot;type&quot;:&quot;histogram2dcontour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;choropleth&quot;:[{&quot;type&quot;:&quot;choropleth&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;histogram2d&quot;:[{&quot;type&quot;:&quot;histogram2d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;heatmap&quot;:[{&quot;type&quot;:&quot;heatmap&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;contourcarpet&quot;:[{&quot;type&quot;:&quot;contourcarpet&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;contour&quot;:[{&quot;type&quot;:&quot;contour&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;surface&quot;:[{&quot;type&quot;:&quot;surface&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;},&quot;colorscale&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]]}],&quot;mesh3d&quot;:[{&quot;type&quot;:&quot;mesh3d&quot;,&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}],&quot;scatter&quot;:[{&quot;fillpattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2},&quot;type&quot;:&quot;scatter&quot;}],&quot;parcoords&quot;:[{&quot;type&quot;:&quot;parcoords&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolargl&quot;:[{&quot;type&quot;:&quot;scatterpolargl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;bar&quot;:[{&quot;error_x&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;error_y&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;bar&quot;}],&quot;scattergeo&quot;:[{&quot;type&quot;:&quot;scattergeo&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterpolar&quot;:[{&quot;type&quot;:&quot;scatterpolar&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;histogram&quot;:[{&quot;marker&quot;:{&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;histogram&quot;}],&quot;scattergl&quot;:[{&quot;type&quot;:&quot;scattergl&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatter3d&quot;:[{&quot;type&quot;:&quot;scatter3d&quot;,&quot;line&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermap&quot;:[{&quot;type&quot;:&quot;scattermap&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattermapbox&quot;:[{&quot;type&quot;:&quot;scattermapbox&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scatterternary&quot;:[{&quot;type&quot;:&quot;scatterternary&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;scattercarpet&quot;:[{&quot;type&quot;:&quot;scattercarpet&quot;,&quot;marker&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}}}],&quot;carpet&quot;:[{&quot;aaxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;baxis&quot;:{&quot;endlinecolor&quot;:&quot;#2a3f5f&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;minorgridcolor&quot;:&quot;white&quot;,&quot;startlinecolor&quot;:&quot;#2a3f5f&quot;},&quot;type&quot;:&quot;carpet&quot;}],&quot;table&quot;:[{&quot;cells&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#EBF0F8&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;header&quot;:{&quot;fill&quot;:{&quot;color&quot;:&quot;#C8D4E3&quot;},&quot;line&quot;:{&quot;color&quot;:&quot;white&quot;}},&quot;type&quot;:&quot;table&quot;}],&quot;barpolar&quot;:[{&quot;marker&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#E5ECF6&quot;,&quot;width&quot;:0.5},&quot;pattern&quot;:{&quot;fillmode&quot;:&quot;overlay&quot;,&quot;size&quot;:10,&quot;solidity&quot;:0.2}},&quot;type&quot;:&quot;barpolar&quot;}],&quot;pie&quot;:[{&quot;automargin&quot;:true,&quot;type&quot;:&quot;pie&quot;}]},&quot;layout&quot;:{&quot;autotypenumbers&quot;:&quot;strict&quot;,&quot;colorway&quot;:[&quot;#636efa&quot;,&quot;#EF553B&quot;,&quot;#00cc96&quot;,&quot;#ab63fa&quot;,&quot;#FFA15A&quot;,&quot;#19d3f3&quot;,&quot;#FF6692&quot;,&quot;#B6E880&quot;,&quot;#FF97FF&quot;,&quot;#FECB52&quot;],&quot;font&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;},&quot;hovermode&quot;:&quot;closest&quot;,&quot;hoverlabel&quot;:{&quot;align&quot;:&quot;left&quot;},&quot;paper_bgcolor&quot;:&quot;white&quot;,&quot;plot_bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;polar&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;angularaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;radialaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;ternary&quot;:{&quot;bgcolor&quot;:&quot;#E5ECF6&quot;,&quot;aaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;baxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;},&quot;caxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;}},&quot;coloraxis&quot;:{&quot;colorbar&quot;:{&quot;outlinewidth&quot;:0,&quot;ticks&quot;:&quot;&quot;}},&quot;colorscale&quot;:{&quot;sequential&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;sequentialminus&quot;:[[0.0,&quot;#0d0887&quot;],[0.1111111111111111,&quot;#46039f&quot;],[0.2222222222222222,&quot;#7201a8&quot;],[0.3333333333333333,&quot;#9c179e&quot;],[0.4444444444444444,&quot;#bd3786&quot;],[0.5555555555555556,&quot;#d8576b&quot;],[0.6666666666666666,&quot;#ed7953&quot;],[0.7777777777777778,&quot;#fb9f3a&quot;],[0.8888888888888888,&quot;#fdca26&quot;],[1.0,&quot;#f0f921&quot;]],&quot;diverging&quot;:[[0,&quot;#8e0152&quot;],[0.1,&quot;#c51b7d&quot;],[0.2,&quot;#de77ae&quot;],[0.3,&quot;#f1b6da&quot;],[0.4,&quot;#fde0ef&quot;],[0.5,&quot;#f7f7f7&quot;],[0.6,&quot;#e6f5d0&quot;],[0.7,&quot;#b8e186&quot;],[0.8,&quot;#7fbc41&quot;],[0.9,&quot;#4d9221&quot;],[1,&quot;#276419&quot;]]},&quot;xaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;yaxis&quot;:{&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;ticks&quot;:&quot;&quot;,&quot;title&quot;:{&quot;standoff&quot;:15},&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;automargin&quot;:true,&quot;zerolinewidth&quot;:2},&quot;scene&quot;:{&quot;xaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;yaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2},&quot;zaxis&quot;:{&quot;backgroundcolor&quot;:&quot;#E5ECF6&quot;,&quot;gridcolor&quot;:&quot;white&quot;,&quot;linecolor&quot;:&quot;white&quot;,&quot;showbackground&quot;:true,&quot;ticks&quot;:&quot;&quot;,&quot;zerolinecolor&quot;:&quot;white&quot;,&quot;gridwidth&quot;:2}},&quot;shapedefaults&quot;:{&quot;line&quot;:{&quot;color&quot;:&quot;#2a3f5f&quot;}},&quot;annotationdefaults&quot;:{&quot;arrowcolor&quot;:&quot;#2a3f5f&quot;,&quot;arrowhead&quot;:0,&quot;arrowwidth&quot;:1},&quot;geo&quot;:{&quot;bgcolor&quot;:&quot;white&quot;,&quot;landcolor&quot;:&quot;#E5ECF6&quot;,&quot;subunitcolor&quot;:&quot;white&quot;,&quot;showland&quot;:true,&quot;showlakes&quot;:true,&quot;lakecolor&quot;:&quot;white&quot;},&quot;title&quot;:{&quot;x&quot;:0.05},&quot;mapbox&quot;:{&quot;style&quot;:&quot;light&quot;}}},&quot;xaxis&quot;:{&quot;title&quot;:{&quot;text&quot;:&quot;x (m)&quot;}},&quot;yaxis&quot;:{&quot;title&quot;:{&quot;text&quot;:&quot;y (m)&quot;},&quot;scaleanchor&quot;:&quot;x&quot;,&quot;scaleratio&quot;:1}},                        {&quot;displaylogo&quot;: false, &quot;responsive&quot;: true}                    )                };            &lt;/script&gt;        &lt;/div&gt;\n",
++       "&lt;/body&gt;\n",
++       "&lt;/html&gt;\"></iframe>"
++      ],
++      "text/plain": [
++       "<IPython.core.display.HTML object>"
++      ]
++     },
++     "metadata": {},
++     "output_type": "display_data"
++    }
++   ],
++   "source": [
++    "figure = go.Figure()\n",
++    "for name, plan in plans.items():\n",
++    "    poses = [plan.atPose2(key) for key in states]\n",
++    "    figure.add_scatter(x=[p.x() for p in poses], y=[p.y() for p in poses],\n",
++    "                       mode=\"lines+markers\", name=name)\n",
++    "figure.add_scatter(x=[goal.x()], y=[goal.y()], mode=\"markers\", name=\"Goal\",\n",
++    "                   marker=dict(symbol=\"x\", size=12))\n",
++    "figure.update_layout(xaxis_title=\"x (m)\", yaxis_title=\"y (m)\")\n",
++    "figure.update_yaxes(scaleanchor=\"x\", scaleratio=1)\n",
++    "from html import escape\n",
++    "\n",
++    "document = figure.to_html(include_plotlyjs=\"cdn\", config={\"displaylogo\": False, \"responsive\": True})\n",
++    "display(HTML(f'<iframe title=\"Three sampling planners for a unicycle\" style=\"width:100%;border:0\" '\n",
++    "             f'height=\"{figure.layout.height or 480}\" srcdoc=\"{escape(document, quote=True)}\"></iframe>'))"
++   ]
++  }
++ ],
++ "metadata": {
++  "kernelspec": {
++   "display_name": "Python 3",
++   "language": "python",
++   "name": "python3"
++  },
++  "language_info": {
++   "codemirror_mode": {
++    "name": "ipython",
++    "version": 3
++   },
++   "file_extension": ".py",
++   "mimetype": "text/x-python",
++   "name": "python",
++   "nbconvert_exporter": "python",
++   "pygments_lexer": "ipython3",
++   "version": "3.12.6"
 +  }
 + },
 + "nbformat": 4,

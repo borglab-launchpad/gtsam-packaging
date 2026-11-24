@@ -1,10 +1,17 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~78.gbp0caabc) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~79.gbpf36c37) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f36c3788d66d6c51edcd0550e12f9aecc569baed **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @0caabc298013465528641c8627a23a5d2eb77c60 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Nov 2026 22:05:33 +0000
+  [ Frank Dellaert ]
+  * Add CEM and predictive sampling to SamplingPlanner
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Nov 2026 14:10:44 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~77.gbp8df924) resolute; urgency=medium
 
