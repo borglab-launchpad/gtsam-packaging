@@ -1,10 +1,35 @@
-gtsam-no-tbb (4.3.0-0ubuntu16~84.gbpc080de) UNRELEASED; urgency=medium
+gtsam-no-tbb (4.3.0-0ubuntu16~85.gbpf8567b) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @f8567b8d06d8a23c331657edd024ca71720a5e18 **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @c080de81abe62847bd1541275f896f4553bc3929 **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Tue, 24 Nov 2026 18:37:41 +0000
+  [ Frank Dellaert ]
+  * Document GTSAM architecture and automate source quality checks
+  * Document and check stable module include direction
+  * Remove concrete geometry includes from WNOA templates
+  * Include the WNOA motion factor base directly
+  * Include geometry types at WNOA interpolator instantiations
+  * Sample WNOA interpolation tests with integer loop counters
+  * Initialize WNOA matrices and test data on demand
+  * Make WNOA source and test includes explicit
+  * Defer CppUnitLite test metadata allocation until execution
+  * Validate WNOA interpolation inputs and Eigen index ranges
+  * Gate changed C++ source lines with Clang-Tidy in PR CI
+  * Group WNOA motion-factor tests by state type
+  * Simplify CI matrix selection and document local code quality checks
+  * Instantiate concrete WNOA templates in sam
+  * Group the application modules in the architecture diagram
+  * Document Kruskal under inference and mark legacy include paths
+  * Remove six module include exceptions while preserving public headers
+  * Move pose-aware visualization to SAM and generalize forest printing
+  * Fix EliminationTree direct Key dependency
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Wed, 25 Nov 2026 07:22:42 +0000
 
 gtsam-no-tbb (4.3.0-0ubuntu16~83.gbp58fb02) resolute; urgency=medium
 
