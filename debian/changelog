@@ -1,10 +1,55 @@
-gtsam (4.3.0-0ubuntu14~75.gbp4f079f) UNRELEASED; urgency=medium
+gtsam (4.3.0-0ubuntu14~76.gbp2209ea) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @2209ea22a1a4b7e4ebbb6b8ef100a47e49177b3a **
+
+  [ Borglab Builder ]
   ** SNAPSHOT build @4f079f259c59c2487e639d02a2bd449ba52cbfcb **
 
   * modified changelog for distro resolute
+  * commit of final snapshot version number update
 
- -- Borglab Builder <borglab.launchpad@gmail.com>  Mon, 23 Nov 2026 22:05:31 +0000
+  [ Huyvux12 ]
+  * Fix #2941: list Cephes in top-level LICENSE
+
+  [ Frank Dellaert ]
+  * Add CEM and predictive sampling to SamplingPlanner
+  * Document GTSAM architecture and automate source quality checks
+  * Document and check stable module include direction
+  * Remove concrete geometry includes from WNOA templates
+  * Include the WNOA motion factor base directly
+  * Include geometry types at WNOA interpolator instantiations
+  * Sample WNOA interpolation tests with integer loop counters
+  * Initialize WNOA matrices and test data on demand
+  * Make WNOA source and test includes explicit
+  * Defer CppUnitLite test metadata allocation until execution
+  * Validate WNOA interpolation inputs and Eigen index ranges
+  * Gate changed C++ source lines with Clang-Tidy in PR CI
+  * Group WNOA motion-factor tests by state type
+  * Simplify CI matrix selection and document local code quality checks
+  * Instantiate concrete WNOA templates in sam
+  * Group the application modules in the architecture diagram
+  * Document Kruskal under inference and mark legacy include paths
+  * Remove six module include exceptions while preserving public headers
+  * Move pose-aware visualization to SAM and generalize forest printing
+  * Fix EliminationTree direct Key dependency
+  * Fix pytest discovery for installed Conda packages
+  * Add structured MPPI proposals, weighting rules and tracking operations
+  * Calibrate MPPI proposals on separate seeds and evaluate the variants
+  * Simplify planning wrappers to follow standard GTSAM conventions
+  * Unify SamplingAlgorithm and PiecewiseLinearProposal hierarchies to simplify wrappers
+  * Negate GaussianProposal::logWeightOffsets to match importance-sampling sign
+  * Clip nominal controls and clarify 8s window in CartPoleMPPI.ipynb
+  * Recompute final DDPTracking backward pass at minimum damping and document clamping
+  * Fix clang-tidy narrowing and implicit widening warnings in planning
+  * Deduplicate planning test fixtures, add clarifying comments, and clang-format
+  * Fix clang-tidy analyzer and narrowing warnings in planning tests and CEM
+  * Fix CI clang-tidy float loop and static init errors and document CI/local parity
+
+  [ Rohan Bansal ]
+  * standardized across eqf
+  * Add Python tests for VioEqF and ABC filter wrappers
+
+ -- Borglab Builder <borglab.launchpad@gmail.com>  Thu, 26 Nov 2026 01:38:04 +0000
 
 gtsam (4.3.0-0ubuntu14~74.gbp1fb8d9) resolute; urgency=medium
 
